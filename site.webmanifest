@@ -1,0 +1,17 @@
+{
+  "name": "INFOSERV2A",
+  "short_name": "INFOSERV2A",
+  "description": "Cybersécurité locale et réseaux critiques en Sud Corse.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#020814",
+  "theme_color": "#00d9f5",
+  "icons": [
+    {
+      "src": "public/assets/imported/favicon-infoserv2a.svg",
+      "sizes": "64x64",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

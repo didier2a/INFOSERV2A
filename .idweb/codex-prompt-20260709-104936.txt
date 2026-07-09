@@ -1,0 +1,1 @@
+Rapproche la page active de son PNG de reference avec la methode du calque : aligner header, hero, H1, CTA, cartes, marges, footer, tout en gardant le texte HTML et le responsive.
