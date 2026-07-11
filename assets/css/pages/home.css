@@ -20,7 +20,7 @@
 }
 
 .page-home .brand-logo {
-  width: 176px;
+  width: 186px;
 }
 
 .page-home .nav-link {
@@ -45,7 +45,7 @@
   background:
     linear-gradient(90deg, #020814 0%, rgba(2, 8, 20, 0.94) 31%, rgba(2, 8, 20, 0.56) 50%, rgba(2, 8, 20, 0.12) 76%),
     linear-gradient(180deg, transparent 62%, #020814 100%),
-    url("../../../public/assets/imported/home-hero-no-text.png") center 61% / cover no-repeat;
+    url("../../../public/assets/imported/home-hero-no-text.png") right center / auto 560px no-repeat;
 }
 
 .page-home .hero::before {
@@ -62,9 +62,9 @@
 
 .page-home .hero-inner {
   min-height: 505px;
-  grid-template-columns: minmax(0, 555px) 1fr;
+  grid-template-columns: minmax(0, 620px) 1fr;
   align-items: start;
-  padding: 49px 0 76px;
+  padding: 56px 0 69px;
 }
 
 .page-home .hero-content {
@@ -82,9 +82,9 @@
 }
 
 .page-home .hero-title {
-  max-width: 535px;
+  max-width: 610px;
   margin-bottom: 13px;
-  font-size: clamp(2.65rem, 3.62vw, 3.26rem);
+  font-size: clamp(2.65rem, 3.55vw, 3.2rem);
   line-height: 1.03;
 }
 
@@ -125,6 +125,25 @@
   height: 39px;
 }
 
+.page-home .ui-icon {
+  width: 72%;
+  height: 72%;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 5px rgba(18, 247, 255, 0.28));
+}
+
+.page-home .proof-icon::before,
+.page-home .proof-icon::after,
+.page-home .card-icon::before,
+.page-home .card-icon::after {
+  display: none;
+}
+
 .page-home .proof-title {
   font-size: 0.58rem;
 }
@@ -159,7 +178,7 @@
 }
 
 .page-home .service-card {
-  min-height: 236px;
+  min-height: 268px;
   display: flex;
   flex-direction: column;
   padding: 21px 20px 18px;
@@ -262,7 +281,7 @@
 }
 
 .page-home .step-card {
-  min-height: 145px;
+  min-height: 168px;
   padding: 27px 11px 13px;
   border-radius: 5px;
   background: rgba(4, 15, 31, 0.74);
@@ -294,8 +313,8 @@
 
 .page-home .local-section {
   position: relative;
-  min-height: 245px;
-  padding-block: 28px 24px;
+  min-height: 265px;
+  padding-block: 32px 28px;
   background:
     linear-gradient(90deg, #031022 0%, rgba(3, 16, 34, 0.96) 40%, rgba(3, 16, 34, 0.4) 68%, #031022 100%);
 }
@@ -337,7 +356,7 @@
 }
 
 .page-home .local-map {
-  min-height: 190px;
+  min-height: 210px;
   margin-right: -38px;
 }
 
@@ -346,7 +365,7 @@
 }
 
 .page-home .local-map img {
-  height: 205px;
+  height: 225px;
   object-position: 65% center;
   opacity: 0.92;
   mix-blend-mode: screen;
@@ -402,7 +421,8 @@
 }
 
 .page-home .site-footer {
-  padding: 25px 0 16px;
+  min-height: 262px;
+  padding: 30px 0 16px;
 }
 
 .page-home .footer-inner {
