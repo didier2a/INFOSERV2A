@@ -233,14 +233,14 @@
 }
 
 .info-card {
-  min-height: 202px;
+  min-height: 232px;
   display: flex;
   flex-direction: column;
   padding: 18px 17px 15px;
 }
 
 .info-card.compact {
-  min-height: 122px;
+  min-height: 150px;
 }
 
 .info-card .card-symbol {
@@ -255,7 +255,7 @@
 .choice-card h3 {
   margin: 0 0 8px;
   color: var(--color-text);
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   line-height: 1.2;
 }
 
@@ -266,7 +266,7 @@
 .choice-card p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.61rem;
+  font-size: 0.65rem;
   line-height: 1.48;
 }
 
@@ -298,13 +298,13 @@
 }
 
 .photo-card {
-  min-height: 208px;
+  min-height: 255px;
   overflow: hidden;
 }
 
 .photo-card img {
   width: 100%;
-  height: 120px;
+  height: 154px;
   object-fit: cover;
   filter: saturate(0.86) contrast(1.08);
 }
@@ -323,7 +323,7 @@
 }
 
 .process-card {
-  min-height: 145px;
+  min-height: 190px;
   display: grid;
   align-content: center;
   justify-items: center;
@@ -524,15 +524,29 @@
 }
 
 .page-method .process-card {
-  min-height: 178px;
+  min-height: 260px;
 }
 
 .page-method .info-card {
-  min-height: 230px;
+  min-height: 260px;
 }
 
 .page-method .info-card.compact {
-  min-height: 145px;
+  min-height: 180px;
+}
+
+.page-sectors [aria-labelledby="expertise-sectors"] .info-card.compact {
+  min-height: 220px;
+}
+
+.page-sectors [aria-labelledby="critical-title"] .info-card.compact,
+.page-network .info-card.compact,
+.page-contact .info-card.compact {
+  min-height: 155px;
+}
+
+.page-about .info-card.compact {
+  min-height: 170px;
 }
 
 .page-method .page-cta,
