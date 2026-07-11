@@ -17,3 +17,129 @@ PSRemotingProtocolVersion: 2.4
 SerializationVersion: 1.1.0.1
 WSManStackVersion: 3.0
 **********************
+git version 2.55.0.windows.2
+warning: in the working copy of 'a-propos.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'assets/css/style.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'assets/js/main.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'contact.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'cyber.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'index-old.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'index.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'mentions-legales.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'methode.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'politique-confidentialite.html', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of 'reseau.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'script.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'secteurs-sensibles.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.idweb/codex-prompt-20260709-084202.txt', LF will be replaced by CRLF the next time Git
+ touches it
+warning: in the working copy of '.idweb/codex-prompt-20260709-084704.txt', LF will be replaced by CRLF the next time Git
+ touches it
+warning: in the working copy of '.idweb/codex-prompt-20260709-084810.txt', LF will be replaced by CRLF the next time Git
+ touches it
+warning: in the working copy of '.idweb/run-20260709-084202.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-084704.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-084810.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-085632.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-085646.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-104852.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-104900.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-104920.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-104936.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-105058.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of 'assets/css/debug-overlays.css', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'assets/js/idweb-debug-overlay.js', LF will be replaced by CRLF the next time Git touche
+s it
+warning: in the working copy of 'prompts/20260709-104625-01-accueil-codex-app.txt', LF will be replaced by CRLF the next
+ time Git touches it
+warning: in the working copy of 'prompts/20260709-104758-accueil-codex-app.txt', LF will be replaced by CRLF the next ti
+me Git touches it
+warning: in the working copy of 'prompts/20260709-104814-cyber-codex-app.txt', LF will be replaced by CRLF the next time
+ Git touches it
+warning: in the working copy of 'public/assets/imported/favicon-infoserv2a.svg', LF will be replaced by CRLF the next ti
+me Git touches it
+warning: in the working copy of 'site.webmanifest', LF will be replaced by CRLF the next time Git touches it
+[master f7c4e65] IDWEB V0.5 snapshot 2026-07-09 10:51:00
+ 72 files changed, 2608 insertions(+), 2235 deletions(-)
+ create mode 100644 .idweb/codex-prompt-20260709-084202.txt
+ create mode 100644 .idweb/codex-prompt-20260709-084704.txt
+ create mode 100644 .idweb/codex-prompt-20260709-084810.txt
+ create mode 100644 .idweb/codex-prompt-20260709-104936.txt
+ create mode 100644 .idweb/run-20260709-084202.log
+ create mode 100644 .idweb/run-20260709-084202.ps1
+ create mode 100644 .idweb/run-20260709-084704.log
+ create mode 100644 .idweb/run-20260709-084704.ps1
+ create mode 100644 .idweb/run-20260709-084810.log
+ create mode 100644 .idweb/run-20260709-084810.ps1
+ create mode 100644 .idweb/run-20260709-085632.log
+ create mode 100644 .idweb/run-20260709-085632.ps1
+ create mode 100644 .idweb/run-20260709-085646.log
+ create mode 100644 .idweb/run-20260709-085646.ps1
+ create mode 100644 .idweb/run-20260709-104852.log
+ create mode 100644 .idweb/run-20260709-104852.ps1
+ create mode 100644 .idweb/run-20260709-104900.log
+ create mode 100644 .idweb/run-20260709-104900.ps1
+ create mode 100644 .idweb/run-20260709-104920.log
+ create mode 100644 .idweb/run-20260709-104920.ps1
+ create mode 100644 .idweb/run-20260709-104936.log
+ create mode 100644 .idweb/run-20260709-104936.ps1
+ create mode 100644 .idweb/run-20260709-105058.log
+ create mode 100644 .idweb/run-20260709-105058.ps1
+ create mode 100644 assets/css/debug-overlays.css
+ create mode 100644 assets/images/01-accueil-index-reference.png
+ create mode 100644 assets/images/references/01-accueil-index-reference.png
+ create mode 100644 assets/images/references/02-cyber-reference.png
+ create mode 100644 assets/images/references/03-reseau-reference.png
+ create mode 100644 assets/images/references/04-secteurs-sensibles-reference.png
+ create mode 100644 assets/images/references/05-methode-reference.png
+ create mode 100644 assets/images/references/06-a-propos-reference.png
+ create mode 100644 assets/images/references/07-contact-reference.png
+ create mode 100644 assets/images/references/manifest.json
+ create mode 100644 assets/js/idweb-debug-overlay.js
+ create mode 100644 prompts/20260709-104625-01-accueil-codex-app.txt
+ create mode 100644 prompts/20260709-104758-accueil-codex-app.txt
+ create mode 100644 prompts/20260709-104814-cyber-codex-app.txt
+ create mode 100644 public/assets/imported/20260709-084201/01-accueil-index-reference.png
+ create mode 100644 public/assets/imported/20260709-084201/02-cyber-reference.png
+ create mode 100644 public/assets/imported/20260709-084201/03-reseau-reference.png
+ create mode 100644 public/assets/imported/20260709-084201/04-secteurs-sensibles-reference.png
+ create mode 100644 public/assets/imported/20260709-084201/05-methode-reference.png
+ create mode 100644 public/assets/imported/20260709-084201/06-a-propos-reference.png
+ create mode 100644 public/assets/imported/20260709-084201/07-contact-reference.png
+ create mode 100644 public/assets/imported/20260709-084201/manifest.json
+ create mode 100644 public/assets/imported/20260709-084703/01-accueil-index-reference.png
+ create mode 100644 public/assets/imported/20260709-084703/02-cyber-reference.png
+ create mode 100644 public/assets/imported/20260709-084703/03-reseau-reference.png
+ create mode 100644 public/assets/imported/20260709-084703/04-secteurs-sensibles-reference.png
+ create mode 100644 public/assets/imported/20260709-084703/05-methode-reference.png
+ create mode 100644 public/assets/imported/20260709-084703/06-a-propos-reference.png
+ create mode 100644 public/assets/imported/20260709-084703/07-contact-reference.png
+ create mode 100644 public/assets/imported/20260709-084703/manifest.json
+ create mode 100644 public/assets/imported/favicon-infoserv2a.svg
+ create mode 100644 site-map.json
+ create mode 100644 site.webmanifest
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+        modified:   .idweb/run-20260709-105058.log
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+Commande terminee.
+**********************
+PowerShell transcript end
+End time: 20260709105101
+**********************

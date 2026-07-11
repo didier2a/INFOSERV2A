@@ -1,18 +1,305 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" class="no-js">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#020814">
+  <meta name="description" content="INFOSERV2A accompagne les entreprises du Sud Corse avec des services cyber de proximité, des audits locaux, des tests d’intrusion raisonnés, l’analyse des vulnérabilités et la continuité d’activité.">
   <title>Cyber — INFOSERV2A</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" href="public/assets/imported/favicon-infoserv2a.svg" type="image/svg+xml">
+  <link rel="manifest" href="site.webmanifest">
   <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/debug-overlays.css">
+  <script src="assets/js/main.js" defer></script>
+  <script src="assets/js/idweb-debug-overlay.js" defer></script>
 </head>
-<body class="prep-page">
-  <header class="site-header">
+<body class="page-cyber idweb-ref-cyber">
+  <header class="site-header" data-header>
     <div class="header-inner">
-      <a class="brand" href="index.html" aria-label="INFOSERV2A accueil"><img class="brand-logo" src="assets/images/logo-infoserv2a.png" alt="INFOSERV2A Cyber & Réseau" width="164" height="40"><span class="brand-text">INFOSERV2A</span></a>
-      <nav class="main-nav is-prep" aria-label="Navigation principale"><a class="nav-link" href="index.html">Accueil</a></nav>
+      <a class="brand" href="index.html" aria-label="INFOSERV2A accueil">
+        <img class="brand-logo" src="assets/images/logo-infoserv2a.png" alt="INFOSERV2A Cyber & Réseau" width="164" height="40">
+        <span class="brand-text">INFOSERV2A</span>
+      </a>
+
+      <nav class="main-nav" id="main-nav" aria-label="Navigation principale">
+        <a class="nav-link" href="index.html">Accueil</a>
+        <a class="nav-link active" href="cyber.html" aria-current="page">Cyber</a>
+        <a class="nav-link" href="reseau.html">Réseau</a>
+        <a class="nav-link" href="secteurs-sensibles.html">Secteurs sensibles</a>
+        <a class="nav-link" href="methode.html">Méthode</a>
+        <a class="nav-link" href="a-propos.html">À propos</a>
+        <a class="nav-link" href="contact.html">Contact</a>
+      </nav>
+
+      <a class="header-cta" href="contact.html">Demander un diagnostic</a>
+
+      <button class="mobile-toggle" type="button" aria-expanded="false" aria-controls="main-nav" aria-label="Ouvrir le menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
     </div>
   </header>
-  <main class="prep-main"><h1>Page en préparation</h1><p>Cette page sera développée dans une étape suivante.</p><a class="btn btn-primary" href="index.html">Retour Accueil</a></main>
+
+  <main>
+    <section class="cyber-hero" aria-labelledby="cyber-title">
+      <div class="cyber-hero-bg" aria-hidden="true"></div>
+      <div class="cyber-hero-inner">
+        <div class="cyber-hero-content reveal">
+          <p class="hero-kicker">Cybersécurité locale</p>
+          <h1 class="cyber-hero-title" id="cyber-title">Protégez votre entreprise. Maîtrisez vos risques. <span>Restez opérationnels.</span></h1>
+          <p class="cyber-hero-text">INFOSERV2A accompagne les entreprises du Sud Corse avec des services cyber de proximité, des expertises concrètes et une approche terrain orientée performance et résilience.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="contact.html">Demander un diagnostic</a>
+            <a class="btn btn-secondary" href="#services-cyber">Découvrir nos services</a>
+          </div>
+        </div>
+
+        <div class="cyber-hero-visual reveal" aria-hidden="true">
+          <div class="cyber-shield">
+            <span class="shield-shell"></span>
+            <span class="shield-core"></span>
+            <span class="shield-lock"></span>
+            <span class="shield-ring ring-one"></span>
+            <span class="shield-ring ring-two"></span>
+            <span class="shield-node n-a"></span>
+            <span class="shield-node n-b"></span>
+            <span class="shield-node n-c"></span>
+            <span class="shield-node n-d"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="proof-bar cyber-proof reveal" aria-label="Preuves cybersécurité">
+      <article class="proof-item">
+        <span class="proof-icon icon-pin" aria-hidden="true"></span>
+        <div>
+          <h2 class="proof-title">Expertise locale</h2>
+          <p class="proof-text">Interventions sur site en Sud Corse</p>
+        </div>
+      </article>
+      <article class="proof-item">
+        <span class="proof-icon icon-bolt" aria-hidden="true"></span>
+        <div>
+          <h2 class="proof-title">Réactivité</h2>
+          <p class="proof-text">Délai d’intervention court, relation directe</p>
+        </div>
+      </article>
+      <article class="proof-item">
+        <span class="proof-icon icon-target" aria-hidden="true"></span>
+        <div>
+          <h2 class="proof-title">Approche terrain</h2>
+          <p class="proof-text">Vérifications réelles, preuves concrètes</p>
+        </div>
+      </article>
+      <article class="proof-item">
+        <span class="proof-icon icon-shield" aria-hidden="true"></span>
+        <div>
+          <h2 class="proof-title">Confidentialité</h2>
+          <p class="proof-text">Discrétion, respect et sécurité des données</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="section cyber-services" id="services-cyber" aria-labelledby="services-cyber-title">
+      <div class="section-inner">
+        <div class="section-heading reveal">
+          <p class="section-kicker">Nos services cyber</p>
+          <h2 class="section-title" id="services-cyber-title">Des expertises complètes pour sécuriser durablement votre système d’information.</h2>
+        </div>
+
+        <div class="cyber-service-grid">
+          <article class="cyber-service-card reveal">
+            <span class="card-icon icon-shield" aria-hidden="true"></span>
+            <span class="card-number">01</span>
+            <h3>Audit cyber local</h3>
+            <p>Évaluation complète de votre système d’information, de vos procédures et de vos usages, avec vérifications sur site.</p>
+            <a href="contact.html">En savoir plus</a>
+          </article>
+          <article class="cyber-service-card reveal">
+            <span class="card-icon icon-target" aria-hidden="true"></span>
+            <span class="card-number">02</span>
+            <h3>Tests d’intrusion raisonnés</h3>
+            <p>Tests ciblés et maîtrisés pour identifier les vecteurs d’attaque réels et mesurer l’exposition.</p>
+            <a href="contact.html">En savoir plus</a>
+          </article>
+          <article class="cyber-service-card reveal">
+            <span class="card-icon icon-audit" aria-hidden="true"></span>
+            <span class="card-number">03</span>
+            <h3>Analyse de vulnérabilités</h3>
+            <p>Scan approfondi de votre infrastructure et applications. Priorisation des failles et impacts.</p>
+            <a href="contact.html">En savoir plus</a>
+          </article>
+          <article class="cyber-service-card reveal">
+            <span class="card-icon icon-network" aria-hidden="true"></span>
+            <span class="card-number">04</span>
+            <h3>Cartographie des risques</h3>
+            <p>Identification et hiérarchisation des actifs critiques, menaces et impacts métiers.</p>
+            <a href="contact.html">En savoir plus</a>
+          </article>
+          <article class="cyber-service-card reveal">
+            <span class="card-icon icon-pin" aria-hidden="true"></span>
+            <span class="card-number">05</span>
+            <h3>Vérification terrain</h3>
+            <p>Contrôles physiques et techniques sur site : sécurité des accès, équipements, sauvegardes, configurations.</p>
+            <a href="contact.html">En savoir plus</a>
+          </article>
+          <article class="cyber-service-card reveal">
+            <span class="card-icon icon-refresh" aria-hidden="true"></span>
+            <span class="card-number">06</span>
+            <h3>Continuité d’activité</h3>
+            <p>Évaluation de votre résilience, scénarios de reprise et tests de rétablissement.</p>
+            <a href="contact.html">En savoir plus</a>
+          </article>
+          <article class="cyber-service-card reveal">
+            <span class="card-icon icon-training" aria-hidden="true"></span>
+            <span class="card-number">07</span>
+            <h3>Sensibilisation des collaborateurs</h3>
+            <p>Sessions adaptées à vos équipes pour réduire les risques humains et renforcer les bons réflexes.</p>
+            <a href="contact.html">En savoir plus</a>
+          </article>
+          <article class="cyber-service-card reveal">
+            <span class="card-icon icon-plan" aria-hidden="true"></span>
+            <span class="card-number">08</span>
+            <h3>Plan d’action</h3>
+            <p>Feuille de route priorisée, chiffrée et réaliste pour corriger les risques identifiés.</p>
+            <a href="contact.html">En savoir plus</a>
+          </article>
+          <article class="cyber-service-card reveal">
+            <span class="card-icon icon-chart" aria-hidden="true"></span>
+            <span class="card-number">09</span>
+            <h3>Suivi et amélioration continue</h3>
+            <p>Accompagnement dans la durée, revues régulières et indicateurs de sécurité.</p>
+            <a href="contact.html">En savoir plus</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section cyber-trust" aria-labelledby="trust-title">
+      <div class="section-inner">
+        <div class="section-heading reveal">
+          <p class="section-kicker">Une approche de confiance</p>
+          <h2 class="section-title" id="trust-title">Proximité, compétence et engagement pour votre sérénité.</h2>
+        </div>
+        <div class="trust-grid">
+          <article class="trust-card reveal"><span class="card-icon icon-user" aria-hidden="true"></span><strong>100%</strong><p>Interventions locales en Sud Corse</p></article>
+          <article class="trust-card reveal"><span class="card-icon icon-network" aria-hidden="true"></span><strong>15+</strong><p>Années d’expérience terrain</p></article>
+          <article class="trust-card reveal"><span class="card-icon icon-lock" aria-hidden="true"></span><strong>Confidentialité</strong><p>Engagement strict et conformité RGPD</p></article>
+          <article class="trust-card reveal"><span class="card-icon icon-continuity" aria-hidden="true"></span><strong>Résultats concrets</strong><p>Recommandations claires, mesurables et actionnables</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section cyber-method" aria-labelledby="cyber-method-title">
+      <div class="section-inner">
+        <div class="section-heading reveal">
+          <p class="section-kicker">Notre démarche</p>
+          <h2 class="section-title" id="cyber-method-title">Une méthode structurée, des livrables utiles.</h2>
+        </div>
+        <ol class="cyber-method-steps">
+          <li class="step-card reveal"><span class="step-number">1</span><span class="card-icon icon-chat" aria-hidden="true"></span><h3>Écoute & cadrage</h3><p>Compréhension de vos enjeux, périmètre et objectifs.</p></li>
+          <li class="step-card reveal"><span class="step-number">2</span><span class="card-icon icon-audit" aria-hidden="true"></span><h3>Analyse & investigation</h3><p>Collecte d’informations, analyses techniques et terrain.</p></li>
+          <li class="step-card reveal"><span class="step-number">3</span><span class="card-icon icon-target" aria-hidden="true"></span><h3>Évaluation & priorisation</h3><p>Évaluation des risques et hiérarchisation des actions.</p></li>
+          <li class="step-card reveal"><span class="step-number">4</span><span class="card-icon icon-plan" aria-hidden="true"></span><h3>Recommandations</h3><p>Plan d’action clair, réaliste et priorisé.</p></li>
+          <li class="step-card reveal"><span class="step-number">5</span><span class="card-icon icon-rocket" aria-hidden="true"></span><h3>Mise en œuvre</h3><p>Accompagnement dans le déploiement des actions.</p></li>
+          <li class="step-card reveal"><span class="step-number">6</span><span class="card-icon icon-chart" aria-hidden="true"></span><h3>Suivi & amélioration</h3><p>Mesure, ajustements et amélioration continue.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section cyber-results" aria-labelledby="results-title">
+      <div class="section-inner">
+        <div class="section-heading reveal">
+          <p class="section-kicker">Des engagements, des résultats</p>
+        </div>
+        <div class="results-layout">
+          <div class="results-strip reveal" aria-label="Résultats cybersécurité">
+            <span><i class="card-icon icon-pin" aria-hidden="true"></i>Réduction des risques et des incidents</span>
+            <span><i class="card-icon icon-continuity" aria-hidden="true"></i>Conformité réglementaire et sectorielle</span>
+            <span><i class="card-icon icon-user" aria-hidden="true"></i>Protection de vos données et de votre réputation</span>
+            <span><i class="card-icon icon-shield" aria-hidden="true"></i>Résilience opérationnelle renforcée</span>
+          </div>
+          <aside class="priority-card reveal">
+            <span class="card-icon icon-shield" aria-hidden="true"></span>
+            <strong>Votre sécurité, notre priorité.</strong>
+            <p>Votre performance, notre mission.</p>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="section cta-section cyber-final" aria-labelledby="cyber-cta-title">
+      <div class="section-inner">
+        <div class="cta-band reveal">
+          <div class="cta-content">
+            <span class="cta-mark" aria-hidden="true"></span>
+            <div>
+              <h2 id="cyber-cta-title">Faites le point sur votre sécurité. Un diagnostic local, rapide et sans engagement.</h2>
+            </div>
+          </div>
+          <div class="cta-actions-stack">
+            <a class="btn btn-primary" href="contact.html">Demander un diagnostic</a>
+            <a class="small-link" href="contact.html">Ou nous contacter</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="index.html" aria-label="INFOSERV2A accueil">
+          <img class="brand-logo" src="assets/images/logo-infoserv2a.png" alt="INFOSERV2A Cyber & Réseau" width="164" height="40">
+          <span class="brand-text">INFOSERV2A</span>
+        </a>
+        <p>Cybersécurité locale et réseaux critiques pour les entreprises du Sud Corse.</p>
+      </div>
+
+      <nav class="footer-column" aria-label="Navigation pied de page">
+        <h2>Navigation</h2>
+        <a href="index.html">Accueil</a>
+        <a href="cyber.html">Cyber</a>
+        <a href="reseau.html">Réseau</a>
+        <a href="secteurs-sensibles.html">Secteurs sensibles</a>
+        <a href="methode.html">Méthode</a>
+        <a href="a-propos.html">À propos</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+
+      <div class="footer-column">
+        <h2>Services</h2>
+        <span>Audit cyber local</span>
+        <span>Tests d’intrusion</span>
+        <span>Analyse de vulnérabilités</span>
+        <span>Cartographie des risques</span>
+        <span>Continuité d’activité</span>
+        <span>Sensibilisation</span>
+        <span>Plan d’action</span>
+        <span>Suivi et amélioration</span>
+      </div>
+
+      <address class="footer-column">
+        <h2>Contact</h2>
+        <span>Porto-Vecchio, Sud Corse</span>
+        <span>Intervention sur toute la région</span>
+        <a href="tel:+33631754145">06 31 75 41 45</a>
+        <a href="mailto:contact@infoserv2a.pro">contact@infoserv2a.pro</a>
+      </address>
+    </div>
+
+    <div class="footer-bottom">
+      <span>© 2026 INFOSERV2A — Cyber & Réseau</span>
+      <nav aria-label="Liens légaux">
+        <a href="mentions-legales.html">Mentions légales</a>
+        <a href="politique-confidentialite.html">Politique de confidentialité</a>
+      </nav>
+    </div>
+  </footer>
 </body>
 </html>
