@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#020814">
+  <meta name="robots" content="index, follow">
   <meta name="description" content="INFOSERV2A accompagne les entreprises du Sud Corse en cybersécurité locale, audit terrain, réseaux critiques, Wi-Fi professionnel, Starlink et continuité d’activité.">
   <title>INFOSERV2A — Cybersécurité locale et réseaux critiques en Sud Corse</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,9 +13,14 @@
   <link rel="icon" href="public/assets/imported/favicon-infoserv2a.svg" type="image/svg+xml">
   <link rel="manifest" href="site.webmanifest">
   <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/design-system.css">
+  <link rel="stylesheet" href="assets/css/pages/home.css">
+  <link rel="stylesheet" href="assets/css/debug-overlays.css">
   <script src="assets/js/main.js" defer></script>
+  <script src="assets/js/idweb-debug-overlay.js" defer></script>
 </head>
-<body>
+<body class="page-home idweb-ref-index">
+  <a class="skip-link" href="#main-content">Aller au contenu principal</a>
   <header class="site-header" data-header>
     <div class="header-inner">
       <a class="brand" href="index.html" aria-label="INFOSERV2A accueil">
@@ -42,37 +48,16 @@
     </div>
   </header>
 
-  <main>
+  <main id="main-content">
     <section class="hero" aria-labelledby="hero-title">
-      <div class="hero-grid" aria-hidden="true"></div>
-      <div class="hero-orb hero-orb-one" aria-hidden="true"></div>
-      <div class="hero-orb hero-orb-two" aria-hidden="true"></div>
-
       <div class="hero-inner">
         <div class="hero-content reveal">
-          <p class="hero-kicker">INFOSERV2A — Cyber & Réseau</p>
+          <p class="hero-kicker">Cybersécurité locale &amp; réseaux critiques</p>
           <h1 class="hero-title" id="hero-title">Cybersécurité locale et réseaux critiques pour les entreprises du <span>Sud Corse.</span></h1>
           <p class="hero-text">Audit local, vérification terrain et solutions réseau performantes pour protéger vos données, vos sites et assurer la continuité de vos activités, même dans les environnements les plus exigeants.</p>
           <div class="hero-actions">
             <a class="btn btn-primary" href="contact.html">Demander un diagnostic</a>
             <a class="btn btn-secondary" href="cyber.html">Découvrir nos services</a>
-          </div>
-        </div>
-
-        <div class="hero-visual reveal" aria-hidden="true">
-          <div class="hero-panel">
-            <img class="hero-panel-image" src="assets/images/hero-sud-corse-network.png" alt="">
-            <div class="hero-map">
-              <span class="map-outline"></span>
-              <span class="map-radar"></span>
-              <span class="map-point p1"></span>
-              <span class="map-point p2"></span>
-              <span class="map-point p3"></span>
-              <span class="map-point p4"></span>
-              <span class="map-line l1"></span>
-              <span class="map-line l2"></span>
-              <span class="map-line l3"></span>
-            </div>
           </div>
         </div>
       </div>
@@ -114,7 +99,6 @@
         <div class="section-heading reveal">
           <p class="section-kicker">Nos services</p>
           <h2 class="section-title" id="services-title">Des solutions sur mesure pour sécuriser et connecter votre entreprise.</h2>
-          <p class="section-lead">Une approche locale, concrète et orientée continuité pour les environnements professionnels qui ne peuvent pas se permettre l’interruption.</p>
         </div>
 
         <div class="cards-grid services-grid">
@@ -122,21 +106,25 @@
             <span class="card-icon icon-shield" aria-hidden="true"></span>
             <h3>Audit cyber local</h3>
             <p>Audit initial, tests d’intrusion, analyse des vulnérabilités et évaluation des risques sur site.</p>
+            <a class="card-link" href="cyber.html">En savoir plus</a>
           </article>
           <article class="service-card reveal">
             <span class="card-icon icon-network" aria-hidden="true"></span>
             <h3>Réseaux critiques</h3>
             <p>Conception, sécurisation et supervision de réseaux filaires, Wi-Fi et sites distants.</p>
+            <a class="card-link" href="reseau.html">En savoir plus</a>
           </article>
           <article class="service-card reveal">
             <span class="card-icon icon-wifi" aria-hidden="true"></span>
             <h3>Wi-Fi professionnel</h3>
             <p>Déploiement de solutions Wi-Fi sécurisées, performantes et adaptées à vos environnements.</p>
+            <a class="card-link" href="reseau.html">En savoir plus</a>
           </article>
           <article class="service-card reveal">
             <span class="card-icon icon-starlink" aria-hidden="true"></span>
             <h3>Starlink & sites isolés</h3>
             <p>Connexion haut débit par satellite pour sites isolés, continuité et secours opérationnel.</p>
+            <a class="card-link" href="reseau.html">En savoir plus</a>
           </article>
         </div>
       </div>
@@ -179,7 +167,6 @@
         <div class="section-heading section-heading-compact reveal">
           <p class="section-kicker">Secteurs accompagnés</p>
           <h2 class="section-title" id="sectors-title">Des environnements variés, des exigences élevées.</h2>
-          <p class="section-lead">INFOSERV2A intervient auprès de structures professionnelles qui ont besoin de disponibilité, de confidentialité et de réseaux fiables.</p>
         </div>
 
         <div class="cards-grid sector-grid" aria-label="Secteurs">
@@ -250,7 +237,7 @@
         </div>
 
         <div class="local-map reveal" aria-hidden="true">
-          <img src="assets/images/local-sud-corse-network.png" alt="">
+          <img src="public/assets/imported/home-local-map-no-text.png" alt="">
           <span class="local-point"></span>
           <span class="local-label">Porto-Vecchio<br>Sud Corse</span>
         </div>
@@ -264,10 +251,12 @@
             <span class="cta-mark" aria-hidden="true"></span>
             <div>
               <h2 id="cta-title">Sécurisez vos systèmes. Connectez vos sites. Assurez votre continuité.</h2>
-              <p>Un diagnostic local permet d’identifier les priorités, de clarifier les risques et de construire un plan d’action réaliste.</p>
             </div>
           </div>
-          <a class="btn btn-primary" href="contact.html">Demander un diagnostic</a>
+          <div class="cta-actions-stack">
+            <a class="btn btn-primary" href="contact.html">Demander un diagnostic</a>
+            <a class="small-link" href="contact.html">Ou nous contacter</a>
+          </div>
         </div>
       </div>
     </section>
@@ -281,6 +270,10 @@
           <span class="brand-text">INFOSERV2A</span>
         </a>
         <p>Cybersécurité locale et réseaux critiques pour les entreprises du Sud Corse.</p>
+        <div class="footer-socials" aria-label="Contacts rapides">
+          <a href="tel:+33631754145" aria-label="Appeler INFOSERV2A">Tél.</a>
+          <a href="mailto:contact@infoserv2a.pro" aria-label="Écrire à INFOSERV2A">@</a>
+        </div>
       </div>
 
       <nav class="footer-column" aria-label="Navigation pied de page">
