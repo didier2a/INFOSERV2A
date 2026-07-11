@@ -40,12 +40,12 @@
 }
 
 .page-home .hero {
-  min-height: 535px;
+  min-height: 525px;
   border-bottom-color: rgba(0, 217, 245, 0.1);
   background:
     linear-gradient(90deg, #020814 0%, rgba(2, 8, 20, 0.94) 31%, rgba(2, 8, 20, 0.56) 50%, rgba(2, 8, 20, 0.12) 76%),
     linear-gradient(180deg, transparent 62%, #020814 100%),
-    url("../../../public/assets/imported/home-hero-no-text.png") calc(100% - 82px) center / auto 560px no-repeat;
+    url("../../../public/assets/imported/home-hero-no-text.png") calc(100% - 218px) center / auto 560px no-repeat;
 }
 
 .page-home .hero::before {
@@ -61,7 +61,7 @@
 }
 
 .page-home .hero-inner {
-  min-height: 535px;
+  min-height: 525px;
   grid-template-columns: minmax(0, 620px) 1fr;
   align-items: start;
   padding: 70px 0 69px;
@@ -121,13 +121,13 @@
 }
 
 .page-home .proof-icon {
-  width: 39px;
-  height: 39px;
+  width: 44px;
+  height: 44px;
 }
 
 .page-home .ui-icon {
-  width: 72%;
-  height: 72%;
+  width: 86%;
+  height: 86%;
   overflow: visible;
   fill: none;
   stroke: currentColor;
@@ -155,6 +155,14 @@
 
 .page-home .section {
   padding-block: 38px 43px;
+}
+
+.page-home .services-section {
+  padding: 55px 0 10px;
+}
+
+.page-home .services-section .section-heading {
+  margin-bottom: 36px;
 }
 
 .page-home .section-heading {
