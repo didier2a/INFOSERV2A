@@ -211,7 +211,7 @@
 }
 
 .page-home .service-card p {
-  font-size: 0.68rem;
+  font-size: 0.71rem;
   line-height: 1.48;
 }
 
@@ -232,6 +232,11 @@
   gap: 24px;
 }
 
+.page-home .section-alt .split-block,
+.page-home .sectors-layout {
+  align-items: start;
+}
+
 .page-home .reason-card {
   min-height: 109px;
   padding: 12px 15px;
@@ -249,7 +254,7 @@
 }
 
 .page-home .reason-card p {
-  font-size: 0.61rem;
+  font-size: 0.64rem;
   line-height: 1.4;
 }
 
@@ -313,7 +318,7 @@
 }
 
 .page-home .step-card p {
-  font-size: 0.58rem;
+  font-size: 0.62rem;
   line-height: 1.4;
 }
 
