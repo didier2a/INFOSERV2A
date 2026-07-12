@@ -1,0 +1,12 @@
+---
+description: Règles permanentes du site INFOSERV2A
+alwaysApply: true
+---
+
+Lire `AGENTS.md` et les documents du dossier `docs/` avant toute modification.
+
+Le site possède sept pages et sept PNG de référence. Travailler une page à la fois.
+
+Conserver la direction artistique des références, mais appliquer les règles d’aération, de responsive, de cartes extensibles, de navigation et de concision éditoriale définies dans les documents du projet.
+
+Ne jamais inventer de données, de coordonnées, de chiffres ou de certifications.
