@@ -1,0 +1,143 @@
+@media (min-width: 640px) {
+  .trust-bar,
+  .values-bar {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .grid-2,
+  .split,
+  .contact-grid,
+  .two-worlds,
+  .footer-grid,
+  .devis-layout {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .grid-3,
+  .contact-tiles {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 900px) {
+  .container {
+    width: min(calc(100% - 3rem), var(--container-width));
+  }
+
+  .nav-toggle,
+  .header-cta--mobile {
+    display: none;
+  }
+
+  .site-nav,
+  .header-cta,
+  .btn.header-cta {
+    display: flex;
+  }
+
+  .grid-3,
+  .process,
+  .contact-tiles {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .feature-block {
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 2.4rem;
+  }
+
+  .feature-block--reverse {
+    grid-template-columns: 0.95fr 1.05fr;
+  }
+
+  .feature-block--reverse .feature-block__media {
+    order: 2;
+  }
+
+  .hero {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hero > .container {
+    width: min(calc(100% - 4rem), 980px);
+  }
+
+  .hero__layout {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    gap: 1.75rem;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .hero-showcase {
+    display: flex;
+    align-self: stretch;
+    min-height: 0;
+  }
+
+  .hero-showcase__stage {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+  }
+
+  .trust-bar {
+    width: 100%;
+  }
+
+  .embed {
+    min-height: 420px;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  }
+
+  .page-hero--split > .container:first-of-type {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 2rem;
+    align-items: center;
+  }
+}
+
+@media (max-width: 899px) {
+  .header-cta--mobile {
+    display: inline-flex;
+    min-height: 42px;
+    padding-inline: 0.9rem;
+    font-size: 0.88rem;
+    flex-shrink: 0;
+  }
+
+  .brand__tag {
+    display: none;
+  }
+
+  .nav-panel:not(.is-open) {
+    visibility: hidden;
+  }
+}
+
+.split .process {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 374px) {
+  .hero__title { font-size: 1.65rem; }
+  .brand__tag { display: none; }
+  .btn { width: 100%; }
+  .header-inner .btn { width: auto; }
+}
+
+@media (max-width: 639px) {
+  .values-bar { gap: 0.85rem 0.4rem; }
+}

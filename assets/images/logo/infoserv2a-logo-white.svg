@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 128" role="img" aria-label="InfoServ2A">
+  <rect width="520" height="128" rx="18" fill="#070b14"/>
+  <g fill="none" stroke="#2E86FF" stroke-linecap="round">
+    <path d="M28 86c18-6 32-22 36-42" stroke-width="3.2"/>
+    <path d="M22 92c24-8 44-28 50-54" stroke-width="2.4" opacity=".85"/>
+    <path d="M16 98c30-10 54-34 62-66" stroke-width="1.8" opacity=".65"/>
+  </g>
+  <path d="M18 104c22-10 38-8 52 2 10 7 22 8 34 2" fill="none" stroke="#d7deea" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="64" cy="44" r="3.2" fill="#F3F6FB"/>
+  <circle cx="78" cy="58" r="2.4" fill="#F3F6FB"/>
+  <circle cx="48" cy="62" r="2.2" fill="#2E86FF"/>
+  <text x="128" y="62" font-family="Segoe UI, Avenir Next, Helvetica Neue, sans-serif" font-size="38" font-weight="700" letter-spacing="1.2">
+    <tspan fill="#F3F6FB">INFO</tspan><tspan fill="#C5CEDB">SERV</tspan><tspan fill="#2E86FF">2A</tspan>
+  </text>
+  <path d="M128 78h250" stroke="#2E86FF" stroke-width="2" stroke-linecap="round" opacity=".85"/>
+  <path d="M128 78h250" stroke="#2E86FF" stroke-width="8" stroke-linecap="round" opacity=".18"/>
+</svg>
