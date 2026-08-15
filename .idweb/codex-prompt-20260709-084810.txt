@@ -1,0 +1,2 @@
+Cree un site web local complet pour : INFOSERV2A.
+Respecte le dossier existant, ne publie rien en ligne, et termine par les fichiers crees.

@@ -1,0 +1,41 @@
+MISSION CODEX APP — INFOSERV2A — CREATION PAGE PAR PAGE — PIXEL FIDELITY
+
+Dossier projet : utiliser le dossier actuellement ouvert.
+Page active : Cyber
+Fichier a produire/corriger : cyber.html
+PNG de reference officiel : assets/images/references/02-cyber-reference.png
+site-map : site-map.json
+
+Cree uniquement la page Cyber en reutilisant strictement la matrice graphique deja validee sur index.html.
+
+Objectif : reconstruire la page en vrai HTML/CSS avec une fidelite visuelle tres forte au PNG de reference. Le PNG est une maquette de production, pas une simple inspiration.
+
+Regles absolues :
+- Ne pas afficher le PNG comme image pleine page.
+- Ne pas faire une maquette cliquable en image.
+- Le texte doit rester HTML, selectionnable, responsive et indexable.
+- Utiliser le PNG comme reference de composition, espacements, densite, tailles, couleurs, blocs et ambiance.
+- Activer/maintenir le systeme de calque debug : ?ref=1 ou ?debugRef=1.
+- Ne pas utiliser d'orange, de rouge, de style hacker a capuche, ni de visuels anxiogenes.
+- Ne pas parler de depannage PC, imprimantes ou maintenance grand public.
+- Respecter la marque : cybersécurité locale et réseaux critiques pour les entreprises du Sud Corse.
+
+Workflow technique attendu :
+1. Inspecter site-map.json et le PNG de reference.
+2. Inspecter index.html et assets/css/style.css si la matrice existe.
+3. Produire/corriger cyber.html.
+4. Corriger assets/css/style.css uniquement si necessaire.
+5. Conserver ou ajouter assets/css/debug-overlays.css et assets/js/idweb-debug-overlay.js.
+6. Verifier navigation, responsive, liens, SEO minimal et absence d'erreur console.
+
+Cette page doit reprendre le header, footer, boutons, variables CSS, cartes, espacements et langage visuel deja valides sur index.html. Ne refais pas la charte. Ne modifie index.html que si une correction commune est absolument necessaire.
+
+Fidelite attendue :
+- header proche de la maquette ;
+- hero proche de la maquette ;
+- proportions, marges, taille du H1, CTA et cartes calibres ;
+- cartes glassmorphism bleu nuit/cyan ;
+- footer premium ;
+- rendu desktop 1440px prioritaire, puis responsive.
+
+A la fin : modifier reellement les fichiers et resumer les fichiers modifies.

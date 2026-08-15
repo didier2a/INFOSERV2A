@@ -1,0 +1,3019 @@
+﻿**********************
+Début de la transcription Windows PowerShell
+Heure de début : 20260708235900
+Nom d'utilisateur : DESKTOP-1QIFE0G\didie
+Utilisateur runAs :  DESKTOP-1QIFE0G\didie
+Nom de la configuration : 
+Ordinateur : DESKTOP-1QIFE0G (Microsoft Windows NT 10.0.26200.0)
+Application hôte : C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoLogo -NoProfile -NoExit -ExecutionPolicy Bypass -File C:\Users\didie\OneDrive\Documents\SITE INFOSERV2A 2026\.idweb\run-20260708-235859.ps1
+ID de processus : 165372
+PSVersion: 5.1.26100.8737
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.8737
+BuildVersion: 10.0.26100.8737
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Recherche de codex...
+C:\Users\didie\AppData\Local\Programs\OpenAI\Codex\bin\codex.exe
+
+Version Codex :
+codex-cli 0.143.0
+
+Lancement de codex exec...
+Fichier prompt : C:\Users\didie\OneDrive\Documents\SITE INFOSERV2A 2026\.idweb\codex-prompt-20260708-235859.txt
+
++        <address>
++          <h2>Contact</h2>
++          <span>Porto-Vecchio, Sud Corse</span>
++          <a href="tel:+33700000000">07 00 00 00 00</a>
++          <a href="mailto:contact@infoserv2a.fr">contact@infoserv2a.fr</a>
++        </address>
++      </div>
++      <div class="footer-bottom container">
++        <span>© 2026 INFOSERV2A. Tous droits reserves.</span>
++        <span>Site local - aucune publication en ligne.</span>
++      </div>
++    </footer>
++
++    <script src="script.js"></script>
++  </body>
++</html>
+
+  ✓ Associer les PNG aux pages
+  ✓ Créer le système CSS commun
+  ✓ Créer les 7 pages HTML
+  ✓ Ajouter les interactions mobile/contact
+  ✓ Vérifier liens et responsive
+  ✓ Lancer une validation locale
+diff --git a/assets/css/style.css b/assets/css/style.css
+new file mode 100644
+index 0000000000000000000000000000000000000000..5495fc09c6f896cfa8ecea555845abadb7cab131
+--- /dev/null
++++ b/assets/css/style.css
+@@ -0,0 +1,1124 @@
++:root {
++  color-scheme: dark;
++  --night: #020814;
++  --night-2: #06152a;
++  --panel: rgba(8, 24, 46, 0.78);
++  --panel-strong: rgba(7, 20, 39, 0.92);
++  --line: rgba(0, 220, 255, 0.22);
++  --line-strong: rgba(18, 247, 255, 0.48);
++  --cyan: #00d9f5;
++  --cyan-bright: #12f7ff;
++  --blue: #148cff;
++  --text: #f4f8ff;
++  --muted: #a8b7c9;
++  --quiet: #6f8195;
++  --shadow: 0 26px 90px rgba(0, 0, 0, 0.42);
++  --radius: 24px;
++  --container: 1220px;
++  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
++}
++
++* {
++  box-sizing: border-box;
++}
++
++html {
++  scroll-behavior: smooth;
++}
++
++body {
++  margin: 0;
++  min-width: 320px;
++  overflow-x: hidden;
++  background:
++    radial-gradient(circle at 78% 8%, rgba(20, 140, 255, 0.18), transparent 32rem),
++    radial-gradient(circle at 12% 42%, rgba(0, 217, 245, 0.1), transparent 28rem),
++    linear-gradient(180deg, #01050d 0%, var(--night) 34%, #031022 100%);
++  color: var(--text);
++}
++
++body.nav-open {
++  overflow: hidden;
++}
++
++a {
++  color: inherit;
++  text-decoration: none;
++}
++
++img {
++  display: block;
++  max-width: 100%;
++}
++
++h1,
++h2,
++h3,
++p {
++  margin-top: 0;
++}
++
++p {
++  color: var(--muted);
++  line-height: 1.7;
++}
++
++.sr-only {
++  position: absolute;
++  width: 1px;
++  height: 1px;
++  padding: 0;
++  overflow: hidden;
++  clip: rect(0, 0, 0, 0);
++  white-space: nowrap;
++  border: 0;
++}
++
++.container,
++.header-inner,
++.footer-inner,
++.footer-bottom {
++  width: min(var(--container), calc(100% - 64px));
++  margin-inline: auto;
++}
++
++.site-header {
++  position: sticky;
++  top: 0;
++  z-index: 50;
++  min-height: 82px;
++  background: rgba(2, 8, 20, 0.86);
++  border-bottom: 1px solid rgba(0, 220, 255, 0.16);
++  backdrop-filter: blur(20px);
++  box-shadow: 0 14px 42px rgba(0, 0, 0, 0.22);
++}
++
++.header-inner {
++  min-height: 82px;
++  display: grid;
++  grid-template-columns: auto 1fr auto;
++  align-items: center;
++  gap: 28px;
++}
++
++.logo {
++  display: inline-flex;
++  align-items: center;
++  gap: 12px;
++  min-width: max-content;
++}
++
++.logo-mark {
++  width: 48px;
++  height: 48px;
++  position: relative;
++  border: 2px solid var(--cyan);
++  border-radius: 50%;
++  box-shadow: 0 0 34px rgba(0, 217, 245, 0.34);
++}
++
++.logo-mark::before,
++.logo-mark::after {
++  content: "";
++  position: absolute;
++  border-radius: 50%;
++}
++
++.logo-mark::before {
++  inset: 8px;
++  border: 1px solid rgba(18, 247, 255, 0.76);
++  border-left-color: transparent;
++}
++
++.logo-mark::after {
++  width: 9px;
++  height: 9px;
++  right: 9px;
++  bottom: 10px;
++  background: var(--cyan);
++  box-shadow: 0 0 18px var(--cyan);
++}
++
++.logo strong {
++  display: block;
++  color: var(--text);
++  font-size: 1.2rem;
++  line-height: 1;
++  letter-spacing: 0;
++}
++
++.logo small {
++  display: block;
++  margin-top: 5px;
++  color: var(--quiet);
++  font-size: 0.61rem;
++  font-weight: 700;
++  letter-spacing: 0.14em;
++  text-transform: uppercase;
++}
++
++.main-nav {
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  gap: clamp(15px, 2.4vw, 31px);
++}
++
++.nav-link {
++  position: relative;
++  padding: 31px 0 29px;
++  color: var(--muted);
++  font-size: 0.78rem;
++  font-weight: 850;
++  text-transform: uppercase;
++}
++
++.nav-link::after {
++  content: "";
++  position: absolute;
++  left: 0;
++  right: 0;
++  bottom: 21px;
++  height: 2px;
++  transform: scaleX(0);
++  transform-origin: center;
++  background: var(--cyan);
++  box-shadow: 0 0 14px rgba(18, 247, 255, 0.8);
++  transition: transform 160ms ease;
++}
++
++.nav-link:hover,
++.nav-link:focus-visible,
++.nav-link.active {
++  color: var(--cyan-bright);
++}
++
++.nav-link:hover::after,
++.nav-link.active::after {
++  transform: scaleX(1);
++}
++
++.header-cta,
++.button,
++.form-submit {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  gap: 12px;
++  min-height: 52px;
++  padding: 0 24px;
++  border: 1px solid transparent;
++  border-radius: 7px;
++  font: inherit;
++  font-size: 0.78rem;
++  font-weight: 900;
++  letter-spacing: 0;
++  text-transform: uppercase;
++  cursor: pointer;
++}
++
++.header-cta,
++.button-primary,
++.form-submit {
++  background: linear-gradient(135deg, var(--cyan-bright), var(--cyan) 52%, #08aeea);
++  color: #02101c;
++  box-shadow: 0 18px 48px rgba(0, 217, 245, 0.24);
++}
++
++.button-secondary {
++  background: rgba(3, 13, 29, 0.62);
++  border-color: var(--line);
++  color: var(--text);
++}
++
++.header-cta::after,
++.button::after,
++.form-submit::after {
++  content: "->";
++  font-size: 1rem;
++  line-height: 1;
++}
++
++.button:hover,
++.header-cta:hover,
++.form-submit:hover {
++  transform: translateY(-1px);
++  border-color: rgba(18, 247, 255, 0.56);
++}
++
++.mobile-toggle {
++  display: none;
++  width: 48px;
++  height: 48px;
++  border: 1px solid var(--line);
++  border-radius: 8px;
++  background: rgba(255, 255, 255, 0.035);
++  color: var(--text);
++}
++
++.mobile-toggle span:not(.sr-only) {
++  display: block;
++  width: 22px;
++  height: 2px;
++  margin: 5px auto;
++  background: var(--text);
++}
++
++.hero {
++  position: relative;
++  min-height: var(--hero-height, 640px);
++  overflow: hidden;
++  border-bottom: 1px solid rgba(0, 220, 255, 0.12);
++}
++
++.hero.home {
++  --hero-height: 720px;
++}
++
++.hero-background,
++.hero::before,
++.hero::after {
++  position: absolute;
++  content: "";
++  inset: 0;
++  pointer-events: none;
++}
++
++.hero::before {
++  background-image: var(--hero-image);
++  background-size: cover;
++  background-position: center 6%;
++  opacity: 0.58;
++  filter: saturate(1.04);
++}
++
++.hero::after {
++  background:
++    linear-gradient(90deg, rgba(2, 8, 20, 0.96) 0%, rgba(2, 8, 20, 0.72) 43%, rgba(2, 8, 20, 0.24) 100%),
++    linear-gradient(180deg, rgba(2, 8, 20, 0.18) 0%, rgba(2, 8, 20, 0.9) 100%),
++    radial-gradient(circle at 72% 46%, rgba(18, 247, 255, 0.2), transparent 18rem);
++}
++
++.hero-inner {
++  position: relative;
++  z-index: 1;
++  width: min(var(--container), calc(100% - 64px));
++  min-height: var(--hero-height, 640px);
++  margin-inline: auto;
++  display: grid;
++  grid-template-columns: minmax(0, 650px) minmax(300px, 1fr);
++  gap: 48px;
++  align-items: center;
++  padding: 72px 0 50px;
++}
++
++.hero-content {
++  padding-top: 20px;
++}
++
++.hero-kicker,
++.section-kicker {
++  display: inline-flex;
++  align-items: center;
++  min-height: 29px;
++  margin: 0 0 18px;
++  padding: 0 14px;
++  border: 1px solid var(--line);
++  border-radius: 7px;
++  color: var(--cyan-bright);
++  background: rgba(5, 18, 36, 0.58);
++  font-size: 0.73rem;
++  font-weight: 900;
++  text-transform: uppercase;
++}
++
++.section-kicker {
++  min-height: auto;
++  padding: 0;
++  border: 0;
++  background: transparent;
++}
++
++.hero-title {
++  max-width: 760px;
++  margin-bottom: 22px;
++  font-size: clamp(3rem, 5.4vw, 5.15rem);
++  line-height: 1.03;
++  letter-spacing: 0;
++}
++
++.hero-title .accent,
++.section-title .accent {
++  color: var(--cyan);
++}
++
++.hero-text {
++  max-width: 670px;
++  margin-bottom: 0;
++  font-size: clamp(1.05rem, 1.45vw, 1.22rem);
++  line-height: 1.75;
++}
++
++.hero-actions,
++.cta-actions {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 16px;
++  margin-top: 34px;
++}
++
++.hero-visual {
++  min-height: 360px;
++  display: grid;
++  place-items: center;
++}
++
++.hero-card {
++  position: relative;
++  width: min(100%, 430px);
++  min-height: 390px;
++  border: 1px solid rgba(18, 247, 255, 0.32);
++  border-radius: 50%;
++  background:
++    radial-gradient(circle, rgba(18, 247, 255, 0.25), transparent 20%),
++    repeating-radial-gradient(circle, rgba(18, 247, 255, 0.2) 0 1px, transparent 1px 48px);
++  box-shadow: inset 0 0 58px rgba(18, 247, 255, 0.12), 0 0 78px rgba(0, 217, 245, 0.18);
++  opacity: 0.92;
++}
++
++.hero-card::before {
++  content: "";
++  position: absolute;
++  inset: 25%;
++  border: 2px solid var(--cyan);
++  border-radius: 22px;
++  transform: rotate(45deg);
++  box-shadow: 0 0 34px rgba(18, 247, 255, 0.5);
++}
++
++.proof-bar {
++  position: relative;
++  z-index: 2;
++  width: min(var(--container), calc(100% - 64px));
++  margin: -74px auto 0;
++  display: grid;
++  grid-template-columns: repeat(var(--proof-cols, 4), minmax(0, 1fr));
++  gap: 0;
++  overflow: hidden;
++  border: 1px solid var(--line);
++  border-radius: 11px;
++  background: rgba(4, 13, 27, 0.82);
++  backdrop-filter: blur(18px);
++  box-shadow: var(--shadow);
++}
++
++.proof-item {
++  min-height: 94px;
++  display: grid;
++  grid-template-columns: 44px minmax(0, 1fr);
++  gap: 16px;
++  align-items: center;
++  padding: 22px 24px;
++  border-right: 1px solid rgba(0, 220, 255, 0.16);
++}
++
++.proof-item:last-child {
++  border-right: 0;
++}
++
++.icon {
++  width: 44px;
++  height: 44px;
++  display: grid;
++  place-items: center;
++  border: 1px solid rgba(18, 247, 255, 0.65);
++  border-radius: 50%;
++  color: var(--cyan-bright);
++  font-size: 0.78rem;
++  font-weight: 900;
++  box-shadow: inset 0 0 22px rgba(0, 217, 245, 0.12);
++}
++
++.proof-item strong,
++.mini-feature strong {
++  display: block;
++  margin-bottom: 4px;
++  color: var(--cyan-bright);
++  font-size: 0.82rem;
++  text-transform: uppercase;
++}
++
++.proof-item span,
++.mini-feature span {
++  color: var(--muted);
++  font-size: 0.9rem;
++  line-height: 1.45;
++}
++
++.section {
++  padding: clamp(74px, 8.5vw, 122px) 0;
++}
++
++.section.compact {
++  padding-top: clamp(44px, 6vw, 72px);
++}
++
++.section-dark {
++  background:
++    radial-gradient(circle at 12% 18%, rgba(20, 140, 255, 0.12), transparent 25rem),
++    rgba(2, 8, 20, 0.38);
++  border-block: 1px solid rgba(0, 220, 255, 0.12);
++}
++
++.section-grid {
++  display: grid;
++  grid-template-columns: minmax(0, 0.82fr) minmax(320px, 1.18fr);
++  gap: clamp(40px, 7vw, 86px);
++  align-items: center;
++}
++
++.section-title {
++  max-width: 830px;
++  margin-bottom: 18px;
++  font-size: clamp(2.1rem, 3.7vw, 3.6rem);
++  line-height: 1.08;
++  letter-spacing: 0;
++}
++
++.section-lead {
++  max-width: 720px;
++  font-size: 1.08rem;
++}
++
++.section-heading {
++  display: flex;
++  justify-content: space-between;
++  align-items: end;
++  gap: 28px;
++  margin-bottom: 32px;
++}
++
++.section-heading > div {
++  max-width: 790px;
++}
++
++.section-link {
++  color: var(--cyan-bright);
++  font-size: 0.78rem;
++  font-weight: 900;
++  text-transform: uppercase;
++  white-space: nowrap;
++}
++
++.cards-grid {
++  display: grid;
++  grid-template-columns: repeat(var(--grid-cols, 4), minmax(0, 1fr));
++  gap: 22px;
++}
++
++.cards-grid.cols-3 {
++  --grid-cols: 3;
++}
++
++.cards-grid.cols-5 {
++  --grid-cols: 5;
++}
++
++.service-card,
++.sector-card,
++.method-card,
++.value-card,
++.contact-card,
++.step-card {
++  position: relative;
++  min-height: 230px;
++  padding: 28px;
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  background:
++    linear-gradient(145deg, rgba(18, 247, 255, 0.06), rgba(20, 140, 255, 0.015) 42%, transparent),
++    var(--panel);
++  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.21);
++}
++
++.service-card:hover,
++.sector-card:hover,
++.method-card:hover,
++.value-card:hover,
++.contact-card:hover,
++.step-card:hover {
++  border-color: var(--line-strong);
++  transform: translateY(-2px);
++}
++
++.card-icon {
++  width: 58px;
++  height: 58px;
++  display: grid;
++  place-items: center;
++  margin-bottom: 28px;
++  border: 1px solid rgba(18, 247, 255, 0.62);
++  border-radius: 18px;
++  color: var(--cyan-bright);
++  font-size: 1rem;
++  font-weight: 900;
++}
++
++.card-number {
++  position: absolute;
++  top: 30px;
++  right: 28px;
++  color: rgba(0, 217, 245, 0.52);
++  font-size: 0.92rem;
++  font-weight: 900;
++}
++
++.service-card h3,
++.sector-card h3,
++.method-card h3,
++.value-card h3,
++.contact-card h3,
++.step-card h3 {
++  margin-bottom: 12px;
++  font-size: 1.32rem;
++  line-height: 1.18;
++}
++
++.service-card p,
++.sector-card p,
++.method-card p,
++.value-card p,
++.contact-card p,
++.step-card p {
++  margin-bottom: 0;
++  font-size: 0.96rem;
++}
++
++.card-link {
++  display: inline-flex;
++  gap: 10px;
++  margin-top: 24px;
++  color: var(--cyan-bright);
++  font-size: 0.75rem;
++  font-weight: 900;
++  text-transform: uppercase;
++}
++
++.card-link::after {
++  content: "->";
++}
++
++.steps {
++  display: grid;
++  grid-template-columns: repeat(6, minmax(0, 1fr));
++  gap: 18px;
++  margin: 0;
++  padding: 0;
++  list-style: none;
++}
++
++.step-card {
++  min-height: 255px;
++  padding-top: 54px;
++  text-align: center;
++}
++
++.step-number {
++  position: absolute;
++  top: -15px;
++  left: 50%;
++  width: 34px;
++  height: 34px;
++  display: grid;
++  place-items: center;
++  transform: translateX(-50%);
++  border: 1px solid var(--cyan);
++  border-radius: 50%;
++  background: #041329;
++  color: var(--cyan-bright);
++  font-size: 0.9rem;
++  font-weight: 900;
++}
++
++.feature-row {
++  display: grid;
++  grid-template-columns: repeat(var(--feature-cols, 4), minmax(0, 1fr));
++  gap: 0;
++  border-block: 1px solid rgba(0, 220, 255, 0.14);
++}
++
++.mini-feature {
++  display: grid;
++  grid-template-columns: 48px minmax(0, 1fr);
++  gap: 16px;
++  padding: 26px 24px;
++  border-right: 1px solid rgba(0, 220, 255, 0.14);
++}
++
++.mini-feature:last-child {
++  border-right: 0;
++}
++
++.highlight-band,
++.cta-band {
++  position: relative;
++  overflow: hidden;
++  display: grid;
++  grid-template-columns: 120px minmax(0, 1fr) auto;
++  gap: 32px;
++  align-items: center;
++  padding: 30px 34px;
++  border: 1px solid rgba(18, 247, 255, 0.36);
++  border-radius: 14px;
++  background:
++    linear-gradient(90deg, rgba(0, 217, 245, 0.08), rgba(20, 140, 255, 0.04)),
++    rgba(5, 18, 36, 0.78);
++  box-shadow: var(--shadow);
++}
++
++.highlight-band::after,
++.cta-band::after {
++  content: "";
++  position: absolute;
++  inset: 0;
++  background-image: var(--hero-image);
++  background-size: cover;
++  background-position: center 72%;
++  opacity: 0.13;
++}
++
++.highlight-band > *,
++.cta-band > * {
++  position: relative;
++  z-index: 1;
++}
++
++.band-mark {
++  width: 96px;
++  height: 96px;
++  border: 2px solid var(--cyan);
++  border-radius: 50%;
++  box-shadow: inset 0 0 28px rgba(18, 247, 255, 0.15), 0 0 28px rgba(0, 217, 245, 0.22);
++}
++
++.cta-title {
++  margin-bottom: 6px;
++  font-size: clamp(1.55rem, 2.4vw, 2.2rem);
++  line-height: 1.12;
++}
++
++.cta-text {
++  margin-bottom: 0;
++}
++
++.cta-actions {
++  margin-top: 0;
++}
++
++.two-column {
++  display: grid;
++  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
++  gap: 28px;
++}
++
++.local-map {
++  min-height: 360px;
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  background:
++    radial-gradient(circle at 45% 52%, rgba(18, 247, 255, 0.35), transparent 5rem),
++    radial-gradient(circle at 58% 42%, rgba(20, 140, 255, 0.18), transparent 13rem),
++    linear-gradient(135deg, rgba(8, 24, 46, 0.7), rgba(2, 8, 20, 0.74));
++  position: relative;
++  overflow: hidden;
++}
++
++.local-map::before {
++  content: "";
++  position: absolute;
++  inset: 30px;
++  border: 1px solid rgba(18, 247, 255, 0.24);
++  border-radius: 42% 58% 44% 56%;
++  transform: rotate(10deg);
++}
++
++.local-map::after {
++  content: "Porto-Vecchio\A Sud Corse";
++  white-space: pre;
++  position: absolute;
++  right: 42px;
++  bottom: 38px;
++  color: var(--text);
++  font-size: 1.4rem;
++  font-weight: 900;
++}
++
++.bullets,
++.contact-list {
++  margin: 18px 0 0;
++  padding: 0;
++  list-style: none;
++}
++
++.bullets li,
++.contact-list li {
++  position: relative;
++  margin-bottom: 10px;
++  padding-left: 18px;
++  color: var(--muted);
++}
++
++.bullets li::before,
++.contact-list li::before {
++  content: "";
++  position: absolute;
++  left: 0;
++  top: 0.72em;
++  width: 5px;
++  height: 5px;
++  border-radius: 50%;
++  background: var(--cyan);
++}
++
++.contact-layout {
++  display: grid;
++  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
++  gap: 48px;
++  padding: 36px;
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  background: rgba(5, 18, 36, 0.6);
++}
++
++.contact-form {
++  display: grid;
++  gap: 18px;
++}
++
++.form-grid {
++  display: grid;
++  grid-template-columns: repeat(2, minmax(0, 1fr));
++  gap: 18px;
++}
++
++.form-field {
++  display: grid;
++  gap: 8px;
++}
++
++.form-field.full {
++  grid-column: 1 / -1;
++}
++
++.form-field label,
++.field-label {
++  color: var(--text);
++  font-size: 0.84rem;
++  font-weight: 800;
++}
++
++.form-input,
++.form-textarea,
++select.form-input {
++  width: 100%;
++  min-height: 52px;
++  padding: 13px 15px;
++  border: 1px solid rgba(0, 220, 255, 0.2);
++  border-radius: 7px;
++  background: rgba(2, 8, 20, 0.68);
++  color: var(--text);
++  font: inherit;
++}
++
++.form-textarea {
++  min-height: 132px;
++  resize: vertical;
++}
++
++.form-status {
++  min-height: 24px;
++  margin: 12px 0 0;
++  color: var(--cyan-bright);
++  font-weight: 800;
++}
++
++.request-types {
++  display: grid;
++  grid-template-columns: repeat(6, minmax(0, 1fr));
++  gap: 18px;
++}
++
++.request-card {
++  min-height: 150px;
++  display: grid;
++  place-items: center;
++  gap: 12px;
++  padding: 20px;
++  border: 1px solid var(--line);
++  border-radius: 16px;
++  background: var(--panel);
++  text-align: center;
++  color: var(--text);
++  font-weight: 800;
++}
++
++.request-card span:last-child {
++  width: 18px;
++  height: 18px;
++  border: 1px solid var(--quiet);
++  border-radius: 50%;
++}
++
++.site-footer {
++  padding: 56px 0 24px;
++  background:
++    linear-gradient(180deg, rgba(3, 16, 34, 0.98), #01050d),
++    var(--night);
++  border-top: 1px solid rgba(0, 220, 255, 0.16);
++}
++
++.footer-inner {
++  display: grid;
++  grid-template-columns: minmax(250px, 1.2fr) repeat(3, minmax(160px, 0.8fr));
++  gap: 44px;
++}
++
++.footer-column h2 {
++  margin: 0 0 16px;
++  color: var(--cyan);
++  font-size: 0.78rem;
++  text-transform: uppercase;
++}
++
++.footer-column p {
++  max-width: 280px;
++  margin-top: 18px;
++}
++
++.footer-column a,
++.footer-column span {
++  display: block;
++  margin-bottom: 9px;
++  color: var(--muted);
++  font-size: 0.94rem;
++  font-style: normal;
++}
++
++.footer-column a:hover {
++  color: var(--cyan-bright);
++}
++
++.footer-bottom {
++  display: flex;
++  justify-content: space-between;
++  gap: 24px;
++  margin-top: 42px;
++  padding-top: 22px;
++  border-top: 1px solid rgba(0, 220, 255, 0.12);
++  color: var(--quiet);
++  font-size: 0.86rem;
++}
++
++.footer-bottom nav {
++  display: flex;
++  gap: 32px;
++}
++
++input:focus,
++select:focus,
++textarea:focus,
++button:focus-visible,
++a:focus-visible {
++  outline: 3px solid rgba(18, 247, 255, 0.42);
++  outline-offset: 3px;
++}
++
++@media (max-width: 1100px) {
++  .header-inner {
++    grid-template-columns: auto auto;
++    justify-content: space-between;
++  }
++
++  .mobile-toggle {
++    display: block;
++  }
++
++  .main-nav {
++    position: fixed;
++    inset: 82px 0 auto;
++    display: none;
++    grid-column: 1 / -1;
++    padding: 24px 32px 30px;
++    border-bottom: 1px solid var(--line);
++    background: rgba(2, 8, 20, 0.98);
++  }
++
++  .main-nav.is-open {
++    display: grid;
++    justify-items: start;
++  }
++
++  .nav-link {
++    width: 100%;
++    padding: 12px 0;
++  }
++
++  .nav-link::after {
++    bottom: 5px;
++    right: auto;
++    width: 42px;
++  }
++
++  .header-cta {
++    display: none;
++  }
++
++  .hero-inner,
++  .section-grid,
++  .contact-layout,
++  .two-column {
++    grid-template-columns: 1fr;
++  }
++
++  .hero-visual {
++    display: none;
++  }
++
++  .proof-bar,
++  .cards-grid,
++  .cards-grid.cols-3,
++  .cards-grid.cols-5 {
++    grid-template-columns: repeat(2, minmax(0, 1fr));
++  }
++
++  .steps {
++    grid-template-columns: repeat(3, minmax(0, 1fr));
++  }
++
++  .feature-row,
++  .request-types,
++  .footer-inner {
++    grid-template-columns: repeat(2, minmax(0, 1fr));
++  }
++
++  .cta-band,
++  .highlight-band {
++    grid-template-columns: 90px 1fr;
++  }
++
++  .cta-actions {
++    grid-column: 2;
++  }
++}
++
++@media (max-width: 700px) {
++  .container,
++  .header-inner,
++  .footer-inner,
++  .footer-bottom,
++  .hero-inner,
++  .proof-bar {
++    width: min(100% - 30px, var(--container));
++  }
++
++  .site-header,
++  .header-inner {
++    min-height: 70px;
++  }
++
++  .main-nav {
++    inset: 70px 0 auto;
++    padding-inline: 18px;
++  }
++
++  .logo-mark {
++    width: 40px;
++    height: 40px;
++  }
++
++  .logo strong {
++    font-size: 1rem;
++  }
++
++  .logo small {
++    font-size: 0.55rem;
++  }
++
++  .hero,
++  .hero.home {
++    --hero-height: auto;
++    min-height: auto;
++  }
++
++  .hero-inner {
++    min-height: auto;
++    padding: 72px 0 110px;
++  }
++
++  .hero-title {
++    font-size: clamp(2.35rem, 11vw, 3.35rem);
++  }
++
++  .hero-actions,
++  .cta-actions,
++  .footer-bottom,
++  .footer-bottom nav {
++    flex-direction: column;
++    align-items: stretch;
++  }
++
++  .button,
++  .form-submit {
++    width: 100%;
++  }
++
++  .proof-bar {
++    margin-top: -72px;
++  }
++
++  .proof-bar,
++  .cards-grid,
++  .cards-grid.cols-3,
++  .cards-grid.cols-5,
++  .steps,
++  .feature-row,
++  .request-types,
++  .form-grid,
++  .footer-inner {
++    grid-template-columns: 1fr;
++  }
++
++  .proof-item,
++  .mini-feature {
++    border-right: 0;
++    border-bottom: 1px solid rgba(0, 220, 255, 0.14);
++  }
++
++  .proof-item:last-child,
++  .mini-feature:last-child {
++    border-bottom: 0;
++  }
++
++  .section-heading {
++    display: block;
++  }
++
++  .contact-layout {
++    padding: 22px;
++  }
++
++  .cta-band,
++  .highlight-band {
++    grid-template-columns: 1fr;
++    padding: 24px;
++  }
++
++  .cta-actions {
++    grid-column: auto;
++  }
++
++  .band-mark {
++    width: 76px;
++    height: 76px;
++  }
++}
+diff --git a/assets/js/main.js b/assets/js/main.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..9f8d3ab63df512a675187888ce4d654c4944c713
+--- /dev/null
++++ b/assets/js/main.js
+@@ -0,0 +1,29 @@
++const mobileToggle = document.querySelector(".mobile-toggle");
++const mainNav = document.querySelector(".main-nav");
++
++if (mobileToggle && mainNav) {
++  mobileToggle.addEventListener("click", () => {
++    const isOpen = mobileToggle.getAttribute("aria-expanded") === "true";
++    mobileToggle.setAttribute("aria-expanded", String(!isOpen));
++    mainNav.classList.toggle("is-open", !isOpen);
++    document.body.classList.toggle("nav-open", !isOpen);
++  });
++
++  mainNav.addEventListener("click", (event) => {
++    if (event.target instanceof HTMLAnchorElement) {
++      mobileToggle.setAttribute("aria-expanded", "false");
++      mainNav.classList.remove("is-open");
++      document.body.classList.remove("nav-open");
++    }
++  });
++}
++
++document.querySelectorAll(".contact-form").forEach((form) => {
++  form.addEventListener("submit", (event) => {
++    event.preventDefault();
++    const status = form.querySelector(".form-status");
++    if (status) {
++      status.textContent = "Votre demande est prête à être envoyée. Le branchement serveur sera ajouté ultérieurement.";
++    }
++  });
++});
+diff --git a/index-old.html b/index-old.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..79602fea463dff05f16fecbd4985a1d03a8518c7
+--- /dev/null
++++ b/index-old.html
+@@ -0,0 +1,293 @@
++<!doctype html>
++<html lang="fr">
++  <head>
++    <meta charset="utf-8">
++    <meta name="viewport" content="width=device-width, initial-scale=1">
++    <meta name="description" content="INFOSERV2A accompagne les entreprises du Sud Corse avec des audits cyber, des reseaux critiques, du Wi-Fi professionnel et des solutions de continuite
+d'activite.">
++    <title>INFOSERV2A - Cybersecurite locale et reseaux critiques</title>
++    <link rel="stylesheet" href="styles.css">
++  </head>
++  <body>
++    <header class="site-header" id="top">
++      <a class="brand" href="#top" aria-label="INFOSERV2A accueil">
++        <span class="brand-mark" aria-hidden="true"></span>
++        <span>
++          <strong>INFOSERV2A</strong>
++          <small>Cyber & reseaux</small>
++        </span>
++      </a>
++
++      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
++        <span></span>
++        <span></span>
++        <span></span>
++        <span class="sr-only">Ouvrir le menu</span>
++      </button>
++
++      <nav class="site-nav" id="site-nav" aria-label="Navigation principale">
++        <a href="#services">Services</a>
++        <a href="#secteurs">Secteurs</a>
++        <a href="#methode">Methode</a>
++        <a href="#apropos">A propos</a>
++        <a href="#contact">Contact</a>
++      </nav>
++
++      <a class="header-cta" href="#diagnostic">Diagnostic</a>
++    </header>
++
++    <main>
++      <section class="hero section-band">
++        <div class="hero-media" aria-hidden="true">
++          <img src="public/assets/imported/20260708-234402/002-chatgpt-image-8-juil-2026-23_20_44-1.png" alt="">
++        </div>
++        <div class="container hero-grid">
++          <div class="hero-copy">
++            <p class="eyebrow">Cybersecurite locale & reseaux critiques</p>
++            <h1>Protegez vos systemes. Connectez vos sites. Assurez votre continuite.</h1>
++            <p class="hero-text">INFOSERV2A accompagne les PME, TPE, structures sensibles et sites isoles du Sud Corse avec une approche terrain, claire et directement exploitable.</p>
++            <div class="hero-actions">
++              <a class="button button-primary" href="#diagnostic">Demander un diagnostic</a>
++              <a class="button button-secondary" href="#services">Decouvrir les services</a>
++            </div>
++          </div>
++
++          <aside class="signal-panel" aria-label="Points forts INFOSERV2A">
++            <div>
++              <span class="metric">Sud Corse</span>
++              <span>Interventions locales et reactives</span>
++            </div>
++            <div>
++              <span class="metric">Audit</span>
++              <span>Tests reels, constats clairs, priorites</span>
++            </div>
++            <div>
++              <span class="metric">Continuite</span>
++              <span>Reseaux fiables et plans d'action</span>
++            </div>
++          </aside>
++        </div>
++      </section>
++
++      <section class="trust-strip" aria-label="Domaines couverts">
++        <div class="container trust-grid">
++          <article>
++            <span class="icon-shield" aria-hidden="true"></span>
++            <h2>Audit terrain</h2>
++            <p>Verification sur site, controle des usages et synthese des risques.</p>
++          </article>
++          <article>
++            <span class="icon-wifi" aria-hidden="true"></span>
++            <h2>Wi-Fi professionnel</h2>
++            <p>Couverture fiable, securisee et adaptee aux contraintes metier.</p>
++          </article>
++          <article>
++            <span class="icon-network" aria-hidden="true"></span>
++            <h2>Reseaux critiques</h2>
++            <p>Architecture, segmentation, supervision et maintien operationnel.</p>
++          </article>
++          <article>
++            <span class="icon-satellite" aria-hidden="true"></span>
++            <h2>Sites isoles</h2>
++            <p>Connectivite satellite, liens de secours et resilience locale.</p>
++          </article>
++        </div>
++      </section>
++
++      <section class="section" id="services">
++        <div class="container">
++          <div class="section-heading">
++            <p class="eyebrow">Nos services</p>
++            <h2>Des solutions concretes pour securiser et connecter votre entreprise.</h2>
++          </div>
++
++          <div class="cards-grid">
++            <article class="service-card">
++              <span class="card-number">01</span>
++              <h3>Audit cyber local</h3>
++              <p>Etat des lieux de votre systeme d'information, verification des acces, analyse des vulnerabilites et recommandations priorisees.</p>
++              <a href="#diagnostic">Planifier un audit</a>
++            </article>
++            <article class="service-card">
++              <span class="card-number">02</span>
++              <h3>Reseaux critiques</h3>
++              <p>Conception, securisation et supervision de reseaux fiables pour les activites qui ne peuvent pas s'arreter.</p>
++              <a href="#contact">Parler reseau</a>
++            </article>
++            <article class="service-card">
++              <span class="card-number">03</span>
++              <h3>Wi-Fi professionnel</h3>
++              <p>Deploiement de solutions Wi-Fi performantes, segmentees et adaptees a vos locaux, equipes et visiteurs.</p>
++              <a href="#contact">Evaluer la couverture</a>
++            </article>
++            <article class="service-card">
++              <span class="card-number">04</span>
++              <h3>Starlink & sites isoles</h3>
++              <p>Connexion haut debit par satellite, secours internet, interconnexion de sites et continuités pour zones contraintes.</p>
++              <a href="#contact">Connecter un site</a>
++            </article>
++            <article class="service-card">
++              <span class="card-number">05</span>
++              <h3>Plan d'action securite</h3>
++              <p>Feuille de route realiste, chiffrage, priorisation et accompagnement pour corriger les risques identifies.</p>
++              <a href="#methode">Voir la methode</a>
++            </article>
++            <article class="service-card">
++              <span class="card-number">06</span>
++              <h3>Suivi & amelioration</h3>
++              <p>Revue reguliere, indicateurs simples, controles de configuration et ajustements continus apres intervention.</p>
++              <a href="#contact">Organiser le suivi</a>
++            </article>
++          </div>
++        </div>
++      </section>
++
++      <section class="section section-muted" id="secteurs">
++        <div class="container split-layout">
++          <div>
++            <p class="eyebrow">Secteurs accompagnes</p>
++            <h2>Des environnements varies, des exigences elevees.</h2>
++            <p>INFOSERV2A intervient la ou les contraintes terrain comptent autant que les outils : disponibilite, discretion, reaction rapide et comprehension des usages reels.</p>
++          </div>
++
++          <div class="sector-grid" aria-label="Secteurs">
++            <span>Hotellerie</span>
++            <span>Campings</span>
++            <span>Medical</span>
++            <span>Juridique</span>
++            <span>Immobilier</span>
++            <span>Villas & sites isoles</span>
++          </div>
++        </div>
++      </section>
++
++      <section class="section" id="methode">
++        <div class="container">
++          <div class="section-heading narrow">
++            <p class="eyebrow">Notre methode</p>
++            <h2>Une demarche structuree pour des resultats exploitables.</h2>
++          </div>
++
++          <ol class="steps">
++            <li>
++              <span>1</span>
++              <h3>Ecoute & cadrage</h3>
++              <p>Comprehension du contexte, du perimetre et des objectifs.</p>
++            </li>
++            <li>
++              <span>2</span>
++              <h3>Analyse terrain</h3>
++              <p>Verification technique, cartographie des flux et tests controles.</p>
++            </li>
++            <li>
++              <span>3</span>
++              <h3>Priorisation</h3>
++              <p>Classement des risques selon impact, urgence et complexite.</p>
++            </li>
++            <li>
++              <span>4</span>
++              <h3>Plan d'action</h3>
++              <p>Recommandations claires, realistes et directement planifiables.</p>
++            </li>
++            <li>
++              <span>5</span>
++              <h3>Mise en oeuvre</h3>
++              <p>Accompagnement au deploiement, controle et ajustements.</p>
++            </li>
++          </ol>
++        </div>
++      </section>
++
++      <section class="section local-section" id="apropos">
++        <div class="container local-grid">
++          <div>
++            <p class="eyebrow">Ancrage local</p>
++            <h2>Porto-Vecchio, Sud Corse. Proximite, reactivite, confiance.</h2>
++            <p>Base en Sud Corse, INFOSERV2A accompagne les structures locales avec des interventions de proximite et une relation directe avec le dirigeant ou le responsable technique.</p>
++            <div class="local-facts">
++              <span>Intervention locale</span>
++              <span>Delais courts</span>
++              <span>Confidentialite</span>
++            </div>
++          </div>
++          <figure class="visual-card">
++            <img src="public/assets/imported/20260708-234402/001-chatgpt-image-8-juil-2026-23_19_47.png" alt="Apercu visuel de l'identite INFOSERV2A et de son ancrage en Corse">
++          </figure>
++        </div>
++      </section>
++
++      <section class="section diagnostic-section" id="diagnostic">
++        <div class="container diagnostic-grid">
++          <div>
++            <p class="eyebrow">Diagnostic</p>
++            <h2>Faites le point sur votre securite et vos reseaux.</h2>
++            <p>Envoyez une demande locale. Le formulaire prepare un message recapitulatif dans votre navigateur, sans envoyer de donnees a un service externe.</p>
++          </div>
++
++          <form class="contact-form" id="diagnostic-form">
++            <label>
++              Nom / entreprise
++              <input name="name" type="text" autocomplete="organization" required>
++            </label>
++            <label>
++              Email
++              <input name="email" type="email" autocomplete="email" required>
++            </label>
++            <label>
++              Besoin principal
++              <select name="need" required>
++                <option value="">Selectionner</option>
++                <option>Audit cyber local</option>
++                <option>Reseau critique</option>
++                <option>Wi-Fi professionnel</option>
++                <option>Starlink ou site isole</option>
++                <option>Continuite d'activite</option>
++              </select>
++            </label>
++            <label>
++              Message
++              <textarea name="message" rows="4" placeholder="Contexte, lieu, urgence, contraintes..."></textarea>
++            </label>
++            <button class="button button-primary" type="submit">Preparer la demande</button>
++            <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
++          </form>
++        </div>
++      </section>
++    </main>
++
++    <footer class="site-footer" id="contact">
++      <div class="container footer-grid">
++        <div>
++          <a class="brand footer-brand" href="#top" aria-label="INFOSERV2A accueil">
++            <span class="brand-mark" aria-hidden="true"></span>
++            <span>
++              <strong>INFOSERV2A</strong>
++              <small>Cyber & reseaux</small>
++            </span>
++          </a>
++          <p>Cybersecurite locale et reseaux critiques pour les entreprises du Sud Corse.</p>
++        </div>
++
++        <div>
++          <h2>Navigation</h2>
++          <a href="#services">Services</a>
++          <a href="#secteurs">Secteurs</a>
++          <a href="#methode">Methode</a>
++          <a href="#diagnostic">Diagnostic</a>
++        </div>
++
++        <address>
++          <h2>Contact</h2>
++          <span>Porto-Vecchio, Sud Corse</span>
++          <a href="tel:+33700000000">07 00 00 00 00</a>
++          <a href="mailto:contact@infoserv2a.fr">contact@infoserv2a.fr</a>
++        </address>
++      </div>
++      <div class="footer-bottom container">
++        <span>© 2026 INFOSERV2A. Tous droits reserves.</span>
++        <span>Site local - aucune publication en ligne.</span>
++      </div>
++    </footer>
++
++    <script src="script.js"></script>
++  </body>
++</html>
+
+codex
+Modifications effectuées : le site est maintenant en 7 pages réelles avec header/footer communs, palette bleu nuit/cyan, fonds issus des 7 PNG de référence, cartes/sections responsive, menu
+mobile, formulaire contact sans envoi réel, et liens légaux fonctionnels.
+
+Validations faites :
+- liens internes vérifiés : OK ;
+- 1 seul H1 par page : OK ;
+- menu actif par page : OK ;
+- CSS commun équilibré : OK ;
+- anciennes références contact/couleurs non conformes recherchées : OK ;
+- aperçu navigateur intégré non disponible dans cette session, donc pas de capture responsive visuelle possible ici.
+
+Fichiers modifiés/créés :
+- `index.html`
+- `cyber.html`
+- `reseau.html`
+- `secteurs-sensibles.html`
+- `methode.html`
+- `a-propos.html`
+- `contact.html`
+- `mentions-legales.html`
+- `politique-confidentialite.html`
+- `index-old.html` redirige vers `index.html`
+- `assets/css/style.css`
+- `assets/js/main.js`
+- `styles.css`
+- `script.js`
+
+À lancer côté IDWEB : Build/Test puis Preview locale.
+diff --git a/assets/css/style.css b/assets/css/style.css
+new file mode 100644
+index 0000000000000000000000000000000000000000..5495fc09c6f896cfa8ecea555845abadb7cab131
+--- /dev/null
++++ b/assets/css/style.css
+@@ -0,0 +1,1124 @@
++:root {
++  color-scheme: dark;
++  --night: #020814;
++  --night-2: #06152a;
++  --panel: rgba(8, 24, 46, 0.78);
++  --panel-strong: rgba(7, 20, 39, 0.92);
++  --line: rgba(0, 220, 255, 0.22);
++  --line-strong: rgba(18, 247, 255, 0.48);
++  --cyan: #00d9f5;
++  --cyan-bright: #12f7ff;
++  --blue: #148cff;
++  --text: #f4f8ff;
++  --muted: #a8b7c9;
++  --quiet: #6f8195;
++  --shadow: 0 26px 90px rgba(0, 0, 0, 0.42);
++  --radius: 24px;
++  --container: 1220px;
++  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
++}
++
++* {
++  box-sizing: border-box;
++}
++
++html {
++  scroll-behavior: smooth;
++}
++
++body {
++  margin: 0;
++  min-width: 320px;
++  overflow-x: hidden;
++  background:
++    radial-gradient(circle at 78% 8%, rgba(20, 140, 255, 0.18), transparent 32rem),
++    radial-gradient(circle at 12% 42%, rgba(0, 217, 245, 0.1), transparent 28rem),
++    linear-gradient(180deg, #01050d 0%, var(--night) 34%, #031022 100%);
++  color: var(--text);
++}
++
++body.nav-open {
++  overflow: hidden;
++}
++
++a {
++  color: inherit;
++  text-decoration: none;
++}
++
++img {
++  display: block;
++  max-width: 100%;
++}
++
++h1,
++h2,
++h3,
++p {
++  margin-top: 0;
++}
++
++p {
++  color: var(--muted);
++  line-height: 1.7;
++}
++
++.sr-only {
++  position: absolute;
++  width: 1px;
++  height: 1px;
++  padding: 0;
++  overflow: hidden;
++  clip: rect(0, 0, 0, 0);
++  white-space: nowrap;
++  border: 0;
++}
++
++.container,
++.header-inner,
++.footer-inner,
++.footer-bottom {
++  width: min(var(--container), calc(100% - 64px));
++  margin-inline: auto;
++}
++
++.site-header {
++  position: sticky;
++  top: 0;
++  z-index: 50;
++  min-height: 82px;
++  background: rgba(2, 8, 20, 0.86);
++  border-bottom: 1px solid rgba(0, 220, 255, 0.16);
++  backdrop-filter: blur(20px);
++  box-shadow: 0 14px 42px rgba(0, 0, 0, 0.22);
++}
++
++.header-inner {
++  min-height: 82px;
++  display: grid;
++  grid-template-columns: auto 1fr auto;
++  align-items: center;
++  gap: 28px;
++}
++
++.logo {
++  display: inline-flex;
++  align-items: center;
++  gap: 12px;
++  min-width: max-content;
++}
++
++.logo-mark {
++  width: 48px;
++  height: 48px;
++  position: relative;
++  border: 2px solid var(--cyan);
++  border-radius: 50%;
++  box-shadow: 0 0 34px rgba(0, 217, 245, 0.34);
++}
++
++.logo-mark::before,
++.logo-mark::after {
++  content: "";
++  position: absolute;
++  border-radius: 50%;
++}
++
++.logo-mark::before {
++  inset: 8px;
++  border: 1px solid rgba(18, 247, 255, 0.76);
++  border-left-color: transparent;
++}
++
++.logo-mark::after {
++  width: 9px;
++  height: 9px;
++  right: 9px;
++  bottom: 10px;
++  background: var(--cyan);
++  box-shadow: 0 0 18px var(--cyan);
++}
++
++.logo strong {
++  display: block;
++  color: var(--text);
++  font-size: 1.2rem;
++  line-height: 1;
++  letter-spacing: 0;
++}
++
++.logo small {
++  display: block;
++  margin-top: 5px;
++  color: var(--quiet);
++  font-size: 0.61rem;
++  font-weight: 700;
++  letter-spacing: 0.14em;
++  text-transform: uppercase;
++}
++
++.main-nav {
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  gap: clamp(15px, 2.4vw, 31px);
++}
++
++.nav-link {
++  position: relative;
++  padding: 31px 0 29px;
++  color: var(--muted);
++  font-size: 0.78rem;
++  font-weight: 850;
++  text-transform: uppercase;
++}
++
++.nav-link::after {
++  content: "";
++  position: absolute;
++  left: 0;
++  right: 0;
++  bottom: 21px;
++  height: 2px;
++  transform: scaleX(0);
++  transform-origin: center;
++  background: var(--cyan);
++  box-shadow: 0 0 14px rgba(18, 247, 255, 0.8);
++  transition: transform 160ms ease;
++}
++
++.nav-link:hover,
++.nav-link:focus-visible,
++.nav-link.active {
++  color: var(--cyan-bright);
++}
++
++.nav-link:hover::after,
++.nav-link.active::after {
++  transform: scaleX(1);
++}
++
++.header-cta,
++.button,
++.form-submit {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  gap: 12px;
++  min-height: 52px;
++  padding: 0 24px;
++  border: 1px solid transparent;
++  border-radius: 7px;
++  font: inherit;
++  font-size: 0.78rem;
++  font-weight: 900;
++  letter-spacing: 0;
++  text-transform: uppercase;
++  cursor: pointer;
++}
++
++.header-cta,
++.button-primary,
++.form-submit {
++  background: linear-gradient(135deg, var(--cyan-bright), var(--cyan) 52%, #08aeea);
++  color: #02101c;
++  box-shadow: 0 18px 48px rgba(0, 217, 245, 0.24);
++}
++
++.button-secondary {
++  background: rgba(3, 13, 29, 0.62);
++  border-color: var(--line);
++  color: var(--text);
++}
++
++.header-cta::after,
++.button::after,
++.form-submit::after {
++  content: "->";
++  font-size: 1rem;
++  line-height: 1;
++}
++
++.button:hover,
++.header-cta:hover,
++.form-submit:hover {
++  transform: translateY(-1px);
++  border-color: rgba(18, 247, 255, 0.56);
++}
++
++.mobile-toggle {
++  display: none;
++  width: 48px;
++  height: 48px;
++  border: 1px solid var(--line);
++  border-radius: 8px;
++  background: rgba(255, 255, 255, 0.035);
++  color: var(--text);
++}
++
++.mobile-toggle span:not(.sr-only) {
++  display: block;
++  width: 22px;
++  height: 2px;
++  margin: 5px auto;
++  background: var(--text);
++}
++
++.hero {
++  position: relative;
++  min-height: var(--hero-height, 640px);
++  overflow: hidden;
++  border-bottom: 1px solid rgba(0, 220, 255, 0.12);
++}
++
++.hero.home {
++  --hero-height: 720px;
++}
++
++.hero-background,
++.hero::before,
++.hero::after {
++  position: absolute;
++  content: "";
++  inset: 0;
++  pointer-events: none;
++}
++
++.hero::before {
++  background-image: var(--hero-image);
++  background-size: cover;
++  background-position: center 6%;
++  opacity: 0.58;
++  filter: saturate(1.04);
++}
++
++.hero::after {
++  background:
++    linear-gradient(90deg, rgba(2, 8, 20, 0.96) 0%, rgba(2, 8, 20, 0.72) 43%, rgba(2, 8, 20, 0.24) 100%),
++    linear-gradient(180deg, rgba(2, 8, 20, 0.18) 0%, rgba(2, 8, 20, 0.9) 100%),
++    radial-gradient(circle at 72% 46%, rgba(18, 247, 255, 0.2), transparent 18rem);
++}
++
++.hero-inner {
++  position: relative;
++  z-index: 1;
++  width: min(var(--container), calc(100% - 64px));
++  min-height: var(--hero-height, 640px);
++  margin-inline: auto;
++  display: grid;
++  grid-template-columns: minmax(0, 650px) minmax(300px, 1fr);
++  gap: 48px;
++  align-items: center;
++  padding: 72px 0 50px;
++}
++
++.hero-content {
++  padding-top: 20px;
++}
++
++.hero-kicker,
++.section-kicker {
++  display: inline-flex;
++  align-items: center;
++  min-height: 29px;
++  margin: 0 0 18px;
++  padding: 0 14px;
++  border: 1px solid var(--line);
++  border-radius: 7px;
++  color: var(--cyan-bright);
++  background: rgba(5, 18, 36, 0.58);
++  font-size: 0.73rem;
++  font-weight: 900;
++  text-transform: uppercase;
++}
++
++.section-kicker {
++  min-height: auto;
++  padding: 0;
++  border: 0;
++  background: transparent;
++}
++
++.hero-title {
++  max-width: 760px;
++  margin-bottom: 22px;
++  font-size: clamp(3rem, 5.4vw, 5.15rem);
++  line-height: 1.03;
++  letter-spacing: 0;
++}
++
++.hero-title .accent,
++.section-title .accent {
++  color: var(--cyan);
++}
++
++.hero-text {
++  max-width: 670px;
++  margin-bottom: 0;
++  font-size: clamp(1.05rem, 1.45vw, 1.22rem);
++  line-height: 1.75;
++}
++
++.hero-actions,
++.cta-actions {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 16px;
++  margin-top: 34px;
++}
++
++.hero-visual {
++  min-height: 360px;
++  display: grid;
++  place-items: center;
++}
++
++.hero-card {
++  position: relative;
++  width: min(100%, 430px);
++  min-height: 390px;
++  border: 1px solid rgba(18, 247, 255, 0.32);
++  border-radius: 50%;
++  background:
++    radial-gradient(circle, rgba(18, 247, 255, 0.25), transparent 20%),
++    repeating-radial-gradient(circle, rgba(18, 247, 255, 0.2) 0 1px, transparent 1px 48px);
++  box-shadow: inset 0 0 58px rgba(18, 247, 255, 0.12), 0 0 78px rgba(0, 217, 245, 0.18);
++  opacity: 0.92;
++}
++
++.hero-card::before {
++  content: "";
++  position: absolute;
++  inset: 25%;
++  border: 2px solid var(--cyan);
++  border-radius: 22px;
++  transform: rotate(45deg);
++  box-shadow: 0 0 34px rgba(18, 247, 255, 0.5);
++}
++
++.proof-bar {
++  position: relative;
++  z-index: 2;
++  width: min(var(--container), calc(100% - 64px));
++  margin: -74px auto 0;
++  display: grid;
++  grid-template-columns: repeat(var(--proof-cols, 4), minmax(0, 1fr));
++  gap: 0;
++  overflow: hidden;
++  border: 1px solid var(--line);
++  border-radius: 11px;
++  background: rgba(4, 13, 27, 0.82);
++  backdrop-filter: blur(18px);
++  box-shadow: var(--shadow);
++}
++
++.proof-item {
++  min-height: 94px;
++  display: grid;
++  grid-template-columns: 44px minmax(0, 1fr);
++  gap: 16px;
++  align-items: center;
++  padding: 22px 24px;
++  border-right: 1px solid rgba(0, 220, 255, 0.16);
++}
++
++.proof-item:last-child {
++  border-right: 0;
++}
++
++.icon {
++  width: 44px;
++  height: 44px;
++  display: grid;
++  place-items: center;
++  border: 1px solid rgba(18, 247, 255, 0.65);
++  border-radius: 50%;
++  color: var(--cyan-bright);
++  font-size: 0.78rem;
++  font-weight: 900;
++  box-shadow: inset 0 0 22px rgba(0, 217, 245, 0.12);
++}
++
++.proof-item strong,
++.mini-feature strong {
++  display: block;
++  margin-bottom: 4px;
++  color: var(--cyan-bright);
++  font-size: 0.82rem;
++  text-transform: uppercase;
++}
++
++.proof-item span,
++.mini-feature span {
++  color: var(--muted);
++  font-size: 0.9rem;
++  line-height: 1.45;
++}
++
++.section {
++  padding: clamp(74px, 8.5vw, 122px) 0;
++}
++
++.section.compact {
++  padding-top: clamp(44px, 6vw, 72px);
++}
++
++.section-dark {
++  background:
++    radial-gradient(circle at 12% 18%, rgba(20, 140, 255, 0.12), transparent 25rem),
++    rgba(2, 8, 20, 0.38);
++  border-block: 1px solid rgba(0, 220, 255, 0.12);
++}
++
++.section-grid {
++  display: grid;
++  grid-template-columns: minmax(0, 0.82fr) minmax(320px, 1.18fr);
++  gap: clamp(40px, 7vw, 86px);
++  align-items: center;
++}
++
++.section-title {
++  max-width: 830px;
++  margin-bottom: 18px;
++  font-size: clamp(2.1rem, 3.7vw, 3.6rem);
++  line-height: 1.08;
++  letter-spacing: 0;
++}
++
++.section-lead {
++  max-width: 720px;
++  font-size: 1.08rem;
++}
++
++.section-heading {
++  display: flex;
++  justify-content: space-between;
++  align-items: end;
++  gap: 28px;
++  margin-bottom: 32px;
++}
++
++.section-heading > div {
++  max-width: 790px;
++}
++
++.section-link {
++  color: var(--cyan-bright);
++  font-size: 0.78rem;
++  font-weight: 900;
++  text-transform: uppercase;
++  white-space: nowrap;
++}
++
++.cards-grid {
++  display: grid;
++  grid-template-columns: repeat(var(--grid-cols, 4), minmax(0, 1fr));
++  gap: 22px;
++}
++
++.cards-grid.cols-3 {
++  --grid-cols: 3;
++}
++
++.cards-grid.cols-5 {
++  --grid-cols: 5;
++}
++
++.service-card,
++.sector-card,
++.method-card,
++.value-card,
++.contact-card,
++.step-card {
++  position: relative;
++  min-height: 230px;
++  padding: 28px;
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  background:
++    linear-gradient(145deg, rgba(18, 247, 255, 0.06), rgba(20, 140, 255, 0.015) 42%, transparent),
++    var(--panel);
++  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.21);
++}
++
++.service-card:hover,
++.sector-card:hover,
++.method-card:hover,
++.value-card:hover,
++.contact-card:hover,
++.step-card:hover {
++  border-color: var(--line-strong);
++  transform: translateY(-2px);
++}
++
++.card-icon {
++  width: 58px;
++  height: 58px;
++  display: grid;
++  place-items: center;
++  margin-bottom: 28px;
++  border: 1px solid rgba(18, 247, 255, 0.62);
++  border-radius: 18px;
++  color: var(--cyan-bright);
++  font-size: 1rem;
++  font-weight: 900;
++}
++
++.card-number {
++  position: absolute;
++  top: 30px;
++  right: 28px;
++  color: rgba(0, 217, 245, 0.52);
++  font-size: 0.92rem;
++  font-weight: 900;
++}
++
++.service-card h3,
++.sector-card h3,
++.method-card h3,
++.value-card h3,
++.contact-card h3,
++.step-card h3 {
++  margin-bottom: 12px;
++  font-size: 1.32rem;
++  line-height: 1.18;
++}
++
++.service-card p,
++.sector-card p,
++.method-card p,
++.value-card p,
++.contact-card p,
++.step-card p {
++  margin-bottom: 0;
++  font-size: 0.96rem;
++}
++
++.card-link {
++  display: inline-flex;
++  gap: 10px;
++  margin-top: 24px;
++  color: var(--cyan-bright);
++  font-size: 0.75rem;
++  font-weight: 900;
++  text-transform: uppercase;
++}
++
++.card-link::after {
++  content: "->";
++}
++
++.steps {
++  display: grid;
++  grid-template-columns: repeat(6, minmax(0, 1fr));
++  gap: 18px;
++  margin: 0;
++  padding: 0;
++  list-style: none;
++}
++
++.step-card {
++  min-height: 255px;
++  padding-top: 54px;
++  text-align: center;
++}
++
++.step-number {
++  position: absolute;
++  top: -15px;
++  left: 50%;
++  width: 34px;
++  height: 34px;
++  display: grid;
++  place-items: center;
++  transform: translateX(-50%);
++  border: 1px solid var(--cyan);
++  border-radius: 50%;
++  background: #041329;
++  color: var(--cyan-bright);
++  font-size: 0.9rem;
++  font-weight: 900;
++}
++
++.feature-row {
++  display: grid;
++  grid-template-columns: repeat(var(--feature-cols, 4), minmax(0, 1fr));
++  gap: 0;
++  border-block: 1px solid rgba(0, 220, 255, 0.14);
++}
++
++.mini-feature {
++  display: grid;
++  grid-template-columns: 48px minmax(0, 1fr);
++  gap: 16px;
++  padding: 26px 24px;
++  border-right: 1px solid rgba(0, 220, 255, 0.14);
++}
++
++.mini-feature:last-child {
++  border-right: 0;
++}
++
++.highlight-band,
++.cta-band {
++  position: relative;
++  overflow: hidden;
++  display: grid;
++  grid-template-columns: 120px minmax(0, 1fr) auto;
++  gap: 32px;
++  align-items: center;
++  padding: 30px 34px;
++  border: 1px solid rgba(18, 247, 255, 0.36);
++  border-radius: 14px;
++  background:
++    linear-gradient(90deg, rgba(0, 217, 245, 0.08), rgba(20, 140, 255, 0.04)),
++    rgba(5, 18, 36, 0.78);
++  box-shadow: var(--shadow);
++}
++
++.highlight-band::after,
++.cta-band::after {
++  content: "";
++  position: absolute;
++  inset: 0;
++  background-image: var(--hero-image);
++  background-size: cover;
++  background-position: center 72%;
++  opacity: 0.13;
++}
++
++.highlight-band > *,
++.cta-band > * {
++  position: relative;
++  z-index: 1;
++}
++
++.band-mark {
++  width: 96px;
++  height: 96px;
++  border: 2px solid var(--cyan);
++  border-radius: 50%;
++  box-shadow: inset 0 0 28px rgba(18, 247, 255, 0.15), 0 0 28px rgba(0, 217, 245, 0.22);
++}
++
++.cta-title {
++  margin-bottom: 6px;
++  font-size: clamp(1.55rem, 2.4vw, 2.2rem);
++  line-height: 1.12;
++}
++
++.cta-text {
++  margin-bottom: 0;
++}
++
++.cta-actions {
++  margin-top: 0;
++}
++
++.two-column {
++  display: grid;
++  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
++  gap: 28px;
++}
++
++.local-map {
++  min-height: 360px;
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  background:
++    radial-gradient(circle at 45% 52%, rgba(18, 247, 255, 0.35), transparent 5rem),
++    radial-gradient(circle at 58% 42%, rgba(20, 140, 255, 0.18), transparent 13rem),
++    linear-gradient(135deg, rgba(8, 24, 46, 0.7), rgba(2, 8, 20, 0.74));
++  position: relative;
++  overflow: hidden;
++}
++
++.local-map::before {
++  content: "";
++  position: absolute;
++  inset: 30px;
++  border: 1px solid rgba(18, 247, 255, 0.24);
++  border-radius: 42% 58% 44% 56%;
++  transform: rotate(10deg);
++}
++
++.local-map::after {
++  content: "Porto-Vecchio\A Sud Corse";
++  white-space: pre;
++  position: absolute;
++  right: 42px;
++  bottom: 38px;
++  color: var(--text);
++  font-size: 1.4rem;
++  font-weight: 900;
++}
++
++.bullets,
++.contact-list {
++  margin: 18px 0 0;
++  padding: 0;
++  list-style: none;
++}
++
++.bullets li,
++.contact-list li {
++  position: relative;
++  margin-bottom: 10px;
++  padding-left: 18px;
++  color: var(--muted);
++}
++
++.bullets li::before,
++.contact-list li::before {
++  content: "";
++  position: absolute;
++  left: 0;
++  top: 0.72em;
++  width: 5px;
++  height: 5px;
++  border-radius: 50%;
++  background: var(--cyan);
++}
++
++.contact-layout {
++  display: grid;
++  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
++  gap: 48px;
++  padding: 36px;
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  background: rgba(5, 18, 36, 0.6);
++}
++
++.contact-form {
++  display: grid;
++  gap: 18px;
++}
++
++.form-grid {
++  display: grid;
++  grid-template-columns: repeat(2, minmax(0, 1fr));
++  gap: 18px;
++}
++
++.form-field {
++  display: grid;
++  gap: 8px;
++}
++
++.form-field.full {
++  grid-column: 1 / -1;
++}
++
++.form-field label,
++.field-label {
++  color: var(--text);
++  font-size: 0.84rem;
++  font-weight: 800;
++}
++
++.form-input,
++.form-textarea,
++select.form-input {
++  width: 100%;
++  min-height: 52px;
++  padding: 13px 15px;
++  border: 1px solid rgba(0, 220, 255, 0.2);
++  border-radius: 7px;
++  background: rgba(2, 8, 20, 0.68);
++  color: var(--text);
++  font: inherit;
++}
++
++.form-textarea {
++  min-height: 132px;
++  resize: vertical;
++}
++
++.form-status {
++  min-height: 24px;
++  margin: 12px 0 0;
++  color: var(--cyan-bright);
++  font-weight: 800;
++}
++
++.request-types {
++  display: grid;
++  grid-template-columns: repeat(6, minmax(0, 1fr));
++  gap: 18px;
++}
++
++.request-card {
++  min-height: 150px;
++  display: grid;
++  place-items: center;
++  gap: 12px;
++  padding: 20px;
++  border: 1px solid var(--line);
++  border-radius: 16px;
++  background: var(--panel);
++  text-align: center;
++  color: var(--text);
++  font-weight: 800;
++}
++
++.request-card span:last-child {
++  width: 18px;
++  height: 18px;
++  border: 1px solid var(--quiet);
++  border-radius: 50%;
++}
++
++.site-footer {
++  padding: 56px 0 24px;
++  background:
++    linear-gradient(180deg, rgba(3, 16, 34, 0.98), #01050d),
++    var(--night);
++  border-top: 1px solid rgba(0, 220, 255, 0.16);
++}
++
++.footer-inner {
++  display: grid;
++  grid-template-columns: minmax(250px, 1.2fr) repeat(3, minmax(160px, 0.8fr));
++  gap: 44px;
++}
++
++.footer-column h2 {
++  margin: 0 0 16px;
++  color: var(--cyan);
++  font-size: 0.78rem;
++  text-transform: uppercase;
++}
++
++.footer-column p {
++  max-width: 280px;
++  margin-top: 18px;
++}
++
++.footer-column a,
++.footer-column span {
++  display: block;
++  margin-bottom: 9px;
++  color: var(--muted);
++  font-size: 0.94rem;
++  font-style: normal;
++}
++
++.footer-column a:hover {
++  color: var(--cyan-bright);
++}
++
++.footer-bottom {
++  display: flex;
++  justify-content: space-between;
++  gap: 24px;
++  margin-top: 42px;
++  padding-top: 22px;
++  border-top: 1px solid rgba(0, 220, 255, 0.12);
++  color: var(--quiet);
++  font-size: 0.86rem;
++}
++
++.footer-bottom nav {
++  display: flex;
++  gap: 32px;
++}
++
++input:focus,
++select:focus,
++textarea:focus,
++button:focus-visible,
++a:focus-visible {
++  outline: 3px solid rgba(18, 247, 255, 0.42);
++  outline-offset: 3px;
++}
++
++@media (max-width: 1100px) {
++  .header-inner {
++    grid-template-columns: auto auto;
++    justify-content: space-between;
++  }
++
++  .mobile-toggle {
++    display: block;
++  }
++
++  .main-nav {
++    position: fixed;
++    inset: 82px 0 auto;
++    display: none;
++    grid-column: 1 / -1;
++    padding: 24px 32px 30px;
++    border-bottom: 1px solid var(--line);
++    background: rgba(2, 8, 20, 0.98);
++  }
++
++  .main-nav.is-open {
++    display: grid;
++    justify-items: start;
++  }
++
++  .nav-link {
++    width: 100%;
++    padding: 12px 0;
++  }
++
++  .nav-link::after {
++    bottom: 5px;
++    right: auto;
++    width: 42px;
++  }
++
++  .header-cta {
++    display: none;
++  }
++
++  .hero-inner,
++  .section-grid,
++  .contact-layout,
++  .two-column {
++    grid-template-columns: 1fr;
++  }
++
++  .hero-visual {
++    display: none;
++  }
++
++  .proof-bar,
++  .cards-grid,
++  .cards-grid.cols-3,
++  .cards-grid.cols-5 {
++    grid-template-columns: repeat(2, minmax(0, 1fr));
++  }
++
++  .steps {
++    grid-template-columns: repeat(3, minmax(0, 1fr));
++  }
++
++  .feature-row,
++  .request-types,
++  .footer-inner {
++    grid-template-columns: repeat(2, minmax(0, 1fr));
++  }
++
++  .cta-band,
++  .highlight-band {
++    grid-template-columns: 90px 1fr;
++  }
++
++  .cta-actions {
++    grid-column: 2;
++  }
++}
++
++@media (max-width: 700px) {
++  .container,
++  .header-inner,
++  .footer-inner,
++  .footer-bottom,
++  .hero-inner,
++  .proof-bar {
++    width: min(100% - 30px, var(--container));
++  }
++
++  .site-header,
++  .header-inner {
++    min-height: 70px;
++  }
++
++  .main-nav {
++    inset: 70px 0 auto;
++    padding-inline: 18px;
++  }
++
++  .logo-mark {
++    width: 40px;
++    height: 40px;
++  }
++
++  .logo strong {
++    font-size: 1rem;
++  }
++
++  .logo small {
++    font-size: 0.55rem;
++  }
++
++  .hero,
++  .hero.home {
++    --hero-height: auto;
++    min-height: auto;
++  }
++
++  .hero-inner {
++    min-height: auto;
++    padding: 72px 0 110px;
++  }
++
++  .hero-title {
++    font-size: clamp(2.35rem, 11vw, 3.35rem);
++  }
++
++  .hero-actions,
++  .cta-actions,
++  .footer-bottom,
++  .footer-bottom nav {
++    flex-direction: column;
++    align-items: stretch;
++  }
++
++  .button,
++  .form-submit {
++    width: 100%;
++  }
++
++  .proof-bar {
++    margin-top: -72px;
++  }
++
++  .proof-bar,
++  .cards-grid,
++  .cards-grid.cols-3,
++  .cards-grid.cols-5,
++  .steps,
++  .feature-row,
++  .request-types,
++  .form-grid,
++  .footer-inner {
++    grid-template-columns: 1fr;
++  }
++
++  .proof-item,
++  .mini-feature {
++    border-right: 0;
++    border-bottom: 1px solid rgba(0, 220, 255, 0.14);
++  }
++
++  .proof-item:last-child,
++  .mini-feature:last-child {
++    border-bottom: 0;
++  }
++
++  .section-heading {
++    display: block;
++  }
++
++  .contact-layout {
++    padding: 22px;
++  }
++
++  .cta-band,
++  .highlight-band {
++    grid-template-columns: 1fr;
++    padding: 24px;
++  }
++
++  .cta-actions {
++    grid-column: auto;
++  }
++
++  .band-mark {
++    width: 76px;
++    height: 76px;
++  }
++}
+diff --git a/assets/js/main.js b/assets/js/main.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..9f8d3ab63df512a675187888ce4d654c4944c713
+--- /dev/null
++++ b/assets/js/main.js
+@@ -0,0 +1,29 @@
++const mobileToggle = document.querySelector(".mobile-toggle");
++const mainNav = document.querySelector(".main-nav");
++
++if (mobileToggle && mainNav) {
++  mobileToggle.addEventListener("click", () => {
++    const isOpen = mobileToggle.getAttribute("aria-expanded") === "true";
++    mobileToggle.setAttribute("aria-expanded", String(!isOpen));
++    mainNav.classList.toggle("is-open", !isOpen);
++    document.body.classList.toggle("nav-open", !isOpen);
++  });
++
++  mainNav.addEventListener("click", (event) => {
++    if (event.target instanceof HTMLAnchorElement) {
++      mobileToggle.setAttribute("aria-expanded", "false");
++      mainNav.classList.remove("is-open");
++      document.body.classList.remove("nav-open");
++    }
++  });
++}
++
++document.querySelectorAll(".contact-form").forEach((form) => {
++  form.addEventListener("submit", (event) => {
++    event.preventDefault();
++    const status = form.querySelector(".form-status");
++    if (status) {
++      status.textContent = "Votre demande est prête à être envoyée. Le branchement serveur sera ajouté ultérieurement.";
++    }
++  });
++});
+diff --git a/index-old.html b/index-old.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..79602fea463dff05f16fecbd4985a1d03a8518c7
+--- /dev/null
++++ b/index-old.html
+@@ -0,0 +1,293 @@
++<!doctype html>
++<html lang="fr">
++  <head>
++    <meta charset="utf-8">
++    <meta name="viewport" content="width=device-width, initial-scale=1">
++    <meta name="description" content="INFOSERV2A accompagne les entreprises du Sud Corse avec des audits cyber, des reseaux critiques, du Wi-Fi professionnel et des solutions de continuite
+d'activite.">
++    <title>INFOSERV2A - Cybersecurite locale et reseaux critiques</title>
++    <link rel="stylesheet" href="styles.css">
++  </head>
++  <body>
++    <header class="site-header" id="top">
++      <a class="brand" href="#top" aria-label="INFOSERV2A accueil">
++        <span class="brand-mark" aria-hidden="true"></span>
++        <span>
++          <strong>INFOSERV2A</strong>
++          <small>Cyber & reseaux</small>
++        </span>
++      </a>
++
++      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
++        <span></span>
++        <span></span>
++        <span></span>
++        <span class="sr-only">Ouvrir le menu</span>
++      </button>
++
++      <nav class="site-nav" id="site-nav" aria-label="Navigation principale">
++        <a href="#services">Services</a>
++        <a href="#secteurs">Secteurs</a>
++        <a href="#methode">Methode</a>
++        <a href="#apropos">A propos</a>
++        <a href="#contact">Contact</a>
++      </nav>
++
++      <a class="header-cta" href="#diagnostic">Diagnostic</a>
++    </header>
++
++    <main>
++      <section class="hero section-band">
++        <div class="hero-media" aria-hidden="true">
++          <img src="public/assets/imported/20260708-234402/002-chatgpt-image-8-juil-2026-23_20_44-1.png" alt="">
++        </div>
++        <div class="container hero-grid">
++          <div class="hero-copy">
++            <p class="eyebrow">Cybersecurite locale & reseaux critiques</p>
++            <h1>Protegez vos systemes. Connectez vos sites. Assurez votre continuite.</h1>
++            <p class="hero-text">INFOSERV2A accompagne les PME, TPE, structures sensibles et sites isoles du Sud Corse avec une approche terrain, claire et directement exploitable.</p>
++            <div class="hero-actions">
++              <a class="button button-primary" href="#diagnostic">Demander un diagnostic</a>
++              <a class="button button-secondary" href="#services">Decouvrir les services</a>
++            </div>
++          </div>
++
++          <aside class="signal-panel" aria-label="Points forts INFOSERV2A">
++            <div>
++              <span class="metric">Sud Corse</span>
++              <span>Interventions locales et reactives</span>
++            </div>
++            <div>
++              <span class="metric">Audit</span>
++              <span>Tests reels, constats clairs, priorites</span>
++            </div>
++            <div>
++              <span class="metric">Continuite</span>
++              <span>Reseaux fiables et plans d'action</span>
++            </div>
++          </aside>
++        </div>
++      </section>
++
++      <section class="trust-strip" aria-label="Domaines couverts">
++        <div class="container trust-grid">
++          <article>
++            <span class="icon-shield" aria-hidden="true"></span>
++            <h2>Audit terrain</h2>
++            <p>Verification sur site, controle des usages et synthese des risques.</p>
++          </article>
++          <article>
++            <span class="icon-wifi" aria-hidden="true"></span>
++            <h2>Wi-Fi professionnel</h2>
++            <p>Couverture fiable, securisee et adaptee aux contraintes metier.</p>
++          </article>
++          <article>
++            <span class="icon-network" aria-hidden="true"></span>
++            <h2>Reseaux critiques</h2>
++            <p>Architecture, segmentation, supervision et maintien operationnel.</p>
++          </article>
++          <article>
++            <span class="icon-satellite" aria-hidden="true"></span>
++            <h2>Sites isoles</h2>
++            <p>Connectivite satellite, liens de secours et resilience locale.</p>
++          </article>
++        </div>
++      </section>
++
++      <section class="section" id="services">
++        <div class="container">
++          <div class="section-heading">
++            <p class="eyebrow">Nos services</p>
++            <h2>Des solutions concretes pour securiser et connecter votre entreprise.</h2>
++          </div>
++
++          <div class="cards-grid">
++            <article class="service-card">
++              <span class="card-number">01</span>
++              <h3>Audit cyber local</h3>
++              <p>Etat des lieux de votre systeme d'information, verification des acces, analyse des vulnerabilites et recommandations priorisees.</p>
++              <a href="#diagnostic">Planifier un audit</a>
++            </article>
++            <article class="service-card">
++              <span class="card-number">02</span>
++              <h3>Reseaux critiques</h3>
++              <p>Conception, securisation et supervision de reseaux fiables pour les activites qui ne peuvent pas s'arreter.</p>
++              <a href="#contact">Parler reseau</a>
++            </article>
++            <article class="service-card">
++              <span class="card-number">03</span>
++              <h3>Wi-Fi professionnel</h3>
++              <p>Deploiement de solutions Wi-Fi performantes, segmentees et adaptees a vos locaux, equipes et visiteurs.</p>
++              <a href="#contact">Evaluer la couverture</a>
++            </article>
++            <article class="service-card">
++              <span class="card-number">04</span>
++              <h3>Starlink & sites isoles</h3>
++              <p>Connexion haut debit par satellite, secours internet, interconnexion de sites et continuités pour zones contraintes.</p>
++              <a href="#contact">Connecter un site</a>
++            </article>
++            <article class="service-card">
++              <span class="card-number">05</span>
++              <h3>Plan d'action securite</h3>
++              <p>Feuille de route realiste, chiffrage, priorisation et accompagnement pour corriger les risques identifies.</p>
++              <a href="#methode">Voir la methode</a>
++            </article>
++            <article class="service-card">
++              <span class="card-number">06</span>
++              <h3>Suivi & amelioration</h3>
++              <p>Revue reguliere, indicateurs simples, controles de configuration et ajustements continus apres intervention.</p>
++              <a href="#contact">Organiser le suivi</a>
++            </article>
++          </div>
++        </div>
++      </section>
++
++      <section class="section section-muted" id="secteurs">
++        <div class="container split-layout">
++          <div>
++            <p class="eyebrow">Secteurs accompagnes</p>
++            <h2>Des environnements varies, des exigences elevees.</h2>
++            <p>INFOSERV2A intervient la ou les contraintes terrain comptent autant que les outils : disponibilite, discretion, reaction rapide et comprehension des usages reels.</p>
++          </div>
++
++          <div class="sector-grid" aria-label="Secteurs">
++            <span>Hotellerie</span>
++            <span>Campings</span>
++            <span>Medical</span>
++            <span>Juridique</span>
++            <span>Immobilier</span>
++            <span>Villas & sites isoles</span>
++          </div>
++        </div>
++      </section>
++
++      <section class="section" id="methode">
++        <div class="container">
++          <div class="section-heading narrow">
++            <p class="eyebrow">Notre methode</p>
++            <h2>Une demarche structuree pour des resultats exploitables.</h2>
++          </div>
++
++          <ol class="steps">
++            <li>
++              <span>1</span>
++              <h3>Ecoute & cadrage</h3>
++              <p>Comprehension du contexte, du perimetre et des objectifs.</p>
++            </li>
++            <li>
++              <span>2</span>
++              <h3>Analyse terrain</h3>
++              <p>Verification technique, cartographie des flux et tests controles.</p>
++            </li>
++            <li>
++              <span>3</span>
++              <h3>Priorisation</h3>
++              <p>Classement des risques selon impact, urgence et complexite.</p>
++            </li>
++            <li>
++              <span>4</span>
++              <h3>Plan d'action</h3>
++              <p>Recommandations claires, realistes et directement planifiables.</p>
++            </li>
++            <li>
++              <span>5</span>
++              <h3>Mise en oeuvre</h3>
++              <p>Accompagnement au deploiement, controle et ajustements.</p>
++            </li>
++          </ol>
++        </div>
++      </section>
++
++      <section class="section local-section" id="apropos">
++        <div class="container local-grid">
++          <div>
++            <p class="eyebrow">Ancrage local</p>
++            <h2>Porto-Vecchio, Sud Corse. Proximite, reactivite, confiance.</h2>
++            <p>Base en Sud Corse, INFOSERV2A accompagne les structures locales avec des interventions de proximite et une relation directe avec le dirigeant ou le responsable technique.</p>
++            <div class="local-facts">
++              <span>Intervention locale</span>
++              <span>Delais courts</span>
++              <span>Confidentialite</span>
++            </div>
++          </div>
++          <figure class="visual-card">
++            <img src="public/assets/imported/20260708-234402/001-chatgpt-image-8-juil-2026-23_19_47.png" alt="Apercu visuel de l'identite INFOSERV2A et de son ancrage en Corse">
++          </figure>
++        </div>
++      </section>
++
++      <section class="section diagnostic-section" id="diagnostic">
++        <div class="container diagnostic-grid">
++          <div>
++            <p class="eyebrow">Diagnostic</p>
++            <h2>Faites le point sur votre securite et vos reseaux.</h2>
++            <p>Envoyez une demande locale. Le formulaire prepare un message recapitulatif dans votre navigateur, sans envoyer de donnees a un service externe.</p>
++          </div>
++
++          <form class="contact-form" id="diagnostic-form">
++            <label>
++              Nom / entreprise
++              <input name="name" type="text" autocomplete="organization" required>
++            </label>
++            <label>
++              Email
++              <input name="email" type="email" autocomplete="email" required>
++            </label>
++            <label>
++              Besoin principal
++              <select name="need" required>
++                <option value="">Selectionner</option>
++                <option>Audit cyber local</option>
++                <option>Reseau critique</option>
++                <option>Wi-Fi professionnel</option>
++                <option>Starlink ou site isole</option>
++                <option>Continuite d'activite</option>
++              </select>
++            </label>
++            <label>
++              Message
++              <textarea name="message" rows="4" placeholder="Contexte, lieu, urgence, contraintes..."></textarea>
++            </label>
++            <button class="button button-primary" type="submit">Preparer la demande</button>
++            <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
++          </form>
++        </div>
++      </section>
++    </main>
++
++    <footer class="site-footer" id="contact">
++      <div class="container footer-grid">
++        <div>
++          <a class="brand footer-brand" href="#top" aria-label="INFOSERV2A accueil">
++            <span class="brand-mark" aria-hidden="true"></span>
++            <span>
++              <strong>INFOSERV2A</strong>
++              <small>Cyber & reseaux</small>
++            </span>
++          </a>
++          <p>Cybersecurite locale et reseaux critiques pour les entreprises du Sud Corse.</p>
++        </div>
++
++        <div>
++          <h2>Navigation</h2>
++          <a href="#services">Services</a>
++          <a href="#secteurs">Secteurs</a>
++          <a href="#methode">Methode</a>
++          <a href="#diagnostic">Diagnostic</a>
++        </div>
++
++        <address>
++          <h2>Contact</h2>
++          <span>Porto-Vecchio, Sud Corse</span>
++          <a href="tel:+33700000000">07 00 00 00 00</a>
++          <a href="mailto:contact@infoserv2a.fr">contact@infoserv2a.fr</a>
++        </address>
++      </div>
++      <div class="footer-bottom container">
++        <span>© 2026 INFOSERV2A. Tous droits reserves.</span>
++        <span>Site local - aucune publication en ligne.</span>
++      </div>
++    </footer>
++
++    <script src="script.js"></script>
++  </body>
++</html>
+
+tokens used
+311 908
+
+Commande terminee.
+**********************
+Fin de la transcription Windows PowerShell
+Heure de fin : 20260709003126
+**********************

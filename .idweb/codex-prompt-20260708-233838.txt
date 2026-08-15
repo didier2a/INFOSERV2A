@@ -1,0 +1,13 @@
+﻿Des photos locales viennent d'etre importees dans le projet.
+
+Manifest :
+C:\Users\didie\OneDrive\Documents\SITE INFOSERV2A 2026\public\assets\imported\20260708-233835\manifest.json
+
+Tache :
+- Lis le manifest.json.
+- Integre les images dans le site selon le contexte existant.
+- Si la demande concerne l'equipe ou les animatrices, remplace les anciennes photos correspondantes.
+- Utilise les chemins relatifs depuis public/assets/imported/.
+- Ajoute des textes alt sobres en francais.
+- Ne deplace pas les fichiers importes.
+- Termine par un resume des fichiers modifies.

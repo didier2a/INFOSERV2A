@@ -1,0 +1,267 @@
+**********************
+PowerShell transcript start
+Start time: 20260709084143
+Username: DESKTOP-1QIFE0G\didie
+RunAs User: DESKTOP-1QIFE0G\didie
+Configuration Name: 
+Machine: DESKTOP-1QIFE0G (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.3.0_x64__8wekyb3d8bbwe\pwsh.dll -NoLogo -NoProfile -ExecutionPolicy Bypass -File C:\Users\didie\OneDrive\Documents\SITE INFOSERV2A 2026\.idweb\run-20260709-084142.ps1
+Process ID: 238896
+PSVersion: 7.6.3
+PSEdition: Core
+GitCommitId: 7.6.3
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+git version 2.55.0.windows.2
+warning: in the working copy of '.idweb/codex-prompt-20260709-052417.txt', LF will be replaced by CRLF the next time Git
+ touches it
+warning: in the working copy of '.idweb/codex-prompt-20260709-052443.txt', LF will be replaced by CRLF the next time Git
+ touches it
+warning: in the working copy of '.idweb/codex-prompt-20260709-052533.txt', LF will be replaced by CRLF the next time Git
+ touches it
+warning: in the working copy of '.idweb/codex-prompt-20260709-052632.txt', LF will be replaced by CRLF the next time Git
+ touches it
+warning: in the working copy of '.idweb/codex-prompt-20260709-052649.txt', LF will be replaced by CRLF the next time Git
+ touches it
+warning: in the working copy of '.idweb/codex-prompt-20260709-052841.txt', LF will be replaced by CRLF the next time Git
+ touches it
+warning: in the working copy of '.idweb/codex-prompt-20260709-053050.txt', LF will be replaced by CRLF the next time Git
+ touches it
+warning: in the working copy of '.idweb/codex-prompt-20260709-053349.txt', LF will be replaced by CRLF the next time Git
+ touches it
+warning: in the working copy of '.idweb/codex-prompt-20260709-055409.txt', LF will be replaced by CRLF the next time Git
+ touches it
+warning: in the working copy of '.idweb/codex-prompt-20260709-055459.txt', LF will be replaced by CRLF the next time Git
+ touches it
+warning: in the working copy of '.idweb/codex-prompt-20260709-083959.txt', LF will be replaced by CRLF the next time Git
+ touches it
+warning: in the working copy of '.idweb/run-20260709-052417.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-052443.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-052533.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-052632.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-052644.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-052649.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-052841.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-053050.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-053350.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-055409.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-055459.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-083959.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of '.idweb/run-20260709-084142.ps1', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of 'a-propos.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'assets/css/style.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'assets/js/main.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'contact.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'cyber.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'index-old.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'index.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'methode.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'reseau.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'secteurs-sensibles.html', LF will be replaced by CRLF the next time Git touches it
+[master fabd004] IDWEB snapshot 2026-07-09 08:41:45
+ 168 files changed, 21453 insertions(+)
+ create mode 100644 .idweb/codex-prompt-20260708-234404.txt
+ create mode 100644 .idweb/codex-prompt-20260708-234515.txt
+ create mode 100644 .idweb/codex-prompt-20260708-235859.txt
+ create mode 100644 .idweb/codex-prompt-20260709-050129.txt
+ create mode 100644 .idweb/codex-prompt-20260709-050715.txt
+ create mode 100644 .idweb/codex-prompt-20260709-051239.txt
+ create mode 100644 .idweb/codex-prompt-20260709-051313.txt
+ create mode 100644 .idweb/codex-prompt-20260709-051659.txt
+ create mode 100644 .idweb/codex-prompt-20260709-052417.txt
+ create mode 100644 .idweb/codex-prompt-20260709-052443.txt
+ create mode 100644 .idweb/codex-prompt-20260709-052533.txt
+ create mode 100644 .idweb/codex-prompt-20260709-052632.txt
+ create mode 100644 .idweb/codex-prompt-20260709-052649.txt
+ create mode 100644 .idweb/codex-prompt-20260709-052841.txt
+ create mode 100644 .idweb/codex-prompt-20260709-053050.txt
+ create mode 100644 .idweb/codex-prompt-20260709-053349.txt
+ create mode 100644 .idweb/codex-prompt-20260709-055409.txt
+ create mode 100644 .idweb/codex-prompt-20260709-055459.txt
+ create mode 100644 .idweb/codex-prompt-20260709-083959.txt
+ create mode 100644 .idweb/run-20260708-234404.log
+ create mode 100644 .idweb/run-20260708-234404.ps1
+ create mode 100644 .idweb/run-20260708-234515.log
+ create mode 100644 .idweb/run-20260708-234515.ps1
+ create mode 100644 .idweb/run-20260708-235859.log
+ create mode 100644 .idweb/run-20260708-235859.ps1
+ create mode 100644 .idweb/run-20260709-050129.log
+ create mode 100644 .idweb/run-20260709-050129.ps1
+ create mode 100644 .idweb/run-20260709-050715.log
+ create mode 100644 .idweb/run-20260709-050715.ps1
+ create mode 100644 .idweb/run-20260709-051239.log
+ create mode 100644 .idweb/run-20260709-051239.ps1
+ create mode 100644 .idweb/run-20260709-051313.log
+ create mode 100644 .idweb/run-20260709-051313.ps1
+ create mode 100644 .idweb/run-20260709-051659.log
+ create mode 100644 .idweb/run-20260709-051659.ps1
+ create mode 100644 .idweb/run-20260709-052417.ps1
+ create mode 100644 .idweb/run-20260709-052443.ps1
+ create mode 100644 .idweb/run-20260709-052533.ps1
+ create mode 100644 .idweb/run-20260709-052632.ps1
+ create mode 100644 .idweb/run-20260709-052644.ps1
+ create mode 100644 .idweb/run-20260709-052649.ps1
+ create mode 100644 .idweb/run-20260709-052841.log
+ create mode 100644 .idweb/run-20260709-052841.ps1
+ create mode 100644 .idweb/run-20260709-053050.log
+ create mode 100644 .idweb/run-20260709-053050.ps1
+ create mode 100644 .idweb/run-20260709-053350.log
+ create mode 100644 .idweb/run-20260709-053350.ps1
+ create mode 100644 .idweb/run-20260709-055409.log
+ create mode 100644 .idweb/run-20260709-055409.ps1
+ create mode 100644 .idweb/run-20260709-055459.log
+ create mode 100644 .idweb/run-20260709-055459.ps1
+ create mode 100644 .idweb/run-20260709-083959.log
+ create mode 100644 .idweb/run-20260709-083959.ps1
+ create mode 100644 .idweb/run-20260709-084142.log
+ create mode 100644 .idweb/run-20260709-084142.ps1
+ create mode 100644 a-propos.html
+ create mode 100644 assets/css/style.css
+ create mode 100644 assets/images/hero-sud-corse-network.png
+ create mode 100644 assets/images/local-sud-corse-network.png
+ create mode 100644 assets/images/logo-infoserv2a.png
+ create mode 100644 assets/js/main.js
+ create mode 100644 contact.html
+ create mode 100644 cyber.html
+ create mode 100644 index-old.html
+ create mode 100644 index.html
+ create mode 100644 mentions-legales.html
+ create mode 100644 methode.html
+ create mode 100644 politique-confidentialite.html
+ create mode 100644 public/assets/imported/20260708-234402/001-chatgpt-image-8-juil-2026-23_19_47.png
+ create mode 100644 public/assets/imported/20260708-234402/002-chatgpt-image-8-juil-2026-23_20_44-1.png
+ create mode 100644 public/assets/imported/20260708-234402/003-chatgpt-image-8-juil-2026-23_20_44-2.png
+ create mode 100644 public/assets/imported/20260708-234402/004-chatgpt-image-8-juil-2026-23_20_45-3.png
+ create mode 100644 public/assets/imported/20260708-234402/005-chatgpt-image-8-juil-2026-23_20_45-4.png
+ create mode 100644 public/assets/imported/20260708-234402/006-chatgpt-image-8-juil-2026-23_20_47-5.png
+ create mode 100644 public/assets/imported/20260708-234402/007-chatgpt-image-8-juil-2026-23_20_48-6.png
+ create mode 100644 public/assets/imported/20260708-234402/manifest.json
+ create mode 100644 public/assets/imported/20260709-050127/001-chatgpt-image-8-juil-2026-23_19_47.png
+ create mode 100644 public/assets/imported/20260709-050127/002-chatgpt-image-8-juil-2026-23_20_44-1.png
+ create mode 100644 public/assets/imported/20260709-050127/003-chatgpt-image-8-juil-2026-23_20_44-2.png
+ create mode 100644 public/assets/imported/20260709-050127/004-chatgpt-image-8-juil-2026-23_20_45-3.png
+ create mode 100644 public/assets/imported/20260709-050127/005-chatgpt-image-8-juil-2026-23_20_45-4.png
+ create mode 100644 public/assets/imported/20260709-050127/006-chatgpt-image-8-juil-2026-23_20_47-5.png
+ create mode 100644 public/assets/imported/20260709-050127/007-chatgpt-image-8-juil-2026-23_20_48-6.png
+ create mode 100644 public/assets/imported/20260709-050127/manifest.json
+ create mode 100644 public/assets/imported/20260709-050712/001-01-accueil-index-reference.png
+ create mode 100644 public/assets/imported/20260709-050712/002-02-cyber-reference.png
+ create mode 100644 public/assets/imported/20260709-050712/003-03-reseau-reference.png
+ create mode 100644 public/assets/imported/20260709-050712/004-04-secteurs-sensibles-reference.png
+ create mode 100644 public/assets/imported/20260709-050712/005-05-methode-reference.png
+ create mode 100644 public/assets/imported/20260709-050712/006-06-a-propos-reference.png
+ create mode 100644 public/assets/imported/20260709-050712/007-07-contact-reference.png
+ create mode 100644 public/assets/imported/20260709-050712/manifest.json
+ create mode 100644 public/assets/imported/20260709-052415/01-accueil-index-reference.png
+ create mode 100644 public/assets/imported/20260709-052415/02-cyber-reference.png
+ create mode 100644 public/assets/imported/20260709-052415/03-reseau-reference.png
+ create mode 100644 public/assets/imported/20260709-052415/04-secteurs-sensibles-reference.png
+ create mode 100644 public/assets/imported/20260709-052415/05-methode-reference.png
+ create mode 100644 public/assets/imported/20260709-052415/06-a-propos-reference.png
+ create mode 100644 public/assets/imported/20260709-052415/07-contact-reference.png
+ create mode 100644 public/assets/imported/20260709-052415/manifest.json
+ create mode 100644 public/assets/imported/20260709-052438/01-accueil-index-reference.png
+ create mode 100644 public/assets/imported/20260709-052438/02-cyber-reference.png
+ create mode 100644 public/assets/imported/20260709-052438/03-reseau-reference.png
+ create mode 100644 public/assets/imported/20260709-052438/04-secteurs-sensibles-reference.png
+ create mode 100644 public/assets/imported/20260709-052438/05-methode-reference.png
+ create mode 100644 public/assets/imported/20260709-052438/06-a-propos-reference.png
+ create mode 100644 public/assets/imported/20260709-052438/07-contact-reference.png
+ create mode 100644 public/assets/imported/20260709-052438/manifest.json
+ create mode 100644 public/assets/imported/20260709-052529/01-accueil-index-reference.png
+ create mode 100644 public/assets/imported/20260709-052529/02-cyber-reference.png
+ create mode 100644 public/assets/imported/20260709-052529/03-reseau-reference.png
+ create mode 100644 public/assets/imported/20260709-052529/04-secteurs-sensibles-reference.png
+ create mode 100644 public/assets/imported/20260709-052529/05-methode-reference.png
+ create mode 100644 public/assets/imported/20260709-052529/06-a-propos-reference.png
+ create mode 100644 public/assets/imported/20260709-052529/07-contact-reference.png
+ create mode 100644 public/assets/imported/20260709-052529/manifest.json
+ create mode 100644 public/assets/imported/20260709-052631/01-accueil-index-reference.png
+ create mode 100644 public/assets/imported/20260709-052631/02-cyber-reference.png
+ create mode 100644 public/assets/imported/20260709-052631/03-reseau-reference.png
+ create mode 100644 public/assets/imported/20260709-052631/04-secteurs-sensibles-reference.png
+ create mode 100644 public/assets/imported/20260709-052631/05-methode-reference.png
+ create mode 100644 public/assets/imported/20260709-052631/06-a-propos-reference.png
+ create mode 100644 public/assets/imported/20260709-052631/07-contact-reference.png
+ create mode 100644 public/assets/imported/20260709-052631/manifest.json
+ create mode 100644 public/assets/imported/20260709-052648/01-accueil-index-reference.png
+ create mode 100644 public/assets/imported/20260709-052648/02-cyber-reference.png
+ create mode 100644 public/assets/imported/20260709-052648/03-reseau-reference.png
+ create mode 100644 public/assets/imported/20260709-052648/04-secteurs-sensibles-reference.png
+ create mode 100644 public/assets/imported/20260709-052648/05-methode-reference.png
+ create mode 100644 public/assets/imported/20260709-052648/06-a-propos-reference.png
+ create mode 100644 public/assets/imported/20260709-052648/07-contact-reference.png
+ create mode 100644 public/assets/imported/20260709-052648/manifest.json
+ create mode 100644 public/assets/imported/20260709-052839/01-accueil-index-reference.png
+ create mode 100644 public/assets/imported/20260709-052839/02-cyber-reference.png
+ create mode 100644 public/assets/imported/20260709-052839/03-reseau-reference.png
+ create mode 100644 public/assets/imported/20260709-052839/04-secteurs-sensibles-reference.png
+ create mode 100644 public/assets/imported/20260709-052839/05-methode-reference.png
+ create mode 100644 public/assets/imported/20260709-052839/06-a-propos-reference.png
+ create mode 100644 public/assets/imported/20260709-052839/07-contact-reference.png
+ create mode 100644 public/assets/imported/20260709-052839/manifest.json
+ create mode 100644 public/assets/imported/20260709-053049/01-accueil-index-reference.png
+ create mode 100644 public/assets/imported/20260709-053049/02-cyber-reference.png
+ create mode 100644 public/assets/imported/20260709-053049/03-reseau-reference.png
+ create mode 100644 public/assets/imported/20260709-053049/04-secteurs-sensibles-reference.png
+ create mode 100644 public/assets/imported/20260709-053049/05-methode-reference.png
+ create mode 100644 public/assets/imported/20260709-053049/06-a-propos-reference.png
+ create mode 100644 public/assets/imported/20260709-053049/07-contact-reference.png
+ create mode 100644 public/assets/imported/20260709-053049/manifest.json
+ create mode 100644 public/assets/imported/20260709-055408/01-accueil-index-reference.png
+ create mode 100644 public/assets/imported/20260709-055408/02-cyber-reference.png
+ create mode 100644 public/assets/imported/20260709-055408/03-reseau-reference.png
+ create mode 100644 public/assets/imported/20260709-055408/04-secteurs-sensibles-reference.png
+ create mode 100644 public/assets/imported/20260709-055408/05-methode-reference.png
+ create mode 100644 public/assets/imported/20260709-055408/06-a-propos-reference.png
+ create mode 100644 public/assets/imported/20260709-055408/07-contact-reference.png
+ create mode 100644 public/assets/imported/20260709-055408/manifest.json
+ create mode 100644 public/assets/imported/20260709-083956/01-accueil-index-reference.png
+ create mode 100644 public/assets/imported/20260709-083956/02-cyber-reference.png
+ create mode 100644 public/assets/imported/20260709-083956/03-reseau-reference.png
+ create mode 100644 public/assets/imported/20260709-083956/04-secteurs-sensibles-reference.png
+ create mode 100644 public/assets/imported/20260709-083956/05-methode-reference.png
+ create mode 100644 public/assets/imported/20260709-083956/06-a-propos-reference.png
+ create mode 100644 public/assets/imported/20260709-083956/07-contact-reference.png
+ create mode 100644 public/assets/imported/20260709-083956/manifest.json
+ create mode 100644 reseau.html
+ create mode 100644 script.js
+ create mode 100644 secteurs-sensibles.html
+ create mode 100644 styles.css
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+        modified:   .idweb/run-20260709-084142.log
+        modified:   a-propos.html
+        modified:   contact.html
+        modified:   cyber.html
+        modified:   methode.html
+        modified:   reseau.html
+        modified:   secteurs-sensibles.html
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+Commande terminee.
+**********************
+PowerShell transcript end
+End time: 20260709084146
+**********************

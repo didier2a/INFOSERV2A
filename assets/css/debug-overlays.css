@@ -1,0 +1,28 @@
+/* IDWEB Pixel Fidelity Debug Overlay
+   Usage : ajoute ?ref=1 ou ?debugRef=1 a l'URL de la page.
+   Exemple : index.html?ref=1
+   Le calque est DESACTIVE par defaut et sert uniquement au controle visuel.
+*/
+body.idweb-debug-reference::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 50%;
+  transform: translateX(-50%);
+  width: min(100vw, 1440px);
+  min-height: 100%;
+  background-repeat: no-repeat;
+  background-position: top center;
+  background-size: 1440px auto;
+  opacity: var(--idweb-debug-opacity, 0.28);
+  pointer-events: none;
+  z-index: 2147483647;
+  mix-blend-mode: normal;
+}
+body.idweb-debug-reference { position: relative; }
+body.idweb-debug-reference.idweb-ref-index::after { background-image: url('../images/references/01-accueil-index-reference.png'); }
+body.idweb-debug-reference.idweb-ref-cyber::after { background-image: url('../images/references/02-cyber-reference.png'); }
+body.idweb-debug-reference.idweb-ref-reseau::after { background-image: url('../images/references/03-reseau-reference.png'); }
+body.idweb-debug-reference.idweb-ref-secteurs::after { background-image: url('../images/references/04-secteurs-sensibles-reference.png'); }
+body.idweb-debug-reference.idweb-ref-methode::after { background-image: url('../images/references/05-methode-reference.png'); }
+body.idweb-debug-reference.idweb-ref-apropos::after { background-image: url('../images/references/06-a-propos-reference.png'); }
+body.idweb-debug-reference.idweb-ref-contact::after { background-image: url('../images/references/07-contact-reference.png'); }

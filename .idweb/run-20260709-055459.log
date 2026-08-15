@@ -1,0 +1,35 @@
+**********************
+PowerShell transcript start
+Start time: 20260709055500
+Username: DESKTOP-1QIFE0G\didie
+RunAs User: DESKTOP-1QIFE0G\didie
+Configuration Name: 
+Machine: DESKTOP-1QIFE0G (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.3.0_x64__8wekyb3d8bbwe\pwsh.dll -NoLogo -NoProfile -ExecutionPolicy Bypass -File C:\Users\didie\OneDrive\Documents\SITE INFOSERV2A 2026\.idweb\run-20260709-055459.ps1
+Process ID: 27592
+PSVersion: 7.6.3
+PSEdition: Core
+GitCommitId: 7.6.3
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Recherche de codex...
+C:\Users\didie\AppData\Local\Programs\OpenAI\Codex\bin\codex.exe
+
+Version Codex :
+codex-cli 0.143.0
+
+Lancement de codex exec...
+Fichier prompt : C:\Users\didie\OneDrive\Documents\SITE INFOSERV2A 2026\.idweb\codex-prompt-20260709-055459.txt
+Mode prompt : lecture via stdin pour eviter l'erreur Windows 'nom de fichier ou extension trop long'.
+
+
+Commande terminee.
+**********************
+PowerShell transcript end
+End time: 20260709060559
+**********************

@@ -1,0 +1,1294 @@
+﻿Modifie ce site local selon la demande suivante :
+
+MISSION CODEX — CORRECTION PIXEL FAITHFUL DU SITE INFOSERV2A À PARTIR DES 7 PNG DE RÉFÉRENCE RENOMMÉS
+
+Tu dois modifier le site existant INFOSERV2A pour le rendre beaucoup plus fidèle visuellement aux 7 maquettes PNG fournies dans le dossier images du projet.
+
+Objectif :
+Ne pas recréer un site librement inspiré.
+Ne pas refaire une version générique.
+Ne pas réinterpréter la direction artistique.
+Ne pas générer une nouvelle charte.
+Ne pas inventer de nouveaux contenus.
+Tu dois reconstruire les pages HTML/CSS existantes pour qu’elles correspondent le plus fidèlement possible aux 7 PNG de référence, page par page, section par section, bloc par bloc.
+
+On vise un rendu “pixel faithful” professionnel :
+- même structure visuelle ;
+- mêmes sections ;
+- mêmes titres ;
+- même hiérarchie ;
+- mêmes espacements ;
+- mêmes grilles ;
+- mêmes couleurs ;
+- même ambiance ;
+- mêmes boutons ;
+- même densité visuelle ;
+- même position générale des blocs ;
+- même logique de header et de footer ;
+- même ton premium bleu nuit / cyan.
+
+Le résultat doit rester un vrai site web :
+- texte HTML réel ;
+- navigation fonctionnelle ;
+- responsive ;
+- SEO minimal propre ;
+- accessibilité correcte ;
+- fichiers maintenables ;
+- pas de page figée en simple image pleine page.
+
+==================================================
+1. DOSSIER PROJET
+==================================================
+
+Tu travailles dans le dossier projet actuellement ouvert par IDWEB :
+
+C:\Users\didie\OneDrive\Documents\SITE INFOSERV2A 2026
+
+Le site existe déjà. Tu dois le corriger, pas repartir en version générique.
+
+Pages à corriger :
+
+- index.html
+- cyber.html
+- reseau.html
+- secteurs-sensibles.html
+- methode.html
+- a-propos.html
+- contact.html
+
+Fichiers communs à corriger si nécessaire :
+
+- assets/css/style.css
+- assets/js/main.js
+- assets/images/
+
+==================================================
+2. RÉFÉRENCES VISUELLES OFFICIELLES
+==================================================
+
+IMPORTANT — LES 7 PNG DE RÉFÉRENCE ONT ÉTÉ RENOMMÉS EXPLICITEMENT.
+
+Utiliser cette correspondance stricte :
+
+- index.html doit reproduire visuellement 01-accueil-index-reference.png
+- cyber.html doit reproduire visuellement 02-cyber-reference.png
+- reseau.html doit reproduire visuellement 03-reseau-reference.png
+- secteurs-sensibles.html doit reproduire visuellement 04-secteurs-sensibles-reference.png
+- methode.html doit reproduire visuellement 05-methode-reference.png
+- a-propos.html doit reproduire visuellement 06-a-propos-reference.png
+- contact.html doit reproduire visuellement 07-contact-reference.png
+
+Ces PNG sont les maquettes officielles. Le site HTML/CSS doit être reconstruit page par page pour coller à ces références le plus fidèlement possible.
+
+IMPORTANT :
+Les PNG doivent être utilisés comme maquettes de référence.
+Ne pas simplement les afficher en image pleine page.
+Reconstruire le rendu en HTML/CSS.
+Le texte doit rester sélectionnable, lisible, indexable et modifiable.
+
+==================================================
+3. NIVEAU DE FIDÉLITÉ ATTENDU
+==================================================
+
+Le site généré précédemment est trop libre. Il doit maintenant être corrigé pour ressembler beaucoup plus aux PNG.
+
+Tu dois ajuster précisément :
+
+- largeur du conteneur principal ;
+- hauteur du header ;
+- disposition du menu ;
+- taille du logo ;
+- largeur des sections ;
+- hauteur des hero sections ;
+- position du bloc texte dans le hero ;
+- position du visuel ou fond graphique ;
+- taille des H1 ;
+- interlignage ;
+- largeur des paragraphes ;
+- placement des CTA ;
+- grilles de cartes ;
+- marges entre sections ;
+- rayons des cartes ;
+- bordures cyan ;
+- effets lumineux ;
+- couleurs de fond ;
+- densité des blocs ;
+- footer ;
+- responsive mobile.
+
+Ne pas faire un site “inspiré de”.
+Faire une intégration fidèle.
+
+==================================================
+4. CONSIGNE ABSOLUE SUR LES TEXTES
+==================================================
+
+Tu dois conserver les textes principaux du site INFOSERV2A déjà définis.
+
+Ne pas reformuler librement.
+Ne pas remplacer par du texte générique.
+Ne pas inventer de nouvelles accroches marketing.
+Ne pas raccourcir les titres.
+Ne pas modifier les intitulés des onglets.
+Ne pas transformer le positionnement de marque.
+
+Reprendre ou rétablir les textes suivants.
+
+--------------------------------------------------
+PAGE ACCUEIL — index.html
+Référence : 01-accueil-index-reference.png
+--------------------------------------------------
+
+H1 :
+Cybersécurité locale et réseaux critiques pour les entreprises du Sud Corse.
+
+Sous-texte :
+Audit local, vérification terrain et solutions réseau performantes pour protéger vos données, vos sites et assurer la continuité de vos activités, même dans les environnements les plus exigeants.
+
+CTA :
+Demander un diagnostic
+Découvrir nos services
+
+Blocs preuves :
+Audit terrain
+Vérification sur site et tests réels.
+
+Wi-Fi professionnel
+Réseaux fiables, sécurisés et performants.
+
+Starlink
+Connectivité satellite haut débit.
+
+Continuité d’activité
+Résilience et maintien opérationnel.
+
+Section :
+Nos services
+
+Titre :
+Des solutions sur mesure pour sécuriser et connecter votre entreprise.
+
+Cartes :
+Audit cyber local
+Audit initial, tests d’intrusion, analyse des vulnérabilités et évaluation des risques sur site.
+
+Réseaux critiques
+Conception, sécurisation et supervision de réseaux filaires, Wi-Fi et sites distants.
+
+Wi-Fi professionnel
+Déploiement de solutions Wi-Fi sécurisées, performantes et adaptées à vos environnements.
+
+Starlink & sites isolés
+Connexion haut débit par satellite pour sites isolés, continuité et secours opérationnel.
+
+Section :
+Pourquoi INFOSERV2A ?
+
+Titre :
+Un partenaire local, fiable et engagé à vos côtés.
+
+Arguments :
+Présence locale
+Basés en Sud Corse, proches de vos sites et disponibles rapidement.
+
+Expertise terrain
+Vérification sur site et solutions adaptées aux contraintes réelles du terrain.
+
+Approche dirigeant
+Vision claire, risques maîtrisés et décisions éclairées pour votre organisation.
+
+Suivi pragmatique
+Accompagnement continu, rapports synthétiques et actions concrètes.
+
+Section :
+Secteurs accompagnés
+
+Titre :
+Des environnements variés, des exigences élevées.
+
+Secteurs :
+Hôtellerie
+Campings
+Médical
+Juridique
+Immobilier
+Villas & sites isolés
+
+Section :
+Notre méthode
+
+Titre :
+Une démarche structurée pour des résultats concrets.
+
+Étapes :
+1. Audit
+Analyse de votre environnement, tests et vérification terrain.
+
+2. Cartographie
+Cartographie des actifs, flux et dépendances critiques.
+
+3. Rapport
+Rapport clair avec constats, niveaux de risque et priorités.
+
+4. Plan d’action
+Recommandations et plan d’action réalisable.
+
+5. Suivi
+Mise en œuvre, suivi régulier et amélioration continue.
+
+Section :
+Ancrage local
+
+Titre :
+Porto-Vecchio, Sud Corse. Proximité, réactivité, confiance.
+
+Texte :
+INFOSERV2A accompagne les PME, TPE et structures sensibles du Sud Corse. Interventions locales, connaissance du terrain et solutions fiables pour protéger vos activités et vos données.
+
+CTA final :
+Sécurisez vos systèmes. Connectez vos sites. Assurez votre continuité.
+
+Bouton :
+Demander un diagnostic
+
+--------------------------------------------------
+PAGE CYBER — cyber.html
+Référence : 02-cyber-reference.png
+--------------------------------------------------
+
+H1 :
+Protégez votre entreprise. Maîtrisez vos risques. Restez opérationnels.
+
+Sous-texte :
+INFOSERV2A accompagne les entreprises du Sud Corse avec des services cyber de proximité, des expertises concrètes et une approche terrain orientée performance et résilience.
+
+CTA :
+Demander un diagnostic
+Découvrir nos services
+
+Preuves :
+Expertise locale
+Interventions sur site en Sud Corse.
+
+Réactivité
+Délai d’intervention court, relation directe.
+
+Approche terrain
+Vérifications réelles, preuves concrètes.
+
+Confidentialité
+Discrétion, respect et sécurité des données.
+
+Section :
+Nos services cyber
+
+Titre :
+Des expertises complètes pour sécuriser durablement votre système d’information.
+
+Cartes :
+Audit cyber local
+Évaluation complète de votre système d’information, de vos procédures et de vos usages, avec vérifications sur site.
+
+Tests d’intrusion raisonnés
+Tests ciblés et maîtrisés pour identifier les vecteurs d’attaque réels et mesurer l’exposition.
+
+Analyse de vulnérabilités
+Scan approfondi de votre infrastructure et applications. Priorisation des failles et impacts.
+
+Cartographie des risques
+Identification et hiérarchisation des actifs critiques, menaces et impacts métiers.
+
+Vérification terrain
+Contrôles physiques et techniques sur site : sécurité des accès, équipements, sauvegardes, configurations.
+
+Continuité d’activité
+Évaluation de votre résilience, scénarios de reprise et tests de rétablissement.
+
+Sensibilisation des collaborateurs
+Sessions adaptées à vos équipes pour réduire les risques humains et renforcer les bons réflexes.
+
+Plan d’action
+Feuille de route priorisée, chiffrée et réaliste pour corriger les risques identifiés.
+
+Suivi et amélioration continue
+Accompagnement dans la durée, revues régulières et indicateurs de sécurité.
+
+Section :
+Une approche de confiance
+
+Titre :
+Proximité, compétence et engagement pour votre sérénité.
+
+Arguments :
+100 %
+Interventions locales en Sud Corse.
+
+15+
+Années d’expérience terrain.
+
+Confidentialité
+Engagement strict et conformité RGPD.
+
+Résultats concrets
+Recommandations claires, mesurables et actionnables.
+
+Section :
+Notre démarche
+
+Titre :
+Une méthode structurée, des livrables utiles.
+
+Étapes :
+1. Écoute & cadrage
+Compréhension de vos enjeux, périmètre et objectifs.
+
+2. Analyse & investigation
+Collecte d’informations, analyses techniques et terrain.
+
+3. Évaluation & priorisation
+Évaluation des risques et hiérarchisation des actions.
+
+4. Recommandations
+Plan d’action clair, réaliste et priorisé.
+
+5. Mise en œuvre
+Accompagnement dans le déploiement des actions.
+
+6. Suivi & amélioration
+Mesure, ajustements et amélioration continue.
+
+Section :
+Des engagements, des résultats
+
+Bénéfices :
+Réduction des risques et des incidents
+Conformité réglementaire et sectorielle
+Protection de vos données et de votre réputation
+Résilience opérationnelle renforcée
+
+CTA final :
+Faites le point sur votre sécurité. Un diagnostic local, rapide et sans engagement.
+
+--------------------------------------------------
+PAGE RÉSEAU — reseau.html
+Référence : 03-reseau-reference.png
+--------------------------------------------------
+
+H1 :
+Des réseaux critiques fiables et performants partout en Sud Corse.
+
+Sous-texte :
+INFOSERV2A conçoit, déploie et sécurise vos infrastructures réseau pour garantir une connectivité continue, rapide et résiliente, même dans les environnements les plus exigeants.
+
+CTA :
+Demander un diagnostic
+Découvrir nos services
+
+Preuves :
+Expertise locale
+Basée en Sud Corse.
+
+Interventions rapides
+Délais d’intervention optimisés.
+
+Infrastructures critiques
+Disponibilité et résilience.
+
+Accompagnement sur-mesure
+De l’audit à l’exploitation.
+
+Section :
+Nos offres réseau
+
+Titre :
+Une connectivité sécurisée, performante et évolutive.
+
+Cartes :
+Wi-Fi professionnel
+Déploiement de solutions Wi-Fi sécurisées, performantes et adaptées à vos environnements.
+
+Réseaux critiques
+Conception, industrialisation et supervision de réseaux hautement disponibles.
+
+Architecture réseau
+Audit, conception et ingénierie d’architectures réseau scalables et sécurisées.
+
+Sécurisation réseau
+Segmentation, filtrage, VPN, pare-feu nouvelle génération et contrôle d’accès.
+
+Supervision & NOC
+Supervision proactive, alerting, analyses et reporting en temps réel.
+
+Ponts radio
+Liaisons point-à-point et point-à-multipoint pour sites distants et interconnexions.
+
+Starlink & satellites
+Intégration de solutions Starlink pour une connectivité haut débit partout.
+
+Connectivité sites isolés
+Solutions autonomes et hybrides pour sites sans accès à la fibre ou à l’ADSL.
+
+Continuité réseau
+Redondance, bascule automatique, PRA/PCA et maintien en condition opérationnelle.
+
+Optimisation des performances
+Analyse, tuning et optimisation des flux pour des réseaux rapides et stables.
+
+Section :
+Déploiements en Sud Corse
+
+Titre :
+Des infrastructures réseau adaptées à tous les terrains.
+
+Cas d’usage :
+Collectivités & mairies
+Réseaux fiables pour les services publics et la vie locale.
+
+Ports & capitaineries
+Connexion sécurisée pour vos équipements et usagers.
+
+Sites industriels
+Réseaux critiques sécurisés pour vos outils de production.
+
+Hôtellerie & tourisme
+Wi-Fi haut débit et connectivité ininterrompue pour vos clients.
+
+Sites isolés & terrains difficiles
+Connectivité fiable là où les réseaux traditionnels n’atteignent pas.
+
+Section :
+Pourquoi choisir INFOSERV2A ?
+
+Titre :
+Un partenaire réseau de confiance.
+
+Arguments :
+Expertise locale
+Connaissance terrain de la Sud Corse.
+
+Solutions sur-mesure
+Conçues pour vos usages et contraintes.
+
+Sécurité intégrée
+Des réseaux conçus secure by design.
+
+Haute disponibilité
+Continuité et résilience maximales.
+
+Performance mesurable
+Des résultats concrets et durables.
+
+Section :
+Notre méthode réseau
+
+Titre :
+Une démarche éprouvée pour des réseaux fiables et durables.
+
+Étapes :
+1. Analyse
+Audit de l’existant et recueil des besoins.
+
+2. Conception
+Architecture, choix technologiques et plan d’adressage.
+
+3. Déploiement
+Installation, configuration et sécurisation.
+
+4. Tests & validation
+Tests de charge, bascule et conformité.
+
+5. Supervision
+Surveillance, alerting et reporting en continu.
+
+6. Amélioration
+Optimisations et évolutions continues.
+
+CTA final :
+Besoin d’un réseau fiable et performant en Sud Corse ? Parlons-en.
+
+--------------------------------------------------
+PAGE SECTEURS SENSIBLES — secteurs-sensibles.html
+Référence : 04-secteurs-sensibles-reference.png
+--------------------------------------------------
+
+H1 :
+Des secteurs exigeants. Des solutions sur mesure.
+
+Sous-texte :
+INFOSERV2A accompagne les entreprises et structures évoluant dans des environnements sensibles, où la disponibilité, la confidentialité et la résilience sont essentielles.
+
+CTA :
+Échanger avec un expert
+
+Preuves :
+Protection renforcée
+des données, des accès et des infrastructures.
+
+Continuité garantie
+de vos activités même en cas d’incident.
+
+Accompagnement local
+de proximité, réactif et engagé.
+
+Section :
+Des secteurs au cœur de nos expertises
+
+Secteurs :
+Hôtellerie
+Hôtels, résidences, chambres d’hôtes.
+
+Campings
+Campings, villages vacances, sites de loisirs.
+
+Médical
+Cabinets, cliniques, maisons de santé, laboratoires.
+
+Juridique
+Cabinets d’avocats, études notariales, huissiers.
+
+Immobilier
+Agences, promoteurs, administrateurs de biens.
+
+Villas & sites isolés
+Propriétés privées, sites éloignés ou autonomes.
+
+Bloc :
+Et plus largement : PME / TPE à fortes contraintes opérationnelles
+
+Texte :
+Activités industrielles, artisanales, logistiques, services… Des environnements critiques qui ne peuvent pas s’arrêter.
+
+Section :
+Contraintes & besoins par secteur
+
+Hôtellerie :
+Saisonnalité et pics d’activité
+Wi-Fi invités sécurisé
+PMS et données clients
+Paiements sécurisés
+
+Campings :
+Environnements ouverts
+Multiplicité des accès
+Saisonnalité & mobilité
+Continuité des services
+
+Médical :
+Données de santé sensibles
+Conformité RGPD / HDS
+Matériels connectés
+Continuité des soins
+
+Juridique :
+Données confidentielles
+Accès distants sécurisés
+Archivage & traçabilité
+Conformité réglementaire
+
+Immobilier :
+Données clients & biens
+Accès partagés & distants
+Transactions sécurisées
+Disponibilité des outils
+
+Villas & sites isolés :
+Connexions fiables
+Sécurité des accès
+Autonomie énergétique
+Surveillance à distance
+
+Section :
+Exemples d’exigences critiques
+
+Exigences :
+Sécurité des données et des accès
+Réseaux fiables et performants
+Sauvegardes & PRA plans de reprise
+Supervision 24/7 et détection proactive
+Conformité RGPD, HDS et réglementations
+Résilience & continuité d’activité
+
+Section :
+Pourquoi choisir un partenaire local ?
+
+Arguments :
+Proximité & réactivité
+Interventions rapides sur site et meilleure compréhension de vos enjeux locaux.
+
+Connaissance du terrain
+Spécificités insulaires, contraintes de connectivité, environnement et réglementation.
+
+Accompagnement humain
+Une relation de confiance, des échanges clairs et un suivi personnalisé.
+
+Engagement & disponibilité
+Une équipe impliquée, joignable et mobilisée à chaque étape.
+
+Partenaire de long terme
+Nous construisons des solutions durables qui évoluent avec votre activité.
+
+Ancrage local, vision globale
+Expertises de pointe et solutions adaptées à votre réalité.
+
+CTA final :
+Votre secteur a ses contraintes. Nos solutions font la différence.
+
+--------------------------------------------------
+PAGE MÉTHODE — methode.html
+Référence : 05-methode-reference.png
+--------------------------------------------------
+
+H1 :
+Une méthode locale, structurée et orientée résultats.
+
+Sous-texte :
+INFOSERV2A accompagne les entreprises du Sud Corse avec une démarche rigoureuse en 6 étapes clés, de l’audit initial au suivi local continu.
+
+CTA :
+Demander un diagnostic
+Découvrir nos services
+
+Section :
+Notre processus en 6 étapes
+
+Titre :
+Une démarche structurée, transparente et mesurable.
+
+Étapes :
+1. Audit
+Analyse de votre environnement, identification des vulnérabilités et des risques critiques.
+
+2. Cartographie
+Cartographie de votre SI, des flux, des actifs et des dépendances.
+
+3. Rapport
+Remise d’un rapport détaillé, hiérarchisé et compréhensible, avec preuves et priorités.
+
+4. Plan d’action
+Définition d’un plan d’actions priorisé, chiffré et adapté à vos objectifs métiers.
+
+5. Déploiement ou remédiation
+Mise en œuvre des solutions techniques et organisationnelles. Intégration et sécurisation.
+
+6. Suivi local
+Suivi, supervision et amélioration continue avec un interlocuteur de proximité.
+
+Section :
+Ce que vous recevez
+
+Titre :
+Des livrables concrets pour décider et avancer.
+
+Livrables :
+Rapport d’audit
+Synthèse exécutive
+Analyse des risques
+Recommandations initiales
+
+Cartographie du SI
+Inventaire des actifs
+Flux et interconnexions
+Dépendances critiques
+
+Rapport détaillé
+Preuves et constats
+Scénarios de risques
+Priorisation des actions
+
+Plan d’action
+Actions priorisées
+Chiffrage & ROI
+Planning de mise en œuvre
+
+Guide de remédiation
+Solutions techniques
+Bonnes pratiques
+Procédures associées
+
+Suivi & reporting
+Indicateurs clés KPI
+Tableaux de bord
+Points de suivi réguliers
+
+Section :
+Nos principes d’intervention
+
+Titre :
+Une approche locale, rigoureuse et indépendante.
+
+Principes :
+Proximité locale
+Basés en Sud Corse, proches de vos sites et disponibles rapidement.
+
+Indépendance
+Aucun lien éditeur. Nos recommandations sont objectives et adaptées.
+
+Confidentialité
+Vos données sont traitées avec le plus haut niveau de confidentialité.
+
+Exigence
+Méthodes reconnues et outils professionnels pour des résultats fiables.
+
+Pédagogie
+Nous rendons la sécurité compréhensible pour vous et vos équipes.
+
+Bandeau :
+Vous apporter clarté, maîtrise et sérénité à chaque étape.
+
+Arguments :
+Réactivité
+Réponse rapide et délais respectés.
+
+Transparence
+Méthode claire et reporting régulier.
+
+Résultats
+Actions concrètes et mesurables.
+
+CTA final :
+Prêt à sécuriser votre entreprise ? Parlons de vos enjeux.
+
+--------------------------------------------------
+PAGE À PROPOS — a-propos.html
+Référence : 06-a-propos-reference.png
+--------------------------------------------------
+
+H1 :
+Expert local en cybersécurité et réseaux critiques en Corse du Sud.
+
+Sous-texte :
+INFOSERV2A accompagne les entreprises, collectivités et opérateurs dans la sécurisation de leurs systèmes critiques, de leurs réseaux et de leurs données. Une expertise de terrain, une approche pragmatique, une proximité qui fait la différence.
+
+CTA :
+Échanger avec nos experts
+Découvrir notre méthode
+
+Preuves :
+Proximité & réactivité
+Basés en Corse du Sud, interventions rapides.
+
+Expertise terrain
+Plus de 15 ans d’expérience sur les systèmes critiques.
+
+Approche pragmatique
+Des solutions adaptées à vos enjeux réels.
+
+Confidentialité & confiance
+Discrétion, rigueur et engagement total.
+
+Section :
+Notre mission
+
+Titre :
+Sécuriser ce qui compte vraiment.
+
+Texte :
+Notre mission est claire : protéger les systèmes critiques et les données des organisations locales pour garantir leur continuité, leur résilience et leur souveraineté numérique.
+
+Cartes :
+Anticiper les risques
+Identifier, évaluer et anticiper les menaces pour garder une longueur d’avance.
+
+Renforcer la résilience
+Sécuriser les infrastructures et les organisations face aux cybermenaces et incidents.
+
+Accompagner durablement
+Être un partenaire de confiance dans la durée, aux côtés des décideurs et des équipes.
+
+Citation :
+Nous croyons en une cybersécurité utile, concrète et accessible. Au service des entreprises et des territoires que nous connaissons, avec l’exigence et l’humilité du terrain.
+
+Signature :
+L’équipe INFOSERV2A
+
+Section :
+Nos valeurs
+
+Titre :
+Des valeurs fortes, au service de votre sécurité.
+
+Valeurs :
+Intégrité
+Nous agissons avec éthique, transparence et indépendance dans chaque mission.
+
+Proximité
+Une équipe locale, disponible et à l’écoute pour des relations de confiance.
+
+Excellence
+Des expertises pointues et une veille permanente pour des solutions fiables.
+
+Pragmatisme
+Des recommandations réalistes, priorisées et alignées sur vos objectifs métiers.
+
+Engagement
+Nous nous impliquons pleinement pour atteindre vos objectifs de sécurité.
+
+Section :
+Notre ancrage
+
+Titre :
+Ancrés en Corse du Sud, proches de vos enjeux.
+
+Texte :
+Basés à Porto-Vecchio, nous connaissons le tissu économique local, ses spécificités et ses contraintes. Cette proximité nous permet d’intervenir vite, efficacement et avec pertinence.
+
+Points :
+Interventions sur toute la Corse-du-Sud et Ajaccio.
+Connaissance des acteurs locaux et des environnements sensibles.
+Partenaire de confiance pour les entreprises et collectivités.
+
+Bloc cartographique :
+Porto-Vecchio
+Corse du Sud
+Au cœur du territoire, au plus près de vos opérations critiques.
+
+Chiffres :
+15+
+années d’expérience sur les systèmes critiques.
+
+100+
+clients accompagnés en Corse et ailleurs.
+
+250+
+projets menés avec succès en cybersécurité & réseaux.
+
+24/7
+veille & disponibilité pour vos systèmes.
+
+0
+compromis sur la sécurité et la confidentialité.
+
+Section :
+Notre engagement
+
+Titre :
+À vos côtés, dans la durée.
+
+Texte :
+Nous nous engageons à comprendre vos enjeux, à parler votre langage et à vous apporter des solutions concrètes qui renforcent votre sécurité et votre performance.
+
+Cibles :
+Entreprises
+PME, ETI, Grands Groupes.
+
+Collectivités
+Mairies, intercommunalités, établissements publics.
+
+Opérateurs critiques
+Réseaux, infrastructures, services essentiels.
+
+Secteurs sensibles
+Tourisme, santé, transport, industrie, énergie.
+
+CTA final :
+Construisons ensemble votre résilience.
+
+--------------------------------------------------
+PAGE CONTACT — contact.html
+Référence : 07-contact-reference.png
+--------------------------------------------------
+
+H1 :
+Échangeons sur la sécurité et la résilience de votre entreprise en Sud Corse.
+
+Sous-texte :
+Une question, un projet, un besoin urgent ? Nos experts sont à votre écoute pour vous accompagner avec réactivité et confidentialité.
+
+Preuves :
+Réponse rapide
+en moins de 24h.
+
+Équipe experte
+proche de vous.
+
+Confidentialité
+garantie.
+
+Section formulaire :
+Envoyez-nous un message
+
+Texte :
+Décrivez votre besoin, nous vous recontacterons rapidement.
+
+Champs :
+Nom complet*
+Fonction
+Entreprise*
+Secteur d’activité
+Email professionnel*
+Téléphone
+Sujet de votre demande*
+Décrivez votre besoin ou votre projet*
+
+Bouton :
+Envoyer ma demande
+
+Message confidentialité :
+Vos données sont traitées de manière confidentielle et ne seront jamais partagées.
+
+Section coordonnées :
+Nos coordonnées
+
+INFOSERV2A — Sud Corse
+
+Adresse :
+Porto-Vecchio, Corse-du-Sud
+Intervention sur toute la région
+
+Téléphone :
+06 31 75 41 45
+Lun – Ven : 8h30 – 18h30
+
+Email :
+contact@infoserv2a.pro
+Réponse sous 24h ouvrées
+
+Support d’urgence :
+Sur demande pour les clients sous contrat
+
+Réseaux :
+INFOSERV2A
+
+Section zone d’intervention :
+Présents en Sud Corse, réactifs sur toute la région.
+
+Texte :
+Basés à Porto-Vecchio, nous intervenons rapidement sur l’ensemble de la Corse-du-Sud et au-delà selon vos besoins.
+
+Points :
+Proximité et réactivité
+Déplacements sur site
+Interventions planifiées ou d’urgence
+
+Villes :
+Porto-Vecchio
+Bonifacio
+Sainte-Lucie de Porto-Vecchio
+Lecci
+Figari
+Sari-Solenzara
+Ajaccio selon mission
+
+Section :
+Pourquoi nous contacter ?
+
+Cartes :
+Sécuriser votre entreprise
+Renforcez votre sécurité informatique et protégez vos données sensibles.
+
+Optimiser votre réseau
+Améliorez la performance, la fiabilité et la disponibilité de votre infrastructure.
+
+Répondre aux exigences
+Conformité, audits, certifications : nous vous aidons à répondre aux normes.
+
+Être accompagné
+Un partenaire local et engagé pour vous accompagner dans la durée.
+
+Section :
+Types de demandes
+
+Cartes :
+Audit & évaluation
+Cybersécurité incident & prévention
+Réseaux & infrastructure
+Conformité & réglementation
+Support & maintenance critique
+Autre demande
+
+CTA final :
+Besoin d’un diagnostic rapide ?
+Demandez votre analyse offerte et sans engagement.
+
+Bouton :
+Demander un diagnostic
+
+==================================================
+5. HEADER — À RENDRE IDENTIQUE SUR LES 7 PAGES
+==================================================
+
+Le header doit être corrigé pour ressembler aux PNG :
+
+- fond bleu nuit très sombre ;
+- effet légèrement transparent / glass ;
+- bordure inférieure cyan très discrète ;
+- logo INFOSERV2A à gauche ;
+- menu horizontal au centre ou à droite selon la maquette ;
+- bouton CTA “Demander un diagnostic” à droite ;
+- hauteur régulière ;
+- padding premium ;
+- menu actif en cyan ;
+- hover cyan discret.
+
+Menu exact :
+Accueil
+Cyber
+Réseau
+Secteurs sensibles
+Méthode
+À propos
+Contact
+
+Liens exacts :
+Accueil -> index.html
+Cyber -> cyber.html
+Réseau -> reseau.html
+Secteurs sensibles -> secteurs-sensibles.html
+Méthode -> methode.html
+À propos -> a-propos.html
+Contact -> contact.html
+
+Le header doit être strictement commun à toutes les pages.
+
+==================================================
+6. FOOTER — À RENDRE IDENTIQUE SUR LES 7 PAGES
+==================================================
+
+Footer commun à toutes les pages.
+
+Il doit être premium, sombre, structuré, avec colonnes.
+
+Contenu :
+
+INFOSERV2A
+Cybersécurité locale et réseaux critiques pour les entreprises du Sud Corse.
+
+Navigation :
+Accueil
+Cyber
+Réseau
+Secteurs sensibles
+Méthode
+À propos
+Contact
+
+Services :
+Audit cyber local
+Réseaux critiques
+Wi-Fi professionnel
+Starlink & sites isolés
+Continuité d’activité
+
+Contact :
+Porto-Vecchio, Corse-du-Sud
+Intervention sur toute la région Sud Corse
+06 31 75 41 45
+contact@infoserv2a.pro
+
+Bas :
+© 2026 INFOSERV2A — Cyber & Réseau
+Mentions légales
+Politique de confidentialité
+
+==================================================
+7. STYLE VISUEL À RESPECTER STRICTEMENT
+==================================================
+
+Ne pas utiliser d’orange.
+Ne pas utiliser de rouge.
+Ne pas utiliser de couleurs grand public.
+Ne pas utiliser de fonds blancs dominants.
+
+Palette obligatoire :
+- Bleu nuit principal : #020814
+- Bleu secondaire : #06152A
+- Carte glass : rgba(8, 24, 46, 0.78)
+- Bordure cyan : rgba(0, 220, 255, 0.22)
+- Cyan principal : #00D9F5
+- Cyan lumineux : #12F7FF
+- Bleu lumineux : #148CFF
+- Texte principal : #F4F8FF
+- Texte secondaire : #A8B7C9
+- Texte discret : #6F8195
+
+Effets :
+- glassmorphism sobre ;
+- glow cyan maîtrisé ;
+- cartes sombres ;
+- coins arrondis ;
+- filets cyan fins ;
+- fonds avec gradients ;
+- profondeur premium ;
+- motifs réseau / carte / interface cyber très discrets.
+
+Ne pas surcharger.
+Le site doit rester luxueux, lisible, haut de gamme.
+
+==================================================
+8. STRUCTURE CSS À RENFORCER
+==================================================
+
+Corriger assets/css/style.css pour obtenir une base cohérente.
+
+Créer ou corriger ces classes :
+
+.site-header
+.header-inner
+.logo
+.main-nav
+.nav-link
+.nav-link.active
+.header-cta
+.mobile-toggle
+
+.hero
+.hero-inner
+.hero-content
+.hero-kicker
+.hero-title
+.hero-text
+.hero-actions
+.hero-visual
+.hero-card
+.hero-background
+
+.section
+.section-dark
+.section-grid
+.section-kicker
+.section-title
+.section-lead
+
+.proof-bar
+.proof-item
+
+.cards-grid
+.service-card
+.sector-card
+.method-card
+.value-card
+.contact-card
+
+.steps
+.step-card
+.step-number
+
+.cta-band
+.cta-title
+.cta-text
+.cta-actions
+
+.site-footer
+.footer-inner
+.footer-column
+.footer-bottom
+
+.contact-form
+.form-grid
+.form-field
+.form-input
+.form-textarea
+.form-submit
+
+Les pages doivent partager le même système de design.
+
+==================================================
+9. GRILLES ET DIMENSIONS RECOMMANDÉES
+==================================================
+
+Desktop :
+- max-width principal : 1180px à 1280px ;
+- padding horizontal : 32px à 48px ;
+- hero min-height : environ 720px sur accueil, 600px sur pages internes ;
+- header : 76px à 88px ;
+- cartes : border-radius 22px à 28px ;
+- gap cartes : 22px à 32px ;
+- H1 accueil : 56px à 72px selon espace ;
+- H1 pages internes : 48px à 64px ;
+- texte hero : 18px à 21px ;
+- boutons : hauteur 48px à 56px.
+
+Mobile :
+- header compact ;
+- menu burger fonctionnel ;
+- hero en une colonne ;
+- H1 mobile : 36px à 44px ;
+- cartes en une colonne ;
+- aucun débordement horizontal.
+
+==================================================
+10. IMAGES ET FONDS
+==================================================
+
+Utiliser les images importées dans assets/images comme références.
+
+Ne pas créer de nouveaux visuels externes.
+Ne pas télécharger d’images.
+Ne pas remplacer les maquettes par des visuels génériques.
+
+Pour chaque page :
+- utiliser le PNG correspondant comme référence visuelle ;
+- si nécessaire, utiliser une image de la maquette ou un fond existant comme background décoratif ;
+- privilégier un rendu proche des PNG ;
+- ne pas figer toute la page en image ;
+- le texte doit rester HTML.
+
+Si les images de maquettes sont trop grandes, les optimiser par CSS :
+object-fit: cover;
+background-size: cover;
+background-position: center;
+overlay sombre par ::before ou gradient.
+
+==================================================
+11. NE PAS DÉTRUIRE LA NAVIGATION
+==================================================
+
+Après correction, vérifier tous les liens :
+
+index.html
+cyber.html
+reseau.html
+secteurs-sensibles.html
+methode.html
+a-propos.html
+contact.html
+mentions-legales.html
+politique-confidentialite.html
+
+Le bouton “Demander un diagnostic” doit toujours pointer vers contact.html.
+
+Le bouton “Découvrir nos services” doit pointer vers cyber.html ou reseau.html selon le contexte.
+
+Le menu actif doit être correct sur chaque page.
+
+==================================================
+12. FORMULAIRE CONTACT
+==================================================
+
+Le formulaire de contact doit rester prêt à brancher.
+
+Pas besoin de back-end.
+Mais prévoir un JavaScript propre dans assets/js/main.js :
+
+- empêcher le submit réel ;
+- afficher un message sobre :
+“Votre demande est prête à être envoyée. Le branchement serveur sera ajouté ultérieurement.”
+
+Ne pas utiliser d’alerte navigateur agressive.
+Afficher le message dans la page.
+
+==================================================
+13. ACCESSIBILITÉ ET SEO MINIMAL
+==================================================
+
+Chaque page doit avoir :
+
+- un title unique ;
+- une meta description ;
+- un seul H1 ;
+- des H2 structurés ;
+- textes lisibles ;
+- attributs alt sur images importantes ;
+- liens explicites ;
+- contraste suffisant.
+
+Ne pas sacrifier le SEO au visuel.
+
+Contraintes :
+- Travaille uniquement dans ce dossier projet.
+- Ne recree pas le site complet sauf demande explicite.
+- Conserve la structure existante si elle est correcte.
+- Ne supprime pas de contenu important sans raison.
+- Mets a jour les textes, composants, styles ou assets necessaires.
+- Verifie la coherence responsive.
+- A la fin, resume les fichiers modifies et les tests a lancer.
