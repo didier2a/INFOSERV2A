@@ -22,10 +22,10 @@
   <link rel="icon" href="assets/images/logo/favicon.png?v=2" type="image/png" sizes="192x192">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
   <link rel="manifest" href="site.webmanifest">
-  <link rel="stylesheet" href="assets/css/variables.css?v=20260815">
-  <link rel="stylesheet" href="assets/css/main.css?v=20260815">
-  <link rel="stylesheet" href="assets/css/components.css?v=20260815">
-  <link rel="stylesheet" href="assets/css/responsive.css?v=20260815">
+  <link rel="stylesheet" href="assets/css/variables.css?v=20260816">
+  <link rel="stylesheet" href="assets/css/main.css?v=20260816">
+  <link rel="stylesheet" href="assets/css/components.css?v=20260816">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=20260816">
   <script type="application/ld+json">{
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
@@ -63,28 +63,40 @@
   <!-- chrome:header -->
 <header class="site-header">
   <div class="container header-inner">
-    <a class="brand" href="/" aria-label="InfoServ2A">
+    <a class="brand" href="/" aria-label="InfoServ2A, accueil">
       <img class="brand__logo" src="assets/images/logo/infoserv2a-logo-light.png" alt="InfoServ2A" width="220" height="47">
     </a>
     <nav class="site-nav" aria-label="Navigation principale">
-      <a href="/">Accueil</a>
-      <div class="nav-item">
-        <button class="nav-sub-toggle" type="button" aria-expanded="false" aria-controls="menu-services">Services</button>
-        <div class="nav-sub" id="menu-services">
-          <a href="videosurveillance.html">Vidéosurveillance</a>
-          <a href="creation-site-web.html">Création de sites web</a>
-          <a href="maintenance-distance.html">Maintenance à distance</a>
-          <a href="configuration-domicile.html">Configuration à domicile</a>
-          <a href="cybersecurite-ia.html">Cybersécurité &amp; IA</a>
-          <a href="recuperation-donnees.html" aria-current="page">Récupération de données</a>
+      <div class="nav-item nav-item--mega">
+        <button class="nav-sub-toggle" aria-current="true" type="button" aria-expanded="false" aria-controls="menu-offres">Offres</button>
+        <div class="nav-sub nav-sub--mega" id="menu-offres">
+          <div class="mega-col">
+            <p class="mega-col__title">Sécurité</p>
+            <p class="mega-col__lead">Surveillance des sites et protection des outils numériques.</p>
+            <a href="videosurveillance.html">Vidéosurveillance</a>
+            <a href="cybersecurite-ia.html">Cybersécurité &amp; IA</a>
+            <a href="cybersecurite-ia.html#audit-nis2">Audit NIS 2</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-col__title">Présence web</p>
+            <p class="mega-col__lead">Un site local, hébergé et suivi dans la durée.</p>
+            <a href="creation-site-web.html">Création de sites web</a>
+          </div>
+          <div class="mega-col">
+            <p class="mega-col__title">Assistance</p>
+            <p class="mega-col__lead">Dépannage, installation et récupération de données.</p>
+            <a href="maintenance-distance.html">Maintenance à distance</a>
+            <a href="configuration-domicile.html">Configuration à domicile</a>
+            <a href="recuperation-donnees.html" aria-current="page">Récupération de données</a>
+          </div>
         </div>
       </div>
       <a href="realisations.html">Réalisations</a>
       <a href="a-propos.html">À propos</a>
       <a href="contact.html">Contact</a>
     </nav>
-    <a class="btn btn--primary header-cta" href="devis.html">Demande de devis</a>
-    <a class="btn btn--primary header-cta--mobile" href="devis.html">Devis</a>
+    <a class="header-phone" href="tel:+33745156076">07 45 15 60 76</a>
+    <a class="btn btn--primary header-cta" href="devis.html">Devis</a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-panel" aria-label="Ouvrir le menu">
       <span class="nav-toggle__bars" aria-hidden="true"></span>
     </button>
@@ -97,20 +109,34 @@
     <button class="nav-panel__close nav-toggle" type="button" aria-label="Fermer le menu"><span aria-hidden="true">✕</span></button>
   </div>
   <nav>
-    <a href="/">Accueil</a>
-    <a href="videosurveillance.html">Vidéosurveillance</a>
-    <a href="creation-site-web.html">Création de sites web</a>
-    <a href="maintenance-distance.html">Maintenance à distance</a>
-    <a href="configuration-domicile.html">Configuration à domicile</a>
-    <a href="cybersecurite-ia.html">Cybersécurité &amp; IA</a>
-    <a href="recuperation-donnees.html" aria-current="page">Récupération de données</a>
+    <details class="nav-acc">
+      <summary>Sécurité</summary>
+      <a href="videosurveillance.html">Vidéosurveillance</a>
+      <a href="cybersecurite-ia.html">Cybersécurité &amp; IA</a>
+      <a href="cybersecurite-ia.html#audit-nis2">Audit NIS 2</a>
+    </details>
+    <details class="nav-acc">
+      <summary>Présence web</summary>
+      <a href="creation-site-web.html">Création de sites web</a>
+    </details>
+    <details class="nav-acc">
+      <summary>Assistance</summary>
+      <a href="maintenance-distance.html">Maintenance à distance</a>
+      <a href="configuration-domicile.html">Configuration à domicile</a>
+      <a href="recuperation-donnees.html" aria-current="page">Récupération de données</a>
+    </details>
     <a href="realisations.html">Réalisations</a>
     <a href="a-propos.html">À propos</a>
     <a href="contact.html">Contact</a>
   </nav>
   <a class="btn btn--primary" href="devis.html">Demande de devis</a>
 </aside>
+<div class="mobile-dock" aria-label="Actions rapides">
+  <a class="mobile-dock__call" href="tel:+33745156076">Appeler</a>
+  <a class="mobile-dock__devis btn btn--primary" href="devis.html">Devis</a>
+</div>
 <!-- /chrome:header -->
+
 
 <main id="contenu" class="site-main">
   
@@ -127,7 +153,7 @@
             <div><img src="assets/icons/home.svg" alt=""><div><strong>Selon l'état du support</strong><p class="muted">Aucune récupération n'est présentée comme garantie.</p></div></div>
           </div>
           <div class="btn-row">
-            <a class="btn btn--primary" href="devis.html">Demander un diagnostic</a>
+            <a class="btn btn--primary" href="devis.html?service=recuperation-donnees">Demander un diagnostic</a>
             <a class="btn btn--secondary" href="#supports">En savoir plus</a>
           </div>
         </div>
@@ -153,24 +179,18 @@
       </div>
       <p class="muted" style="margin-top:1.4rem">Le résultat dépend de l'état du support. <span class="brand-name">INFOSERV2A</span> n'annonce pas de récupération garantie.</p>
     </div></section>
-    <section class="section"><div class="container"><div class="cta-band"><h2>Un support inaccessible ?</h2><p class="muted">Commencez par un diagnostic. Devis gratuit et sans engagement.</p><div class="btn-row"><a class="btn btn--primary" href="devis.html">Demander un diagnostic</a><a class="btn btn--secondary" href="contact.html">Nous contacter</a></div></div></div></section>
+    <section class="section"><div class="container"><div class="cta-band"><h2>Un support inaccessible ?</h2><p class="muted">Commencez par un diagnostic. Proposition claire, sans engagement.</p><div class="btn-row"><a class="btn btn--primary" href="devis.html?service=recuperation-donnees">Demander un diagnostic</a><a class="btn btn--secondary" href="contact.html">Nous contacter</a></div></div></div></section>
     
   </main>
   <!-- chrome:footer -->
-<div class="values-bar">
-  <div><strong>Solutions sur mesure</strong>Selon votre besoin</div>
-  <div><strong>Sécurité &amp; confidentialité</strong>Données protégées</div>
-  <div><strong>Accompagnement</strong>Un suivi personnalisé</div>
-  <div><strong>Devis sans engagement</strong>Réponse rapide</div>
-</div>
 <footer class="site-footer">
   <div class="container footer-grid">
     <div class="footer-brand">
       <a class="brand" href="/" aria-label="InfoServ2A">
-        <img class="brand__logo" src="assets/images/logo/infoserv2a-logo-light.png" alt="InfoServ2A" width="220" height="47">
+        <img class="brand__logo brand__logo--footer" src="assets/images/logo/infoserv2a-logo-white.png" alt="InfoServ2A" width="220" height="47">
       </a>
       <p><span class="brand-name">INFOSERV2A</span> — Services numériques, vidéosurveillance et création de sites web à Porto-Vecchio, Corse-du-Sud</p>
-      <p>Porto-Vecchio<br><a href="tel:+33745156076">07 45 15 60 76</a><br><a href="mailto:contact@infoserv2a.pro">contact@infoserv2a.pro</a><br>https://infoserv2a.pro</p>
+      <p>Porto-Vecchio<br><a href="tel:+33745156076">07 45 15 60 76</a><br><a href="mailto:contact@infoserv2a.pro">contact@infoserv2a.pro</a></p>
       <div class="socials">
         <a href="https://www.facebook.com/infoserv2a/" target="_blank" rel="noopener noreferrer" aria-label="Facebook InfoServ2A"><img src="assets/icons/facebook.svg" alt="" width="18" height="18"></a>
         <a href="https://www.instagram.com/infoserv2a/" target="_blank" rel="noopener noreferrer" aria-label="Instagram InfoServ2A"><img src="assets/icons/instagram.svg" alt="" width="18" height="18"></a>
@@ -188,13 +208,14 @@
       </ul>
     </div>
     <div class="footer-col">
-      <h2>Services</h2>
+      <h2>Offres</h2>
       <ul>
         <li><a href="videosurveillance.html">Vidéosurveillance</a></li>
         <li><a href="creation-site-web.html">Création de sites web</a></li>
+        <li><a href="cybersecurite-ia.html">Cybersécurité &amp; IA</a></li>
+        <li><a href="cybersecurite-ia.html#audit-nis2">Audit NIS 2</a></li>
         <li><a href="maintenance-distance.html">Maintenance à distance</a></li>
         <li><a href="configuration-domicile.html">Configuration à domicile</a></li>
-        <li><a href="cybersecurite-ia.html">Cybersécurité &amp; IA</a></li>
         <li><a href="recuperation-donnees.html" aria-current="page">Récupération de données</a></li>
       </ul>
     </div>
@@ -218,7 +239,8 @@
 </footer>
 <!-- /chrome:footer -->
 
-<script src="assets/js/main.js?v=20260815" defer></script>
-  <script src="assets/js/navigation.js?v=20260815" defer></script>
+
+<script src="assets/js/main.js?v=20260816" defer></script>
+  <script src="assets/js/navigation.js?v=20260816" defer></script>
 </body>
 </html>

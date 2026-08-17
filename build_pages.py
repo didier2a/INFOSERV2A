@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-ASSET_V = "20260815"
+ASSET_V = "20260816"
 BRAND = '<span class="brand-name">INFOSERV2A</span>'
 HEADER_MARK_START = "<!-- chrome:header -->"
 HEADER_MARK_END = "<!-- /chrome:header -->"
@@ -28,6 +28,15 @@ CURRENT = {
     "mentions-legales.html": {"mentions-legales.html"},
     "politique-confidentialite.html": {"politique-confidentialite.html"},
     "404.html": set(),
+}
+
+OFFRES = {
+    "videosurveillance.html",
+    "creation-site-web.html",
+    "maintenance-distance.html",
+    "configuration-domicile.html",
+    "cybersecurite-ia.html",
+    "recuperation-donnees.html",
 }
 
 SEO = {
@@ -72,7 +81,14 @@ def apply_current(html: str, page: str) -> str:
             return tag
         return tag[:-1] + ' aria-current="page">'
 
-    return re.sub(r'<a\s[^>]*href="([^"]+)"[^>]*>', repl, html)
+    html = re.sub(r'<a\s[^>]*href="([^"]+)"[^>]*>', repl, html)
+    if page in OFFRES:
+        html = html.replace(
+            'class="nav-sub-toggle"',
+            'class="nav-sub-toggle" aria-current="true"',
+            1,
+        )
+    return html
 
 
 def wrap_brand_text(html: str) -> str:

@@ -150,7 +150,7 @@ ul, ol, h1, h2, h3, p { margin: 0; padding: 0; }
   color: var(--color-text-muted);
 }
 
-.list-check a { color: var(--color-accent); }
+.list-check a { color: var(--color-link); }
 
 .list-check li::before {
   content: "";

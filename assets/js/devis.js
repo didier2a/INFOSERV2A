@@ -5,6 +5,20 @@
   const filesInput = form.querySelector("#devis-files");
   const dropzone = form.querySelector(".dropzone");
   const dropLabel = form.querySelector("[data-drop-label]");
+  const serviceField = form.querySelector("#devis-service");
+
+  if (serviceField) {
+    const requested = new URLSearchParams(window.location.search).get("service");
+    if (requested) {
+      const needle = requested.trim().toLowerCase();
+      const match = [...serviceField.options].find((option) => {
+        const value = option.value.toLowerCase();
+        const label = option.textContent.trim().toLowerCase();
+        return value === needle || label === needle || label.includes(needle);
+      });
+      if (match) serviceField.value = match.value;
+    }
+  }
 
   if (dropzone && filesInput) {
     const refresh = () => {
