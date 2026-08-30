@@ -47,7 +47,7 @@ Le site intègre un compagnon de navigation mobile-first sans exposer de secret 
 
 Le navigateur ne contient aucune clé LiveAvatar ou OpenAI. Un fournisseur temps réel doit obtenir ses jetons éphémères côté serveur, par exemple dans une Cloudflare Pages Function utilisant des secrets Cloudflare.
 
-L’adaptateur prêt à brancher se trouve dans `assets/js/claire-liveavatar-provider.js`. Il reprend le contrat éprouvé dans PocketGuide : jeton éphémère, flux vidéo LiveAvatar, transcription, interruption et narration d’un résultat vérifié par l’application. Il n’est pas chargé tant que l’endpoint serveur n’est pas disponible, afin que le site reste autonome et que la voix locale assure le repli.
+L’adaptateur prêt à brancher se trouve dans `assets/js/claire-liveavatar-provider.js`. Il reprend le contrat de PocketGuide : jeton éphémère, flux vidéo LiveAvatar, transcription, interruption et narration d’un résultat vérifié par l’application. Il n’est pas chargé tant que l’endpoint serveur n’est pas disponible. En cas d’échec, le mode manuel reste disponible, mais l’ancienne synthèse vocale locale est volontairement silencieuse afin de ne pas imiter la voix OpenAI Realtime de Claire.
 
 Exemple d’activation après création de `/api/liveavatar-session` :
 

@@ -16,8 +16,9 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260830-live3)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260830-live3)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260830-live4)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260830-live4)"/g).length, 1, page);
+    assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
     assert.doesNotMatch(html, /claire-mini|claire-panel/);
@@ -41,6 +42,7 @@ test("les pages et assets référencés par Claire existent", async () => {
     "assets/js/claire-companion.js",
     "assets/js/claire-core.mjs",
     "assets/js/claire-liveavatar-provider.js",
+    "vendor/liveavatar/events-browser.mjs",
     "data/site-knowledge.json",
     "functions/api/liveavatar-session.js",
     "functions/api/liveavatar-status.js"
@@ -90,6 +92,18 @@ test("Claire accueille l'utilisateur et explique son rôle chez InfoServ2A", asy
     assert.match(source, /revenir à la navigation manuelle à tout moment/);
   }
   assert.match(endpoint, /InfoServ2A Claire Companion 1\.1/);
+  assert.doesNotMatch(client, /speak\(greeting\)/);
+});
+
+test("le direct exige les pistes LiveAvatar avant d’annoncer la connexion", async () => {
+  const [provider, headers] = await Promise.all([
+    readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8"),
+    readFile(path.join(ROOT, "_headers"), "utf8")
+  ]);
+  assert.match(provider, /STREAM_READY_TIMEOUT_MS\s*=\s*30000/);
+  assert.match(provider, /await streamReady/);
+  assert.match(provider, /this\.streamReady = Boolean\(this\.video\?\.srcObject\)/);
+  assert.match(headers, /wss:\/\/\*\.livekit\.cloud/);
 });
 
 test("la sortie générée reste synchronisée avec le partial", async () => {

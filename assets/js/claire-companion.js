@@ -8,7 +8,7 @@ import {
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
 const STORAGE_PENDING = "infoserv2a.claire.pending";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260830-live3";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260830-live4";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique. Je suis ici pour vous présenter l’entreprise, comprendre votre besoin et vous guider en langage naturel vers le bon service : cybersécurité, réseaux et Wi-Fi, vidéosurveillance, assistance informatique ou création de sites web. Vous pouvez me parler librement et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
 
@@ -137,6 +137,7 @@ export class ClaireCompanion {
     this.lastFocus = null;
     this.pendingTranscript = "";
     this.navigationTimer = null;
+    this.welcomeShown = false;
     this.nodes = {};
     this.provider = null;
     this.providerReadyPromise = null;
@@ -218,7 +219,7 @@ export class ClaireCompanion {
     this.root.querySelectorAll("[data-claire-manual]").forEach((button) => button.addEventListener("click", () => this.enterManualMode()));
     this.root.querySelectorAll("[data-claire-recall]").forEach((button) => button.addEventListener("click", () => this.recall()));
     this.root.querySelectorAll("[data-claire-guided]").forEach((button) => button.addEventListener("click", () => this.enterGuidedMode()));
-    this.root.querySelectorAll("[data-claire-expand]").forEach((button) => button.addEventListener("click", () => this.openConversation()));
+    this.root.querySelectorAll("[data-claire-expand]").forEach((button) => button.addEventListener("click", () => void this.openConversation()));
     this.nodes.retry?.addEventListener("click", () => void this.retryLiveAvatar());
     this.nodes.form?.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -279,15 +280,14 @@ export class ClaireCompanion {
       try {
         await this.provider.connect({ microphone: true });
         this.setEngineStatus("liveavatar-realtime", "LiveAvatar · OpenAI Realtime · marin");
-        this.appendTurn("companion", greeting);
-        await this.speak(greeting);
+        this.showWelcome(greeting);
       } catch {
         this.activateLocalFallback("La connexion LiveAvatar a échoué. Le mode local reste silencieux afin de ne pas imiter la voix Realtime de Claire.");
-        this.appendTurn("companion", greeting);
+        this.showWelcome(greeting);
       }
     } else {
       this.activateLocalFallback("LiveAvatar et OpenAI Realtime ne sont pas encore disponibles. Le mode local reste silencieux afin de ne pas imiter Claire.");
-      this.appendTurn("companion", greeting);
+      this.showWelcome(greeting);
     }
     requestAnimationFrame(() => this.nodes.input?.focus());
   }
@@ -324,10 +324,32 @@ export class ClaireCompanion {
     requestAnimationFrame(() => this.nodes.input?.focus());
   }
 
-  openConversation() {
+  async openConversation() {
     storageSet(STORAGE_MODE, "shared");
+    this.audioEnabled = true;
     this.setState("shared");
+    this.setStatus("connecting", "Connexion à Claire…");
+    await this.providerReadyPromise;
+    if (this.provider?.connect) {
+      try {
+        await this.provider.connect({ microphone: false });
+        this.setEngineStatus("liveavatar-realtime", "LiveAvatar · OpenAI Realtime · marin");
+        this.showWelcome(CLAIRE_WELCOME);
+      } catch {
+        this.activateLocalFallback("La connexion LiveAvatar a échoué. Le mode local reste silencieux afin de ne pas imiter la voix Realtime de Claire.");
+        this.showWelcome(CLAIRE_WELCOME);
+      }
+    } else {
+      this.activateLocalFallback("LiveAvatar et OpenAI Realtime ne sont pas encore disponibles. Le mode local reste silencieux afin de ne pas imiter Claire.");
+      this.showWelcome(CLAIRE_WELCOME);
+    }
     requestAnimationFrame(() => this.nodes.input?.focus());
+  }
+
+  showWelcome(text) {
+    if (this.welcomeShown) return;
+    this.welcomeShown = true;
+    this.appendTurn("companion", text);
   }
 
   enterGuidedMode() {

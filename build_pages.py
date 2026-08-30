@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-ASSET_V = "20260830-live3"
+ASSET_V = "20260830-live4"
 BRAND = '<span class="brand-name">INFOSERV2A</span>'
 HEADER_MARK_START = "<!-- chrome:header -->"
 HEADER_MARK_END = "<!-- /chrome:header -->"
@@ -162,6 +162,14 @@ def ensure_companion_assets(html: str) -> str:
         html = html.replace(
             "</body>",
             f'  <script type="module" src="{js_path}"></script>\n</body>',
+            1,
+        )
+    if "vendor/liveavatar/events-browser.mjs" not in html:
+        if "</head>" not in html:
+            raise SystemExit("head closing tag not found")
+        html = html.replace(
+            "</head>",
+            '  <script type="importmap">{"imports":{"events":"./vendor/liveavatar/events-browser.mjs"}}</script>\n</head>',
             1,
         )
     return html

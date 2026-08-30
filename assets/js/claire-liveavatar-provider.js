@@ -1,4 +1,5 @@
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
+const STREAM_READY_TIMEOUT_MS = 30000;
 
 let sdkPromise = null;
 
@@ -39,6 +40,7 @@ export class InfoServ2ALiveAvatarProvider {
     this.connected = false;
     this.listening = false;
     this.startPromise = null;
+    this.streamReady = false;
     this.callbacks = {};
   }
 
@@ -79,8 +81,9 @@ export class InfoServ2ALiveAvatarProvider {
         this.sdk = sdk;
         const session = new sdk.LiveAvatarSession(payload.sessionToken, { apiUrl: "https://api.liveavatar.com" });
         this.session = session;
-        this.wireSession(session, sdk);
+        const streamReady = this.wireSession(session, sdk);
         await session.start();
+        await streamReady;
         this.connected = true;
         if (microphone) await this.ensureMicrophone();
         else this.emit("ready", "Claire est connectée");
@@ -98,6 +101,16 @@ export class InfoServ2ALiveAvatarProvider {
 
   wireSession(session, sdk) {
     const { SessionEvent, AgentEventsEnum } = sdk;
+    let resolveStream;
+    let rejectStream;
+    const streamReady = new Promise((resolve, reject) => {
+      resolveStream = resolve;
+      rejectStream = reject;
+    });
+    const streamTimer = setTimeout(() => {
+      rejectStream(new Error("Le flux vidéo LiveAvatar n’est pas arrivé dans le délai prévu."));
+    }, STREAM_READY_TIMEOUT_MS);
+
     session.on(SessionEvent.SESSION_STREAM_READY, () => {
       if (this.video) {
         this.video.hidden = false;
@@ -105,11 +118,16 @@ export class InfoServ2ALiveAvatarProvider {
         session.attach(this.video);
         void this.video.play().catch(() => {});
       }
-      this.connected = true;
+      this.streamReady = Boolean(this.video?.srcObject);
+      clearTimeout(streamTimer);
+      resolveStream(this.streamReady);
       this.emit("ready", "Claire · LiveAvatar Realtime");
     });
     session.on(SessionEvent.SESSION_DISCONNECTED, () => {
+      clearTimeout(streamTimer);
+      rejectStream(new Error("La session LiveAvatar a été interrompue avant l’arrivée du flux vidéo."));
       this.connected = false;
+      this.streamReady = false;
       this.listening = false;
       this.emit("error", "Session LiveAvatar interrompue");
     });
@@ -133,6 +151,7 @@ export class InfoServ2ALiveAvatarProvider {
       if (text) this.callbacks.onAvatarTranscript?.(text);
     });
     session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, () => this.emit("ready", "Prête à vous guider"));
+    return streamReady;
   }
 
   async ensureMicrophone() {
@@ -182,6 +201,7 @@ export class InfoServ2ALiveAvatarProvider {
     const session = this.session;
     this.session = null;
     this.connected = false;
+    this.streamReady = false;
     this.listening = false;
     try { await session?.stop(); } catch { /* Session déjà terminée. */ }
     if (this.video) {
@@ -195,6 +215,7 @@ export class InfoServ2ALiveAvatarProvider {
       id: this.id,
       endpoint: this.endpoint,
       connected: this.connected,
+      streamReady: this.streamReady,
       listening: this.listening,
       connector: "OPENAI_REALTIME",
       transport: "ephemeral-session-token"
