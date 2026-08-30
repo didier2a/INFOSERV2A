@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260830-live8)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260830-live8)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260830-live9)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260830-live9)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -134,6 +134,23 @@ test("le diagnostic mobile distingue micro, transcription et réponse Realtime",
   assert.match(provider, /reply-started/);
   assert.match(provider, /Micro reçu, mais OpenAI Realtime ne renvoie pas de réponse/);
   assert.match(provider, /SESSION_STOPPED/);
+});
+
+test("les syllabes, doublons et échos ne peuvent plus piloter la navigation", async () => {
+  const [client, provider] = await Promise.all([
+    readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8")
+  ]);
+  assert.match(provider, /TRANSCRIPT_SETTLE_MS\s*=\s*950/);
+  assert.match(provider, /significant\.length < 4/);
+  assert.match(provider, /buffering-transcript/);
+  assert.match(provider, /this\.avatarSpeaking \|\| Date\.now\(\) < this\.ignoreInputUntil/);
+  assert.match(provider, /void chat\.mute\(\)/);
+  assert.match(provider, /void chat\.unmute\(\)/);
+  assert.match(client, /signature === this\.lastVoiceCommand/);
+  assert.match(client, /if \(this\.navigationTimer \|\|/);
+  assert.doesNotMatch(client, /article\.scrollIntoView/);
+  assert.match(client, /scroller\.scrollTop = scroller\.scrollHeight/);
 });
 
 test("la sortie générée reste synchronisée avec le partial", async () => {

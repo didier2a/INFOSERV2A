@@ -8,7 +8,7 @@ import {
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
 const STORAGE_PENDING = "infoserv2a.claire.pending";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260830-live8";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260830-live9";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique. Je suis ici pour vous présenter l’entreprise, comprendre votre besoin et vous guider en langage naturel vers le bon service : cybersécurité, réseaux et Wi-Fi, vidéosurveillance, assistance informatique ou création de sites web. Vous pouvez me parler librement et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
 
@@ -137,6 +137,8 @@ export class ClaireCompanion {
     this.lastFocus = null;
     this.pendingTranscript = "";
     this.navigationTimer = null;
+    this.lastVoiceCommand = "";
+    this.lastVoiceCommandAt = 0;
     this.welcomeShown = false;
     this.nodes = {};
     this.provider = null;
@@ -197,6 +199,7 @@ export class ClaireCompanion {
       experience: find(".claire-experience"),
       stage: find("[data-claire-stage]"),
       transcript: find("[data-claire-transcript]"),
+      conversationScroll: find(".claire-conversation__scroll"),
       suggestions: find("[data-claire-suggestions]"),
       result: find("[data-claire-result]"),
       resultTitle: find("[data-claire-result-title]"),
@@ -454,12 +457,27 @@ export class ClaireCompanion {
     paragraph.textContent = text;
     article.append(label, paragraph);
     this.nodes.transcript.append(article);
-    article.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    requestAnimationFrame(() => {
+      const scroller = this.nodes.conversationScroll;
+      if (scroller) scroller.scrollTop = scroller.scrollHeight;
+    });
   }
 
   async submit(command, source = "text") {
     const value = String(command || "").trim();
     if (!value) return null;
+    if (source === "liveavatar") {
+      const signature = value.toLocaleLowerCase("fr").replace(/\s+/g, " ");
+      const significant = signature.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+      const now = Date.now();
+      if (significant.length < 4) {
+        this.setStatus("listening", "Continuez votre phrase…");
+        return null;
+      }
+      if (this.navigationTimer || (signature === this.lastVoiceCommand && now - this.lastVoiceCommandAt < 4000)) return null;
+      this.lastVoiceCommand = signature;
+      this.lastVoiceCommandAt = now;
+    }
     const keepGuided = this.state === "guided";
     this.setState(keepGuided ? "guided" : "shared");
     this.appendTurn("user", value);
@@ -486,12 +504,16 @@ export class ClaireCompanion {
     this.speak(result.speech);
 
     if (result.type === "navigate" && result.href) {
+      clearTimeout(this.navigationTimer);
       const target = pageHrefForSession(result.href, "guided");
       storageSet(STORAGE_PENDING, JSON.stringify({
         text: `Nous sommes arrivés dans « ${result.label || result.page?.title} ».`,
         createdAt: Date.now()
       }));
-      this.navigationTimer = setTimeout(() => location.assign(target), 1100);
+      this.navigationTimer = setTimeout(() => {
+        this.navigationTimer = null;
+        location.assign(target);
+      }, 1100);
     }
     return result;
   }

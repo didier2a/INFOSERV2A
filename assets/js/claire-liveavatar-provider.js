@@ -1,5 +1,7 @@
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;
+const TRANSCRIPT_SETTLE_MS = 950;
+const ECHO_GUARD_MS = 900;
 
 let sdkPromise = null;
 
@@ -45,6 +47,12 @@ export class InfoServ2ALiveAvatarProvider {
     this.pendingSpeech = [];
     this.realtimeSignal = "idle";
     this.replyTimer = null;
+    this.transcriptTimer = null;
+    this.transcriptParts = [];
+    this.commandInFlight = false;
+    this.avatarSpeaking = false;
+    this.ignoreInputUntil = 0;
+    this.resumeListeningAfterAvatar = false;
     this.callbacks = {};
   }
 
@@ -121,6 +129,57 @@ export class InfoServ2ALiveAvatarProvider {
       this.realtimeSignal = "reply-timeout";
       this.emit("error", "Micro reçu, mais OpenAI Realtime ne renvoie pas de réponse");
     }, 12000);
+  }
+
+  clearTranscriptBuffer() {
+    clearTimeout(this.transcriptTimer);
+    this.transcriptTimer = null;
+    this.transcriptParts = [];
+  }
+
+  stageTranscript(value) {
+    const text = String(value || "").trim();
+    if (!text || this.avatarSpeaking || Date.now() < this.ignoreInputUntil) return;
+
+    const previous = this.transcriptParts.at(-1) || "";
+    if (previous === text) return;
+    if (previous && text.toLocaleLowerCase("fr").startsWith(previous.toLocaleLowerCase("fr"))) {
+      this.transcriptParts[this.transcriptParts.length - 1] = text;
+    } else if (!previous.toLocaleLowerCase("fr").endsWith(text.toLocaleLowerCase("fr"))) {
+      this.transcriptParts.push(text);
+    }
+
+    clearTimeout(this.transcriptTimer);
+    this.realtimeSignal = "buffering-transcript";
+    this.emit("listening", "Phrase en cours…");
+    this.transcriptTimer = setTimeout(() => void this.flushTranscript(), TRANSCRIPT_SETTLE_MS);
+  }
+
+  async flushTranscript() {
+    clearTimeout(this.transcriptTimer);
+    this.transcriptTimer = null;
+    if (this.avatarSpeaking || this.commandInFlight) {
+      this.transcriptParts = [];
+      return;
+    }
+    const text = this.transcriptParts.join(" ").replace(/\s+/g, " ").trim();
+    this.transcriptParts = [];
+    const significant = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/gi, "");
+    if (significant.length < 4) {
+      this.realtimeSignal = "waiting-complete-phrase";
+      this.emit("listening", "Continuez votre phrase…");
+      return;
+    }
+
+    this.commandInFlight = true;
+    this.realtimeSignal = "transcribed";
+    this.emit("thinking", "Transcription reçue · préparation de la réponse…");
+    try {
+      await this.callbacks.onCommand?.(text);
+    } finally {
+      this.commandInFlight = false;
+      this.ignoreInputUntil = Date.now() + ECHO_GUARD_MS;
+    }
   }
 
   async connect({ microphone = false } = {}) {
@@ -231,12 +290,14 @@ export class InfoServ2ALiveAvatarProvider {
       this.emit("error", "Session LiveAvatar interrompue");
     });
     session.on(AgentEventsEnum.USER_SPEAK_STARTED, () => {
+      if (this.avatarSpeaking || Date.now() < this.ignoreInputUntil) return;
       this.listening = true;
       this.realtimeSignal = "input-detected";
       this.clearReplyTimer();
       this.emit("listening", "Je vous écoute");
     });
     session.on(AgentEventsEnum.USER_SPEAK_ENDED, () => {
+      if (this.avatarSpeaking || Date.now() < this.ignoreInputUntil) return;
       this.realtimeSignal = "input-ended";
       this.armReplyTimer();
       this.emit("thinking", "Micro transmis · attente de la transcription…");
@@ -244,15 +305,21 @@ export class InfoServ2ALiveAvatarProvider {
     session.on(AgentEventsEnum.USER_TRANSCRIPTION, (event) => {
       const text = String(event?.text || "").trim();
       if (!text) return;
-      this.realtimeSignal = "transcribed";
-      this.emit("thinking", "Transcription reçue · préparation de la réponse…");
+      if (this.avatarSpeaking || Date.now() < this.ignoreInputUntil) return;
+      this.clearReplyTimer();
       try { session.interrupt(); } catch { /* La réponse automatique n’a pas encore commencé. */ }
-      void this.callbacks.onCommand?.(text);
+      this.stageTranscript(text);
     });
     session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
       this.listening = false;
+      this.avatarSpeaking = true;
+      this.clearTranscriptBuffer();
       this.realtimeSignal = "reply-started";
       this.clearReplyTimer();
+      const chat = this.session?.voiceChat;
+      this.resumeListeningAfterAvatar = Boolean(chat && !chat.isMuted);
+      if (this.resumeListeningAfterAvatar) void chat.mute().catch(() => {});
+      try { this.session?.stopListening(); } catch { /* État visuel déjà en réponse. */ }
       this.emit(this.mediaAudible ? "speaking" : "sound", this.mediaAudible ? "Claire vous répond" : "Touchez Claire pour entendre sa réponse");
     });
     session.on(AgentEventsEnum.AVATAR_TRANSCRIPTION, (event) => {
@@ -260,8 +327,14 @@ export class InfoServ2ALiveAvatarProvider {
       if (text) this.callbacks.onAvatarTranscript?.(text);
     });
     session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, () => {
+      this.avatarSpeaking = false;
+      this.ignoreInputUntil = Date.now() + ECHO_GUARD_MS;
       this.realtimeSignal = "reply-ended";
       this.clearReplyTimer();
+      const chat = this.session?.voiceChat;
+      if (this.resumeListeningAfterAvatar && chat?.isMuted) void chat.unmute().catch(() => {});
+      this.resumeListeningAfterAvatar = false;
+      try { this.session?.startListening(); } catch { /* Écoute visuelle déjà active. */ }
       this.emit("ready", "Prête à vous guider");
     });
     session.on(AgentEventsEnum.SESSION_STOPPED, () => {
@@ -329,6 +402,11 @@ export class InfoServ2ALiveAvatarProvider {
     this.pendingSpeech = [];
     this.realtimeSignal = "idle";
     this.clearReplyTimer();
+    this.clearTranscriptBuffer();
+    this.commandInFlight = false;
+    this.avatarSpeaking = false;
+    this.ignoreInputUntil = 0;
+    this.resumeListeningAfterAvatar = false;
     if (this.video) {
       this.video.hidden = true;
       this.video.srcObject = null;
@@ -344,6 +422,8 @@ export class InfoServ2ALiveAvatarProvider {
       audioState: this.mediaAudible ? "audible" : (this.hasLiveAudio() ? "blocked" : "missing"),
       videoMuted: Boolean(this.video?.muted),
       realtimeSignal: this.realtimeSignal,
+      commandInFlight: this.commandInFlight,
+      avatarSpeaking: this.avatarSpeaking,
       listening: this.listening,
       connector: "OPENAI_REALTIME",
       transport: "ephemeral-session-token"
