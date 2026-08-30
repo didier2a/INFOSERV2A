@@ -60,7 +60,7 @@ addEventListener("infoserv:claire-ready", (event) => {
 
 La politique CSP du dépôt autorise uniquement la version épinglée du SDK, l’API LiveAvatar et les flux média nécessaires. Les clés restent exclusivement dans les secrets Cloudflare.
 
-Les Pages Functions prêtes au déploiement sont dans `functions/api/` :
+Les fonctions serveur sont dans `functions/api/` et le point d’entrée Cloudflare Worker dans `src/worker.js` les expose sous `/api/` tout en servant les fichiers statiques via le binding `ASSETS` :
 
 - `liveavatar-status.js` active automatiquement l’adaptateur seulement si les bindings requis existent ;
 - `liveavatar-session.js` accepte uniquement une requête de même origine, crée ou réutilise le contexte Claire et renvoie un jeton de session de cinq minutes ;
@@ -73,7 +73,7 @@ Bindings Cloudflare à créer sans fichier local :
 - variable `LIVEAVATAR_AVATAR_ID` ;
 - variable optionnelle `LIVEAVATAR_CONTEXT_ID` après la première création du contexte.
 
-Les fichiers `.env*` et `.dev.vars*` sont ignorés par Git. Aucun n’est nécessaire pour le déploiement : les valeurs de production et de prévisualisation doivent être définies dans **Cloudflare > Workers & Pages > projet > Settings > Variables and Secrets**.
+Les fichiers `.env*` et `.dev.vars*` sont ignorés par Git. Aucun n’est nécessaire pour le déploiement : les valeurs de production et de prévisualisation doivent être définies dans **Cloudflare > Workers & Pages > projet > Settings > Variables and Secrets**. La configuration `wrangler.jsonc` exécute le Worker uniquement pour `/api/*` et laisse Cloudflare servir directement les autres actifs.
 
 Pour reconstruire les blocs partagés et injecter les assets Claire dans toutes les pages :
 

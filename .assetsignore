@@ -1,0 +1,14 @@
+.git*
+.assetsignore
+.htaccess
+.nojekyll
+CNAME
+README.md
+build_pages.py
+serve.py
+package.json
+wrangler.jsonc
+functions/
+partials/
+src/
+tests/
