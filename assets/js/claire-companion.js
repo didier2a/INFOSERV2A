@@ -8,7 +8,7 @@ import {
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
 const STORAGE_PENDING = "infoserv2a.claire.pending";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260830-live6";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260830-live7";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique. Je suis ici pour vous présenter l’entreprise, comprendre votre besoin et vous guider en langage naturel vers le bon service : cybersécurité, réseaux et Wi-Fi, vidéosurveillance, assistance informatique ou création de sites web. Vous pouvez me parler librement et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
 
@@ -286,6 +286,7 @@ export class ClaireCompanion {
         await this.provider.connect({ microphone: true });
         this.setEngineStatus("liveavatar-realtime", "LiveAvatar · OpenAI Realtime · marin");
         this.showWelcome(greeting);
+        this.speak(greeting);
       } catch {
         this.activateLocalFallback("La connexion LiveAvatar a échoué. Le mode local reste silencieux afin de ne pas imiter la voix Realtime de Claire.");
         this.showWelcome(greeting);
@@ -341,6 +342,7 @@ export class ClaireCompanion {
         await this.provider.connect({ microphone: false });
         this.setEngineStatus("liveavatar-realtime", "LiveAvatar · OpenAI Realtime · marin");
         this.showWelcome(CLAIRE_WELCOME);
+        this.speak(CLAIRE_WELCOME);
       } catch {
         this.activateLocalFallback("La connexion LiveAvatar a échoué. Le mode local reste silencieux afin de ne pas imiter la voix Realtime de Claire.");
         this.showWelcome(CLAIRE_WELCOME);

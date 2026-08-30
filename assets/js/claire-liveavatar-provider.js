@@ -41,9 +41,8 @@ export class InfoServ2ALiveAvatarProvider {
     this.listening = false;
     this.startPromise = null;
     this.streamReady = false;
-    this.audioContext = null;
-    this.audioSource = null;
-    this.audioStream = null;
+    this.mediaAudible = false;
+    this.pendingSpeech = [];
     this.callbacks = {};
   }
 
@@ -59,46 +58,53 @@ export class InfoServ2ALiveAvatarProvider {
   }
 
   primeAudio() {
-    const AudioContext = globalThis.AudioContext || globalThis.webkitAudioContext;
-    if (!AudioContext) return false;
-    if (!this.audioContext || this.audioContext.state === "closed") {
-      this.audioContext = new AudioContext();
-    }
-    void this.audioContext.resume().catch(() => {});
+    if (!this.video) return false;
+    this.video.muted = false;
+    this.video.volume = 1;
+    // L'appel est volontairement déclenché dans le geste utilisateur.
+    // Sans flux, play() peut être rejeté ; le vrai déverrouillage sera
+    // retenté dès que LiveAvatar attache ses deux pistes.
+    void this.video.play().catch(() => {});
     return true;
-  }
-
-  connectAudioStream() {
-    const stream = this.video?.srcObject;
-    if (!stream || !this.primeAudio() || !this.audioContext) return false;
-    if (this.audioSource && this.audioStream === stream) return true;
-    try { this.audioSource?.disconnect(); } catch { /* Ancien flux déjà fermé. */ }
-    try {
-      this.audioSource = this.audioContext.createMediaStreamSource(stream);
-      this.audioSource.connect(this.audioContext.destination);
-      this.audioStream = stream;
-      return true;
-    } catch {
-      this.audioSource = null;
-      this.audioStream = null;
-      return false;
-    }
   }
 
   async resumeMedia() {
     if (!this.video) return false;
     this.primeAudio();
-    try { await this.audioContext?.resume?.(); } catch { /* Android peut demander un autre geste. */ }
-    const routed = this.connectAudioStream();
-    if (!routed) this.video.muted = false;
     try {
       await this.video.play();
+      this.mediaAudible = this.hasLiveAudio();
+      if (!this.mediaAudible) throw new Error("Piste audio LiveAvatar absente");
       this.emit("ready", "Son Realtime activé");
+      this.flushPendingSpeech();
       return true;
     } catch {
+      this.mediaAudible = false;
       this.emit("sound", "Touchez Claire pour activer le son");
       return false;
     }
+  }
+
+  hasLiveAudio() {
+    return Boolean(this.video?.srcObject?.getAudioTracks?.().some((track) => track.readyState === "live" && track.enabled));
+  }
+
+  hasLiveVideo() {
+    return Boolean(this.video?.srcObject?.getVideoTracks?.().some((track) => track.readyState === "live" && track.enabled));
+  }
+
+  sendPrompt(value) {
+    if (!this.session) return false;
+    const prompt = `[INFOSERV2A_APP_RESULT]\nInformation vérifiée par le site : ${value}\nRéponds en français naturel, brièvement, sans ajouter de fait ni prétendre avoir réalisé une autre action.`;
+    this.session.message(prompt);
+    this.emit("thinking", "Claire prépare sa réponse…");
+    return true;
+  }
+
+  flushPendingSpeech() {
+    if (!this.mediaAudible || !this.session || !this.pendingSpeech.length) return;
+    const pending = this.pendingSpeech.splice(0);
+    pending.forEach((value) => this.sendPrompt(value));
   }
 
   async connect({ microphone = false } = {}) {
@@ -170,26 +176,36 @@ export class InfoServ2ALiveAvatarProvider {
     session.on(SessionEvent.SESSION_STREAM_READY, () => {
       if (this.video) {
         this.video.hidden = false;
-        // La vidéo reste muette : l'audio est routé dans un AudioContext
-        // préparé par le premier geste de l'utilisateur. Cela évite le
-        // blocage d'autoplay de Chrome Android quand le flux arrive plus tard.
-        this.video.muted = true;
+        // Le SDK officiel attache les pistes vidéo ET audio au même média.
+        // On conserve donc ce média audible au lieu de détourner sa piste
+        // vers un AudioContext parfois suspendu par Chrome Android.
+        this.video.muted = false;
+        this.video.volume = 1;
         session.attach(this.video);
-        const audioReady = this.connectAudioStream();
-        void this.video.play().catch(() => {
-          this.emit("sound", "Touchez Claire pour activer le son");
-        });
-        if (!audioReady || this.audioContext?.state !== "running") {
-          this.emit("sound", "Touchez Claire pour activer le son");
-        }
       }
-      this.streamReady = Boolean(this.video?.srcObject);
+      this.streamReady = this.hasLiveVideo() && this.hasLiveAudio();
       if (!this.streamReady) {
-        rejectStream(new Error("Les pistes LiveAvatar n’ont pas été attachées à la vidéo."));
+        rejectStream(new Error("Les pistes audio et vidéo LiveAvatar n’ont pas toutes été attachées."));
         return;
       }
       resolveStream(true);
-      this.emit("ready", "Claire · LiveAvatar Realtime");
+      void this.video.play().then(() => {
+        this.mediaAudible = !this.video.muted && this.hasLiveAudio();
+        if (this.mediaAudible) {
+          this.emit("ready", "Claire · LiveAvatar Realtime · son actif");
+          this.flushPendingSpeech();
+        } else {
+          this.emit("sound", "Touchez Claire pour activer le son");
+        }
+      }).catch(() => {
+        // Android peut autoriser l'image mais refuser l'audio différé.
+        // On affiche alors la vidéo en sourdine et le prochain toucher de
+        // Claire exécute resumeMedia() dans un nouveau geste utilisateur.
+        this.mediaAudible = false;
+        this.video.muted = true;
+        void this.video.play().catch(() => {});
+        this.emit("sound", "Touchez Claire pour activer le son");
+      });
     });
     session.on(SessionEvent.SESSION_DISCONNECTED, () => {
       rejectStream(new Error("La session LiveAvatar a été interrompue avant l’arrivée du flux vidéo."));
@@ -211,7 +227,7 @@ export class InfoServ2ALiveAvatarProvider {
     });
     session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
       this.listening = false;
-      this.emit("speaking", "Claire vous répond");
+      this.emit(this.mediaAudible ? "speaking" : "sound", this.mediaAudible ? "Claire vous répond" : "Touchez Claire pour entendre sa réponse");
     });
     session.on(AgentEventsEnum.AVATAR_TRANSCRIPTION, (event) => {
       const text = String(event?.text || "").trim();
@@ -253,10 +269,12 @@ export class InfoServ2ALiveAvatarProvider {
     if (!value) return false;
     if (!this.connected) await this.connect({ microphone: false });
     if (!this.session) return false;
-    const prompt = `[INFOSERV2A_APP_RESULT]\nInformation vérifiée par le site : ${value}\nRéponds en français naturel, brièvement, sans ajouter de fait ni prétendre avoir réalisé une autre action.`;
-    this.session.message(prompt);
-    this.emit("thinking", "Claire prépare sa réponse…");
-    return true;
+    if (!this.mediaAudible) {
+      this.pendingSpeech.push(value);
+      this.emit("sound", "Touchez Claire pour activer le son");
+      return true;
+    }
+    return this.sendPrompt(value);
   }
 
   interrupt() {
@@ -272,11 +290,8 @@ export class InfoServ2ALiveAvatarProvider {
     this.listening = false;
     try { await session?.stop(); } catch { /* Session déjà terminée. */ }
     try { await session?.room?.disconnect?.(); } catch { /* Transport LiveKit déjà fermé. */ }
-    try { this.audioSource?.disconnect(); } catch { /* Flux audio déjà fermé. */ }
-    try { await this.audioContext?.close?.(); } catch { /* Contexte audio déjà fermé. */ }
-    this.audioSource = null;
-    this.audioStream = null;
-    this.audioContext = null;
+    this.mediaAudible = false;
+    this.pendingSpeech = [];
     if (this.video) {
       this.video.hidden = true;
       this.video.srcObject = null;
@@ -289,7 +304,8 @@ export class InfoServ2ALiveAvatarProvider {
       endpoint: this.endpoint,
       connected: this.connected,
       streamReady: this.streamReady,
-      audioState: this.audioContext?.state || "inactive",
+      audioState: this.mediaAudible ? "audible" : (this.hasLiveAudio() ? "blocked" : "missing"),
+      videoMuted: Boolean(this.video?.muted),
       listening: this.listening,
       connector: "OPENAI_REALTIME",
       transport: "ephemeral-session-token"
