@@ -3,7 +3,8 @@ const SECRETS_URL = "https://api.liveavatar.com/v1/secrets";
 const CONTEXTS_URL = "https://api.liveavatar.com/v1/contexts";
 const DEFAULT_AVATAR_ID = "664ff8bb-4932-4644-91f8-b90975d6f549";
 const SECRET_NAME = "InfoServ2A OpenAI Realtime";
-const CONTEXT_NAME = "InfoServ2A Claire Companion 1.0";
+const CONTEXT_NAME = "InfoServ2A Claire Companion 1.1";
+const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique. Je suis ici pour vous présenter l’entreprise, comprendre votre besoin et vous guider en langage naturel vers le bon service : cybersécurité, réseaux et Wi-Fi, vidéosurveillance, assistance informatique ou création de sites web. Vous pouvez me parler librement et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
 
 const CLAIRE_CONTEXT = `Tu incarnes Claire, la compagne numérique du site InfoServ2A. Tu es chaleureuse, précise, professionnelle et concise. Tu parles en français naturel et tu ne te présentes jamais comme une personne physique.
 
@@ -97,7 +98,7 @@ async function ensureClaireContext(env, key) {
     body: JSON.stringify({
       name: CONTEXT_NAME,
       prompt: CLAIRE_CONTEXT,
-      opening_text: "Bonjour. Je suis Claire, la compagne numérique d’InfoServ2A. Que souhaitez-vous accomplir ?"
+      opening_text: CLAIRE_WELCOME
     })
   });
   if (!created.response.ok || !created.payload?.data?.id) {

@@ -8,7 +8,9 @@ import {
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
 const STORAGE_PENDING = "infoserv2a.claire.pending";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260830-live2";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260830-live3";
+const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
+const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique. Je suis ici pour vous présenter l’entreprise, comprendre votre besoin et vous guider en langage naturel vers le bon service : cybersécurité, réseaux et Wi-Fi, vidéosurveillance, assistance informatique ou création de sites web. Vous pouvez me parler librement et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
 
 const FALLBACK_KNOWLEDGE = {
   suggestions: ["Vidéosurveillance", "Création de site web", "Dépannage informatique"],
@@ -272,7 +274,7 @@ export class ClaireCompanion {
     this.setState("shared");
     this.setStatus("connecting", "Connexion à Claire…");
     await this.providerReadyPromise;
-    const greeting = "Bonjour. Je peux vous expliquer le site, répondre en langage naturel et vous conduire directement à la bonne rubrique.";
+    const greeting = CLAIRE_WELCOME;
     if (this.provider?.connect) {
       try {
         await this.provider.connect({ microphone: true });
@@ -280,14 +282,12 @@ export class ClaireCompanion {
         this.appendTurn("companion", greeting);
         await this.speak(greeting);
       } catch {
-        this.activateLocalFallback("La connexion LiveAvatar a échoué. Le mode local de secours est actif.");
+        this.activateLocalFallback("La connexion LiveAvatar a échoué. Le mode local reste silencieux afin de ne pas imiter la voix Realtime de Claire.");
         this.appendTurn("companion", greeting);
-        this.browserVoice.speak(greeting);
       }
     } else {
-      this.activateLocalFallback("LiveAvatar et OpenAI Realtime ne sont pas encore configurés sur Cloudflare. Le mode local de secours est actif.");
+      this.activateLocalFallback("LiveAvatar et OpenAI Realtime ne sont pas encore disponibles. Le mode local reste silencieux afin de ne pas imiter Claire.");
       this.appendTurn("companion", greeting);
-      this.browserVoice.speak(greeting);
     }
     requestAnimationFrame(() => this.nodes.input?.focus());
   }
@@ -370,7 +370,9 @@ export class ClaireCompanion {
 
   async configureLiveAvatarProvider() {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 1600);
+    // Le premier appel au Worker peut dépasser plusieurs secondes sur mobile.
+    // Ne pas activer la voix locale pendant qu'un contrôle Realtime valide est en cours.
+    const timer = setTimeout(() => controller.abort(), LIVEAVATAR_STATUS_TIMEOUT_MS);
     try {
       const response = await fetch("/api/liveavatar-status", {
         cache: "no-store",
@@ -514,13 +516,13 @@ export class ClaireCompanion {
       const spoken = this.provider.speak(text);
       if (spoken && typeof spoken.catch === "function") {
         return spoken.catch(() => {
-          this.activateLocalFallback("La voix OpenAI Realtime est indisponible. La voix locale de secours est utilisée.");
-          return this.browserVoice.speak(text);
+          this.activateLocalFallback("La voix OpenAI Realtime est indisponible. L’ancienne voix locale est volontairement désactivée.");
+          return false;
         });
       }
       return spoken;
     }
-    return this.browserVoice.speak(text);
+    return false;
   }
 
   interrupt() {

@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260830-live2)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260830-live2)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260830-live3)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260830-live3)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
     assert.doesNotMatch(html, /claire-mini|claire-panel/);
@@ -69,6 +69,27 @@ test("le client ne contient aucune clé de fournisseur", async () => {
   const client = await readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8");
   assert.doesNotMatch(client, /(?:OPENAI|LIVEAVATAR|HEYGEN)_API_KEY/);
   assert.doesNotMatch(client, /\bsk-[A-Za-z0-9_-]{20,}\b/);
+});
+
+test("le contrôle Realtime attend le Worker mobile et n'utilise jamais l'ancienne voix", async () => {
+  const client = await readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8");
+  assert.match(client, /LIVEAVATAR_STATUS_TIMEOUT_MS\s*=\s*12000/);
+  assert.doesNotMatch(client, /setTimeout\(\(\) => controller\.abort\(\),\s*1600\)/);
+  assert.doesNotMatch(client, /browserVoice\.speak\(greeting\)/);
+  assert.match(client, /ancienne voix locale est volontairement désactivée/);
+});
+
+test("Claire accueille l'utilisateur et explique son rôle chez InfoServ2A", async () => {
+  const [client, endpoint] = await Promise.all([
+    readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
+    readFile(path.join(ROOT, "functions/api/liveavatar-session.js"), "utf8")
+  ]);
+  for (const source of [client, endpoint]) {
+    assert.match(source, /Bonjour et bienvenue chez InfoServ2A/);
+    assert.match(source, /Je suis Claire, votre compagne numérique/);
+    assert.match(source, /revenir à la navigation manuelle à tout moment/);
+  }
+  assert.match(endpoint, /InfoServ2A Claire Companion 1\.1/);
 });
 
 test("la sortie générée reste synchronisée avec le partial", async () => {
