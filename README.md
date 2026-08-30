@@ -4,6 +4,8 @@ Site professionnel d'InfoServ2A, relié à Cloudflare Workers Builds. La branche
 
 Environnement de validation Cloudflare : `https://infoserv2a.infoserv2a.workers.dev/`.
 
+Dernier déclenchement de validation Cloudflare : 30 août 2026 à 15 h 47 (Europe/Paris).
+
 Futur domaine : `https://infoserv2a.pro`
 
 ## Lancement local
