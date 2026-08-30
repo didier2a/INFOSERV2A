@@ -1,6 +1,6 @@
 # InfoServ2A — site local
 
-Site professionnel d'InfoServ2A, destiné aux tests locaux. Aucun déploiement GitHub Pages, Cloudflare Pages, DNS ou domaine de production n'est configuré à ce stade.
+Site professionnel d'InfoServ2A, relié à Cloudflare Workers Builds. La branche `main` alimente le déploiement stable Cloudflare et les autres branches produisent des versions d’aperçu isolées avant validation.
 
 Futur domaine : `https://infoserv2a.pro`
 
