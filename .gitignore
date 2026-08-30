@@ -5,6 +5,9 @@ Thumbs.db
 .idea/
 node_modules/
 dist/
+__pycache__/
+*.pyc
 .env
 .env.*
+.dev.vars*
 .idweb/

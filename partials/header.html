@@ -72,3 +72,84 @@
   <a class="mobile-dock__call" href="tel:+33745156076">Appeler</a>
   <a class="mobile-dock__devis btn btn--primary" href="devis.html">Devis</a>
 </div>
+
+<div class="claire-companion" id="claireCompanion" data-state="loading" aria-busy="true">
+  <div class="claire-companion__backdrop" data-claire-manual aria-hidden="true"></div>
+
+  <section class="claire-arrival" role="dialog" aria-modal="true" aria-labelledby="claireArrivalTitle" aria-describedby="claireArrivalDescription">
+    <div class="claire-arrival__brand" aria-label="InfoServ2A, accompagnement numérique">
+      <span class="claire-signal" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span>INFOSERV2A · COMPAGNON NUMÉRIQUE</span>
+    </div>
+    <div class="claire-arrival__layout">
+      <figure class="claire-avatar claire-avatar--immersive">
+        <img src="assets/images/companion/claire-presence.svg" alt="Claire, compagne numérique d’InfoServ2A">
+        <video class="claire-avatar__video" playsinline autoplay muted hidden aria-label="Claire en direct"></video>
+        <figcaption><span class="claire-status-dot"></span> Claire est disponible</figcaption>
+      </figure>
+      <div class="claire-arrival__copy">
+        <p class="claire-eyebrow">Bienvenue</p>
+        <h1 id="claireArrivalTitle">Je suis Claire. Que souhaitez-vous accomplir&nbsp;?</h1>
+        <p id="claireArrivalDescription">Je peux expliquer les services InfoServ2A, trouver la bonne rubrique et naviguer avec vous. Vous gardez toujours la main.</p>
+        <div class="claire-arrival__actions">
+          <button class="claire-button claire-button--primary" type="button" data-claire-start>
+            <span class="claire-button__icon" aria-hidden="true">●</span>
+            Commencer avec Claire
+          </button>
+          <button class="claire-button claire-button--quiet" type="button" data-claire-manual>Naviguer manuellement</button>
+        </div>
+        <p class="claire-privacy">Le microphone n’est activé qu’après votre action. Le mode local n’envoie aucune conversation à un serveur.</p>
+      </div>
+    </div>
+  </section>
+
+  <aside class="claire-panel" aria-labelledby="clairePanelTitle" aria-describedby="clairePanelDescription">
+    <header class="claire-panel__header">
+      <div class="claire-panel__identity">
+        <img src="assets/images/companion/claire-presence.svg" alt="">
+        <span><strong id="clairePanelTitle">Claire</strong><small data-claire-status>Prête à vous guider</small></span>
+      </div>
+      <button class="claire-icon-button" type="button" data-claire-manual aria-label="Passer en navigation manuelle">×</button>
+    </header>
+
+    <div class="claire-panel__body">
+      <p class="sr-only" id="clairePanelDescription">Dialogue avec Claire, compagne numérique du site InfoServ2A.</p>
+      <div class="claire-transcript" data-claire-transcript role="log" aria-live="polite" aria-relevant="additions">
+        <article class="claire-turn claire-turn--companion">
+          <span>Claire</span>
+          <p>Bonjour. Dites-moi ce que vous cherchez, je vous conduirai à l’information utile.</p>
+        </article>
+      </div>
+
+      <div class="claire-suggestions" data-claire-suggestions aria-label="Suggestions"></div>
+
+      <article class="claire-result" data-claire-result hidden aria-live="polite">
+        <p class="claire-result__eyebrow">Information trouvée</p>
+        <h2 data-claire-result-title></h2>
+        <p data-claire-result-summary></p>
+        <a class="claire-button claire-button--primary" data-claire-result-link href="#">Afficher cette rubrique</a>
+      </article>
+    </div>
+
+    <form class="claire-command" data-claire-form>
+      <label class="sr-only" for="claireCommand">Votre demande</label>
+      <input id="claireCommand" name="command" type="text" autocomplete="off" placeholder="Ex. Je cherche une caméra sans fibre" maxlength="240">
+      <button class="claire-icon-button claire-icon-button--mic" type="button" data-claire-mic aria-label="Activer le microphone" aria-pressed="false">
+        <span aria-hidden="true">●</span>
+      </button>
+      <button class="claire-icon-button claire-icon-button--send" type="submit" aria-label="Envoyer la demande">→</button>
+    </form>
+
+    <footer class="claire-panel__footer">
+      <button type="button" data-claire-manual>Mode manuel</button>
+      <span>Source : pages InfoServ2A</span>
+    </footer>
+  </aside>
+
+  <button class="claire-mini" type="button" data-claire-recall aria-label="Rappeler Claire">
+    <img src="assets/images/companion/claire-presence.svg" alt="">
+    <span><strong>Claire</strong><small>Besoin d’aide&nbsp;?</small></span>
+  </button>
+
+  <p class="sr-only" data-claire-live aria-live="assertive"></p>
+</div>

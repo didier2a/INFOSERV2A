@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-ASSET_V = "20260816"
+ASSET_V = "20260830"
 BRAND = '<span class="brand-name">INFOSERV2A</span>'
 HEADER_MARK_START = "<!-- chrome:header -->"
 HEADER_MARK_END = "<!-- /chrome:header -->"
@@ -142,6 +142,31 @@ def cache_bust(html: str) -> str:
     return html
 
 
+def ensure_companion_assets(html: str) -> str:
+    css_path = "assets/css/claire-companion.css"
+    js_path = "assets/js/claire-companion.js"
+    if css_path not in html:
+        responsive = re.compile(
+            r'(<link rel="stylesheet" href="assets/css/responsive\.css(?:\?v=[^"]*)?">)'
+        )
+        if not responsive.search(html):
+            raise SystemExit("responsive stylesheet link not found")
+        html = responsive.sub(
+            rf'\1\n  <link rel="stylesheet" href="{css_path}">',
+            html,
+            count=1,
+        )
+    if js_path not in html:
+        if "</body>" not in html:
+            raise SystemExit("body closing tag not found")
+        html = html.replace(
+            "</body>",
+            f'  <script type="module" src="{js_path}"></script>\n</body>',
+            1,
+        )
+    return html
+
+
 def patch_seo(html: str, page: str) -> str:
     data = SEO.get(page)
     if not data:
@@ -226,6 +251,7 @@ def main() -> None:
         html = inject_header(html, apply_current(header_src, page))
         html = inject_footer(html, apply_current(footer_src, page))
         html = wrap_main(html)
+        html = ensure_companion_assets(html)
         html = cache_bust(html)
         html = patch_seo(html, page)
         path.write_text(html, encoding="utf-8", newline="\n")

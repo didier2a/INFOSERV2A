@@ -1,0 +1,138 @@
+{
+  "version": "1.0.0",
+  "site": "InfoServ2A",
+  "updated": "2026-08-30",
+  "identity": {
+    "companion": "Claire",
+    "role": "Compagne numérique d’InfoServ2A",
+    "phone": "07 45 15 60 76",
+    "email": "contact@infoserv2a.pro",
+    "area": "Porto-Vecchio et Corse-du-Sud, de Solenzara à Bonifacio",
+    "hours": "Du lundi au samedi, de 9 h à 17 h"
+  },
+  "suggestions": [
+    "Je cherche une vidéosurveillance sans fibre",
+    "Je veux créer ou refaire un site web",
+    "J’ai besoin d’un dépannage informatique",
+    "Je souhaite demander un devis"
+  ],
+  "pages": [
+    {
+      "id": "home",
+      "href": "index.html",
+      "aliases": ["/", ""],
+      "title": "Accueil InfoServ2A",
+      "summary": "InfoServ2A réunit vidéosurveillance, création de sites web et assistance informatique avec un interlocuteur local à Porto-Vecchio.",
+      "keywords": ["accueil", "infoserv2a", "services", "porto-vecchio", "corse-du-sud"],
+      "prompts": ["Quels services proposez-vous ?", "Dans quelle zone intervenez-vous ?", "Je souhaite un devis"]
+    },
+    {
+      "id": "videosurveillance",
+      "href": "videosurveillance.html",
+      "title": "Vidéosurveillance",
+      "summary": "InfoServ2A étudie et installe des solutions de vidéosurveillance pour maisons, commerces, chantiers et sites isolés, y compris en 4G/5G ou avec alimentation solaire selon le contexte.",
+      "keywords": ["camera", "caméras", "surveillance", "sécurité", "4g", "5g", "solaire", "sans fibre", "sans électricité", "chantier", "commerce", "maison"],
+      "prompts": ["Une caméra peut-elle fonctionner sans fibre ?", "Parlez-moi des solutions solaires", "Je veux sécuriser un commerce"]
+    },
+    {
+      "id": "web",
+      "href": "creation-site-web.html",
+      "title": "Création de sites web",
+      "summary": "InfoServ2A conçoit, héberge, maintient et modernise des sites web professionnels adaptés à une activité locale.",
+      "keywords": ["site", "web", "internet", "refonte", "hébergement", "maintenance", "seo", "visibilité locale", "site vitrine"],
+      "prompts": ["Je veux créer un site vitrine", "Pouvez-vous refaire mon site ?", "Qui assure la maintenance ?"]
+    },
+    {
+      "id": "cybersecurity",
+      "href": "cybersecurite-ia.html",
+      "title": "Cybersécurité et intelligence artificielle",
+      "summary": "InfoServ2A accompagne la sécurisation des outils numériques, les usages utiles de l’intelligence artificielle et l’analyse de réseau.",
+      "keywords": ["cybersécurité", "cyber", "ia", "intelligence artificielle", "réseau", "protection", "audit"],
+      "anchors": [
+        {
+          "id": "audit-nis2",
+          "label": "Audit NIS 2",
+          "keywords": ["nis2", "nis 2", "audit réseau", "rapport", "conformité"]
+        }
+      ],
+      "prompts": ["Expliquez-moi l’audit NIS 2", "Comment sécuriser mon réseau ?", "Quel accompagnement IA proposez-vous ?"]
+    },
+    {
+      "id": "remote-support",
+      "href": "maintenance-distance.html",
+      "title": "Maintenance à distance",
+      "summary": "InfoServ2A intervient à distance sur Windows, Mac, Linux, Android et les appareils Apple lorsque le diagnostic le permet.",
+      "keywords": ["maintenance", "dépannage", "assistance", "distance", "windows", "mac", "linux", "android", "iphone", "ipad", "ordinateur", "pc"],
+      "prompts": ["Pouvez-vous dépanner mon PC à distance ?", "Intervenez-vous sur Mac ?", "Mon téléphone est mal configuré"]
+    },
+    {
+      "id": "home-support",
+      "href": "configuration-domicile.html",
+      "title": "Configuration à domicile",
+      "summary": "InfoServ2A configure à domicile les ordinateurs, box, réseaux Wi-Fi et équipements connectés autour de Porto-Vecchio.",
+      "keywords": ["domicile", "configuration", "installation", "wifi", "wi-fi", "box", "ordinateur", "objets connectés", "imprimante"],
+      "prompts": ["Pouvez-vous améliorer mon Wi-Fi ?", "J’ai besoin d’une installation à domicile", "Pouvez-vous configurer ma box ?"]
+    },
+    {
+      "id": "data-recovery",
+      "href": "recuperation-donnees.html",
+      "title": "Récupération de données",
+      "summary": "InfoServ2A réalise un diagnostic avant toute tentative de récupération sur disque dur, SSD, clé USB, PC ou Mac.",
+      "keywords": ["récupération", "données", "fichiers", "disque dur", "ssd", "clé usb", "support inaccessible", "perdu", "effacé"],
+      "anchors": [
+        {
+          "id": "supports",
+          "label": "Supports concernés",
+          "keywords": ["disque", "ssd", "usb", "pc", "mac", "supports"]
+        }
+      ],
+      "prompts": ["Mon disque n’est plus accessible", "Récupérez-vous les clés USB ?", "Comment se passe le diagnostic ?"]
+    },
+    {
+      "id": "portfolio",
+      "href": "realisations.html",
+      "title": "Réalisations",
+      "summary": "Cette rubrique présente des exemples anonymisés de vidéosurveillance et de sites web réalisés en Corse-du-Sud.",
+      "keywords": ["réalisations", "portfolio", "exemples", "projets", "clients", "chantier", "commerce", "artisan", "association"],
+      "prompts": ["Montrez-moi des réalisations", "Avez-vous équipé des chantiers ?", "Avez-vous créé des sites locaux ?"]
+    },
+    {
+      "id": "about",
+      "href": "a-propos.html",
+      "title": "À propos d’InfoServ2A",
+      "summary": "InfoServ2A est un prestataire numérique local à Porto-Vecchio, actif depuis 2010 et orienté vers des solutions utiles et un suivi direct.",
+      "keywords": ["à propos", "qui êtes-vous", "expérience", "depuis 2010", "local", "didier", "entreprise"],
+      "prompts": ["Qui est InfoServ2A ?", "Depuis quand exercez-vous ?", "Quelle est votre zone d’intervention ?"]
+    },
+    {
+      "id": "contact",
+      "href": "contact.html",
+      "title": "Contact",
+      "summary": "La page Contact regroupe le téléphone, l’adresse e-mail, WhatsApp, les horaires et un formulaire de message.",
+      "keywords": ["contact", "téléphone", "email", "e-mail", "whatsapp", "message", "coordonnées", "horaires", "adresse"],
+      "prompts": ["Quel est votre numéro ?", "Quels sont vos horaires ?", "Je veux envoyer un message"]
+    },
+    {
+      "id": "quote",
+      "href": "devis.html",
+      "title": "Demande de devis",
+      "summary": "Le formulaire de devis permet de décrire gratuitement un besoin de vidéosurveillance, site web, assistance, cybersécurité ou récupération de données, sans engagement.",
+      "keywords": ["devis", "prix", "tarif", "estimation", "budget", "gratuit", "projet", "demande"],
+      "prompts": ["Le devis est-il gratuit ?", "Je veux décrire mon projet", "Ouvrez le formulaire de devis"]
+    },
+    {
+      "id": "legal",
+      "href": "mentions-legales.html",
+      "title": "Mentions légales",
+      "summary": "Cette page présente l’éditeur, les coordonnées, l’hébergement et les règles de propriété intellectuelle du site.",
+      "keywords": ["mentions légales", "éditeur", "hébergeur", "propriété intellectuelle", "juridique"]
+    },
+    {
+      "id": "privacy",
+      "href": "politique-confidentialite.html",
+      "title": "Politique de confidentialité",
+      "summary": "Cette page explique les données susceptibles d’être recueillies, leur finalité, leur durée de conservation et les droits des utilisateurs.",
+      "keywords": ["confidentialité", "vie privée", "données personnelles", "rgpd", "conservation", "droits", "microphone"]
+    }
+  ]
+}
