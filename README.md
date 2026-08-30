@@ -37,8 +37,9 @@ http://localhost:8000
 
 Le site intègre un compagnon de navigation mobile-first sans exposer de secret :
 
-- arrivée immersive au premier accès, puis dialogue partagé et médaillon en mode manuel ;
-- dictée et synthèse vocales natives lorsque le navigateur les propose ;
+- arrivée immersive avec la même Claire verticale que Pocket Guide, puis scène plein écran ou rail guidé occupant 38 % de l’écran sur ordinateur ;
+- sur mobile 9:16, Claire conserve une scène haute et le site défile en dessous ; aucune bulle de support en bas à droite n’est utilisée ;
+- LiveAvatar est relié à OpenAI Realtime (`gpt-realtime`, voix `marin`) pour le dialogue audio naturel et la synchronisation labiale ;
 - index explicite de toutes les pages dans `data/site-knowledge.json` ;
 - routage déterministe vers les pages et sections, sans invention de contenu ;
 - mode manuel toujours accessible et préférence conservée pendant la session ;
@@ -64,13 +65,13 @@ Les fonctions serveur sont dans `functions/api/` et le point d’entrée Cloudfl
 
 - `liveavatar-status.js` active automatiquement l’adaptateur seulement si les bindings requis existent ;
 - `liveavatar-session.js` accepte uniquement une requête de même origine, crée ou réutilise le contexte Claire et renvoie un jeton de session de cinq minutes ;
-- en cas d’absence ou d’échec LiveAvatar, Claire repasse automatiquement à la voix native du navigateur.
+- en cas d’absence ou d’échec LiveAvatar, l’interface indique explicitement que la voix native du navigateur est un mode local de secours.
 
 Bindings Cloudflare à créer sans fichier local :
 
 - secret chiffré `LIVEAVATAR_API_KEY` ;
 - secret chiffré `OPENAI_API_KEY`, ou identifiant `LIVEAVATAR_OPENAI_SECRET_ID` si le secret OpenAI existe déjà chez LiveAvatar ;
-- variable `LIVEAVATAR_AVATAR_ID` ;
+- variable optionnelle `LIVEAVATAR_AVATAR_ID` (l’identité Claire de Pocket Guide est utilisée par défaut) ;
 - variable optionnelle `LIVEAVATAR_CONTEXT_ID` après la première création du contexte.
 
 Les fichiers `.env*` et `.dev.vars*` sont ignorés par Git. Aucun n’est nécessaire pour le déploiement : les valeurs de production et de prévisualisation doivent être définies dans **Cloudflare > Workers & Pages > projet > Settings > Variables and Secrets**. La configuration `wrangler.jsonc` exécute le Worker uniquement pour `/api/*` et laisse Cloudflare servir directement les autres actifs.

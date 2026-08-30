@@ -12,11 +12,18 @@ function json(data, status = 200) {
 export function onRequestGet({ env }) {
   const liveAvatar = Boolean(env.LIVEAVATAR_API_KEY || env.HEYGEN_API_KEY);
   const realtime = Boolean(env.LIVEAVATAR_OPENAI_SECRET_ID || env.OPENAI_API_KEY);
-  const avatar = Boolean(env.LIVEAVATAR_AVATAR_ID || env.HEYGEN_AVATAR_ID);
+  const avatar = true;
   return json({
     configured: liveAvatar && realtime && avatar,
+    prerequisites: {
+      liveAvatar,
+      openAIRealtime: realtime,
+      avatar
+    },
     provider: "liveavatar-realtime",
     connector: "OPENAI_REALTIME",
+    voice: "marin",
+    model: String(env.LIVEAVATAR_OPENAI_MODEL || "gpt-realtime"),
     mode: "LITE"
   });
 }

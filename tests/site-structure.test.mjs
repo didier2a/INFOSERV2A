@@ -16,8 +16,11 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260830)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260830)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260830-live2)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260830-live2)"/g).length, 1, page);
+    assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
+    assert.doesNotMatch(html, /claire-mini|claire-panel/);
   }
 });
 
@@ -34,7 +37,7 @@ test("les pages et assets référencés par Claire existent", async () => {
   const required = [
     ...knowledge.pages.map((page) => page.href),
     "assets/css/claire-companion.css",
-    "assets/images/companion/claire-presence.svg",
+    "assets/images/companion/claire-liveavatar-1080x1920.jpg",
     "assets/js/claire-companion.js",
     "assets/js/claire-core.mjs",
     "assets/js/claire-liveavatar-provider.js",
@@ -43,6 +46,23 @@ test("les pages et assets référencés par Claire existent", async () => {
     "functions/api/liveavatar-status.js"
   ];
   await Promise.all(required.map((relative) => access(path.join(ROOT, relative))));
+});
+
+test("Claire conserve une scène majeure et un mode guidé, jamais une bulle de support", async () => {
+  const [html, css, client, provider] = await Promise.all([
+    readFile(path.join(ROOT, "index.html"), "utf8"),
+    readFile(path.join(ROOT, "assets/css/claire-companion.css"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8")
+  ]);
+  assert.match(html, /data-claire-guided/);
+  assert.match(html, /OpenAI Realtime · voix marin/);
+  assert.match(css, /--claire-stage-width: clamp\(360px, 38vw, 540px\)/);
+  assert.match(css, /body\.claire-is-guided/);
+  assert.doesNotMatch(css, /bottom-right|claire-mini/);
+  assert.match(client, /provider\.connect\(\{ microphone: true \}\)/);
+  assert.match(client, /Mode local · Realtime non configuré/);
+  assert.match(provider, /AgentEventsEnum\.AVATAR_TRANSCRIPTION/);
 });
 
 test("le client ne contient aucune clé de fournisseur", async () => {

@@ -26,15 +26,25 @@ test("le statut reste désactivé sans secrets Cloudflare", async () => {
   assert.equal(payload.configured, false);
 });
 
-test("le statut s’active avec les trois bindings requis", async () => {
+test("le statut s’active avec LiveAvatar et OpenAI Realtime", async () => {
   const response = statusFunction.onRequestGet({
     env: {
       LIVEAVATAR_API_KEY: "configured",
-      LIVEAVATAR_OPENAI_SECRET_ID: "secret-ref",
-      LIVEAVATAR_AVATAR_ID: "avatar-ref"
+      LIVEAVATAR_OPENAI_SECRET_ID: "secret-ref"
     }
   });
   assert.equal((await response.json()).configured, true);
+});
+
+test("le statut confirme le modèle vocal sans exposer les secrets", async () => {
+  const payload = await statusFunction.onRequestGet({ env: {} }).json();
+  assert.equal(payload.voice, "marin");
+  assert.equal(payload.model, "gpt-realtime");
+  assert.deepEqual(payload.prerequisites, {
+    liveAvatar: false,
+    openAIRealtime: false,
+    avatar: true
+  });
 });
 
 test("la création de session refuse une origine différente", async () => {

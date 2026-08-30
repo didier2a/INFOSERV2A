@@ -183,7 +183,7 @@ export function routeCommand(input, knowledge, context = {}) {
 
 export function pageHrefForSession(href, mode = "shared") {
   const url = new URL(href, "https://infoserv2a.pro/");
-  if (mode !== "manual") url.searchParams.set("claire", "continue");
+  if (mode !== "manual") url.searchParams.set("claire", mode === "guided" ? "guided" : "continue");
   return `${url.pathname.replace(/^\//, "") || "./"}${url.search}${url.hash}`;
 }
 

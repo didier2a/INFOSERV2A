@@ -42,9 +42,9 @@ export class InfoServ2ALiveAvatarProvider {
     this.callbacks = {};
   }
 
-  install({ video, onTranscript, onStatus, onCommand } = {}) {
+  install({ video, onTranscript, onAvatarTranscript, onStatus, onCommand } = {}) {
     this.video = video || null;
-    this.callbacks = { onTranscript, onStatus, onCommand };
+    this.callbacks = { onTranscript, onAvatarTranscript, onStatus, onCommand };
     this.callbacks.onStatus?.("ready", "LiveAvatar disponible sur activation");
     return this;
   }
@@ -127,6 +127,10 @@ export class InfoServ2ALiveAvatarProvider {
     session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
       this.listening = false;
       this.emit("speaking", "Claire vous répond");
+    });
+    session.on(AgentEventsEnum.AVATAR_TRANSCRIPTION, (event) => {
+      const text = String(event?.text || "").trim();
+      if (text) this.callbacks.onAvatarTranscript?.(text);
     });
     session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, () => this.emit("ready", "Prête à vous guider"));
   }

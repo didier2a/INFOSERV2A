@@ -22,11 +22,11 @@
   <link rel="icon" href="assets/images/logo/favicon.png?v=2" type="image/png" sizes="192x192">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
   <link rel="manifest" href="site.webmanifest">
-  <link rel="stylesheet" href="assets/css/variables.css?v=20260830">
-  <link rel="stylesheet" href="assets/css/main.css?v=20260830">
-  <link rel="stylesheet" href="assets/css/components.css?v=20260830">
-  <link rel="stylesheet" href="assets/css/responsive.css?v=20260830">
-  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260830">
+  <link rel="stylesheet" href="assets/css/variables.css?v=20260830-live2">
+  <link rel="stylesheet" href="assets/css/main.css?v=20260830-live2">
+  <link rel="stylesheet" href="assets/css/components.css?v=20260830-live2">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=20260830-live2">
+  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260830-live2">
   <script type="application/ld+json">{
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
@@ -137,87 +137,111 @@
   <a class="mobile-dock__devis btn btn--primary" href="devis.html">Devis</a>
 </div>
 
-<div class="claire-companion" id="claireCompanion" data-state="loading" aria-busy="true">
-  <div class="claire-companion__backdrop" data-claire-manual aria-hidden="true"></div>
+<div class="claire-companion" id="claireCompanion" data-state="loading" data-provider="checking" aria-busy="true">
+  <div class="claire-companion__backdrop" aria-hidden="true"></div>
 
-  <section class="claire-arrival" role="dialog" aria-modal="true" aria-labelledby="claireArrivalTitle" aria-describedby="claireArrivalDescription">
-    <div class="claire-arrival__brand" aria-label="InfoServ2A, accompagnement numérique">
-      <span class="claire-signal" aria-hidden="true"><i></i><i></i><i></i></span>
-      <span>INFOSERV2A · COMPAGNON NUMÉRIQUE</span>
-    </div>
-    <div class="claire-arrival__layout">
-      <figure class="claire-avatar claire-avatar--immersive">
-        <img src="assets/images/companion/claire-presence.svg" alt="Claire, compagne numérique d’InfoServ2A">
-        <video class="claire-avatar__video" playsinline autoplay muted hidden aria-label="Claire en direct"></video>
-        <figcaption><span class="claire-status-dot"></span> Claire est disponible</figcaption>
-      </figure>
-      <div class="claire-arrival__copy">
-        <p class="claire-eyebrow">Bienvenue</p>
-        <h1 id="claireArrivalTitle">Je suis Claire. Que souhaitez-vous accomplir&nbsp;?</h1>
-        <p id="claireArrivalDescription">Je peux expliquer les services InfoServ2A, trouver la bonne rubrique et naviguer avec vous. Vous gardez toujours la main.</p>
-        <div class="claire-arrival__actions">
-          <button class="claire-button claire-button--primary" type="button" data-claire-start>
-            <span class="claire-button__icon" aria-hidden="true">●</span>
-            Commencer avec Claire
+  <section class="claire-experience" role="dialog" aria-modal="true" aria-labelledby="claireArrivalTitle" aria-describedby="claireArrivalDescription">
+    <header class="claire-experience__header">
+      <div class="claire-experience__brand" aria-label="InfoServ2A, accompagnement numérique">
+        <span class="claire-signal" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>INFOSERV2A · CLAIRE LIVE COMPANION</span>
+      </div>
+      <div class="claire-experience__header-actions">
+        <span class="claire-engine-badge" data-claire-engine-status>Vérification LiveAvatar…</span>
+        <button class="claire-text-control" type="button" data-claire-manual>Navigation manuelle</button>
+      </div>
+    </header>
+
+    <div class="claire-experience__layout">
+      <figure class="claire-live-stage" data-claire-stage data-presence="ready">
+        <img class="claire-live-stage__poster" src="assets/images/companion/claire-liveavatar-1080x1920.jpg" alt="Claire, LiveAvatar d’InfoServ2A">
+        <video class="claire-avatar__video" playsinline autoplay hidden aria-label="Claire en direct avec synchronisation labiale"></video>
+        <span class="claire-live-stage__shade" aria-hidden="true"></span>
+
+        <figcaption class="claire-live-stage__caption">
+          <span class="claire-status-line"><i class="claire-status-dot" aria-hidden="true"></i><strong>Claire</strong><small data-claire-status>Connexion en attente</small></span>
+          <span class="claire-voice-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+        </figcaption>
+
+        <div class="claire-live-stage__controls">
+          <button class="claire-voice-control" type="button" data-claire-mic aria-label="Parler à Claire" aria-pressed="false">
+            <span aria-hidden="true">●</span>
+            <span data-claire-mic-label>Parler à Claire</span>
           </button>
-          <button class="claire-button claire-button--quiet" type="button" data-claire-manual>Naviguer manuellement</button>
+          <button class="claire-stage-control" type="button" data-claire-expand>Conversation</button>
+          <button class="claire-stage-control" type="button" data-claire-manual>Mode manuel</button>
         </div>
-        <p class="claire-privacy">Le microphone n’est activé qu’après votre action. Le mode local n’envoie aucune conversation à un serveur.</p>
+      </figure>
+
+      <div class="claire-dialogue" aria-labelledby="clairePanelTitle" aria-describedby="clairePanelDescription">
+        <div class="claire-arrival-copy">
+          <p class="claire-eyebrow">Bienvenue</p>
+          <h1 id="claireArrivalTitle">Je suis Claire. Que souhaitez-vous accomplir&nbsp;?</h1>
+          <p id="claireArrivalDescription">Parlez-moi naturellement. Je peux expliquer InfoServ2A, afficher la bonne page et naviguer avec vous tout en restant présente à l’écran.</p>
+          <div class="claire-arrival-actions">
+            <button class="claire-button claire-button--primary" type="button" data-claire-start>
+              <span class="claire-button__icon" aria-hidden="true">●</span>
+              Parler à Claire en direct
+            </button>
+            <button class="claire-button claire-button--quiet" type="button" data-claire-manual>Naviguer sans Claire</button>
+          </div>
+          <p class="claire-privacy">Votre action démarre LiveAvatar et OpenAI Realtime. Le microphone n’est jamais activé avant votre accord.</p>
+        </div>
+
+        <div class="claire-conversation">
+          <header class="claire-conversation__header">
+            <div>
+              <p class="claire-eyebrow">Conversation naturelle</p>
+              <h2 id="clairePanelTitle">Claire vous écoute et pilote le site</h2>
+            </div>
+            <button class="claire-icon-button" type="button" data-claire-guided aria-label="Afficher le site avec Claire">↗</button>
+          </header>
+
+          <p class="sr-only" id="clairePanelDescription">Dialogue vocal et textuel avec Claire, LiveAvatar du site InfoServ2A.</p>
+          <div class="claire-conversation__scroll">
+            <div class="claire-transcript" data-claire-transcript role="log" aria-live="polite" aria-relevant="additions">
+              <article class="claire-turn claire-turn--companion">
+                <span>Claire</span>
+                <p>Bonjour. Dites-moi ce que vous souhaitez accomplir, je vais chercher et afficher l’information utile.</p>
+              </article>
+            </div>
+
+            <div class="claire-suggestions" data-claire-suggestions aria-label="Suggestions"></div>
+
+            <article class="claire-result" data-claire-result hidden aria-live="polite">
+              <p class="claire-result__eyebrow">Résultat vérifié par InfoServ2A</p>
+              <h2 data-claire-result-title></h2>
+              <p data-claire-result-summary></p>
+              <a class="claire-button claire-button--primary" data-claire-result-link href="#">Afficher cette page avec Claire</a>
+            </article>
+          </div>
+
+          <form class="claire-command" data-claire-form>
+            <label class="sr-only" for="claireCommand">Votre demande</label>
+            <input id="claireCommand" name="command" type="text" autocomplete="off" placeholder="Ex. Explique-moi la vidéosurveillance sans fibre" maxlength="320">
+            <button class="claire-icon-button claire-icon-button--send" type="submit" aria-label="Envoyer la demande">→</button>
+          </form>
+
+          <footer class="claire-conversation__footer">
+            <button type="button" data-claire-guided>Voir le site avec Claire</button>
+            <button type="button" data-claire-retry hidden>Réessayer LiveAvatar</button>
+            <span>LiveAvatar · OpenAI Realtime · voix marin</span>
+          </footer>
+        </div>
       </div>
     </div>
   </section>
 
-  <aside class="claire-panel" aria-labelledby="clairePanelTitle" aria-describedby="clairePanelDescription">
-    <header class="claire-panel__header">
-      <div class="claire-panel__identity">
-        <img src="assets/images/companion/claire-presence.svg" alt="">
-        <span><strong id="clairePanelTitle">Claire</strong><small data-claire-status>Prête à vous guider</small></span>
-      </div>
-      <button class="claire-icon-button" type="button" data-claire-manual aria-label="Passer en navigation manuelle">×</button>
-    </header>
-
-    <div class="claire-panel__body">
-      <p class="sr-only" id="clairePanelDescription">Dialogue avec Claire, compagne numérique du site InfoServ2A.</p>
-      <div class="claire-transcript" data-claire-transcript role="log" aria-live="polite" aria-relevant="additions">
-        <article class="claire-turn claire-turn--companion">
-          <span>Claire</span>
-          <p>Bonjour. Dites-moi ce que vous cherchez, je vous conduirai à l’information utile.</p>
-        </article>
-      </div>
-
-      <div class="claire-suggestions" data-claire-suggestions aria-label="Suggestions"></div>
-
-      <article class="claire-result" data-claire-result hidden aria-live="polite">
-        <p class="claire-result__eyebrow">Information trouvée</p>
-        <h2 data-claire-result-title></h2>
-        <p data-claire-result-summary></p>
-        <a class="claire-button claire-button--primary" data-claire-result-link href="#">Afficher cette rubrique</a>
-      </article>
-    </div>
-
-    <form class="claire-command" data-claire-form>
-      <label class="sr-only" for="claireCommand">Votre demande</label>
-      <input id="claireCommand" name="command" type="text" autocomplete="off" placeholder="Ex. Je cherche une caméra sans fibre" maxlength="240">
-      <button class="claire-icon-button claire-icon-button--mic" type="button" data-claire-mic aria-label="Activer le microphone" aria-pressed="false">
-        <span aria-hidden="true">●</span>
-      </button>
-      <button class="claire-icon-button claire-icon-button--send" type="submit" aria-label="Envoyer la demande">→</button>
-    </form>
-
-    <footer class="claire-panel__footer">
-      <button type="button" data-claire-manual>Mode manuel</button>
-      <span>Source : pages InfoServ2A</span>
-    </footer>
-  </aside>
-
-  <button class="claire-mini" type="button" data-claire-recall aria-label="Rappeler Claire">
-    <img src="assets/images/companion/claire-presence.svg" alt="">
-    <span><strong>Claire</strong><small>Besoin d’aide&nbsp;?</small></span>
+  <button class="claire-manual-bar" type="button" data-claire-recall aria-label="Reprendre la navigation avec Claire">
+    <img src="assets/images/companion/claire-liveavatar-1080x1920.jpg" alt="">
+    <span><strong>Reprendre avec Claire</strong><small>LiveAvatar + conversation OpenAI Realtime</small></span>
+    <b aria-hidden="true">Ouvrir</b>
   </button>
 
   <p class="sr-only" data-claire-live aria-live="assertive"></p>
 </div>
 <!-- /chrome:header -->
+
 
 
 
@@ -324,8 +348,9 @@
 
 
 
-<script src="assets/js/main.js?v=20260830" defer></script>
-  <script src="assets/js/navigation.js?v=20260830" defer></script>
-  <script type="module" src="assets/js/claire-companion.js?v=20260830"></script>
+
+<script src="assets/js/main.js?v=20260830-live2" defer></script>
+  <script src="assets/js/navigation.js?v=20260830-live2" defer></script>
+  <script type="module" src="assets/js/claire-companion.js?v=20260830-live2"></script>
 </body>
 </html>

@@ -72,6 +72,13 @@ test("conserve Claire pendant une navigation interne", () => {
   );
 });
 
+test("conserve la grande scène Claire en navigation guidée", () => {
+  assert.equal(
+    pageHrefForSession("videosurveillance.html#solutions", "guided"),
+    "videosurveillance.html?claire=guided#solutions"
+  );
+});
+
 test("privilégie un titre et ses mots-clés", () => {
   const web = knowledge.pages.find((page) => page.id === "web");
   const legal = knowledge.pages.find((page) => page.id === "legal");

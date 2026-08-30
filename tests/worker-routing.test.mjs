@@ -24,8 +24,15 @@ test("le Worker expose le statut LiveAvatar sans révéler de secret", async () 
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), {
     configured: false,
+    prerequisites: {
+      liveAvatar: false,
+      openAIRealtime: false,
+      avatar: true
+    },
     provider: "liveavatar-realtime",
     connector: "OPENAI_REALTIME",
+    voice: "marin",
+    model: "gpt-realtime",
     mode: "LITE"
   });
 });
