@@ -8,7 +8,7 @@ import {
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
 const STORAGE_PENDING = "infoserv2a.claire.pending";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260830-live5";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260830-live6";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique. Je suis ici pour vous présenter l’entreprise, comprendre votre besoin et vous guider en langage naturel vers le bon service : cybersécurité, réseaux et Wi-Fi, vidéosurveillance, assistance informatique ou création de sites web. Vous pouvez me parler librement et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
 
@@ -229,6 +229,10 @@ export class ClaireCompanion {
       void this.submit(value, "text");
     });
     this.nodes.mic?.addEventListener("click", () => void this.toggleMicrophone());
+    this.nodes.stage?.addEventListener("click", (event) => {
+      if (event.target?.closest?.("button, a, input")) return;
+      void this.provider?.resumeMedia?.();
+    });
     this.nodes.resultLink?.addEventListener("click", () => storageSet(STORAGE_MODE, "guided"));
     document.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
@@ -272,6 +276,7 @@ export class ClaireCompanion {
     storageSet(STORAGE_SEEN, "1");
     storageSet(STORAGE_MODE, "shared");
     this.audioEnabled = true;
+    this.provider?.primeAudio?.();
     this.setState("shared");
     this.setStatus("connecting", "Connexion à Claire…");
     await this.providerReadyPromise;
@@ -327,6 +332,7 @@ export class ClaireCompanion {
   async openConversation() {
     storageSet(STORAGE_MODE, "shared");
     this.audioEnabled = true;
+    this.provider?.primeAudio?.();
     this.setState("shared");
     this.setStatus("connecting", "Connexion à Claire…");
     await this.providerReadyPromise;
@@ -361,6 +367,7 @@ export class ClaireCompanion {
   }
 
   async retryLiveAvatar() {
+    this.provider?.primeAudio?.();
     this.setEngineStatus("checking", "Vérification LiveAvatar…");
     this.providerReadyPromise = this.configureLiveAvatarProvider();
     const ready = await this.providerReadyPromise;
@@ -505,6 +512,7 @@ export class ClaireCompanion {
 
   async toggleMicrophone() {
     this.audioEnabled = true;
+    this.provider?.primeAudio?.();
     try {
       if (this.provider?.toggleListening) {
         try {

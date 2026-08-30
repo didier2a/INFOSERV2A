@@ -41,6 +41,9 @@ export class InfoServ2ALiveAvatarProvider {
     this.listening = false;
     this.startPromise = null;
     this.streamReady = false;
+    this.audioContext = null;
+    this.audioSource = null;
+    this.audioStream = null;
     this.callbacks = {};
   }
 
@@ -53,6 +56,49 @@ export class InfoServ2ALiveAvatarProvider {
 
   emit(value, label) {
     this.callbacks.onStatus?.(value, label);
+  }
+
+  primeAudio() {
+    const AudioContext = globalThis.AudioContext || globalThis.webkitAudioContext;
+    if (!AudioContext) return false;
+    if (!this.audioContext || this.audioContext.state === "closed") {
+      this.audioContext = new AudioContext();
+    }
+    void this.audioContext.resume().catch(() => {});
+    return true;
+  }
+
+  connectAudioStream() {
+    const stream = this.video?.srcObject;
+    if (!stream || !this.primeAudio() || !this.audioContext) return false;
+    if (this.audioSource && this.audioStream === stream) return true;
+    try { this.audioSource?.disconnect(); } catch { /* Ancien flux déjà fermé. */ }
+    try {
+      this.audioSource = this.audioContext.createMediaStreamSource(stream);
+      this.audioSource.connect(this.audioContext.destination);
+      this.audioStream = stream;
+      return true;
+    } catch {
+      this.audioSource = null;
+      this.audioStream = null;
+      return false;
+    }
+  }
+
+  async resumeMedia() {
+    if (!this.video) return false;
+    this.primeAudio();
+    try { await this.audioContext?.resume?.(); } catch { /* Android peut demander un autre geste. */ }
+    const routed = this.connectAudioStream();
+    if (!routed) this.video.muted = false;
+    try {
+      await this.video.play();
+      this.emit("ready", "Son Realtime activé");
+      return true;
+    } catch {
+      this.emit("sound", "Touchez Claire pour activer le son");
+      return false;
+    }
   }
 
   async connect({ microphone = false } = {}) {
@@ -124,9 +170,18 @@ export class InfoServ2ALiveAvatarProvider {
     session.on(SessionEvent.SESSION_STREAM_READY, () => {
       if (this.video) {
         this.video.hidden = false;
-        this.video.muted = false;
+        // La vidéo reste muette : l'audio est routé dans un AudioContext
+        // préparé par le premier geste de l'utilisateur. Cela évite le
+        // blocage d'autoplay de Chrome Android quand le flux arrive plus tard.
+        this.video.muted = true;
         session.attach(this.video);
-        void this.video.play().catch(() => {});
+        const audioReady = this.connectAudioStream();
+        void this.video.play().catch(() => {
+          this.emit("sound", "Touchez Claire pour activer le son");
+        });
+        if (!audioReady || this.audioContext?.state !== "running") {
+          this.emit("sound", "Touchez Claire pour activer le son");
+        }
       }
       this.streamReady = Boolean(this.video?.srcObject);
       if (!this.streamReady) {
@@ -217,6 +272,11 @@ export class InfoServ2ALiveAvatarProvider {
     this.listening = false;
     try { await session?.stop(); } catch { /* Session déjà terminée. */ }
     try { await session?.room?.disconnect?.(); } catch { /* Transport LiveKit déjà fermé. */ }
+    try { this.audioSource?.disconnect(); } catch { /* Flux audio déjà fermé. */ }
+    try { await this.audioContext?.close?.(); } catch { /* Contexte audio déjà fermé. */ }
+    this.audioSource = null;
+    this.audioStream = null;
+    this.audioContext = null;
     if (this.video) {
       this.video.hidden = true;
       this.video.srcObject = null;
@@ -229,6 +289,7 @@ export class InfoServ2ALiveAvatarProvider {
       endpoint: this.endpoint,
       connected: this.connected,
       streamReady: this.streamReady,
+      audioState: this.audioContext?.state || "inactive",
       listening: this.listening,
       connector: "OPENAI_REALTIME",
       transport: "ephemeral-session-token"
