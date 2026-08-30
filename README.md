@@ -2,6 +2,8 @@
 
 Site professionnel d'InfoServ2A, relié à Cloudflare Workers Builds. La branche `main` alimente le déploiement stable Cloudflare et les autres branches produisent des versions d’aperçu isolées avant validation.
 
+Environnement de validation Cloudflare : `https://infoserv2a.infoserv2a.workers.dev/`.
+
 Futur domaine : `https://infoserv2a.pro`
 
 ## Lancement local
