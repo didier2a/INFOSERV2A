@@ -102,3 +102,39 @@ test("la fonction échange les références serveur contre un jeton éphémère"
     globalThis.fetch = originalFetch;
   }
 });
+
+test("une nouvelle clé Cloudflare crée une nouvelle référence LiveAvatar", async () => {
+  const originalFetch = globalThis.fetch;
+  const outbound = [];
+  globalThis.fetch = async (url, options = {}) => {
+    outbound.push({ url: String(url), options });
+    if (String(url).endsWith("/v1/secrets") && !options.method) {
+      return Response.json({ data: [{ id: "stale", secret_name: "InfoServ2A OpenAI Realtime", secret_type: "OPENAI_API_KEY" }] });
+    }
+    if (String(url).endsWith("/v1/secrets") && options.method === "POST") {
+      return Response.json({ data: { id: "rotated-secret" } });
+    }
+    return Response.json({ data: { session_token: "rotated-token", session_id: "rotated-session" } });
+  };
+  try {
+    const response = await sessionFunction.onRequestPost({
+      request: request(),
+      env: {
+        LIVEAVATAR_API_KEY: "configured",
+        OPENAI_API_KEY: "sk-test-new-value",
+        LIVEAVATAR_CONTEXT_ID: "context-ref",
+        LIVEAVATAR_AVATAR_ID: "avatar-ref"
+      }
+    });
+    assert.equal(response.status, 200);
+    const created = outbound.find((item) => item.url.endsWith("/v1/secrets") && item.options.method === "POST");
+    assert.ok(created);
+    const secretBody = JSON.parse(created.options.body);
+    assert.match(secretBody.secret_name, /^InfoServ2A OpenAI Realtime [0-9a-f]{16}$/);
+    assert.equal(secretBody.secret_value, "sk-test-new-value");
+    const token = outbound.find((item) => item.url.endsWith("/v1/sessions/token"));
+    assert.equal(JSON.parse(token.options.body).openai_realtime_config.secret_id, "rotated-secret");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

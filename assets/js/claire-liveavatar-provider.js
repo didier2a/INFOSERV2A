@@ -43,6 +43,8 @@ export class InfoServ2ALiveAvatarProvider {
     this.streamReady = false;
     this.mediaAudible = false;
     this.pendingSpeech = [];
+    this.realtimeSignal = "idle";
+    this.replyTimer = null;
     this.callbacks = {};
   }
 
@@ -105,6 +107,20 @@ export class InfoServ2ALiveAvatarProvider {
     if (!this.mediaAudible || !this.session || !this.pendingSpeech.length) return;
     const pending = this.pendingSpeech.splice(0);
     pending.forEach((value) => this.sendPrompt(value));
+  }
+
+  clearReplyTimer() {
+    clearTimeout(this.replyTimer);
+    this.replyTimer = null;
+  }
+
+  armReplyTimer() {
+    this.clearReplyTimer();
+    this.replyTimer = setTimeout(() => {
+      if (this.realtimeSignal === "reply-started") return;
+      this.realtimeSignal = "reply-timeout";
+      this.emit("error", "Micro reçu, mais OpenAI Realtime ne renvoie pas de réponse");
+    }, 12000);
   }
 
   async connect({ microphone = false } = {}) {
@@ -216,24 +232,43 @@ export class InfoServ2ALiveAvatarProvider {
     });
     session.on(AgentEventsEnum.USER_SPEAK_STARTED, () => {
       this.listening = true;
+      this.realtimeSignal = "input-detected";
+      this.clearReplyTimer();
       this.emit("listening", "Je vous écoute");
     });
-    session.on(AgentEventsEnum.USER_SPEAK_ENDED, () => this.emit("thinking", "J’analyse votre demande…"));
+    session.on(AgentEventsEnum.USER_SPEAK_ENDED, () => {
+      this.realtimeSignal = "input-ended";
+      this.armReplyTimer();
+      this.emit("thinking", "Micro transmis · attente de la transcription…");
+    });
     session.on(AgentEventsEnum.USER_TRANSCRIPTION, (event) => {
       const text = String(event?.text || "").trim();
       if (!text) return;
+      this.realtimeSignal = "transcribed";
+      this.emit("thinking", "Transcription reçue · préparation de la réponse…");
       try { session.interrupt(); } catch { /* La réponse automatique n’a pas encore commencé. */ }
       void this.callbacks.onCommand?.(text);
     });
     session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
       this.listening = false;
+      this.realtimeSignal = "reply-started";
+      this.clearReplyTimer();
       this.emit(this.mediaAudible ? "speaking" : "sound", this.mediaAudible ? "Claire vous répond" : "Touchez Claire pour entendre sa réponse");
     });
     session.on(AgentEventsEnum.AVATAR_TRANSCRIPTION, (event) => {
       const text = String(event?.text || "").trim();
       if (text) this.callbacks.onAvatarTranscript?.(text);
     });
-    session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, () => this.emit("ready", "Prête à vous guider"));
+    session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, () => {
+      this.realtimeSignal = "reply-ended";
+      this.clearReplyTimer();
+      this.emit("ready", "Prête à vous guider");
+    });
+    session.on(AgentEventsEnum.SESSION_STOPPED, () => {
+      this.realtimeSignal = "connector-stopped";
+      this.clearReplyTimer();
+      this.emit("error", "Le connecteur OpenAI Realtime a arrêté la session");
+    });
     return streamReady;
   }
 
@@ -292,6 +327,8 @@ export class InfoServ2ALiveAvatarProvider {
     try { await session?.room?.disconnect?.(); } catch { /* Transport LiveKit déjà fermé. */ }
     this.mediaAudible = false;
     this.pendingSpeech = [];
+    this.realtimeSignal = "idle";
+    this.clearReplyTimer();
     if (this.video) {
       this.video.hidden = true;
       this.video.srcObject = null;
@@ -306,6 +343,7 @@ export class InfoServ2ALiveAvatarProvider {
       streamReady: this.streamReady,
       audioState: this.mediaAudible ? "audible" : (this.hasLiveAudio() ? "blocked" : "missing"),
       videoMuted: Boolean(this.video?.muted),
+      realtimeSignal: this.realtimeSignal,
       listening: this.listening,
       connector: "OPENAI_REALTIME",
       transport: "ephemeral-session-token"

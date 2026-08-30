@@ -54,23 +54,33 @@ function avatarId(env) {
   return String(env.LIVEAVATAR_AVATAR_ID || env.HEYGEN_AVATAR_ID || DEFAULT_AVATAR_ID).trim();
 }
 
+async function secretFingerprint(value) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest).slice(0, 8), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 async function ensureOpenAISecret(env, key) {
   const configured = String(env.LIVEAVATAR_OPENAI_SECRET_ID || "").trim();
   if (configured) return configured;
 
+  const openaiKey = String(env.OPENAI_API_KEY || "").trim();
+  if (!openaiKey) throw new Error("OpenAI Realtime non configuré");
+  // LiveAvatar ne permet pas de modifier la valeur d’un secret. Un nom
+  // déterministe dérivé de la clé garantit donc qu’une rotation Cloudflare
+  // crée une nouvelle référence au lieu de réutiliser une ancienne clé.
+  const versionedName = `${SECRET_NAME} ${await secretFingerprint(openaiKey)}`;
+
   const listed = await providerJson(SECRETS_URL, { headers: { "X-API-KEY": key } });
   if (!listed.response.ok) throw new Error(`Secrets LiveAvatar ${listed.response.status}`);
   const existing = (Array.isArray(listed.payload?.data) ? listed.payload.data : [])
-    .find((item) => item?.secret_name === SECRET_NAME && item?.secret_type === "OPENAI_API_KEY");
+    .find((item) => item?.secret_name === versionedName && item?.secret_type === "OPENAI_API_KEY");
   if (existing?.id) return String(existing.id);
 
-  const openaiKey = String(env.OPENAI_API_KEY || "").trim();
-  if (!openaiKey) throw new Error("OpenAI Realtime non configuré");
   const created = await providerJson(SECRETS_URL, {
     method: "POST",
     headers: { "X-API-KEY": key, "Content-Type": "application/json" },
     body: JSON.stringify({
-      secret_name: SECRET_NAME,
+      secret_name: versionedName,
       secret_type: "OPENAI_API_KEY",
       secret_value: openaiKey
     })

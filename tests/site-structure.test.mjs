@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260830-live7)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260830-live7)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260830-live8)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260830-live8)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -125,6 +125,15 @@ test("Claire prononce son accueil Realtime après la connexion", async () => {
   const client = await readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8");
   assert.match(client, /this\.showWelcome\(greeting\);\s*this\.speak\(greeting\);/);
   assert.match(client, /this\.showWelcome\(CLAIRE_WELCOME\);\s*this\.speak\(CLAIRE_WELCOME\);/);
+});
+
+test("le diagnostic mobile distingue micro, transcription et réponse Realtime", async () => {
+  const provider = await readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8");
+  assert.match(provider, /input-detected/);
+  assert.match(provider, /Transcription reçue/);
+  assert.match(provider, /reply-started/);
+  assert.match(provider, /Micro reçu, mais OpenAI Realtime ne renvoie pas de réponse/);
+  assert.match(provider, /SESSION_STOPPED/);
 });
 
 test("la sortie générée reste synchronisée avec le partial", async () => {
