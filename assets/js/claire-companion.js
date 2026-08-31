@@ -1,14 +1,20 @@
 import {
   currentPage,
-  pageHrefForSession,
   routeCommand,
   suggestedPrompts
 } from "./claire-core.mjs";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs";
+import {
+  BrowserInfoServ2ASurface,
+  InfoServ2ASiteAdapter
+} from "./claire-site-runtime-adapter.mjs";
+import "./contact.js";
+import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const STORAGE_PENDING = "infoserv2a.claire.pending";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260831-live11";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260831-live12";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260831-live12";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique. Je suis ici pour vous présenter l’entreprise, comprendre votre besoin et vous guider en langage naturel vers le bon service : cybersécurité, réseaux et Wi-Fi, vidéosurveillance, assistance informatique ou création de sites web. Vous pouvez me parler librement et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
 
@@ -37,6 +43,25 @@ const FALLBACK_KNOWLEDGE = {
       summary: "Le devis est gratuit et sans engagement.",
       keywords: ["devis", "prix", "projet"]
     }
+  ]
+};
+
+const FALLBACK_CAPABILITIES = {
+  runtimeVersion: "2.0.0-p1",
+  mode: "controlled-site",
+  guardrails: {
+    maxConcurrentCommands: 1,
+    requireDeclaredTools: true,
+    allowDirectDomFromModel: false,
+    allowFormSubmission: false,
+    manualModeAlwaysAvailable: true
+  },
+  tools: [
+    { name: "search_site", required: ["query"] },
+    { name: "open_service", required: ["service"] },
+    { name: "scroll_to", required: ["target"] },
+    { name: "open_contact", required: [] },
+    { name: "prefill_quote", required: ["description"] }
   ]
 };
 
@@ -136,8 +161,6 @@ export class ClaireCompanion {
     this.audioEnabled = false;
     this.lastFocus = null;
     this.pendingTranscript = "";
-    this.navigationTimer = null;
-    this.pendingNavigation = null;
     this.lastVoiceCommand = "";
     this.lastVoiceCommandAt = 0;
     this.welcomeShown = false;
@@ -145,6 +168,10 @@ export class ClaireCompanion {
     this.provider = null;
     this.providerReadyPromise = null;
     this.liveAvatarStatus = null;
+    this.manifest = FALLBACK_CAPABILITIES;
+    this.surface = null;
+    this.siteAdapter = null;
+    this.runtime = null;
     this.browserVoice = new BrowserVoiceProvider({
       onTranscript: (text, final) => this.handleTranscript(text, final),
       onStatus: (value, label) => this.setStatus(value, label)
@@ -154,12 +181,30 @@ export class ClaireCompanion {
   async init() {
     this.cacheNodes();
     this.bindEvents();
-    this.knowledge = await fetch(KNOWLEDGE_URL, { cache: "no-store" })
-      .then((response) => response.ok ? response.json() : Promise.reject(new Error(`Knowledge HTTP ${response.status}`)))
-      .catch(() => FALLBACK_KNOWLEDGE);
+    const [knowledge, manifest] = await Promise.all([
+      fetch(KNOWLEDGE_URL, { cache: "no-store" })
+        .then((response) => response.ok ? response.json() : Promise.reject(new Error(`Knowledge HTTP ${response.status}`)))
+        .catch(() => FALLBACK_KNOWLEDGE),
+      fetch(CAPABILITIES_URL, { cache: "no-store" })
+        .then((response) => response.ok ? response.json() : Promise.reject(new Error(`Capabilities HTTP ${response.status}`)))
+        .catch(() => FALLBACK_CAPABILITIES)
+    ]);
+    this.knowledge = knowledge;
+    this.manifest = manifest;
+    this.surface = new BrowserInfoServ2ASurface({ knowledge: this.knowledge });
+    this.siteAdapter = new InfoServ2ASiteAdapter({
+      knowledge: this.knowledge,
+      manifest: this.manifest,
+      surface: this.surface
+    });
+    this.runtime = new ClaireRuntimeController({
+      knowledge: this.knowledge,
+      manifest: this.manifest,
+      adapter: this.siteAdapter
+    });
+    this.runtime.subscribe((event) => this.handleRuntimeEvent(event));
     this.root.setAttribute("aria-busy", "false");
     this.renderSuggestions();
-    this.restorePendingTurn();
     this.highlightRequestedSection();
 
     const params = new URLSearchParams(location.search);
@@ -181,8 +226,10 @@ export class ClaireCompanion {
     }
 
     globalThis.InfoServClaire = {
-      version: "1.0.0",
+      version: "2.0.0-p1",
       companion: this,
+      runtime: this.runtime,
+      adapter: this.siteAdapter,
       registerProvider: (provider) => this.registerProvider(provider),
       route: (command) => this.submit(command, "api"),
       manual: () => this.enterManualMode(),
@@ -238,6 +285,11 @@ export class ClaireCompanion {
       void this.provider?.resumeMedia?.();
     });
     this.nodes.resultLink?.addEventListener("click", () => storageSet(STORAGE_MODE, "guided"));
+    document.addEventListener("click", (event) => this.handleSiteLink(event));
+    globalThis.addEventListener("popstate", () => {
+      if (this.state === "manual" || !this.siteAdapter) return;
+      void this.navigateInternal(location.href, { historyMode: "pop", announce: false });
+    });
     document.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
       if (["arrival", "shared", "action", "guided"].includes(this.state)) this.enterManualMode();
@@ -290,7 +342,6 @@ export class ClaireCompanion {
         await this.provider.connect({ microphone: true });
         this.setEngineStatus("liveavatar-realtime", "LiveAvatar · OpenAI Realtime · marin");
         this.showWelcome(greeting);
-        this.speak(greeting);
       } catch {
         this.activateLocalFallback("La connexion LiveAvatar a échoué. Le mode local reste silencieux afin de ne pas imiter la voix Realtime de Claire.");
         this.showWelcome(greeting);
@@ -316,10 +367,8 @@ export class ClaireCompanion {
   }
 
   enterManualMode() {
-    clearTimeout(this.navigationTimer);
-    this.navigationTimer = null;
-    this.pendingNavigation = null;
     this.interrupt();
+    void this.provider?.pauseListening?.();
     storageSet(STORAGE_SEEN, "1");
     storageSet(STORAGE_MODE, "manual");
     this.setState("manual");
@@ -333,6 +382,7 @@ export class ClaireCompanion {
     this.audioEnabled = true;
     this.setState("shared");
     this.setStatus("ready", "Prête à vous guider");
+    void this.provider?.ensureMicrophone?.();
     requestAnimationFrame(() => this.nodes.input?.focus());
   }
 
@@ -348,7 +398,6 @@ export class ClaireCompanion {
         await this.provider.connect({ microphone: false });
         this.setEngineStatus("liveavatar-realtime", "LiveAvatar · OpenAI Realtime · marin");
         this.showWelcome(CLAIRE_WELCOME);
-        this.speak(CLAIRE_WELCOME);
       } catch {
         this.activateLocalFallback("La connexion LiveAvatar a échoué. Le mode local reste silencieux afin de ne pas imiter la voix Realtime de Claire.");
         this.showWelcome(CLAIRE_WELCOME);
@@ -397,8 +446,6 @@ export class ClaireCompanion {
         video: this.nodes.video,
         onTranscript: (text, final = true) => this.handleTranscript(text, final),
         onAvatarTranscript: (text) => this.appendTurn("companion", text),
-        onAvatarSpeakStart: () => this.markNavigationSpeechStarted(),
-        onAvatarSpeakEnd: () => this.completeNavigationAfterSpeech(),
         onStatus: (value, label) => this.setStatus(value, label),
         onCommand: (text) => this.submit(text, "liveavatar")
       });
@@ -479,70 +526,113 @@ export class ClaireCompanion {
         this.setStatus("listening", "Continuez votre phrase…");
         return null;
       }
-      if (this.navigationTimer || (signature === this.lastVoiceCommand && now - this.lastVoiceCommandAt < 4000)) return null;
+      if (this.runtime?.activeCommandId || (signature === this.lastVoiceCommand && now - this.lastVoiceCommandAt < 4000)) return null;
       this.lastVoiceCommand = signature;
       this.lastVoiceCommandAt = now;
     }
+    const direct = routeCommand(value, this.knowledge, { pathname: location.pathname });
+    if (direct.type === "recall") {
+      this.recall();
+      this.appendTurn("companion", direct.speech);
+      this.speak(direct.speech);
+      return direct;
+    }
+
     const keepGuided = this.state === "guided";
     this.setState(keepGuided ? "guided" : "shared");
     this.appendTurn("user", value);
-    this.setStatus("thinking", "Je cherche dans InfoServ2A…");
-    const result = routeCommand(value, this.knowledge, { pathname: location.pathname });
-    globalThis.dispatchEvent(new CustomEvent("infoserv:claire-command", { detail: { command: value, source, result } }));
-
-    if (result.type === "manual") {
-      this.appendTurn("companion", result.speech);
-      this.speak(result.speech);
-      setTimeout(() => this.enterManualMode(), 500);
-      return result;
-    }
-    if (result.type === "recall") {
-      this.recall();
-      this.appendTurn("companion", result.speech);
-      this.speak(result.speech);
-      return result;
-    }
-
-    this.appendTurn("companion", result.speech);
-    this.showResult(result);
-    this.setStatus("ready", "Prête à vous guider");
-
-    if (result.type === "navigate" && result.href) {
-      const target = pageHrefForSession(result.href, "guided");
-      storageSet(STORAGE_PENDING, JSON.stringify({
-        text: `Nous sommes arrivés dans « ${result.label || result.page?.title} ».`,
-        createdAt: Date.now()
+    try {
+      const outcome = await this.runtime.run(value, { pathname: location.pathname });
+      globalThis.dispatchEvent(new CustomEvent("infoserv:claire-command", {
+        detail: { command: value, source, outcome }
       }));
-      this.queueNavigationAfterSpeech(target);
+      if (outcome.plan.mode === "manual") {
+        this.appendTurn("companion", outcome.plan.response);
+        this.enterManualMode();
+        return outcome;
+      }
+
+      const response = outcome.plan.response || "La demande a été vérifiée par InfoServ2A.";
+      this.appendTurn("companion", response);
+      this.showRuntimeResult(outcome);
+      if (outcome.plan.expected?.pageId) {
+        storageSet(STORAGE_MODE, "guided");
+        this.setState("guided");
+        this.renderSuggestions();
+      }
+      this.setStatus("ready", "Action vérifiée · Claire reste connectée");
+      this.speak(response);
+      return outcome;
+    } catch (error) {
+      const message = "Je n’ai pas pu afficher cette information de manière sûre. La navigation manuelle reste disponible.";
+      this.appendTurn("companion", message);
+      this.setStatus("error", "Action interrompue sans quitter la page");
+      this.nodes.live.textContent = String(error?.message || error);
+      this.speak(message);
+      return null;
     }
-    this.speak(result.speech);
-    return result;
   }
 
-  queueNavigationAfterSpeech(target) {
-    clearTimeout(this.navigationTimer);
-    this.pendingNavigation = { target, speechStarted: false };
-    // Filet de sécurité si le fournisseur ne renvoie aucun événement de fin.
-    // Le délai est volontairement long : une réponse normale ne doit jamais
-    // être interrompue par le changement de page.
-    this.navigationTimer = setTimeout(() => this.commitPendingNavigation(), 30000);
+  handleRuntimeEvent(event) {
+    const labels = {
+      interpreting: ["thinking", "J’interprète votre demande…"],
+      planning: ["thinking", "Je prépare une action contrôlée…"],
+      executing: ["thinking", "J’affiche la rubrique demandée…"],
+      verifying: ["thinking", "Je vérifie le résultat affiché…"],
+      complete: ["ready", "Action vérifiée · Claire reste connectée"],
+      error: ["error", "Action interrompue sans quitter la page"],
+      manual: ["ready", "Navigation manuelle activée"]
+    };
+    const status = labels[event.state];
+    if (status) this.setStatus(status[0], status[1]);
   }
 
-  markNavigationSpeechStarted() {
-    if (this.pendingNavigation) this.pendingNavigation.speechStarted = true;
+  showRuntimeResult(outcome) {
+    const snapshot = this.siteAdapter.snapshot();
+    if (!snapshot.page) {
+      this.nodes.result.hidden = true;
+      return;
+    }
+    const href = `${snapshot.page.href}${snapshot.section?.id ? `#${snapshot.section.id}` : ""}`;
+    this.showResult({
+      type: "navigate",
+      page: snapshot.page,
+      label: snapshot.section?.label || snapshot.page.title,
+      href,
+      speech: outcome.plan.response
+    });
   }
 
-  completeNavigationAfterSpeech() {
-    if (!this.pendingNavigation?.speechStarted) return;
-    clearTimeout(this.navigationTimer);
-    this.navigationTimer = setTimeout(() => this.commitPendingNavigation(), 350);
+  async navigateInternal(href, { historyMode = "push", announce = true } = {}) {
+    if (!this.siteAdapter) return false;
+    try {
+      this.setStatus("thinking", "Navigation contrôlée en cours…");
+      const snapshot = await this.siteAdapter.navigateHref(href, { historyMode });
+      storageSet(STORAGE_MODE, "guided");
+      this.setState("guided");
+      this.renderSuggestions();
+      this.setStatus("ready", "Page affichée · Claire reste connectée");
+      if (announce && snapshot.page) {
+        const text = `Voici « ${snapshot.page.title} ». Claire reste connectée pendant votre navigation.`;
+        this.appendTurn("companion", text);
+      }
+      return true;
+    } catch (error) {
+      this.setStatus("error", "Ce lien ne peut pas être ouvert par Claire");
+      this.nodes.live.textContent = String(error?.message || error);
+      return false;
+    }
   }
 
-  commitPendingNavigation() {
-    const target = this.pendingNavigation?.target;
-    this.pendingNavigation = null;
-    this.navigationTimer = null;
-    if (target) location.assign(target);
+  handleSiteLink(event) {
+    if (event.defaultPrevented || this.state === "manual" || event.button > 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const link = event.target?.closest?.("a[href]");
+    if (!link || link.target === "_blank" || link.hasAttribute("download")) return;
+    let url;
+    try { url = new URL(link.href, location.href); } catch { return; }
+    if (url.origin !== location.origin || !this.siteAdapter?.pageForHref(url.href)) return;
+    event.preventDefault();
+    void this.navigateInternal(url.href);
   }
 
   showResult(result) {
@@ -555,8 +645,8 @@ export class ClaireCompanion {
     const title = result.page?.title || result.label || "Action proposée";
     this.nodes.resultTitle.textContent = title;
     this.nodes.resultSummary.textContent = result.page?.summary || result.speech;
-    this.nodes.resultLink.href = result.type === "action" ? result.href : pageHrefForSession(result.href, "guided");
-    this.nodes.resultLink.textContent = result.label || (result.type === "navigate" ? "Ouverture en cours…" : "Afficher cette rubrique");
+    this.nodes.resultLink.href = result.href;
+    this.nodes.resultLink.textContent = result.label || (result.type === "navigate" ? "Page affichée avec Claire" : "Afficher cette rubrique");
     this.nodes.result.hidden = false;
     this.setState(this.state === "guided" ? "guided" : "action");
   }
@@ -611,18 +701,6 @@ export class ClaireCompanion {
     this.browserVoice.interrupt();
   }
 
-  restorePendingTurn() {
-    const raw = storageGet(STORAGE_PENDING);
-    if (!raw) return;
-    storageRemove(STORAGE_PENDING);
-    try {
-      const pending = JSON.parse(raw);
-      if (pending.text && Date.now() - Number(pending.createdAt || 0) < 15000) {
-        this.appendTurn("companion", pending.text);
-      }
-    } catch { /* Valeur de session obsolète. */ }
-  }
-
   highlightRequestedSection() {
     if (!location.hash) return;
     const target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
@@ -635,14 +713,16 @@ export class ClaireCompanion {
 
   diagnostic() {
     return {
-      version: "1.0.0",
+      version: "2.0.0-p1",
       state: this.state,
       provider: this.provider?.id || "browser-native-fallback",
       liveAvatarConfigured: Boolean(this.liveAvatarStatus?.configured),
       voiceRecognition: this.browserVoice.supported(),
       speechSynthesis: Boolean(globalThis.speechSynthesis),
       knowledgeVersion: this.knowledge.version || "fallback",
-      page: currentPage(this.knowledge, location.pathname)?.id || null
+      runtimeState: this.runtime?.state || null,
+      persistentNavigation: Boolean(this.siteAdapter),
+      page: currentPage(this.knowledge, location.pathname)?.id || this.siteAdapter?.snapshot().activePage || null
     };
   }
 }

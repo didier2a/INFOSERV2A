@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "runtimeVersion": "2.0.0-p0",
-  "mode": "text-only",
+  "runtimeVersion": "2.0.0-p1",
+  "mode": "controlled-site",
   "site": "InfoServ2A",
   "knowledgeSource": "data/site-knowledge.json",
   "guardrails": {
@@ -22,22 +22,22 @@
     },
     {
       "name": "open_service",
-      "description": "Sélectionne une page de service déclarée dans l’index du site.",
-      "sideEffect": "preview-navigation",
+      "description": "Affiche une page déclarée dans la surface persistante du site sans interrompre Claire.",
+      "sideEffect": "controlled-navigation",
       "confirmation": "never",
       "required": ["service"]
     },
     {
       "name": "scroll_to",
-      "description": "Sélectionne une ancre déclarée de la page active.",
-      "sideEffect": "preview-scroll",
+      "description": "Positionne la surface persistante sur une ancre déclarée de la page active.",
+      "sideEffect": "controlled-scroll",
       "confirmation": "never",
       "required": ["target"]
     },
     {
       "name": "open_contact",
       "description": "Affiche les coordonnées ou le formulaire de contact sans lancer d’appel ni envoyer de message.",
-      "sideEffect": "preview-navigation",
+      "sideEffect": "controlled-navigation",
       "confirmation": "never",
       "required": []
     },

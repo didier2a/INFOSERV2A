@@ -7,6 +7,7 @@ import {
   planCommand
 } from "../assets/js/claire-runtime-v2.mjs";
 import { InfoServ2ALabAdapter } from "../assets/js/claire-site-adapter.mjs";
+import { InfoServ2ASiteAdapter } from "../assets/js/claire-site-runtime-adapter.mjs";
 
 const knowledge = JSON.parse(
   await readFile(new URL("../data/site-knowledge.json", import.meta.url), "utf8")
@@ -15,15 +16,53 @@ const manifest = JSON.parse(
   await readFile(new URL("../data/claire-capabilities.json", import.meta.url), "utf8")
 );
 
-test("le manifeste P0 n’expose que les cinq outils déclarés", () => {
+test("le manifeste P1 n’expose que les cinq outils déclarés", () => {
   assert.deepEqual(
     manifest.tools.map((tool) => tool.name),
     ["search_site", "open_service", "scroll_to", "open_contact", "prefill_quote"]
   );
-  assert.equal(manifest.mode, "text-only");
+  assert.equal(manifest.runtimeVersion, "2.0.0-p1");
+  assert.equal(manifest.mode, "controlled-site");
   assert.equal(manifest.guardrails.allowDirectDomFromModel, false);
   assert.equal(manifest.guardrails.allowFormSubmission, false);
 });
+
+class MockPersistentSurface {
+  constructor() {
+    this.activePage = "home";
+    this.activeSection = null;
+    this.calls = [];
+    this.draft = null;
+  }
+
+  async openPage(page, options = {}) {
+    this.calls.push(["openPage", page.id, options.historyMode || "push"]);
+    this.activePage = page.id;
+    this.activeSection = null;
+    return page;
+  }
+
+  async scrollTo(anchorId) {
+    this.calls.push(["scrollTo", anchorId]);
+    this.activeSection = anchorId;
+    return { id: anchorId };
+  }
+
+  prefillQuote(draft) {
+    this.calls.push(["prefillQuote", draft.description]);
+    this.draft = draft;
+    return { serviceFound: true, descriptionFound: true, submitted: false };
+  }
+
+  snapshot() {
+    return {
+      activePage: this.activePage,
+      activeSection: this.activeSection,
+      navigationCount: this.calls.filter(([name]) => name === "openPage").length,
+      mainConnected: true
+    };
+  }
+}
 
 test("le scénario sans fibre produit le plan canonique exact", () => {
   const plan = planCommand(
@@ -71,6 +110,33 @@ test("le contrôleur exécute, vérifie et journalise une seule action à la foi
   const snapshot = adapter.snapshot();
   assert.equal(snapshot.activePage, "videosurveillance");
   assert.equal(snapshot.activeSection, "solutions-sans-fibre");
+});
+
+test("P1 pilote la vraie surface dans l’ordre sans détruire la session", async () => {
+  const surface = new MockPersistentSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const outcome = await controller.run("Affiche les solutions de vidéosurveillance sans fibre.");
+  assert.equal(outcome.verification.ok, true);
+  assert.equal(outcome.verification.persistentSession, true);
+  assert.deepEqual(surface.calls, [
+    ["openPage", "videosurveillance", "push"],
+    ["scrollTo", "solutions-sans-fibre"]
+  ]);
+  assert.equal(adapter.snapshot().activePage, "videosurveillance");
+  assert.equal(adapter.snapshot().activeSection, "solutions-sans-fibre");
+});
+
+test("P1 ouvre l’audit NIS 2 sur l’ancre canonique", async () => {
+  const surface = new MockPersistentSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const outcome = await controller.run("Ouvre Nice 2.");
+  assert.deepEqual(outcome.plan.expected, { pageId: "cybersecurity", anchorId: "audit-nis2" });
+  assert.deepEqual(surface.calls, [
+    ["openPage", "cybersecurity", "push"],
+    ["scrollTo", "audit-nis2"]
+  ]);
 });
 
 test("une deuxième commande est refusée tant que la première est active", async () => {
@@ -123,6 +189,27 @@ test("le devis reste un brouillon non soumis", async () => {
   assert.equal(snapshot.activePage, "quote");
   assert.equal(snapshot.submitted, false);
   assert.equal(snapshot.quoteDraft.description, "Ouvre le formulaire de devis.");
+});
+
+test("P1 préremplit un devis dans la surface mais ne le soumet jamais", async () => {
+  const surface = new MockPersistentSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const outcome = await controller.run("Ouvre le formulaire de devis.");
+  assert.equal(outcome.verification.ok, true);
+  assert.equal(adapter.snapshot().submitted, false);
+  assert.equal(surface.draft.description, "Ouvre le formulaire de devis.");
+  assert.ok(!surface.calls.some(([name]) => name === "submit"));
+});
+
+test("P1 affiche le contact sans lancer l’appel ni la messagerie", async () => {
+  const surface = new MockPersistentSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const outcome = await controller.run("Je voudrais vous contacter par email.");
+  assert.equal(outcome.verification.ok, true);
+  assert.equal(adapter.snapshot().contactChannel, "email");
+  assert.ok(!surface.calls.some(([name]) => name === "call" || name === "email"));
 });
 
 test("l’ancre canonique existe dans la page publique", async () => {

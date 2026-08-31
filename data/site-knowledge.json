@@ -60,7 +60,7 @@
         {
           "id": "audit-nis2",
           "label": "Audit NIS 2",
-          "keywords": ["nis2", "nis 2", "audit réseau", "rapport", "conformité"]
+          "keywords": ["nis2", "nis 2", "nice2", "nice 2", "audit réseau", "rapport", "conformité"]
         }
       ],
       "prompts": ["Expliquez-moi l’audit NIS 2", "Comment sécuriser mon réseau ?", "Quel accompagnement IA proposez-vous ?"]

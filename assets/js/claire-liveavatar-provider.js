@@ -158,7 +158,7 @@ export class InfoServ2ALiveAvatarProvider {
   async flushTranscript() {
     clearTimeout(this.transcriptTimer);
     this.transcriptTimer = null;
-    if (this.avatarSpeaking || this.commandInFlight) {
+    if (this.commandInFlight) {
       this.transcriptParts = [];
       return;
     }
@@ -307,13 +307,11 @@ export class InfoServ2ALiveAvatarProvider {
       if (!text) return;
       if (this.avatarSpeaking || Date.now() < this.ignoreInputUntil) return;
       this.clearReplyTimer();
-      try { session.interrupt(); } catch { /* La réponse automatique n’a pas encore commencé. */ }
       this.stageTranscript(text);
     });
     session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
       this.listening = false;
       this.avatarSpeaking = true;
-      this.clearTranscriptBuffer();
       this.realtimeSignal = "reply-started";
       this.clearReplyTimer();
       const chat = this.session?.voiceChat;
@@ -370,6 +368,19 @@ export class InfoServ2ALiveAvatarProvider {
     this.listening = false;
     this.emit("ready", "Microphone en pause");
     return false;
+  }
+
+  async pauseListening() {
+    const chat = this.session?.voiceChat;
+    if (chat && !chat.isMuted) {
+      try { await chat.mute(); } catch { /* Le micro peut déjà être arrêté. */ }
+    }
+    try { this.session?.stopListening(); } catch { /* Le SDK peut déjà être en pause. */ }
+    this.listening = false;
+    this.resumeListeningAfterAvatar = false;
+    this.clearTranscriptBuffer();
+    this.emit("ready", "Microphone en pause · session Claire conservée");
+    return true;
   }
 
   async speak(text) {
