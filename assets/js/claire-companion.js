@@ -234,7 +234,8 @@ export class ClaireCompanion {
       route: (command) => this.submit(command, "api"),
       manual: () => this.enterManualMode(),
       recall: () => this.recall(),
-      guided: () => this.enterGuidedMode()
+      guided: () => this.enterGuidedMode(),
+      diagnostic: () => this.diagnostic()
     };
     globalThis.dispatchEvent(new CustomEvent("infoserv:claire-ready", { detail: globalThis.InfoServClaire }));
     this.providerReadyPromise = this.configureLiveAvatarProvider();
@@ -730,7 +731,8 @@ export class ClaireCompanion {
       knowledgeVersion: this.knowledge.version || "fallback",
       runtimeState: this.runtime?.state || null,
       persistentNavigation: Boolean(this.siteAdapter),
-      page: currentPage(this.knowledge, location.pathname)?.id || this.siteAdapter?.snapshot().activePage || null
+      page: currentPage(this.knowledge, location.pathname)?.id || this.siteAdapter?.snapshot().activePage || null,
+      realtime: this.provider?.diagnostic?.() || null
     };
   }
 }

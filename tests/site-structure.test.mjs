@@ -94,7 +94,8 @@ test("Claire accueille l'utilisateur et explique son rôle chez InfoServ2A", asy
     assert.match(source, /Je suis Claire, votre compagne numérique/);
     assert.match(source, /revenir à la navigation manuelle à tout moment/);
   }
-  assert.match(endpoint, /InfoServ2A Claire Companion 1\.1/);
+  assert.match(endpoint, /InfoServ2A Claire Companion 1\.2 Single Orchestrator/);
+  assert.match(endpoint, /ne produis aucun texte, aucun son, aucun acquittement/);
   assert.match(endpoint, /opening_text:\s*CLAIRE_WELCOME/);
   assert.doesNotMatch(client, /this\.speak\(greeting\)/);
 });
@@ -107,7 +108,9 @@ test("le direct exige les pistes LiveAvatar avant d’annoncer la connexion", as
   assert.match(provider, /SESSION_MEDIA_TIMEOUT_MS\s*=\s*45000/);
   assert.match(provider, /Promise\.race/);
   assert.match(provider, /await streamReady/);
-  assert.match(provider, /this\.streamReady = this\.hasLiveVideo\(\) && this\.hasLiveAudio\(\)/);
+  assert.match(provider, /await this\.waitForMediaTracks\(\)/);
+  assert.match(provider, /TRACK_ATTACH_TIMEOUT_MS\s*=\s*18000/);
+  assert.match(provider, /this\.streamReady = true/);
   assert.match(headers, /wss:\/\/\*\.livekit\.cloud/);
 });
 
@@ -119,7 +122,7 @@ test("Chrome Android reçoit le son Realtime directement et peut le déverrouill
   assert.match(client, /provider\?\.primeAudio\?\.\(\)/);
   assert.match(provider, /this\.video\.muted = false/);
   assert.match(provider, /this\.video\.volume = 1/);
-  assert.match(provider, /this\.hasLiveVideo\(\) && this\.hasLiveAudio\(\)/);
+  assert.match(provider, /mediaTrackState\(this\.video\)/);
   assert.doesNotMatch(provider, /createMediaStreamSource/);
   assert.match(provider, /Touchez Claire pour activer le son/);
   assert.match(provider, /async resumeMedia\(\)/);
@@ -146,7 +149,7 @@ test("le diagnostic mobile distingue micro, transcription et réponse Realtime",
   assert.match(provider, /SESSION_STOPPED/);
 });
 
-test("les syllabes, doublons et échos ne peuvent plus piloter la navigation", async () => {
+test("les syllabes et doublons ne peuvent plus piloter la navigation", async () => {
   const [client, provider] = await Promise.all([
     readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
     readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8")
@@ -154,9 +157,10 @@ test("les syllabes, doublons et échos ne peuvent plus piloter la navigation", a
   assert.match(provider, /TRANSCRIPT_SETTLE_MS\s*=\s*950/);
   assert.match(provider, /significant\.length < 4/);
   assert.match(provider, /buffering-transcript/);
-  assert.match(provider, /this\.avatarSpeaking \|\| Date\.now\(\) < this\.ignoreInputUntil/);
-  assert.match(provider, /void chat\.mute\(\)/);
-  assert.match(provider, /void chat\.unmute\(\)/);
+  const speakingStart = provider.match(/AVATAR_SPEAK_STARTED[\s\S]*?AVATAR_TRANSCRIPTION/)?.[0] || "";
+  const speakingEnd = provider.match(/AVATAR_SPEAK_ENDED[\s\S]*?SESSION_STOPPED/)?.[0] || "";
+  assert.doesNotMatch(speakingStart + speakingEnd, /chat\.(?:mute|unmute)\(\)/);
+  assert.match(provider, /conversation:user-transcription/);
   assert.match(client, /signature === this\.lastVoiceCommand/);
   assert.match(client, /this\.runtime\?\.activeCommandId/);
   assert.doesNotMatch(client, /navigationTimer|pendingNavigation/);
@@ -178,7 +182,7 @@ test("la navigation pilotée conserve Claire et ne recharge jamais le document",
   assert.doesNotMatch(client + adapter, /location\.assign|location\.reload/);
   const speakingStart = provider.match(/AVATAR_SPEAK_STARTED[\s\S]*?AVATAR_TRANSCRIPTION/)?.[0] || "";
   assert.doesNotMatch(speakingStart, /stopListening/);
-  assert.match(speakingStart, /voiceChat/);
+  assert.doesNotMatch(speakingStart, /voiceChat|\.mute\(|\.unmute\(/);
 });
 
 test("Realtime ne coupe plus la réponse sur la première syllabe", async () => {

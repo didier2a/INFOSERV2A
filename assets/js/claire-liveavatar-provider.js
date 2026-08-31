@@ -1,9 +1,23 @@
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;
+const TRACK_ATTACH_TIMEOUT_MS = 18000;
+const TRACK_POLL_MS = 100;
+const MAX_CONNECT_ATTEMPTS = 2;
+const CONNECT_RETRY_DELAY_MS = 1200;
 const TRANSCRIPT_SETTLE_MS = 950;
-const ECHO_GUARD_MS = 900;
 
 let sdkPromise = null;
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function mediaTrackState(video) {
+  const stream = video?.srcObject;
+  const audio = stream?.getAudioTracks?.().some((track) => track.readyState === "live" && track.enabled) || false;
+  const picture = stream?.getVideoTracks?.().some((track) => track.readyState === "live" && track.enabled) || false;
+  return { audio, video: picture };
+}
 
 function validEndpoint(value) {
   if (!value) return "";
@@ -45,14 +59,16 @@ export class InfoServ2ALiveAvatarProvider {
     this.streamReady = false;
     this.mediaAudible = false;
     this.pendingSpeech = [];
+    this.transportState = "idle";
+    this.timeline = [];
     this.realtimeSignal = "idle";
     this.replyTimer = null;
     this.transcriptTimer = null;
     this.transcriptParts = [];
     this.commandInFlight = false;
     this.avatarSpeaking = false;
-    this.ignoreInputUntil = 0;
-    this.resumeListeningAfterAvatar = false;
+    this.stopping = false;
+    this.connectionAttempt = 0;
     this.callbacks = {};
   }
 
@@ -65,6 +81,21 @@ export class InfoServ2ALiveAvatarProvider {
 
   emit(value, label) {
     this.callbacks.onStatus?.(value, label);
+  }
+
+  record(event, detail = {}) {
+    const entry = { at: Date.now(), event, ...detail };
+    this.timeline.push(entry);
+    if (this.timeline.length > 80) this.timeline.shift();
+    try {
+      globalThis.dispatchEvent?.(new CustomEvent("infoserv:claire-telemetry", { detail: entry }));
+    } catch { /* CustomEvent n'est pas disponible dans certains tests Node. */ }
+    return entry;
+  }
+
+  setTransportState(state, detail = {}) {
+    this.transportState = state;
+    this.record(`transport:${state}`, detail);
   }
 
   primeAudio() {
@@ -96,16 +127,43 @@ export class InfoServ2ALiveAvatarProvider {
   }
 
   hasLiveAudio() {
-    return Boolean(this.video?.srcObject?.getAudioTracks?.().some((track) => track.readyState === "live" && track.enabled));
+    return mediaTrackState(this.video).audio;
   }
 
   hasLiveVideo() {
-    return Boolean(this.video?.srcObject?.getVideoTracks?.().some((track) => track.readyState === "live" && track.enabled));
+    return mediaTrackState(this.video).video;
+  }
+
+  async waitForMediaTracks(timeoutMs = TRACK_ATTACH_TIMEOUT_MS) {
+    const startedAt = Date.now();
+    let last = mediaTrackState(this.video);
+    this.record("media:attach-wait", last);
+
+    while (Date.now() - startedAt < timeoutMs) {
+      last = mediaTrackState(this.video);
+      if (last.audio && last.video) {
+        this.record("media:tracks-live", { ...last, waitMs: Date.now() - startedAt });
+        const stream = this.video?.srcObject;
+        stream?.getTracks?.().forEach((track) => {
+          track.addEventListener?.("ended", () => {
+            this.streamReady = false;
+            this.setTransportState("track-ended", { kind: track.kind });
+            this.emit("error", `Piste ${track.kind === "audio" ? "audio" : "vidéo"} interrompue`);
+          }, { once: true });
+        });
+        return true;
+      }
+      await delay(TRACK_POLL_MS);
+    }
+
+    this.record("media:attach-timeout", { ...last, waitMs: Date.now() - startedAt });
+    throw new Error(`Pistes LiveAvatar incomplètes (audio=${last.audio}, vidéo=${last.video}).`);
   }
 
   sendPrompt(value) {
     if (!this.session) return false;
     const prompt = `[INFOSERV2A_APP_RESULT]\nInformation vérifiée par le site : ${value}\nRéponds en français naturel, brièvement, sans ajouter de fait ni prétendre avoir réalisé une autre action.`;
+    this.record("conversation:verified-result-sent", { characters: String(value).length });
     this.session.message(prompt);
     this.emit("thinking", "Claire prépare sa réponse…");
     return true;
@@ -139,7 +197,7 @@ export class InfoServ2ALiveAvatarProvider {
 
   stageTranscript(value) {
     const text = String(value || "").trim();
-    if (!text || this.avatarSpeaking || Date.now() < this.ignoreInputUntil) return;
+    if (!text) return;
 
     const previous = this.transcriptParts.at(-1) || "";
     if (previous === text) return;
@@ -178,12 +236,11 @@ export class InfoServ2ALiveAvatarProvider {
       await this.callbacks.onCommand?.(text);
     } finally {
       this.commandInFlight = false;
-      this.ignoreInputUntil = Date.now() + ECHO_GUARD_MS;
     }
   }
 
   async connect({ microphone = false } = {}) {
-    if (this.connected) {
+    if (this.connected && this.streamReady) {
       if (microphone) await this.ensureMicrophone();
       return true;
     }
@@ -191,132 +248,165 @@ export class InfoServ2ALiveAvatarProvider {
 
     this.startPromise = (async () => {
       this.emit("connecting", "Connexion sécurisée à Claire…");
-      try {
-        const [sdk, response] = await Promise.all([
-          loadSdk(this.sdkUrl),
-          this.fetchImpl(this.endpoint, {
-            method: "POST",
-            credentials: "same-origin",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ appId: "infoserv2a", knowledgeVersion: "1.0.0" })
-          })
-        ]);
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(payload.error || `LiveAvatar HTTP ${response.status}`);
-        if (!payload.sessionToken) throw new Error("Jeton de session LiveAvatar absent");
-
-        this.sdk = sdk;
-        const session = new sdk.LiveAvatarSession(payload.sessionToken, { apiUrl: "https://api.liveavatar.com" });
-        this.session = session;
-        const streamReady = this.wireSession(session, sdk);
-        let sessionTimer;
+      let lastError;
+      for (let attempt = 1; attempt <= MAX_CONNECT_ATTEMPTS; attempt += 1) {
+        this.connectionAttempt = attempt;
+        this.setTransportState("token-request", { attempt });
         try {
-          await Promise.race([
-            (async () => {
-              await session.start();
-              await streamReady;
-            })(),
-            new Promise((_, reject) => {
-              sessionTimer = setTimeout(() => {
-                reject(new Error("La connexion vidéo LiveAvatar a dépassé le délai prévu."));
-              }, SESSION_MEDIA_TIMEOUT_MS);
+          const [sdk, response] = await Promise.all([
+            loadSdk(this.sdkUrl),
+            this.fetchImpl(this.endpoint, {
+              method: "POST",
+              credentials: "same-origin",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ appId: "infoserv2a", knowledgeVersion: "1.0.0" })
             })
           ]);
-        } finally {
-          clearTimeout(sessionTimer);
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(payload.error || `LiveAvatar HTTP ${response.status}`);
+          if (!payload.sessionToken) throw new Error("Jeton de session LiveAvatar absent");
+          this.record("transport:token-ready", { attempt, sessionId: String(payload.sessionId || "") });
+
+          this.sdk = sdk;
+          const session = new sdk.LiveAvatarSession(payload.sessionToken, { apiUrl: "https://api.liveavatar.com" });
+          this.session = session;
+          const streamReady = this.wireSession(session, sdk);
+          let sessionTimer;
+          try {
+            this.setTransportState("joining", { attempt });
+            await Promise.race([
+              (async () => {
+                await session.start();
+                this.record("transport:session-started", { attempt });
+                await streamReady;
+              })(),
+              new Promise((_, reject) => {
+                sessionTimer = setTimeout(() => {
+                  reject(new Error("La connexion vidéo LiveAvatar a dépassé le délai prévu."));
+                }, SESSION_MEDIA_TIMEOUT_MS);
+              })
+            ]);
+          } finally {
+            clearTimeout(sessionTimer);
+          }
+
+          this.connected = true;
+          this.setTransportState("connected", { attempt });
+          if (microphone) await this.ensureMicrophone();
+          else this.emit("ready", "Claire est connectée");
+          return true;
+        } catch (error) {
+          lastError = error;
+          this.record("transport:attempt-failed", {
+            attempt,
+            message: String(error?.message || error).slice(0, 180)
+          });
+          await this.disposeSession(this.session);
+          if (attempt < MAX_CONNECT_ATTEMPTS) {
+            this.setTransportState("retry-wait", { attempt });
+            this.emit("connecting", "Transport interrompu · nouvelle tentative…");
+            await delay(CONNECT_RETRY_DELAY_MS);
+          }
         }
-        this.connected = true;
-        if (microphone) await this.ensureMicrophone();
-        else this.emit("ready", "Claire est connectée");
-        return true;
-      } catch (error) {
-        await this.stop();
-        this.emit("error", "LiveAvatar indisponible · mode local actif");
-        throw error;
-      } finally {
-        this.startPromise = null;
       }
+
+      this.setTransportState("failed", { attempts: MAX_CONNECT_ATTEMPTS });
+      this.emit("error", "LiveAvatar indisponible · transport interrompu");
+      throw lastError || new Error("Connexion LiveAvatar interrompue");
     })();
-    return this.startPromise;
+    try {
+      return await this.startPromise;
+    } finally {
+      this.startPromise = null;
+      this.connectionAttempt = 0;
+    }
   }
 
   wireSession(session, sdk) {
     const { SessionEvent, AgentEventsEnum } = sdk;
+    let settled = false;
     let resolveStream;
     let rejectStream;
     const streamReady = new Promise((resolve, reject) => {
-      resolveStream = resolve;
-      rejectStream = reject;
+      resolveStream = (value) => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
+      rejectStream = (error) => {
+        if (settled) return;
+        settled = true;
+        reject(error);
+      };
     });
     session.on(SessionEvent.SESSION_STREAM_READY, () => {
-      if (this.video) {
+      void (async () => {
+        if (!this.video) throw new Error("Élément vidéo Claire absent");
+        this.record("transport:stream-ready-event");
         this.video.hidden = false;
         // Le SDK officiel attache les pistes vidéo ET audio au même média.
         // On conserve donc ce média audible au lieu de détourner sa piste
         // vers un AudioContext parfois suspendu par Chrome Android.
         this.video.muted = false;
         this.video.volume = 1;
-        session.attach(this.video);
-      }
-      this.streamReady = this.hasLiveVideo() && this.hasLiveAudio();
-      if (!this.streamReady) {
-        rejectStream(new Error("Les pistes audio et vidéo LiveAvatar n’ont pas toutes été attachées."));
-        return;
-      }
-      resolveStream(true);
-      void this.video.play().then(() => {
-        this.mediaAudible = !this.video.muted && this.hasLiveAudio();
-        if (this.mediaAudible) {
-          this.emit("ready", "Claire · LiveAvatar Realtime · son actif");
-          this.flushPendingSpeech();
-        } else {
+        await Promise.resolve(session.attach(this.video));
+        await this.waitForMediaTracks();
+        this.streamReady = true;
+        resolveStream(true);
+        try {
+          await this.video.play();
+          this.mediaAudible = !this.video.muted && this.hasLiveAudio();
+          if (this.mediaAudible) {
+            this.emit("ready", "Claire · LiveAvatar Realtime · son actif");
+            this.flushPendingSpeech();
+          } else {
+            this.emit("sound", "Touchez Claire pour activer le son");
+          }
+        } catch {
+          // Android peut autoriser l'image mais refuser l'audio différé.
+          // On affiche alors la vidéo en sourdine et le prochain toucher de
+          // Claire exécute resumeMedia() dans un nouveau geste utilisateur.
+          this.mediaAudible = false;
+          this.video.muted = true;
+          void this.video.play().catch(() => {});
           this.emit("sound", "Touchez Claire pour activer le son");
         }
-      }).catch(() => {
-        // Android peut autoriser l'image mais refuser l'audio différé.
-        // On affiche alors la vidéo en sourdine et le prochain toucher de
-        // Claire exécute resumeMedia() dans un nouveau geste utilisateur.
-        this.mediaAudible = false;
-        this.video.muted = true;
-        void this.video.play().catch(() => {});
-        this.emit("sound", "Touchez Claire pour activer le son");
-      });
+      })().catch((error) => rejectStream(error));
     });
     session.on(SessionEvent.SESSION_DISCONNECTED, () => {
+      if (this.session !== session) return;
       rejectStream(new Error("La session LiveAvatar a été interrompue avant l’arrivée du flux vidéo."));
       this.connected = false;
       this.streamReady = false;
       this.listening = false;
-      this.emit("error", "Session LiveAvatar interrompue");
+      this.setTransportState(this.stopping ? "closed" : "disconnected");
+      if (!this.stopping) this.emit("error", "Session LiveAvatar interrompue · touchez le micro pour reconnecter");
     });
     session.on(AgentEventsEnum.USER_SPEAK_STARTED, () => {
-      if (this.avatarSpeaking || Date.now() < this.ignoreInputUntil) return;
       this.listening = true;
       this.realtimeSignal = "input-detected";
+      this.record("conversation:user-speak-started", { avatarSpeaking: this.avatarSpeaking });
       this.clearReplyTimer();
       this.emit("listening", "Je vous écoute");
     });
     session.on(AgentEventsEnum.USER_SPEAK_ENDED, () => {
-      if (this.avatarSpeaking || Date.now() < this.ignoreInputUntil) return;
       this.realtimeSignal = "input-ended";
+      this.record("conversation:user-speak-ended");
       this.armReplyTimer();
       this.emit("thinking", "Micro transmis · attente de la transcription…");
     });
     session.on(AgentEventsEnum.USER_TRANSCRIPTION, (event) => {
       const text = String(event?.text || "").trim();
       if (!text) return;
-      if (this.avatarSpeaking || Date.now() < this.ignoreInputUntil) return;
+      this.record("conversation:user-transcription", { characters: text.length });
       this.clearReplyTimer();
       this.stageTranscript(text);
     });
     session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
-      this.listening = false;
       this.avatarSpeaking = true;
       this.realtimeSignal = "reply-started";
+      this.record("conversation:avatar-speak-started");
       this.clearReplyTimer();
-      const chat = this.session?.voiceChat;
-      this.resumeListeningAfterAvatar = Boolean(chat && !chat.isMuted);
-      if (this.resumeListeningAfterAvatar) void chat.mute().catch(() => {});
       this.callbacks.onAvatarSpeakStart?.();
       this.emit(this.mediaAudible ? "speaking" : "sound", this.mediaAudible ? "Claire vous répond" : "Touchez Claire pour entendre sa réponse");
     });
@@ -326,31 +416,51 @@ export class InfoServ2ALiveAvatarProvider {
     });
     session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, () => {
       this.avatarSpeaking = false;
-      this.ignoreInputUntil = Date.now() + ECHO_GUARD_MS;
       this.realtimeSignal = "reply-ended";
+      this.record("conversation:avatar-speak-ended");
       this.clearReplyTimer();
-      const chat = this.session?.voiceChat;
-      if (this.resumeListeningAfterAvatar && chat?.isMuted) void chat.unmute().catch(() => {});
-      this.resumeListeningAfterAvatar = false;
       this.callbacks.onAvatarSpeakEnd?.();
-      this.emit("ready", "Prête à vous guider");
+      this.emit(this.listening ? "listening" : "ready", this.listening ? "Je vous écoute" : "Prête à vous guider");
     });
     session.on(AgentEventsEnum.SESSION_STOPPED, () => {
       this.realtimeSignal = "connector-stopped";
+      this.record("conversation:connector-stopped");
       this.clearReplyTimer();
-      this.emit("error", "Le connecteur OpenAI Realtime a arrêté la session");
+      if (!this.stopping) this.emit("error", "Le connecteur OpenAI Realtime a arrêté la session");
     });
     return streamReady;
+  }
+
+  async disposeSession(session) {
+    if (!session) return;
+    const current = this.session === session;
+    this.stopping = true;
+    try { await session.stop?.(); } catch { /* Session déjà terminée. */ }
+    try { await session.room?.disconnect?.(); } catch { /* Transport LiveKit déjà fermé. */ }
+    if (current) {
+      this.session = null;
+      this.connected = false;
+      this.streamReady = false;
+      this.listening = false;
+      this.mediaAudible = false;
+      if (this.video) {
+        this.video.hidden = true;
+        this.video.srcObject = null;
+      }
+    }
+    this.stopping = false;
   }
 
   async ensureMicrophone() {
     if (!this.session || !this.connected) return false;
     const chat = this.session.voiceChat;
     if (!chat) return false;
+    this.record("microphone:start-request", { state: String(chat.state || "unknown") });
     if (String(chat.state) === "INACTIVE") await chat.start({ defaultMuted: false });
     else if (chat.isMuted) await chat.unmute();
     try { this.session.startListening(); } catch { /* Le SDK peut déjà écouter. */ }
     this.listening = true;
+    this.record("microphone:active");
     this.emit("listening", "Je vous écoute");
     return true;
   }
@@ -366,6 +476,7 @@ export class InfoServ2ALiveAvatarProvider {
     await chat.mute();
     try { this.session.stopListening(); } catch { /* Le SDK peut déjà être en pause. */ }
     this.listening = false;
+    this.record("microphone:paused", { source: "toggle" });
     this.emit("ready", "Microphone en pause");
     return false;
   }
@@ -377,8 +488,8 @@ export class InfoServ2ALiveAvatarProvider {
     }
     try { this.session?.stopListening(); } catch { /* Le SDK peut déjà être en pause. */ }
     this.listening = false;
-    this.resumeListeningAfterAvatar = false;
     this.clearTranscriptBuffer();
+    this.record("microphone:paused", { source: "manual-mode" });
     this.emit("ready", "Microphone en pause · session Claire conservée");
     return true;
   }
@@ -397,39 +508,32 @@ export class InfoServ2ALiveAvatarProvider {
   }
 
   interrupt() {
+    this.record("conversation:manual-interrupt");
     try { this.session?.interrupt(); } catch { /* Aucune réponse en cours. */ }
     this.emit(this.listening ? "listening" : "ready", this.listening ? "Je vous écoute" : "Prête à vous guider");
   }
 
   async stop() {
     const session = this.session;
-    this.session = null;
-    this.connected = false;
-    this.streamReady = false;
-    this.listening = false;
-    try { await session?.stop(); } catch { /* Session déjà terminée. */ }
-    try { await session?.room?.disconnect?.(); } catch { /* Transport LiveKit déjà fermé. */ }
-    this.mediaAudible = false;
+    await this.disposeSession(session);
     this.pendingSpeech = [];
     this.realtimeSignal = "idle";
+    this.setTransportState("idle");
     this.clearReplyTimer();
     this.clearTranscriptBuffer();
     this.commandInFlight = false;
     this.avatarSpeaking = false;
-    this.ignoreInputUntil = 0;
-    this.resumeListeningAfterAvatar = false;
-    if (this.video) {
-      this.video.hidden = true;
-      this.video.srcObject = null;
-    }
   }
 
   diagnostic() {
     return {
       id: this.id,
       endpoint: this.endpoint,
+      transportState: this.transportState,
+      connectionAttempt: this.connectionAttempt,
       connected: this.connected,
       streamReady: this.streamReady,
+      tracks: mediaTrackState(this.video),
       audioState: this.mediaAudible ? "audible" : (this.hasLiveAudio() ? "blocked" : "missing"),
       videoMuted: Boolean(this.video?.muted),
       realtimeSignal: this.realtimeSignal,
@@ -437,7 +541,8 @@ export class InfoServ2ALiveAvatarProvider {
       avatarSpeaking: this.avatarSpeaking,
       listening: this.listening,
       connector: "OPENAI_REALTIME",
-      transport: "ephemeral-session-token"
+      transport: "ephemeral-session-token",
+      timeline: this.timeline.slice(-20)
     };
   }
 }
