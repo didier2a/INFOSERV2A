@@ -19,6 +19,12 @@ function methodNotAllowed(allowed) {
   );
 }
 
+function assetRequest(request, pathname) {
+  const url = new URL(request.url);
+  url.pathname = pathname;
+  return new Request(url, request);
+}
+
 export default {
   async fetch(request, env) {
     const { pathname } = new URL(request.url);
@@ -32,6 +38,13 @@ export default {
       if (request.method === "POST") return liveAvatarSession({ request, env });
       if (request.method === "OPTIONS") return liveAvatarSessionOptions({ request, env });
       return methodNotAllowed(["POST", "OPTIONS"]);
+    }
+
+    if (pathname === "/claire-lab" || pathname === "/claire-lab/") {
+      if (request.method !== "GET" && request.method !== "HEAD") {
+        return methodNotAllowed(["GET", "HEAD"]);
+      }
+      return env.ASSETS.fetch(assetRequest(request, "/claire-lab.html"));
     }
 
     return env.ASSETS.fetch(request);

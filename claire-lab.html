@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Claire Runtime V2 — Laboratoire InfoServ2A</title>
+  <meta name="description" content="Laboratoire texte du contrôleur Claire Runtime V2 pour InfoServ2A.">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#f4f6f8">
+  <link rel="icon" href="favicon.ico?v=2" sizes="any">
+  <link rel="stylesheet" href="assets/css/variables.css?v=20260831-live11">
+  <link rel="stylesheet" href="assets/css/main.css?v=20260831-live11">
+  <link rel="stylesheet" href="assets/css/claire-lab.css?v=20260831-live11">
+</head>
+<body class="claire-lab-page">
+  <a class="skip-link" href="#lab-command">Aller à la commande</a>
+  <header class="lab-header">
+    <a href="/" aria-label="InfoServ2A, retour au site">
+      <img src="assets/images/logo/infoserv2a-logo-light.png" alt="InfoServ2A" width="220" height="47">
+    </a>
+    <div class="lab-header__meta">
+      <span class="lab-pill lab-pill--ok">P0 actif</span>
+      <span class="lab-header__mode">Texte uniquement · aucun secret</span>
+    </div>
+  </header>
+
+  <main class="lab-main">
+    <section class="lab-intro" aria-labelledby="lab-title">
+      <div>
+        <p class="lab-kicker">INFOSERV2A · CLAIRE RUNTIME V2</p>
+        <h1 id="lab-title">Valider le contrôleur avant la voix</h1>
+        <p>Ce laboratoire exécute les mêmes intentions de navigation dans un aperçu isolé. OpenAI Realtime, LiveKit et LiveAvatar sont volontairement désactivés.</p>
+      </div>
+      <a class="lab-manual-link" href="/?claire=manual">Navigation manuelle</a>
+    </section>
+
+    <div class="lab-workspace">
+      <section class="lab-companion" aria-labelledby="lab-companion-title">
+        <div class="lab-stage">
+          <figure class="lab-stage__visual">
+            <img src="assets/images/companion/claire-liveavatar-1080x1920.jpg" alt="Claire, compagne numérique d’InfoServ2A">
+            <figcaption>
+              <span class="lab-live-dot" aria-hidden="true"></span>
+              <span>Claire · présence statique P0</span>
+            </figcaption>
+          </figure>
+
+          <div class="lab-dialogue">
+            <div class="lab-dialogue__head">
+              <div>
+                <p class="lab-kicker">CONVERSATION CONTRÔLÉE</p>
+                <h2 id="lab-companion-title">Claire pilote l’aperçu</h2>
+              </div>
+              <span class="lab-state" id="lab-state" data-state="ready">Prête</span>
+            </div>
+
+            <div class="lab-transcript" id="lab-transcript" aria-live="polite">
+              <article class="lab-turn lab-turn--claire">
+                <strong>Claire</strong>
+                <p>Bonjour. Je suis en mode laboratoire texte. Demandez-moi une information : je vais afficher mon plan, exécuter chaque outil dans l’ordre et vérifier le résultat.</p>
+              </article>
+            </div>
+
+            <div class="lab-suggestions" aria-label="Exemples de demandes">
+              <button type="button" data-lab-command="Affiche les solutions de vidéosurveillance sans fibre.">Solutions sans fibre</button>
+              <button type="button" data-lab-command="Ouvre l’audit NIS 2.">Audit NIS 2</button>
+              <button type="button" data-lab-command="Je voudrais vous contacter par email.">Contact</button>
+            </div>
+
+            <form class="lab-command" id="lab-form">
+              <label for="lab-command">Votre demande</label>
+              <div class="lab-command__row">
+                <input id="lab-command" name="command" autocomplete="off" maxlength="320" placeholder="Ex. Affiche les solutions sans fibre" required>
+                <button type="submit" id="lab-submit">Exécuter</button>
+              </div>
+              <p>Aucune commande vocale et aucune navigation automatique hors du laboratoire.</p>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <aside class="lab-inspector" aria-label="Inspection du contrôleur Claire">
+        <section class="lab-panel">
+          <div class="lab-panel__head">
+            <div><span>01</span><h2>Plan d’actions</h2></div>
+            <span class="lab-pill">Déclaré</span>
+          </div>
+          <ol class="lab-plan" id="lab-plan">
+            <li class="lab-empty">Aucune commande exécutée.</li>
+          </ol>
+        </section>
+
+        <section class="lab-panel">
+          <div class="lab-panel__head">
+            <div><span>02</span><h2>Aperçu du site</h2></div>
+            <span class="lab-pill lab-pill--ok" id="lab-verification">En attente</span>
+          </div>
+          <div class="lab-preview" id="lab-preview">
+            <p class="lab-empty">La page et la section vérifiées apparaîtront ici.</p>
+          </div>
+        </section>
+
+        <section class="lab-panel lab-panel--log">
+          <div class="lab-panel__head">
+            <div><span>03</span><h2>Journal d’événements</h2></div>
+            <button type="button" class="lab-reset" id="lab-reset">Réinitialiser</button>
+          </div>
+          <ol class="lab-events" id="lab-events" aria-live="polite">
+            <li class="lab-empty">Le journal est vide.</li>
+          </ol>
+        </section>
+      </aside>
+    </div>
+  </main>
+  <script type="module" src="assets/js/claire-lab.js?v=20260831-live11"></script>
+</body>
+</html>

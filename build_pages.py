@@ -12,6 +12,7 @@ HEADER_MARK_START = "<!-- chrome:header -->"
 HEADER_MARK_END = "<!-- /chrome:header -->"
 FOOTER_MARK_START = "<!-- chrome:footer -->"
 FOOTER_MARK_END = "<!-- /chrome:footer -->"
+STANDALONE_PAGES = {"claire-lab.html"}
 
 CURRENT = {
     "index.html": {"/"},
@@ -256,6 +257,11 @@ def main() -> None:
     for path in sorted(ROOT.glob("*.html")):
         page = path.name
         html = path.read_text(encoding="utf-8")
+        if page in STANDALONE_PAGES:
+            html = cache_bust(html)
+            path.write_text(html, encoding="utf-8", newline="\n")
+            print("updated", page)
+            continue
         html = inject_header(html, apply_current(header_src, page))
         html = inject_footer(html, apply_current(footer_src, page))
         html = wrap_main(html)

@@ -19,6 +19,19 @@ test("le Worker sert les actifs du site hors API", async () => {
   assert.equal(await response.text(), "asset:/contact.html");
 });
 
+test("le Worker expose le laboratoire Claire sans extension HTML", async () => {
+  const response = await worker.fetch(new Request("https://infoserv2a.test/claire-lab"), env());
+  assert.equal(await response.text(), "asset:/claire-lab.html");
+});
+
+test("le laboratoire Claire reste en lecture seule au niveau HTTP", async () => {
+  const response = await worker.fetch(new Request("https://infoserv2a.test/claire-lab", {
+    method: "POST"
+  }), env());
+  assert.equal(response.status, 405);
+  assert.equal(response.headers.get("Allow"), "GET, HEAD");
+});
+
 test("le Worker expose le statut LiveAvatar sans révéler de secret", async () => {
   const response = await worker.fetch(new Request("https://infoserv2a.test/api/liveavatar-status"), env());
   assert.equal(response.status, 200);

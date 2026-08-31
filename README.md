@@ -88,6 +88,36 @@ Pour tester le moteur de routage :
 node --test tests/claire-core.test.mjs
 ```
 
+## Claire Runtime V2 — laboratoire P0
+
+La route isolée **/claire-lab** valide le contrôleur avant de rebrancher la
+voix et l’avatar. Elle ne charge ni OpenAI Realtime, ni LiveKit, ni LiveAvatar
+et n’utilise aucun secret côté navigateur.
+
+```bash
+python -m http.server 8000
+```
+
+Puis ouvrir **http://localhost:8000/claire-lab.html**.
+
+Le laboratoire sépare :
+
+- le manifeste **data/claire-capabilities.json**, qui limite les actions aux
+  cinq outils déclarés ;
+- le contrôleur **assets/js/claire-runtime-v2.mjs**, source de vérité de la
+  machine à états et du journal ;
+- l’adaptateur **assets/js/claire-site-adapter.mjs**, qui simule le site sans
+  navigation ni soumission ;
+- l’interface **claire-lab.html**, responsive S22, tablette et ordinateur.
+
+Le scénario P0 de référence est : « Affiche les solutions de vidéosurveillance
+sans fibre. » Il doit exécuter dans l’ordre **search_site**, **open_service**,
+**scroll_to**, puis vérifier la page et l’ancre attendues.
+
+```bash
+node --test tests/claire-runtime-v2.test.mjs
+```
+
 ## Formulaires
 
 En local, l'envoi est simulé. Un message indique clairement qu'aucun e-mail n'a été envoyé.

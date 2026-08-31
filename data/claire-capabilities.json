@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "1.0.0",
+  "runtimeVersion": "2.0.0-p0",
+  "mode": "text-only",
+  "site": "InfoServ2A",
+  "knowledgeSource": "data/site-knowledge.json",
+  "guardrails": {
+    "maxConcurrentCommands": 1,
+    "requireDeclaredTools": true,
+    "allowDirectDomFromModel": false,
+    "allowFormSubmission": false,
+    "manualModeAlwaysAvailable": true,
+    "recordEveryTransition": true
+  },
+  "tools": [
+    {
+      "name": "search_site",
+      "description": "Recherche dans l’index public InfoServ2A sans modifier la page.",
+      "sideEffect": "none",
+      "confirmation": "never",
+      "required": ["query"]
+    },
+    {
+      "name": "open_service",
+      "description": "Sélectionne une page de service déclarée dans l’index du site.",
+      "sideEffect": "preview-navigation",
+      "confirmation": "never",
+      "required": ["service"]
+    },
+    {
+      "name": "scroll_to",
+      "description": "Sélectionne une ancre déclarée de la page active.",
+      "sideEffect": "preview-scroll",
+      "confirmation": "never",
+      "required": ["target"]
+    },
+    {
+      "name": "open_contact",
+      "description": "Affiche les coordonnées ou le formulaire de contact sans lancer d’appel ni envoyer de message.",
+      "sideEffect": "preview-navigation",
+      "confirmation": "never",
+      "required": []
+    },
+    {
+      "name": "prefill_quote",
+      "description": "Prépare un brouillon de devis sans le soumettre.",
+      "sideEffect": "draft-only",
+      "confirmation": "never",
+      "required": ["description"]
+    }
+  ]
+}
