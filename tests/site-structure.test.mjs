@@ -66,6 +66,7 @@ test("Claire conserve une scène majeure et un mode guidé, jamais une bulle de 
   assert.doesNotMatch(css, /bottom-right|claire-mini/);
   assert.match(client, /provider\.connect\(\{ microphone: true \}\)/);
   assert.match(client, /Mode local · Realtime non configuré/);
+  assert.match(client, /LiveAvatar configuré · transport interrompu/);
   assert.match(provider, /AgentEventsEnum\.AVATAR_TRANSCRIPTION/);
 });
 

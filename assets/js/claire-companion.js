@@ -355,8 +355,16 @@ export class ClaireCompanion {
 
   activateLocalFallback(message) {
     this.provider = null;
-    this.markProviderUnavailable(message);
+    if (this.liveAvatarStatus?.configured) this.markProviderConnectionError(message);
+    else this.markProviderUnavailable(message);
     this.appendTurn("companion", message);
+  }
+
+  markProviderConnectionError(message) {
+    this.setEngineStatus("transport-error", "LiveAvatar configuré · transport interrompu");
+    this.setStatus("error", "Connexion LiveAvatar interrompue · mode texte");
+    if (this.nodes.retry) this.nodes.retry.hidden = false;
+    if (this.nodes.live) this.nodes.live.textContent = message;
   }
 
   markProviderUnavailable(message) {
