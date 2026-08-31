@@ -683,6 +683,13 @@ body.nav-open { overflow: hidden; }
   border-radius: var(--radius-sm);
   background: #fff;
 }
+.form input.sr-only {
+  width: 1px;
+  height: 1px;
+  min-height: 1px;
+  padding: 0;
+  border: 0;
+}
 .form textarea { min-height: 140px; resize: vertical; }
 .form input:focus-visible,
 .form select:focus-visible,

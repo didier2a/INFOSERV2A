@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260830-live10)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260830-live10)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260831-live11)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260831-live11)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -167,6 +167,11 @@ test("une navigation attend la fin réelle de la réponse de Claire", async () =
   assert.doesNotMatch(speakingStart, /stopListening/);
   assert.match(speakingStart, /voiceChat/);
   assert.match(speakingStart, /onAvatarSpeakStart/);
+});
+
+test("le champ de pièces jointes masqué ne crée aucun débordement horizontal", async () => {
+  const css = await readFile(path.join(ROOT, "assets/css/components.css"), "utf8");
+  assert.match(css, /\.form input\.sr-only\s*\{[^}]*width:\s*1px[^}]*min-height:\s*1px[^}]*padding:\s*0[^}]*border:\s*0/s);
 });
 
 test("la sortie générée reste synchronisée avec le partial", async () => {
