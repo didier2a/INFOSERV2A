@@ -156,6 +156,7 @@ class BrowserVoiceProvider {
 export class ClaireCompanion {
   constructor(root) {
     this.root = root;
+    this.debugMode = new URLSearchParams(location.search).get("debug") === "1";
     this.knowledge = FALLBACK_KNOWLEDGE;
     this.state = "loading";
     this.audioEnabled = false;
@@ -291,6 +292,9 @@ export class ClaireCompanion {
       if (this.state === "manual" || !this.siteAdapter) return;
       void this.navigateInternal(location.href, { historyMode: "pop", announce: false });
     });
+    globalThis.addEventListener("infoserv:claire-telemetry", (event) => {
+      this.showRealtimeTelemetry(event.detail);
+    });
     document.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
       if (["arrival", "shared", "action", "guided"].includes(this.state)) this.enterManualMode();
@@ -327,6 +331,20 @@ export class ClaireCompanion {
   setEngineStatus(provider, label) {
     this.root.dataset.provider = provider;
     if (this.nodes.engineStatus) this.nodes.engineStatus.textContent = label;
+  }
+
+  showRealtimeTelemetry(detail = {}) {
+    if (!this.debugMode || !this.nodes.live) return;
+    const diagnostic = this.provider?.diagnostic?.();
+    const tracks = diagnostic?.tracks || {};
+    const attempt = diagnostic?.attempt || detail.attempt || 1;
+    this.nodes.live.textContent = [
+      "Diagnostic S22",
+      String(detail.event || "initialisation"),
+      `tentative ${attempt}`,
+      `audio ${tracks.audio ? "OK" : "attente"}`,
+      `vidéo ${tracks.video ? "OK" : "attente"}`
+    ].join(" · ");
   }
 
   async start() {

@@ -141,7 +141,12 @@ test("l’accueil Realtime est prononcé une seule fois par le contexte LiveAvat
 });
 
 test("le diagnostic mobile distingue micro, transcription et réponse Realtime", async () => {
-  const provider = await readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8");
+  const [client, provider] = await Promise.all([
+    readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8")
+  ]);
+  assert.match(client, /infoserv:claire-telemetry/);
+  assert.match(client, /Diagnostic S22/);
   assert.match(provider, /input-detected/);
   assert.match(provider, /Transcription reçue/);
   assert.match(provider, /reply-started/);
