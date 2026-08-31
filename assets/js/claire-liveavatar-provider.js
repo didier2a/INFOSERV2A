@@ -56,9 +56,9 @@ export class InfoServ2ALiveAvatarProvider {
     this.callbacks = {};
   }
 
-  install({ video, onTranscript, onAvatarTranscript, onStatus, onCommand } = {}) {
+  install({ video, onTranscript, onAvatarTranscript, onAvatarSpeakStart, onAvatarSpeakEnd, onStatus, onCommand } = {}) {
     this.video = video || null;
-    this.callbacks = { onTranscript, onAvatarTranscript, onStatus, onCommand };
+    this.callbacks = { onTranscript, onAvatarTranscript, onAvatarSpeakStart, onAvatarSpeakEnd, onStatus, onCommand };
     this.callbacks.onStatus?.("ready", "LiveAvatar disponible sur activation");
     return this;
   }
@@ -319,7 +319,7 @@ export class InfoServ2ALiveAvatarProvider {
       const chat = this.session?.voiceChat;
       this.resumeListeningAfterAvatar = Boolean(chat && !chat.isMuted);
       if (this.resumeListeningAfterAvatar) void chat.mute().catch(() => {});
-      try { this.session?.stopListening(); } catch { /* État visuel déjà en réponse. */ }
+      this.callbacks.onAvatarSpeakStart?.();
       this.emit(this.mediaAudible ? "speaking" : "sound", this.mediaAudible ? "Claire vous répond" : "Touchez Claire pour entendre sa réponse");
     });
     session.on(AgentEventsEnum.AVATAR_TRANSCRIPTION, (event) => {
@@ -334,7 +334,7 @@ export class InfoServ2ALiveAvatarProvider {
       const chat = this.session?.voiceChat;
       if (this.resumeListeningAfterAvatar && chat?.isMuted) void chat.unmute().catch(() => {});
       this.resumeListeningAfterAvatar = false;
-      try { this.session?.startListening(); } catch { /* Écoute visuelle déjà active. */ }
+      this.callbacks.onAvatarSpeakEnd?.();
       this.emit("ready", "Prête à vous guider");
     });
     session.on(AgentEventsEnum.SESSION_STOPPED, () => {

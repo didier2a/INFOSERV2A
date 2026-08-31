@@ -8,7 +8,7 @@ import {
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
 const STORAGE_PENDING = "infoserv2a.claire.pending";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260830-live9";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260830-live10";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique. Je suis ici pour vous présenter l’entreprise, comprendre votre besoin et vous guider en langage naturel vers le bon service : cybersécurité, réseaux et Wi-Fi, vidéosurveillance, assistance informatique ou création de sites web. Vous pouvez me parler librement et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
 
@@ -137,6 +137,7 @@ export class ClaireCompanion {
     this.lastFocus = null;
     this.pendingTranscript = "";
     this.navigationTimer = null;
+    this.pendingNavigation = null;
     this.lastVoiceCommand = "";
     this.lastVoiceCommandAt = 0;
     this.welcomeShown = false;
@@ -316,6 +317,8 @@ export class ClaireCompanion {
 
   enterManualMode() {
     clearTimeout(this.navigationTimer);
+    this.navigationTimer = null;
+    this.pendingNavigation = null;
     this.interrupt();
     storageSet(STORAGE_SEEN, "1");
     storageSet(STORAGE_MODE, "manual");
@@ -394,6 +397,8 @@ export class ClaireCompanion {
         video: this.nodes.video,
         onTranscript: (text, final = true) => this.handleTranscript(text, final),
         onAvatarTranscript: (text) => this.appendTurn("companion", text),
+        onAvatarSpeakStart: () => this.markNavigationSpeechStarted(),
+        onAvatarSpeakEnd: () => this.completeNavigationAfterSpeech(),
         onStatus: (value, label) => this.setStatus(value, label),
         onCommand: (text) => this.submit(text, "liveavatar")
       });
@@ -501,21 +506,43 @@ export class ClaireCompanion {
     this.appendTurn("companion", result.speech);
     this.showResult(result);
     this.setStatus("ready", "Prête à vous guider");
-    this.speak(result.speech);
 
     if (result.type === "navigate" && result.href) {
-      clearTimeout(this.navigationTimer);
       const target = pageHrefForSession(result.href, "guided");
       storageSet(STORAGE_PENDING, JSON.stringify({
         text: `Nous sommes arrivés dans « ${result.label || result.page?.title} ».`,
         createdAt: Date.now()
       }));
-      this.navigationTimer = setTimeout(() => {
-        this.navigationTimer = null;
-        location.assign(target);
-      }, 1100);
+      this.queueNavigationAfterSpeech(target);
     }
+    this.speak(result.speech);
     return result;
+  }
+
+  queueNavigationAfterSpeech(target) {
+    clearTimeout(this.navigationTimer);
+    this.pendingNavigation = { target, speechStarted: false };
+    // Filet de sécurité si le fournisseur ne renvoie aucun événement de fin.
+    // Le délai est volontairement long : une réponse normale ne doit jamais
+    // être interrompue par le changement de page.
+    this.navigationTimer = setTimeout(() => this.commitPendingNavigation(), 30000);
+  }
+
+  markNavigationSpeechStarted() {
+    if (this.pendingNavigation) this.pendingNavigation.speechStarted = true;
+  }
+
+  completeNavigationAfterSpeech() {
+    if (!this.pendingNavigation?.speechStarted) return;
+    clearTimeout(this.navigationTimer);
+    this.navigationTimer = setTimeout(() => this.commitPendingNavigation(), 350);
+  }
+
+  commitPendingNavigation() {
+    const target = this.pendingNavigation?.target;
+    this.pendingNavigation = null;
+    this.navigationTimer = null;
+    if (target) location.assign(target);
   }
 
   showResult(result) {

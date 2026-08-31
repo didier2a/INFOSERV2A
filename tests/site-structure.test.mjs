@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260830-live9)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260830-live9)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260830-live10)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260830-live10)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -151,6 +151,22 @@ test("les syllabes, doublons et échos ne peuvent plus piloter la navigation", a
   assert.match(client, /if \(this\.navigationTimer \|\|/);
   assert.doesNotMatch(client, /article\.scrollIntoView/);
   assert.match(client, /scroller\.scrollTop = scroller\.scrollHeight/);
+});
+
+test("une navigation attend la fin réelle de la réponse de Claire", async () => {
+  const [client, provider] = await Promise.all([
+    readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8")
+  ]);
+  assert.match(client, /onAvatarSpeakStart: \(\) => this\.markNavigationSpeechStarted\(\)/);
+  assert.match(client, /onAvatarSpeakEnd: \(\) => this\.completeNavigationAfterSpeech\(\)/);
+  assert.match(client, /speechStarted: false/);
+  assert.match(client, /if \(!this\.pendingNavigation\?\.speechStarted\) return/);
+  assert.doesNotMatch(client, /location\.assign\(target\)[\s\S]{0,80}1100/);
+  const speakingStart = provider.match(/AVATAR_SPEAK_STARTED[\s\S]*?AVATAR_TRANSCRIPTION/)?.[0] || "";
+  assert.doesNotMatch(speakingStart, /stopListening/);
+  assert.match(speakingStart, /voiceChat/);
+  assert.match(speakingStart, /onAvatarSpeakStart/);
 });
 
 test("la sortie générée reste synchronisée avec le partial", async () => {
