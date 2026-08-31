@@ -21,7 +21,7 @@ test("le Worker sert les actifs du site hors API", async () => {
 
 test("le Worker expose le laboratoire Claire sans extension HTML", async () => {
   const response = await worker.fetch(new Request("https://infoserv2a.test/claire-lab"), env());
-  assert.equal(await response.text(), "asset:/claire-lab.html");
+  assert.equal(await response.text(), "asset:/claire-lab");
 });
 
 test("le laboratoire Claire reste en lecture seule au niveau HTTP", async () => {
