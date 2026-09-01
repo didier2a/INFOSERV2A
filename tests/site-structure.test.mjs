@@ -100,6 +100,7 @@ test("Claire accueille l'utilisateur et explique son rôle chez InfoServ2A", asy
     assert.match(source, /revenir à la navigation manuelle à tout moment/);
   }
   assert.match(endpoint, /InfoServ2A Claire Aidant 1\.4/);
+  assert.match(endpoint, /temperature:\s*0\.6/);
   assert.match(endpoint, /ne produis aucun texte, aucun son, aucun acquittement/);
   assert.match(endpoint, /opening_text:\s*CLAIRE_WELCOME/);
   assert.doesNotMatch(client, /this\.speak\(greeting\)/);

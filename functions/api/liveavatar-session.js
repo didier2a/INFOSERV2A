@@ -156,7 +156,8 @@ export async function onRequestPost({ request, env }) {
           context_id: contextId,
           voice: "marin",
           model,
-          temperature: 0.55
+          // LiveAvatar refuse toute température < 0.6 sur le connecteur LITE.
+          temperature: 0.6
         }
       })
     });
