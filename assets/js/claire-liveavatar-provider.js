@@ -78,9 +78,24 @@ export class InfoServ2ALiveAvatarProvider {
 
   install({ video, onTranscript, onAvatarTranscript, onAvatarSpeakStart, onAvatarSpeakEnd, onBargeIn, onStatus, onCommand, classifyCommand } = {}) {
     this.video = video || null;
+    this.prepareVideoElement();
     this.callbacks = { onTranscript, onAvatarTranscript, onAvatarSpeakStart, onAvatarSpeakEnd, onBargeIn, onStatus, onCommand, classifyCommand };
     this.callbacks.onStatus?.("ready", "LiveAvatar disponible sur activation");
     return this;
+  }
+
+  prepareVideoElement() {
+    if (!this.video) return false;
+    this.video.playsInline = true;
+    this.video.autoplay = true;
+    this.video.controls = false;
+    this.video.disablePictureInPicture = true;
+    this.video.preload = "auto";
+    this.video.setAttribute?.("playsinline", "");
+    this.video.setAttribute?.("webkit-playsinline", "");
+    this.video.setAttribute?.("disablepictureinpicture", "");
+    this.video.setAttribute?.("disableremoteplayback", "");
+    return true;
   }
 
   emit(value, label) {
@@ -104,29 +119,76 @@ export class InfoServ2ALiveAvatarProvider {
 
   primeAudio() {
     if (!this.video) return false;
+    this.prepareVideoElement();
     this.video.muted = false;
     this.video.volume = 1;
-    // L'appel est volontairement déclenché dans le geste utilisateur.
-    // Sans flux, play() peut être rejeté ; le vrai déverrouillage sera
-    // retenté dès que LiveAvatar attache ses deux pistes.
-    void this.video.play().catch(() => {});
+    // Geste utilisateur (PC, Chrome Android, Safari iPhone) : déverrouille
+    // l'autoplay. Sans flux, play() peut échouer ; on retentera à l'attache.
+    void this.video.play().catch(() => {
+      this.video.muted = true;
+      void this.video.play().catch(() => {});
+    });
     return true;
+  }
+
+  async unlockPlayback() {
+    if (!this.video) return false;
+    this.prepareVideoElement();
+    try {
+      this.video.muted = false;
+      this.video.volume = 1;
+      await this.video.play();
+      return !this.video.muted;
+    } catch {
+      try {
+        this.video.muted = true;
+        await this.video.play();
+        this.video.muted = false;
+        this.video.volume = 1;
+        await this.video.play();
+        return !this.video.muted;
+      } catch {
+        this.video.muted = true;
+        void this.video.play().catch(() => {});
+        return false;
+      }
+    }
   }
 
   async resumeMedia() {
     if (!this.video) return false;
-    this.primeAudio();
-    try {
-      await this.video.play();
-      this.mediaAudible = this.hasLiveAudio();
-      if (!this.mediaAudible) throw new Error("Piste audio LiveAvatar absente");
-      this.emit("ready", "Son Realtime activé");
-      this.flushPendingSpeech();
-      return true;
-    } catch {
-      this.mediaAudible = false;
+    const unlocked = await this.unlockPlayback();
+    this.mediaAudible = unlocked && this.hasLiveAudio();
+    if (!this.mediaAudible) {
       this.emit("sound", "Touchez Claire pour activer le son");
       return false;
+    }
+    this.emit("ready", "Son Realtime activé");
+    this.flushPendingSpeech();
+    return true;
+  }
+
+  async preflightMicrophone() {
+    const getUserMedia = globalThis.navigator?.mediaDevices?.getUserMedia?.bind(
+      globalThis.navigator.mediaDevices
+    );
+    if (!getUserMedia) {
+      this.record("microphone:preflight-unavailable");
+      return false;
+    }
+    try {
+      const stream = await getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        video: false
+      });
+      stream.getTracks().forEach((track) => {
+        try { track.stop(); } catch { /* Piste déjà relâchée pour le SDK. */ }
+      });
+      this.record("microphone:preflight-granted");
+      return true;
+    } catch (error) {
+      this.record("microphone:preflight-denied", { name: String(error?.name || "") });
+      throw error;
     }
   }
 
@@ -418,29 +480,18 @@ export class InfoServ2ALiveAvatarProvider {
         this.video.hidden = false;
         // Le SDK officiel attache les pistes vidéo ET audio au même média.
         // On conserve donc ce média audible au lieu de détourner sa piste
-        // vers un AudioContext parfois suspendu par Chrome Android.
-        this.video.muted = false;
-        this.video.volume = 1;
+        // vers un AudioContext parfois suspendu par Chrome Android / iOS.
+        this.prepareVideoElement();
         await Promise.resolve(session.attach(this.video));
         await this.waitForMediaTracks();
         this.streamReady = true;
         resolveStream(true);
-        try {
-          await this.video.play();
-          this.mediaAudible = !this.video.muted && this.hasLiveAudio();
-          if (this.mediaAudible) {
-            this.emit("ready", "Claire · LiveAvatar Realtime · son actif");
-            this.flushPendingSpeech();
-          } else {
-            this.emit("sound", "Touchez Claire pour activer le son");
-          }
-        } catch {
-          // Android peut autoriser l'image mais refuser l'audio différé.
-          // On affiche alors la vidéo en sourdine et le prochain toucher de
-          // Claire exécute resumeMedia() dans un nouveau geste utilisateur.
-          this.mediaAudible = false;
-          this.video.muted = true;
-          void this.video.play().catch(() => {});
+        const unlocked = await this.unlockPlayback();
+        this.mediaAudible = unlocked && this.hasLiveAudio();
+        if (this.mediaAudible) {
+          this.emit("ready", "Claire · LiveAvatar Realtime · son actif");
+          this.flushPendingSpeech();
+        } else {
           this.emit("sound", "Touchez Claire pour activer le son");
         }
       })().catch((error) => rejectStream(error));

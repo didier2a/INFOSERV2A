@@ -91,7 +91,7 @@
     <div class="claire-experience__layout">
       <figure class="claire-live-stage" data-claire-stage data-presence="ready">
         <img class="claire-live-stage__poster" src="assets/images/companion/claire-liveavatar-1080x1920.jpg" alt="Claire, aidante LiveAvatar d’InfoServ2A">
-        <video class="claire-avatar__video" playsinline autoplay hidden aria-label="Claire en direct avec synchronisation labiale"></video>
+        <video class="claire-avatar__video" playsinline webkit-playsinline autoplay muted hidden disablepictureinpicture disableremoteplayback preload="metadata" aria-label="Claire en direct avec synchronisation labiale"></video>
         <span class="claire-live-stage__shade" aria-hidden="true"></span>
 
         <figcaption class="claire-live-stage__caption">
@@ -122,7 +122,7 @@
             </button>
             <button class="claire-button claire-button--quiet" type="button" data-claire-manual>Naviguer sans Claire</button>
           </div>
-          <p class="claire-privacy">Votre action démarre LiveAvatar et OpenAI Realtime. Le microphone n’est jamais activé avant votre accord.</p>
+          <p class="claire-privacy">Votre action démarre LiveAvatar et OpenAI Realtime. Sur ordinateur, téléphone Android (Chrome) et iPhone (Safari), acceptez le microphone pour parler. Il n’est jamais activé avant votre accord.</p>
         </div>
 
         <div class="claire-conversation">
@@ -155,7 +155,7 @@
 
           <form class="claire-command" data-claire-form>
             <label class="sr-only" for="claireCommand">Votre demande</label>
-            <input id="claireCommand" name="command" type="text" autocomplete="off" placeholder="Ex. Explique-moi la vidéosurveillance sans fibre" maxlength="320">
+            <input id="claireCommand" name="command" type="text" autocomplete="off" enterkeyhint="send" inputmode="text" autocapitalize="sentences" maxlength="320" placeholder="Ex. Explique-moi la vidéosurveillance sans fibre">
             <button class="claire-icon-button claire-icon-button--send" type="submit" aria-label="Envoyer la demande">→</button>
           </form>
 

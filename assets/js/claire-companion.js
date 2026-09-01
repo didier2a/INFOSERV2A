@@ -17,8 +17,8 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-aidant9";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-aidant9";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-mobile1";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-mobile1";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 280;
 const LIVEAVATAR_CLOUD_FALLBACKS = [
@@ -92,6 +92,14 @@ function storageSet(key, value) {
 
 function storageRemove(key) {
   try { sessionStorage.removeItem(key); } catch { /* Rien à faire. */ }
+}
+
+function isPhoneShell() {
+  try {
+    return Boolean(globalThis.matchMedia?.("(max-width: 820px), ((pointer: coarse) and (hover: none))")?.matches);
+  } catch {
+    return false;
+  }
 }
 
 function liveAvatarStatusUrls() {
@@ -221,6 +229,7 @@ export class ClaireCompanion {
     this.liveAvatarStatus = null;
     this.liveAvatarApiOrigin = null;
     this.startLock = null;
+    this.wakeLock = null;
     this.manifest = FALLBACK_CAPABILITIES;
     this.surface = null;
     this.siteAdapter = null;
@@ -358,6 +367,7 @@ export class ClaireCompanion {
       this.nodes.input.value = "";
       void this.submit(value, "text");
     });
+    this.bindResponsiveShell();
     this.nodes.mic?.addEventListener("click", () => void this.toggleMicrophone());
     this.nodes.stage?.addEventListener("click", (event) => {
       if (event.target?.closest?.("button, a, input")) return;
@@ -386,6 +396,97 @@ export class ClaireCompanion {
     });
   }
 
+  bindResponsiveShell() {
+    this.syncViewportShell();
+    const sync = () => this.syncViewportShell();
+    globalThis.visualViewport?.addEventListener("resize", sync);
+    globalThis.visualViewport?.addEventListener("scroll", sync);
+    globalThis.addEventListener("resize", sync);
+    globalThis.addEventListener("orientationchange", () => {
+      this.syncViewportShell();
+      if (this.provider?.connected) void this.provider.resumeMedia?.();
+    });
+    this.nodes.input?.addEventListener("focus", sync);
+    this.nodes.input?.addEventListener("blur", sync);
+    document.addEventListener("visibilitychange", () => void this.handleVisibility());
+    globalThis.addEventListener("pageshow", (event) => {
+      if (event.persisted) void this.handleVisibility();
+    });
+  }
+
+  syncViewportShell() {
+    const viewport = globalThis.visualViewport;
+    const height = Math.round(viewport?.height || globalThis.innerHeight || 0);
+    if (height) document.documentElement.style.setProperty("--claire-vvh", `${height}px`);
+    document.documentElement.style.setProperty("--claire-vv-offset", `${Math.round(viewport?.offsetTop || 0)}px`);
+    const phone = isPhoneShell();
+    document.body.classList.toggle("claire-phone-shell", phone);
+    document.body.classList.toggle(
+      "claire-keyboard-open",
+      Boolean(phone && this.nodes.input && document.activeElement === this.nodes.input)
+    );
+  }
+
+  focusComposer() {
+    if (isPhoneShell()) return;
+    requestAnimationFrame(() => this.nodes.input?.focus());
+  }
+
+  async keepScreenAwake() {
+    if (!globalThis.navigator?.wakeLock?.request) return false;
+    try {
+      this.wakeLock = await globalThis.navigator.wakeLock.request("screen");
+      this.wakeLock.addEventListener?.("release", () => { this.wakeLock = null; }, { once: true });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  releaseWakeLock() {
+    try { this.wakeLock?.release?.(); } catch { /* Verrou déjà relâché. */ }
+    this.wakeLock = null;
+  }
+
+  async handleVisibility() {
+    this.syncViewportShell();
+    if (document.visibilityState !== "visible") {
+      this.releaseWakeLock();
+      return;
+    }
+    if (!this.provider?.connected || this.state === "manual") return;
+    await this.keepScreenAwake();
+    await this.provider.resumeMedia?.();
+    if (this.audioEnabled && this.provider.listening) {
+      try { await this.provider.ensureMicrophone(); } catch { /* Session à reconnecter au micro. */ }
+    }
+  }
+
+  prepareLocalVideo() {
+    const video = this.nodes.video;
+    if (!video) return;
+    video.playsInline = true;
+    video.autoplay = true;
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
+  }
+
+  async preflightMicrophone() {
+    if (this.provider?.preflightMicrophone) return this.provider.preflightMicrophone();
+    const getUserMedia = globalThis.navigator?.mediaDevices?.getUserMedia?.bind(
+      globalThis.navigator.mediaDevices
+    );
+    if (!getUserMedia) return false;
+    const stream = await getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      video: false
+    });
+    stream.getTracks().forEach((track) => {
+      try { track.stop(); } catch { /* Piste déjà relâchée. */ }
+    });
+    return true;
+  }
+
   setState(next) {
     this.state = next;
     this.root.dataset.state = next;
@@ -399,6 +500,7 @@ export class ClaireCompanion {
       this.lastFocus = document.activeElement;
       requestAnimationFrame(() => this.root.querySelector("[data-claire-start]")?.focus());
     }
+    this.syncViewportShell();
   }
 
   setStatus(value, label) {
@@ -447,7 +549,15 @@ export class ClaireCompanion {
     storageSet(STORAGE_SEEN, "1");
     storageSet(STORAGE_MODE, "shared");
     this.audioEnabled = true;
+    this.prepareLocalVideo();
     this.provider?.primeAudio?.();
+    let microphoneRequested = microphone;
+    try {
+      await this.preflightMicrophone();
+    } catch {
+      microphoneRequested = false;
+      this.setStatus("error", "Autorisez le microphone pour parler à Claire");
+    }
     this.setState(state);
     this.setStatus("connecting", "Connexion à Claire…");
     this.setEngineStatus("connecting", "Connexion LiveAvatar…");
@@ -455,11 +565,12 @@ export class ClaireCompanion {
     const greeting = CLAIRE_WELCOME;
     if (this.provider?.connect) {
       try {
-        await this.provider.connect({ microphone });
+        await this.provider.connect({ microphone: microphoneRequested });
         this.setEngineStatus("liveavatar-realtime", "LiveAvatar · OpenAI Realtime · marin");
         this.provider.sendBriefing?.(buildSiteBriefing(this.knowledge));
         this.pushPageContext();
         this.scheduleWelcomeTranscript(greeting);
+        void this.keepScreenAwake();
       } catch {
         this.activateLocalFallback("La connexion LiveAvatar a échoué. Le mode local reste silencieux afin de ne pas imiter la voix Realtime de Claire.");
         this.showWelcome(greeting);
@@ -468,7 +579,7 @@ export class ClaireCompanion {
       this.activateLocalFallback("LiveAvatar et OpenAI Realtime ne sont pas encore disponibles. Le mode local reste silencieux afin de ne pas imiter Claire.");
       this.showWelcome(greeting);
     }
-    requestAnimationFrame(() => this.nodes.input?.focus());
+    this.focusComposer();
   }
 
   activateLocalFallback(message) {
@@ -494,6 +605,7 @@ export class ClaireCompanion {
 
   enterManualMode() {
     this.interrupt();
+    this.releaseWakeLock();
     void this.provider?.pauseListening?.();
     storageSet(STORAGE_SEEN, "1");
     storageSet(STORAGE_MODE, "manual");
@@ -509,7 +621,7 @@ export class ClaireCompanion {
     this.setState("shared");
     this.setStatus("ready", "Prête à vous guider");
     void this.provider?.ensureMicrophone?.();
-    requestAnimationFrame(() => this.nodes.input?.focus());
+    this.focusComposer();
   }
 
   async openConversation() {
@@ -536,7 +648,10 @@ export class ClaireCompanion {
   pushPageContext(snapshot = this.siteAdapter?.snapshot()) {
     const text = describePageContext(snapshot);
     if (!text) return false;
-    return this.provider?.sendContext?.(text) || false;
+    const shell = isPhoneShell()
+      ? "Appareil : téléphone. Réponses plus courtes."
+      : "Appareil : ordinateur.";
+    return this.provider?.sendContext?.(`${text}\n${shell}`) || false;
   }
 
   verifiedSpeechFor(outcome) {
@@ -560,7 +675,9 @@ export class ClaireCompanion {
   }
 
   async retryLiveAvatar() {
+    this.prepareLocalVideo();
     this.provider?.primeAudio?.();
+    try { await this.preflightMicrophone(); } catch { /* L’utilisateur pourra réessayer le micro. */ }
     this.setEngineStatus("checking", "Vérification LiveAvatar…");
     this.providerReadyPromise = this.configureLiveAvatarProvider();
     const ready = await this.providerReadyPromise;
@@ -931,7 +1048,9 @@ export class ClaireCompanion {
 
   async toggleMicrophone() {
     this.audioEnabled = true;
+    this.prepareLocalVideo();
     this.provider?.primeAudio?.();
+    try { await this.preflightMicrophone(); } catch { /* Le SDK redemandera le micro. */ }
     if (this.state === "arrival" || this.state === "loading" || !this.provider?.connected) {
       await this.start();
       return;
@@ -1000,6 +1119,7 @@ export class ClaireCompanion {
       version: "2.1.0-generalist",
       state: this.state,
       provider: this.provider?.id || "browser-native-fallback",
+      phoneShell: isPhoneShell(),
       liveAvatarConfigured: Boolean(this.liveAvatarStatus?.configured),
       voiceRecognition: this.browserVoice.supported(),
       speechSynthesis: Boolean(globalThis.speechSynthesis),

@@ -9,7 +9,7 @@ Les serveurs de noms sont bien Cloudflare (`ian.ns.cloudflare.com` / `sarah.ns.c
 
 | URL | Qui répond | `/api/liveavatar-status` | LiveAvatar |
 |---|---|---|---|
-| [Preview Workers](https://cursor-live-avatar-aidant-8f54-infoserv2a.infoserv2a.workers.dev/?claire=1) | Worker de la branche (Aidant 1.7) | `configured: true` | OK |
+| [Preview Workers](https://cursor-live-avatar-aidant-8f54-infoserv2a.infoserv2a.workers.dev/?claire=1) | Worker de la branche (Aidant 1.8, PC + mobile) | `configured: true` | OK |
 | [https://www.infoserv2a.pro](https://www.infoserv2a.pro/?claire=1) | Worker **production** (`claire-companion.js?v=20260830-live2`) | JSON `configured: false` | Non (clé OpenAI absente) |
 | [Worker `main`](https://infoserv2a.infoserv2a.workers.dev/) | Worker production | `configured: false` (`openAIRealtime: false`) | Non |
 | [https://infoserv2a.pro](https://infoserv2a.pro/?claire=1) | **GitHub Pages** (`server: GitHub.com`, `x-github-request-id`) | **404 HTML** | Non |
@@ -19,7 +19,7 @@ Deux clics restent, dans cet ordre :
 1. **Domaine racine** — attacher `infoserv2a.pro` (sans `www`) au Worker. Tant que les enregistrements A GitHub (`185.199.x.x`) existent pour `@`, Cloudflare refuse ou ignore le Custom Domain de la racine. Voir [B4](#b4-attacher-le-domaine-au-worker).
 2. **Secret OpenAI en production** — même valeur que la preview. Sans ça, même `www` et le Worker `main` restent en `configured: false`. Voir [étape A](#étape-a--secrets-production-5-minutes-aucun-dns).
 
-Ne fusionner la [PR #4](https://github.com/didier2a/INFOSERV2A/pull/4) que lorsque vous le demanderez : aujourd’hui la production sert encore l’ancien client `live2`, pas Aidant 1.7.
+Ne fusionner la [PR #4](https://github.com/didier2a/INFOSERV2A/pull/4) que lorsque vous le demanderez : aujourd’hui la production sert encore l’ancien client `live2`, pas Aidant 1.8.
 
 ## 1. Pourquoi la preview marche et pas le domaine public
 
@@ -59,7 +59,7 @@ curl -s https://infoserv2a.infoserv2a.workers.dev/api/liveavatar-status
 
 Attendu : `"configured":true` et `"openAIRealtime":true`.
 
-4. Fusionner la PR [#4](https://github.com/didier2a/INFOSERV2A/pull/4) dans `main` **seulement si vous le demandez** : ça publie Aidant 1.7 (interruption + synchro de l’onglet) sur le Worker production. Sans fusion, `www` et la racine resteront sur l’ancien client `live2`.
+4. Fusionner la PR [#4](https://github.com/didier2a/INFOSERV2A/pull/4) dans `main` **seulement si vous le demandez** : ça publie Aidant 1.8 (interruption, synchro d’onglet, responsive PC + téléphone) sur le Worker production. Sans fusion, `www` et la racine resteront sur l’ancien client `live2`.
 
 ### Étape B — DNS Cloudflare + domaine du Worker (le vrai transfert d’URL)
 

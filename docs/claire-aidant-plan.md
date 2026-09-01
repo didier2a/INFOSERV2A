@@ -1,7 +1,7 @@
 # Plan Claire — aidante Live Avatar d’InfoServ2A
 
 Date : 1er septembre 2026  
-Statut : généraliste OpenAI Live, interruption et page de droite synchronisée (contexte Aidant 1.7)  
+Statut : généraliste OpenAI Live, interruption, page de droite synchronisée, responsive PC + téléphone (contexte Aidant 1.8)  
 Référence visuelle : `/claire-aidant-figma.html` · `data/claire-aidant-figma.json`
 
 ## 1. Intention
@@ -56,7 +56,7 @@ Règles non négociables :
 - Surface persistante `assets/js/claire-site-runtime-adapter.mjs`.
 - Laboratoire texte `/claire-lab` (aucun secret, aucune voix).
 - Ancres canoniques : `solutions-sans-fibre`, `audit-nis2`, `supports`, `offre-hebergement`.
-- Contexte LiveAvatar `InfoServ2A Claire Aidant 1.7` (prompt généré depuis `data/site-knowledge.json`).
+- Contexte LiveAvatar `InfoServ2A Claire Aidant 1.8` (prompt généré depuis `data/site-knowledge.json`).
 
 ## 5. Spec Figma
 
@@ -85,7 +85,7 @@ Frames à pousser dans Figma dès que le MCP Figma est authentifié sur le burea
 - `LIVEAVATAR_API_KEY`
 - `OPENAI_API_KEY` ou `LIVEAVATAR_OPENAI_SECRET_ID`
 - optionnel `LIVEAVATAR_AVATAR_ID` (Claire Pocket Guide par défaut)
-- optionnel `LIVEAVATAR_CONTEXT_ID` après la première création du contexte Aidant 1.7. Si une ancienne valeur pointe encore vers 1.3, 1.4, 1.5 ou 1.6, la supprimer pour forcer la recréation.
+- optionnel `LIVEAVATAR_CONTEXT_ID` après la première création du contexte Aidant 1.8. Si une ancienne valeur pointe encore vers 1.3–1.7, la supprimer pour forcer la recréation.
 
 ## 7. Acceptation
 
@@ -108,7 +108,7 @@ Cahier des charges énoncé : Claire n’est pas limitée au site ; LiveAvatar e
 
 | Exigence | Verdict | Preuve |
 |---|---|---|
-| Interlocutrice généraliste, comme OpenAI Live | **Conforme** | `classifyUtterance` est `chat` par défaut. Barge-in dès que le visiteur parle. Contexte Aidant 1.7. |
+| Interlocutrice généraliste, comme OpenAI Live | **Conforme** | `classifyUtterance` est `chat` par défaut. Barge-in dès que le visiteur parle. Contexte Aidant 1.8. |
 | Interruption (parler / toucher / Interrompre) | **Conforme** | `bargeIn` sur `USER_SPEAK_STARTED`, transcription, micro, scène et bouton. |
 | Navigation synchronisée avec ce qu’elle dit | **Conforme** | `followSpokenNavigation` zappe l’onglet et la section de droite pendant `AVATAR_TRANSCRIPTION`. |
 | LiveAvatar relié à OpenAI Live / Realtime | **Conforme** | Session LITE, `gpt-realtime`, voix `marin`, température 0.6. LiveAvatar n’est pas le cerveau : c’est le visage. |

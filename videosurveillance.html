@@ -2,7 +2,10 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Vidéosurveillance à Porto-Vecchio — InfoServ2A</title>
   <meta name="description" content="Installation de caméras de surveillance à Porto-Vecchio : solaire, 4G, terrains isolés, maisons, commerces et chantiers. Devis gratuit.">
   <link rel="canonical" href="https://infoserv2a.pro/videosurveillance.html">
@@ -22,11 +25,11 @@
   <link rel="icon" href="assets/images/logo/favicon.png?v=2" type="image/png" sizes="192x192">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
   <link rel="manifest" href="site.webmanifest">
-  <link rel="stylesheet" href="assets/css/variables.css?v=20260901-aidant9">
-  <link rel="stylesheet" href="assets/css/main.css?v=20260901-aidant9">
-  <link rel="stylesheet" href="assets/css/components.css?v=20260901-aidant9">
-  <link rel="stylesheet" href="assets/css/responsive.css?v=20260901-aidant9">
-  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260901-aidant9">
+  <link rel="stylesheet" href="assets/css/variables.css?v=20260901-mobile1">
+  <link rel="stylesheet" href="assets/css/main.css?v=20260901-mobile1">
+  <link rel="stylesheet" href="assets/css/components.css?v=20260901-mobile1">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=20260901-mobile1">
+  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260901-mobile1">
   <script type="application/ld+json">{
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
@@ -156,7 +159,7 @@
     <div class="claire-experience__layout">
       <figure class="claire-live-stage" data-claire-stage data-presence="ready">
         <img class="claire-live-stage__poster" src="assets/images/companion/claire-liveavatar-1080x1920.jpg" alt="Claire, aidante LiveAvatar d’InfoServ2A">
-        <video class="claire-avatar__video" playsinline autoplay hidden aria-label="Claire en direct avec synchronisation labiale"></video>
+        <video class="claire-avatar__video" playsinline webkit-playsinline autoplay muted hidden disablepictureinpicture disableremoteplayback preload="metadata" aria-label="Claire en direct avec synchronisation labiale"></video>
         <span class="claire-live-stage__shade" aria-hidden="true"></span>
 
         <figcaption class="claire-live-stage__caption">
@@ -187,7 +190,7 @@
             </button>
             <button class="claire-button claire-button--quiet" type="button" data-claire-manual>Naviguer sans Claire</button>
           </div>
-          <p class="claire-privacy">Votre action démarre LiveAvatar et OpenAI Realtime. Le microphone n’est jamais activé avant votre accord.</p>
+          <p class="claire-privacy">Votre action démarre LiveAvatar et OpenAI Realtime. Sur ordinateur, téléphone Android (Chrome) et iPhone (Safari), acceptez le microphone pour parler. Il n’est jamais activé avant votre accord.</p>
         </div>
 
         <div class="claire-conversation">
@@ -220,7 +223,7 @@
 
           <form class="claire-command" data-claire-form>
             <label class="sr-only" for="claireCommand">Votre demande</label>
-            <input id="claireCommand" name="command" type="text" autocomplete="off" placeholder="Ex. Explique-moi la vidéosurveillance sans fibre" maxlength="320">
+            <input id="claireCommand" name="command" type="text" autocomplete="off" enterkeyhint="send" inputmode="text" autocapitalize="sentences" maxlength="320" placeholder="Ex. Explique-moi la vidéosurveillance sans fibre">
             <button class="claire-icon-button claire-icon-button--send" type="submit" aria-label="Envoyer la demande">→</button>
           </form>
 
@@ -309,6 +312,7 @@
   </script>
 </div>
 <!-- /chrome:header -->
+
 
 
 
@@ -501,8 +505,9 @@
 
 
 
-<script src="assets/js/main.js?v=20260901-aidant9" defer></script>
-  <script src="assets/js/navigation.js?v=20260901-aidant9" defer></script>
-  <script type="module" src="assets/js/claire-companion.js?v=20260901-aidant9"></script>
+
+<script src="assets/js/main.js?v=20260901-mobile1" defer></script>
+  <script src="assets/js/navigation.js?v=20260901-mobile1" defer></script>
+  <script type="module" src="assets/js/claire-companion.js?v=20260901-mobile1"></script>
 </body>
 </html>

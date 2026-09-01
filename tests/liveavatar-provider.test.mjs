@@ -65,11 +65,18 @@ const sdkUrl = `data:text/javascript;base64,${Buffer.from(sdkSource).toString("b
 const { InfoServ2ALiveAvatarProvider } = await import("../assets/js/claire-liveavatar-provider.js");
 
 function fakeVideo() {
+  const attrs = {};
   return {
     hidden: true,
     muted: true,
     volume: 0,
     srcObject: null,
+    playsInline: false,
+    autoplay: false,
+    controls: false,
+    disablePictureInPicture: false,
+    preload: "",
+    setAttribute(name, value = "") { attrs[name] = value; },
     play: async () => true
   };
 }
@@ -242,5 +249,33 @@ test("la transcription de Claire est transmise pour synchroniser la page de droi
   assert.deepEqual(spoken, ["Voici l’onglet Vidéosurveillance"]);
   assert.equal(provider.avatarSpeaking, true);
 
+  await provider.stop();
+});
+
+test("le prévol micro relâche les pistes pour que PC et téléphone partagent le même SDK", async () => {
+  const stopped = [];
+  const mediaDevices = {
+    getUserMedia: async () => ({
+      getTracks: () => [{
+        stop() { stopped.push("audio"); }
+      }]
+    })
+  };
+  Object.defineProperty(globalThis.navigator, "mediaDevices", {
+    configurable: true,
+    value: mediaDevices
+  });
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-preflight" })
+  }).install({ video });
+
+  assert.equal(await provider.preflightMicrophone(), true);
+  assert.deepEqual(stopped, ["audio"]);
+  assert.equal(video.playsInline, true);
+
+  await provider.connect({ microphone: true });
+  assert.equal(provider.connected, true);
   await provider.stop();
 });

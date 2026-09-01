@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-aidant9)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-aidant9)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-mobile1)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-mobile1)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -72,7 +72,7 @@ test("Claire conserve une scène majeure et un mode guidé, jamais une bulle de 
   assert.match(css, /body\.claire-is-guided/);
   assert.doesNotMatch(css, /bottom-right|claire-mini/);
   assert.match(client, /connectLiveSession\(\{ microphone: true/);
-  assert.match(client, /provider\.connect\(\{ microphone \}\)/);
+  assert.match(client, /provider\.connect\(\{ microphone: microphoneRequested \}\)/);
   assert.match(client, /Mode local · Realtime non configuré/);
   assert.match(client, /LiveAvatar configuré · transport interrompu/);
   assert.match(provider, /AgentEventsEnum\.AVATAR_TRANSCRIPTION/);
@@ -110,7 +110,7 @@ test("Claire accueille l'utilisateur et explique son rôle chez InfoServ2A", asy
     assert.match(source, /m’interrompre à tout moment/);
     assert.match(source, /onglets du site/);
   }
-  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.7/);
+  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.8/);
   assert.match(endpoint, /buildClaireContextPrompt/);
   assert.match(endpoint, /temperature:\s*0\.6/);
   assert.match(endpoint, /opening_text:\s*CLAIRE_WELCOME/);
@@ -244,6 +244,29 @@ test("la conversation guidée reste visible sur mobile et le site ne passe pas s
   assert.match(mobile, /overflow: hidden/);
   assert.match(mobile, /scroll-padding-top/);
   assert.match(mobile, /scroll-margin-top/);
+  assert.match(mobile, /--claire-vvh/);
+});
+
+test("Claire reste en deux colonnes sur ordinateur et s’empile seulement sous 820px", async () => {
+  const [css, client, provider, html] = await Promise.all([
+    readFile(path.join(ROOT, "assets/css/claire-companion.css"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8"),
+    readFile(path.join(ROOT, "index.html"), "utf8")
+  ]);
+  const desktop = css.split("@media (max-width: 820px)")[0];
+  const mobile = css.split("@media (max-width: 820px)")[1].split("@media")[0];
+  assert.match(desktop, /grid-template-columns: minmax\(340px, 46%\) minmax\(0, 1fr\)/);
+  assert.match(desktop, /padding-left: var\(--claire-stage-width\)/);
+  assert.doesNotMatch(desktop, /grid-template-columns: 1fr;/);
+  assert.match(mobile, /grid-template-columns: 1fr;/);
+  assert.match(client, /function isPhoneShell\(/);
+  assert.match(client, /if \(isPhoneShell\(\)\) return;/);
+  assert.match(client, /preflightMicrophone/);
+  assert.match(provider, /webkit-playsinline/);
+  assert.match(provider, /async unlockPlayback\(/);
+  assert.match(html, /viewport-fit=cover/);
+  assert.match(html, /webkit-playsinline/);
 });
 
 test("une transcription vocale coupe la réponse spontanée seulement si le site doit agir", async () => {

@@ -40,7 +40,7 @@ test("audit : Claire est généraliste par défaut, comme OpenAI Live", () => {
   assert.equal(classifyUtterance("Quelle est la capitale de l’Italie ?", knowledge).kind, "chat");
   assert.equal(planCommand("Raconte-moi une blague", knowledge, manifest).mode, "chat");
   assert.match(providerSource, /let kind = "chat"/);
-  assert.match(sessionSource, /InfoServ2A Claire Aidant 1\.7/);
+  assert.match(sessionSource, /InfoServ2A Claire Aidant 1\.8/);
 });
 
 test("audit : le catalogue site est injecté et chaque onglet est connu", () => {
