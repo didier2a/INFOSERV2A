@@ -19,8 +19,8 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it3";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it3";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it4";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it4";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 280;
 const LIVEAVATAR_CLOUD_FALLBACKS = [
@@ -864,7 +864,7 @@ export class ClaireCompanion {
 
     if (classified.kind === "offtopic") {
       this.pushPageContext();
-      this.setStatus("listening", "Claire recentre sur l’informatique");
+      this.setStatus("listening", "Claire vous répond");
       if (this.provider?.avatarSpeaking) this.provider.bargeIn?.("off-topic");
       if (this.provider?.sendOffTopic) {
         this.provider.sendOffTopic(value);

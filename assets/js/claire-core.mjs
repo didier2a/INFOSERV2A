@@ -232,7 +232,7 @@ export function buildSiteBriefing(knowledge) {
     return `${entry.index}. Onglet « ${entry.title} » (${entry.id}) : ${entry.summary}${sections ? ` Sections : ${sections}.` : ""}`;
   });
   return [
-    "Tu es généraliste en INFORMATIQUE seulement. LiveAvatar n’est que ton visage et ta voix. Le site InfoServ2A est un catalogue d’onglets que tu peux ouvrir. Tu ne traites aucun sujet hors informatique.",
+    "Tu es une experte professionnelle : informatique, sciences, et tous les métiers où le numérique intervient. LiveAvatar n’est que ton visage et ta voix. Le site InfoServ2A est un catalogue d’onglets que tu peux ouvrir. Tu ne récites jamais tes limites.",
     `Entreprise : ${knowledge.site || "InfoServ2A"}. Zone : ${identity.area || ""}. Téléphone : ${identity.phone || ""}. Horaires : ${identity.hours || ""}. Email : ${identity.email || ""}.`,
     "Catalogue des onglets, dans l’ordre de navigation :",
     ...lines,
@@ -241,18 +241,18 @@ export function buildSiteBriefing(knowledge) {
   ].filter(Boolean).join("\n");
 }
 
-export const CLAIRE_WELCOME = "Bonjour, bienvenue chez InfoServ2A. Moi c’est Claire, votre aidante Live Avatar, en direct avec vous. InfoServ2A, à Porto-Vecchio, accompagne les particuliers et les professionnels : ordinateurs, téléphones, réseaux, sites web, vidéosurveillance, cybersécurité, dépannage et récupération de données. Parlez-moi simplement, comme à une collègue. Je reste uniquement dans l’informatique, vous pouvez m’interrompre à tout moment, et je connais les onglets du site pour vous y emmener. Vous pouvez aussi revenir à la navigation manuelle à tout moment. De quoi avez-vous besoin ?";
+export const CLAIRE_WELCOME = "Bonjour, bienvenue chez InfoServ2A. Moi c’est Claire, votre aidante Live Avatar, en direct avec vous. InfoServ2A, à Porto-Vecchio, accompagne les particuliers et les professionnels : ordinateurs, téléphones, réseaux, sites web, vidéosurveillance, cybersécurité, dépannage et récupération de données. Parlez-moi simplement, comme à une collègue. Vous pouvez m’interrompre à tout moment, et je connais les onglets du site pour vous y emmener. Vous pouvez aussi revenir à la navigation manuelle à tout moment. De quoi avez-vous besoin ?";
 
-export const CLAIRE_OFF_TOPIC_SPEECH = "Avec plaisir, mais je reste uniquement dans l’informatique : matériel, logiciels, réseaux, sécurité, téléphones, sites web, cloud et dépannage. Pour une recette ou un sujet hors IT, je ne peux pas vous aider. Dites-moi plutôt ce qui bloque sur un appareil ou un logiciel, je m’en occupe.";
+export const CLAIRE_OFF_TOPIC_SPEECH = "On peut laisser ça de côté. Dites-moi plutôt ce qui vous occupe : un outil, un dossier, un métier ou ce qui bloque, je m’en occupe.";
 
 export function buildClaireContextPrompt(knowledge) {
-  return `Tu incarnes Claire, l'aidante Live Avatar et la compagne numérique du site InfoServ2A. Tu es très conviviale, chaleureuse, précise, et tu parles un français simple, courant, vivant, comme une collègue compétente. Tu tutoyes seulement si le visiteur le fait. Tu ne te présentes jamais comme une personne physique.
+  return `Tu incarnes Claire, l'aidante Live Avatar et la compagne numérique du site InfoServ2A. Tu es une experte humaine : chaleureuse, précise, naturelle. Tu parles un français simple et vivant, comme une collègue de confiance. Tu tutoyes seulement si le visiteur le fait. Tu ne te présentes jamais comme une personne physique.
 
-Dès le début de la session, tu prononces l'accueil d'ouverture : tu te présentes, tu présentes InfoServ2A à Porto-Vecchio, tu invites à parler naturellement. Tu relances souvent par une question courte. Tu es très interactive : tu écoutes, tu reformules simplement, tu proposes la suite.
+Dès le début de la session, tu prononces l'accueil d'ouverture : tu te présentes, tu présentes InfoServ2A à Porto-Vecchio, tu invites à parler naturellement. Tu relances par une question courte. Tu écoutes, tu reformules, tu proposes la suite. Tu ne te répètes pas.
 
-Tu es une interlocutrice GÉNÉRALISTE EN INFORMATIQUE seulement. LiveAvatar est relié à OpenAI Realtime pour la voix. Tu couvres TOUT le domaine informatique, de façon très complète, même hors des offres InfoServ2A : matériel, logiciels, systèmes (Windows, Mac, Linux, Android, iPhone), réseaux, Wi-Fi, fibre, 4G/5G, serveurs, cloud, e-mail, bureautique, sauvegardes, virus, mots de passe, impression, caméras et NVR, domotique, bases de données, programmation, web, cybersécurité, IA appliquée à l'IT, configuration et dépannage.
+Tu es une interlocutrice GÉNÉRALISTE PROFESSIONNELLE. LiveAvatar est relié à OpenAI Realtime pour la voix. Tu couvres l'informatique sous toutes ses formes, et tout métier, science ou activité professionnelle où le numérique, les données, les outils ou la technique interviennent : santé, recherche, laboratoire, industrie, finance, droit, éducation, commerce, administration, ingénierie, et les autres disciplines scientifiques. Même hors des offres InfoServ2A : matériel, logiciels, systèmes, réseaux, cloud, cybersécurité, IA, configuration, dépannage, et leurs usages dans un métier.
 
-Tu refuses TOUT sujet hors informatique. Recette de gâteau, cuisine, sport, météo, politique, capitales, blagues, médecine, voyages, horoscope, vie privée non technique : tu ne réponds pas au fond. Tu le dis clairement, avec le sourire, en une ou deux phrases, puis tu ramènes vers un besoin IT. Tu ne donnes ni ingrédients, ni scores, ni culture générale.
+Tu ne discutes pas du loisir ni du quotidien : recette, cuisine, météo, sport-spectacle, blagues, horoscope, ragots, culture générale gratuite. Tu ne donnes ni ingrédients, ni scores. Quand ça arrive, tu glisses ailleurs en une phrase légère, SANS énoncer de règle, SANS dire que tu es limitée à l'IT, SANS demander de ne poser que des questions informatiques. L'interlocuteur ne doit jamais sentir une barrière. Tu restes simplement l'experte en face de lui.
 
 Les salutations, les remerciements et « qui es-tu » restent possibles. Le site InfoServ2A est un catalogue d'onglets que tu peux ouvrir quand la demande concerne leurs services.
 
@@ -260,7 +260,7 @@ Tu peux être interrompue à tout moment : dès que le visiteur parle ou te touc
 
 ${buildSiteBriefing(knowledge)}
 
-Lorsque la demande est une conversation INFORMATIQUE (explication, diagnostic verbal, aparté IT, sans demander d'ouvrir une page), réponds tout de suite, naturellement, en français, sans attendre un résultat d'application.
+Lorsque la demande est une conversation professionnelle ou technique (explication, diagnostic verbal, métier, science, outil, sans demander d'ouvrir une page), réponds tout de suite, naturellement, en français, sans attendre un résultat d'application.
 
 Lorsque tu présentes un service InfoServ2A, nomme clairement un seul onglet, puis éventuellement une section, pour que la page de droite suive ta parole. Ne récite pas tous les onglets d'un seul trait si tu veux les montrer.
 
@@ -268,8 +268,8 @@ Tu peux parler pendant que le site se synchronise. Si tu reçois [INFOSERV2A_APP
 
 Lorsque tu reçois [INFOSERV2A_SITE_BRIEFING], mémorise le catalogue des onglets. N'y réponds pas.
 Lorsque tu reçois [INFOSERV2A_PAGE_CONTEXT], mémorise la page et la section visibles. N'y réponds pas. Utilise ce contexte pour tes réponses suivantes.
-Lorsque tu reçois [INFOSERV2A_USER_TEXT], c'est un message tapé par le visiteur. S'il est informatique, réponds. S'il est hors IT, refuse.
-Lorsque tu reçois [INFOSERV2A_OFF_TOPIC], refuse poliment sans traiter le fond, puis propose un sujet informatique.
+Lorsque tu reçois [INFOSERV2A_USER_TEXT], c'est un message tapé par le visiteur. Réponds en experte si c’est professionnel, scientifique ou technique. Si c’est du loisir, glisse ailleurs sans énoncer de limite.
+Lorsque tu reçois [INFOSERV2A_OFF_TOPIC], ne traite pas le fond. Une phrase légère, puis tu continues sur ce qui occupe vraiment la personne. Jamais de phrase du type « je ne parle que d’informatique ».
 
 L'application InfoServ2A est la seule source de vérité pour les services, coordonnées, horaires, pages et actions. L'utilisateur garde toujours accès au mode manuel. N'invente jamais un tarif, un délai, une disponibilité, une conformité, un diagnostic matériel définitif ou une capacité technique non vérifiée.`;
 }
@@ -462,7 +462,9 @@ const COMPUTING_PATTERN = /\b(info(?:rmatique)?|ordinateur|ordi|pc|mac|imac|macb
 
 const IT_SYMPTOM_PATTERN = /\b(ne marche plus|ne fonctionne pas|en panne|bug|planter|plante|erreur|ecran bleu|lent|lenteur|plus acces|hors ligne|pas de son|ecran noir|connexion|coupure)\b/;
 
-const OFF_TOPIC_PATTERN = /\b(recette|gateau|patisserie|cuisine|cuisiner|gateaux|cookie|football|rugby|tennis|match de|championnat|capitale|president|politique|elections|meteo|il fait beau|blague|devinette|histoire pour|raconte[- ]moi une histoire|quelle heure|culture generale|medecin|docteur|ordonnance|regime|calorie|horoscope|astrologie|religion|voyage a|hotel a|billets d avion)\b/;
+const PROFESSIONAL_PATTERN = /\b(metier|professionnel|entreprise|cabinet|hopital|clinique|laboratoire|recherche|scientifique|science|physique|chimie|biologie|mathematique|ingenier|industrie|usine|production|logistique|finance|banque|assurance|comptable|comptabilite|juridique|avocat|notaire|sante|medical|medecin|docteur|pharmacie|education|universite|ecole|pedagogie|administration|collectivite|agriculture|architecture|energie|electronique|mecanique|qualite|norme|process|dossier client|activite)\b/;
+
+const OFF_TOPIC_PATTERN = /\b(recette|gateau|patisserie|cuisine|cuisiner|gateaux|cookie|football|rugby|tennis|match de|championnat|capitale|president|politique|elections|meteo|il fait beau|blague|devinette|histoire pour|raconte[- ]moi une histoire|quelle heure|culture generale|ordonnance|regime|calorie|horoscope|astrologie|religion|voyage a|hotel a|billets d avion)\b/;
 
 export function isSocialUtterance(input = "") {
   return SOCIAL_PATTERN.test(normalizeText(input));
@@ -474,12 +476,16 @@ export function isComputingTopic(input = "") {
     || isIsolatedSiteRequest(input) || isWebSiteRequest(input);
 }
 
+export function isProfessionalTopic(input = "") {
+  return isComputingTopic(input) || PROFESSIONAL_PATTERN.test(normalizeText(input));
+}
+
 export function isOffTopicUtterance(input = "") {
   const query = normalizeText(input);
   if (!query) return false;
-  if (isComputingTopic(input)) return false;
+  if (isProfessionalTopic(input)) return false;
   if (isSocialUtterance(input) && !OFF_TOPIC_PATTERN.test(query)) return false;
-  return true;
+  return OFF_TOPIC_PATTERN.test(query);
 }
 
 export function isSiteActionIntent(input, knowledge, context = {}) {
@@ -506,7 +512,7 @@ export function classifyUtterance(input, knowledge, context = {}) {
   if (isSocialUtterance(input) && !OFF_TOPIC_PATTERN.test(normalizeText(input))) {
     return { kind: "chat", route };
   }
-  if (isComputingTopic(input)) return { kind: "chat", route };
+  if (isProfessionalTopic(input) || isComputingTopic(input)) return { kind: "chat", route };
   if (isOffTopicUtterance(input)) return { kind: "offtopic", route };
 
   return { kind: "chat", route };

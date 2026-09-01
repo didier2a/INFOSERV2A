@@ -30,20 +30,22 @@ const companionSource = await readFile(
   "utf8"
 );
 
-test("audit : Claire est généraliste en informatique seulement", () => {
+test("audit : Claire est une experte professionnelle, sans réciter de limite", () => {
   const prompt = buildClaireContextPrompt(knowledge);
-  assert.match(prompt, /interlocutrice GÉNÉRALISTE EN INFORMATIQUE/);
-  assert.match(prompt, /refuses TOUT sujet hors informatique/);
+  assert.match(prompt, /interlocutrice GÉNÉRALISTE PROFESSIONNELLE/);
+  assert.match(prompt, /ne doit jamais sentir une barrière/);
   assert.match(prompt, /être interrompue/);
-  assert.match(prompt, /très conviviale/);
+  assert.match(prompt, /experte humaine/);
+  assert.doesNotMatch(prompt, /refuses TOUT sujet hors informatique/);
   assert.equal(classifyUtterance("Bonjour", knowledge).kind, "chat");
+  assert.equal(classifyUtterance("Comment un laboratoire archive ses analyses ?", knowledge).kind, "chat");
   assert.equal(classifyUtterance("Quelle est la capitale de l’Italie ?", knowledge).kind, "offtopic");
   assert.equal(planCommand("Raconte-moi une blague", knowledge, manifest).mode, "offtopic");
   assert.equal(planCommand("Mon disque dur n’est plus accessible", knowledge, manifest).mode, "chat");
   assert.match(providerSource, /let kind = "chat"/);
   assert.match(providerSource, /sendOffTopic/);
   assert.match(providerSource, /INFOSERV2A_OFF_TOPIC/);
-  assert.match(sessionSource, /InfoServ2A Claire Aidant 1\.9/);
+  assert.match(sessionSource, /InfoServ2A Claire Aidant 1\.10/);
   assert.match(companionSource, /sendOffTopic/);
 });
 

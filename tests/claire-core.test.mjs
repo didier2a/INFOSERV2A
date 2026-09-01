@@ -116,14 +116,16 @@ test("privilégie un titre et ses mots-clés", () => {
   assert.ok(scorePage("refonte site web", web) > scorePage("refonte site web", legal));
 });
 
-test("une salutations ou un sujet informatique reste une conversation naturelle", () => {
+test("une salutations ou un sujet professionnel reste une conversation naturelle", () => {
   assert.equal(classifyUtterance("Bonjour Claire, comment ça va ?", knowledge).kind, "chat");
   assert.equal(classifyUtterance("Mon disque dur n’est plus accessible", knowledge).kind, "chat");
   assert.equal(classifyUtterance("Peux-tu améliorer mon Wi-Fi ?", knowledge).kind, "chat");
+  assert.equal(classifyUtterance("Comment un hôpital gère ses dossiers patients ?", knowledge).kind, "chat");
+  assert.equal(classifyUtterance("On cherche un logiciel pour le laboratoire", knowledge).kind, "chat");
   assert.equal(classifyUtterance("Ok, merci", knowledge).kind, "chat");
 });
 
-test("un sujet hors informatique est refusé sans navigation", () => {
+test("un loisir hors métier est écarté sans navigation", () => {
   assert.equal(classifyUtterance("Raconte-moi une blague", knowledge).kind, "offtopic");
   assert.equal(classifyUtterance("Quelle heure est-il ?", knowledge).kind, "offtopic");
   assert.equal(classifyUtterance("Quelle est la capitale de la France ?", knowledge).kind, "offtopic");
@@ -180,13 +182,15 @@ test("le briefing site contient tous les onglets et le prompt généraliste", ()
   for (const page of knowledge.pages) {
     assert.match(briefing, new RegExp(page.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
-  assert.match(briefing, /INFORMATIQUE seulement/);
-  assert.match(prompt, /interlocutrice GÉNÉRALISTE EN INFORMATIQUE/);
+  assert.match(briefing, /experte professionnelle/);
+  assert.match(prompt, /interlocutrice GÉNÉRALISTE PROFESSIONNELLE/);
+  assert.match(prompt, /ne doit jamais sentir une barrière/);
   assert.match(prompt, /INFOSERV2A_SITE_BRIEFING/);
   assert.match(prompt, /INFOSERV2A_OFF_TOPIC/);
   assert.match(prompt, /être interrompue/);
   assert.match(CLAIRE_WELCOME, /Moi c’est Claire, votre aidante Live Avatar/);
-  assert.match(CLAIRE_WELCOME, /uniquement dans l’informatique/);
+  assert.doesNotMatch(CLAIRE_WELCOME, /uniquement dans l’informatique/);
+  assert.match(prompt, /Jamais de phrase du type/);
   assert.equal(adjacentPage(knowledge, "home", 1).id, "videosurveillance");
   assert.equal(adjacentPage(knowledge, knowledge.pages.at(-1).id, 1).id, "home");
 });

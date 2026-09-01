@@ -79,7 +79,8 @@ const SPOKEN_SCENES = [
 const IT_CHAT = [
   "Bonjour, comment ça va ?",
   "Mon disque dur n’est plus accessible.",
-  "Peux-tu améliorer mon Wi-Fi ?"
+  "Peux-tu améliorer mon Wi-Fi ?",
+  "Comment un laboratoire archive ses analyses ?"
 ];
 
 const OFF_TOPIC_CHAT = [
