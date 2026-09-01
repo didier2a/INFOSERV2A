@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-it1)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-it1)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-it2)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-it2)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -232,19 +232,19 @@ test("le champ de pièces jointes masqué ne crée aucun débordement horizontal
   assert.match(css, /\.form input\.sr-only\s*\{[^}]*width:\s*1px[^}]*min-height:\s*1px[^}]*padding:\s*0[^}]*border:\s*0/s);
 });
 
-test("la conversation guidée reste visible à côté du site sur ordinateur", async () => {
+test("la conversation guidée reste un dock en bas, sans recouvrir Claire", async () => {
   const css = await readFile(path.join(ROOT, "assets/css/claire-companion.css"), "utf8");
   const desktop = css.split("@media (max-width: 820px)")[0];
-  assert.match(desktop, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*position: absolute/);
-  assert.match(desktop, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*overflow: hidden/);
-  assert.doesNotMatch(desktop, /\[data-state="guided"\] \.claire-dialogue \{ display: none; \}/);
-});
-
-test("la conversation guidée reste visible sur mobile et le site ne passe pas sous l’avatar", async () => {
-  const css = await readFile(path.join(ROOT, "assets/css/claire-companion.css"), "utf8");
   const mobile = css.split("@media (max-width: 820px)")[1].split("@media")[0];
+  assert.match(desktop, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*position: fixed/);
+  assert.match(desktop, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*max-height: 64px/);
+  assert.match(desktop, /left: calc\(var\(--claire-stage-width\) \+ 0\.75rem\)/);
+  assert.doesNotMatch(desktop, /max-height: min\(38vh, 340px\)/);
+  assert.doesNotMatch(desktop, /\[data-state="guided"\] \.claire-dialogue \{ display: none; \}/);
+  assert.match(mobile, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*position: fixed/);
+  assert.match(mobile, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*max-height: 60px/);
+  assert.doesNotMatch(mobile, /max-height: min\(32vh, 210px\)/);
   assert.doesNotMatch(mobile, /\[data-state="guided"\] \.claire-dialogue \{ display: none; \}/);
-  assert.match(mobile, /overflow: hidden/);
   assert.match(mobile, /scroll-padding-top/);
   assert.match(mobile, /scroll-margin-top/);
   assert.match(mobile, /--claire-vvh/);
@@ -291,6 +291,7 @@ test("une transcription vocale coupe la réponse spontanée seulement si le site
   assert.doesNotMatch(client, /listening && !this\.provider\.avatarSpeaking/);
   assert.match(client, /source === "liveavatar"/);
   assert.match(client, /\[data-claire-interrupt\]/);
+  assert.match(client, /toggleGuidedTranscript/);
   assert.match(client, /sendBriefing/);
   assert.match(provider, /sendBriefing/);
   assert.match(provider, /INFOSERV2A_SITE_BRIEFING/);

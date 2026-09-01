@@ -19,8 +19,8 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it1";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it1";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it2";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it2";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 280;
 const LIVEAVATAR_CLOUD_FALLBACKS = [
@@ -354,7 +354,13 @@ export class ClaireCompanion {
     this.root.querySelectorAll("[data-claire-manual]").forEach((button) => button.addEventListener("click", () => this.enterManualMode()));
     this.root.querySelectorAll("[data-claire-recall]").forEach((button) => button.addEventListener("click", () => this.recall()));
     this.root.querySelectorAll("[data-claire-guided]").forEach((button) => button.addEventListener("click", () => this.enterGuidedMode()));
-    this.root.querySelectorAll("[data-claire-expand]").forEach((button) => button.addEventListener("click", () => void this.openConversation()));
+    this.root.querySelectorAll("[data-claire-expand]").forEach((button) => button.addEventListener("click", () => {
+      if (this.state === "guided") {
+        this.toggleGuidedTranscript();
+        return;
+      }
+      void this.openConversation();
+    }));
     this.nodes.retry?.addEventListener("click", () => void this.retryLiveAvatar());
     this.nodes.interrupt?.addEventListener("click", (event) => {
       event.stopPropagation();
@@ -488,6 +494,9 @@ export class ClaireCompanion {
   }
 
   setState(next) {
+    if (next === "guided" && this.state !== "guided") {
+      this.root.dataset.transcript = "closed";
+    }
     this.state = next;
     this.root.dataset.state = next;
     document.body.classList.toggle("claire-arrival-open", next === "arrival");
@@ -627,6 +636,17 @@ export class ClaireCompanion {
 
   async openConversation() {
     await this.connectLiveSession({ microphone: false, state: "shared" });
+  }
+
+  toggleGuidedTranscript() {
+    const open = this.root.dataset.transcript === "open";
+    this.root.dataset.transcript = open ? "closed" : "open";
+    this.root.querySelectorAll("[data-claire-expand]").forEach((button) => {
+      button.setAttribute("aria-expanded", open ? "false" : "true");
+      if (["Conversation", "Réduire"].includes(button.textContent.trim())) {
+        button.textContent = open ? "Conversation" : "Réduire";
+      }
+    });
   }
 
   showWelcome(text) {

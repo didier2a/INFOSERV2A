@@ -9,7 +9,7 @@
   --claire-muted: #5b6975;
   --claire-shadow: 0 28px 90px rgba(3, 18, 30, 0.28);
   --claire-stage-width: clamp(360px, 38vw, 540px);
-  --claire-mobile-stage: clamp(260px, calc(var(--claire-vvh, 100dvh) * 0.42), 440px);
+  --claire-mobile-stage: clamp(280px, calc(var(--claire-vvh, 100dvh) * 0.48), 480px);
   --claire-vvh: 100dvh;
   --claire-vv-offset: 0px;
   --claire-ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -504,7 +504,7 @@ body.claire-is-manual .mobile-dock {
 
 body.claire-is-guided {
   padding-left: var(--claire-stage-width);
-  padding-bottom: 0;
+  padding-bottom: 4.75rem;
   transition: padding 320ms var(--claire-ease);
 }
 
@@ -517,26 +517,68 @@ body.claire-conversation-open {
   right: auto;
   width: var(--claire-stage-width);
 }
-.claire-companion[data-state="guided"] .claire-experience { width: var(--claire-stage-width); }
+.claire-companion[data-state="guided"] .claire-experience {
+  width: var(--claire-stage-width);
+  overflow: visible;
+  isolation: auto;
+}
 .claire-companion[data-state="guided"] .claire-experience__layout { display: block; height: 100svh; }
 .claire-companion[data-state="guided"] .claire-live-stage { width: 100%; height: 100%; }
 .claire-companion[data-state="guided"] .claire-dialogue {
-  position: absolute;
-  left: 0.75rem;
+  position: fixed;
+  left: calc(var(--claire-stage-width) + 0.75rem);
   right: 0.75rem;
-  bottom: 4.8rem;
-  z-index: 4;
+  bottom: 0.75rem;
+  top: auto;
+  z-index: 6;
   display: grid;
-  max-height: min(38vh, 340px);
+  max-height: 64px;
+  height: auto;
+  padding: 0;
   overflow: hidden;
-  border-radius: 22px;
-  background: rgba(251, 250, 246, 0.94);
-  box-shadow: var(--claire-shadow);
+  border-radius: 16px;
+  background: rgba(251, 250, 246, 0.96);
+  box-shadow: 0 12px 32px rgba(3, 18, 30, 0.16);
+}
+.claire-companion[data-state="guided"][data-transcript="open"] .claire-dialogue {
+  max-height: min(42vh, 360px);
 }
 .claire-companion[data-state="guided"] .claire-conversation {
   min-height: 0;
+  height: auto;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  box-shadow: none;
+  grid-template-rows: auto;
+}
+.claire-companion[data-state="guided"][data-transcript="open"] .claire-conversation {
   height: 100%;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.claire-companion[data-state="guided"] .claire-conversation__header,
+.claire-companion[data-state="guided"] .claire-conversation__scroll,
+.claire-companion[data-state="guided"] .claire-conversation__footer,
+.claire-companion[data-state="guided"] .claire-suggestions,
+.claire-companion[data-state="guided"] .claire-result {
+  display: none;
+}
+.claire-companion[data-state="guided"][data-transcript="open"] .claire-conversation__scroll {
+  display: block;
+}
+.claire-companion[data-state="guided"] .claire-command {
+  margin: 0;
+  padding: 0.28rem 0.35rem;
+  border: 0;
+  border-radius: 16px;
+}
+.claire-companion[data-state="guided"] .claire-command input {
+  min-height: 42px;
+  padding: 0.4rem 0.8rem;
+}
+.claire-companion[data-state="guided"] .claire-icon-button--send {
+  width: 42px;
+  height: 42px;
 }
 .claire-companion[data-state="guided"] .claire-conversation__header h2 { font-size: 1rem; }
 .claire-companion[data-state="guided"] .claire-conversation__footer span { display: none; }
@@ -608,6 +650,7 @@ body.claire-conversation-open {
   body.claire-is-guided {
     padding-top: var(--claire-mobile-stage);
     padding-left: 0;
+    padding-bottom: 4.5rem;
     scroll-padding-top: calc(var(--claire-mobile-stage) + 12px);
   }
   body.claire-is-guided #contenu,
@@ -627,25 +670,39 @@ body.claire-conversation-open {
   .claire-companion[data-state="guided"] .claire-experience__layout,
   .claire-companion[data-state="guided"] .claire-live-stage { height: var(--claire-mobile-stage); min-height: 0; }
   .claire-companion[data-state="guided"] .claire-dialogue {
-    position: absolute;
-    left: 0.55rem;
-    right: 0.55rem;
-    bottom: 3.9rem;
-    z-index: 4;
+    position: fixed;
+    left: 0.65rem;
+    right: 0.65rem;
+    bottom: max(0.55rem, env(safe-area-inset-bottom));
+    top: auto;
+    z-index: 6;
     display: grid;
-    max-height: min(32vh, 210px);
+    max-height: 60px;
+    height: auto;
+    padding: 0;
     overflow: hidden;
-    border-radius: 18px;
-    background: rgba(251, 250, 246, 0.94);
-    box-shadow: var(--claire-shadow);
+    border-radius: 16px;
+    background: rgba(251, 250, 246, 0.96);
+    box-shadow: 0 10px 28px rgba(3, 18, 30, 0.16);
+  }
+  .claire-companion[data-state="guided"][data-transcript="open"] .claire-dialogue {
+    max-height: min(36vh, 280px);
   }
   .claire-companion[data-state="guided"] .claire-conversation__header,
+  .claire-companion[data-state="guided"] .claire-conversation__scroll,
   .claire-companion[data-state="guided"] .claire-suggestions,
+  .claire-companion[data-state="guided"] .claire-conversation__footer,
   .claire-companion[data-state="guided"] .claire-conversation__footer span { display: none; }
+  .claire-companion[data-state="guided"][data-transcript="open"] .claire-conversation__scroll {
+    display: block;
+  }
   .claire-companion[data-state="guided"] .claire-conversation {
     min-height: 0;
-    height: 100%;
-    grid-template-rows: minmax(0, 1fr) auto auto;
+    height: auto;
+    grid-template-rows: auto;
+  }
+  .claire-companion[data-state="guided"] [data-claire-expand] {
+    display: inline-flex;
   }
 }
 
@@ -667,11 +724,18 @@ body.claire-conversation-open {
   .claire-arrival-copy h1 { font-size: clamp(1.8rem, 4.5vw, 3rem); }
   .claire-arrival-copy > p:not(.claire-eyebrow):not(.claire-privacy) { display: none; }
   .claire-privacy { display: none; }
-  body.claire-is-guided { padding-top: 0; padding-left: var(--claire-stage-width); }
+  body.claire-is-guided { padding-top: 0; padding-left: var(--claire-stage-width); padding-bottom: 4.5rem; }
   .claire-companion[data-state="guided"] { right: auto; bottom: 0; width: var(--claire-stage-width); height: 100svh; }
   .claire-companion[data-state="guided"] .claire-experience,
   .claire-companion[data-state="guided"] .claire-experience__layout,
   .claire-companion[data-state="guided"] .claire-live-stage { width: 100%; height: 100svh; }
+  .claire-companion[data-state="guided"] .claire-dialogue {
+    position: fixed;
+    left: calc(var(--claire-stage-width) + 0.55rem);
+    right: 0.55rem;
+    bottom: 0.5rem;
+    max-height: 52px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
