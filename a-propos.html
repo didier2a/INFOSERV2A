@@ -25,11 +25,11 @@
   <link rel="icon" href="assets/images/logo/favicon.png?v=2" type="image/png" sizes="192x192">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
   <link rel="manifest" href="site.webmanifest">
-  <link rel="stylesheet" href="assets/css/variables.css?v=20260901-mobile1">
-  <link rel="stylesheet" href="assets/css/main.css?v=20260901-mobile1">
-  <link rel="stylesheet" href="assets/css/components.css?v=20260901-mobile1">
-  <link rel="stylesheet" href="assets/css/responsive.css?v=20260901-mobile1">
-  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260901-mobile1">
+  <link rel="stylesheet" href="assets/css/variables.css?v=20260901-mobile2">
+  <link rel="stylesheet" href="assets/css/main.css?v=20260901-mobile2">
+  <link rel="stylesheet" href="assets/css/components.css?v=20260901-mobile2">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=20260901-mobile2">
+  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260901-mobile2">
   <script type="application/ld+json">{
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
@@ -265,6 +265,7 @@
       document.body.classList.toggle("claire-arrival-open", next === "arrival");
       document.body.classList.toggle("claire-conversation-open", next === "shared");
       document.body.classList.toggle("claire-is-guided", next === "guided");
+      document.body.classList.toggle("claire-is-manual", next === "manual");
       var badge = root.querySelector("[data-claire-engine-status]");
       var status = root.querySelector("[data-claire-status]");
       if (badge) badge.textContent = "Appuyez pour parler";
@@ -312,6 +313,7 @@
   </script>
 </div>
 <!-- /chrome:header -->
+
 
 
 
@@ -445,8 +447,9 @@
 
 
 
-<script src="assets/js/main.js?v=20260901-mobile1" defer></script>
-  <script src="assets/js/navigation.js?v=20260901-mobile1" defer></script>
-  <script type="module" src="assets/js/claire-companion.js?v=20260901-mobile1"></script>
+
+<script src="assets/js/main.js?v=20260901-mobile2" defer></script>
+  <script src="assets/js/navigation.js?v=20260901-mobile2" defer></script>
+  <script type="module" src="assets/js/claire-companion.js?v=20260901-mobile2"></script>
 </body>
 </html>

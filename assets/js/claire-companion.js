@@ -17,8 +17,8 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-mobile1";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-mobile1";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-mobile2";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-mobile2";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 280;
 const LIVEAVATAR_CLOUD_FALLBACKS = [
@@ -493,6 +493,7 @@ export class ClaireCompanion {
     document.body.classList.toggle("claire-arrival-open", next === "arrival");
     document.body.classList.toggle("claire-conversation-open", next === "shared" || next === "action");
     document.body.classList.toggle("claire-is-guided", next === "guided");
+    document.body.classList.toggle("claire-is-manual", next === "manual");
     this.nodes.experience?.setAttribute("aria-hidden", ["arrival", "shared", "action", "guided"].includes(next) ? "false" : "true");
     this.nodes.experience?.setAttribute("aria-modal", ["arrival", "shared", "action"].includes(next) ? "true" : "false");
     this.nodes.experience?.setAttribute("role", next === "guided" ? "complementary" : "dialog");

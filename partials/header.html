@@ -197,6 +197,7 @@
       document.body.classList.toggle("claire-arrival-open", next === "arrival");
       document.body.classList.toggle("claire-conversation-open", next === "shared");
       document.body.classList.toggle("claire-is-guided", next === "guided");
+      document.body.classList.toggle("claire-is-manual", next === "manual");
       var badge = root.querySelector("[data-claire-engine-status]");
       var status = root.querySelector("[data-claire-status]");
       if (badge) badge.textContent = "Appuyez pour parler";

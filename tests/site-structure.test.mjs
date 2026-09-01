@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-mobile1)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-mobile1)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-mobile2)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-mobile2)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -265,6 +265,8 @@ test("Claire reste en deux colonnes sur ordinateur et s’empile seulement sous 
   assert.match(client, /preflightMicrophone/);
   assert.match(provider, /webkit-playsinline/);
   assert.match(provider, /async unlockPlayback\(/);
+  assert.match(css, /\.claire-manual-bar span \{[^}]*overflow: hidden/);
+  assert.match(client, /claire-is-manual/);
   assert.match(html, /viewport-fit=cover/);
   assert.match(html, /webkit-playsinline/);
 });

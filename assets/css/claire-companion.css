@@ -472,9 +472,9 @@
   text-align: left;
 }
 .claire-manual-bar img { width: 52px; height: 52px; border-radius: 14px; object-fit: cover; object-position: center 18%; }
-.claire-manual-bar span { display: grid; min-width: 0; gap: 0.16rem; flex: 1; }
+.claire-manual-bar span { display: grid; min-width: 0; gap: 0.16rem; flex: 1; overflow: hidden; }
 .claire-manual-bar small { overflow: hidden; opacity: .72; text-overflow: ellipsis; white-space: nowrap; }
-.claire-manual-bar b { padding-right: 0.45rem; color: #7fe0d4; font-size: 0.78rem; }
+.claire-manual-bar b { flex: 0 0 auto; padding-right: 0.45rem; color: #7fe0d4; font-size: 0.78rem; }
 
 .claire-companion[data-state="loading"] .claire-experience,
 .claire-companion[data-state="arrival"] .claire-experience,
@@ -497,7 +497,8 @@ body.claire-conversation-open { overflow: hidden; }
 
 body.claire-arrival-open .mobile-dock,
 body.claire-conversation-open .mobile-dock,
-body.claire-is-guided .mobile-dock {
+body.claire-is-guided .mobile-dock,
+body.claire-is-manual .mobile-dock {
   display: none;
 }
 
@@ -591,7 +592,10 @@ body.claire-conversation-open {
   .claire-conversation__header { padding: .9rem 1rem .75rem; }
   .claire-conversation__scroll { padding: .9rem 1rem; -webkit-overflow-scrolling: touch; }
   .claire-conversation__footer span { display: none; }
-  .claire-manual-bar { bottom: calc(5.2rem + env(safe-area-inset-bottom)); }
+  .claire-manual-bar {
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    width: min(720px, calc(100vw - 1.5rem));
+  }
 
   body.claire-keyboard-open .claire-experience__layout {
     grid-template-rows: minmax(132px, 28dvh) minmax(0, 1fr);
