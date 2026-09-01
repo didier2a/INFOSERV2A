@@ -3,7 +3,9 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
+  classifyUtterance,
   currentPage,
+  describePageContext,
   mergeSpokenTranscript,
   normalizeText,
   pageHrefForSession,
@@ -107,4 +109,26 @@ test("privilégie un titre et ses mots-clés", () => {
   const web = knowledge.pages.find((page) => page.id === "web");
   const legal = knowledge.pages.find((page) => page.id === "legal");
   assert.ok(scorePage("refonte site web", web) > scorePage("refonte site web", legal));
+});
+
+test("une salutations ou un hors-sujet reste une conversation naturelle", () => {
+  assert.equal(classifyUtterance("Bonjour Claire, comment ça va ?", knowledge).kind, "chat");
+  assert.equal(classifyUtterance("Raconte-moi une blague", knowledge).kind, "chat");
+  assert.equal(classifyUtterance("Quelle heure est-il ?", knowledge).kind, "chat");
+});
+
+test("une demande de service continue de piloter le site", () => {
+  assert.equal(classifyUtterance("Je n’ai pas internet, je veux une caméra", knowledge).kind, "site");
+  assert.equal(classifyUtterance("Montre-moi la vidéosurveillance sans fibre", knowledge).kind, "site");
+  assert.equal(classifyUtterance("Je voudrais un devis gratuit", knowledge).kind, "site");
+});
+
+test("une question sur la page courante partage le contexte sans changer de rubrique", () => {
+  const classified = classifyUtterance("Explique cette page", knowledge, { pathname: "/creation-site-web.html" });
+  assert.equal(classified.kind, "page");
+  assert.equal(classified.route.page.id, "web");
+  assert.match(describePageContext({
+    page: classified.route.page,
+    section: null
+  }), /Création de sites web/);
 });

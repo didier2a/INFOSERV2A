@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { mergeSpokenTranscript, routeCommand } from "../assets/js/claire-core.mjs";
+import { classifyUtterance, mergeSpokenTranscript, routeCommand } from "../assets/js/claire-core.mjs";
 import { ClaireRuntimeController, planCommand } from "../assets/js/claire-runtime-v2.mjs";
 import { InfoServ2ASiteAdapter } from "../assets/js/claire-site-runtime-adapter.mjs";
 
@@ -114,4 +114,11 @@ test("simulation vocale : les sous-titres de Claire restent une seule réplique"
   const chunks = ["Voici", "Voici les solutions", " 4G", "et solaires."];
   const spoken = chunks.reduce((text, chunk) => mergeSpokenTranscript(text, chunk), "");
   assert.equal(spoken, "Voici les solutions 4G et solaires.");
+});
+
+test("simulation vocale : un aparté ne déclenche pas de navigation", () => {
+  assert.equal(classifyUtterance("Bonjour, on peut parler d’autre chose ?", knowledge).kind, "chat");
+  for (const scene of SPOKEN_SCENES) {
+    assert.equal(classifyUtterance(scene.heard, knowledge).kind, "site", scene.heard);
+  }
 });

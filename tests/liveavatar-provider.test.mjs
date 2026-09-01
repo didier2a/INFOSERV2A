@@ -163,3 +163,34 @@ test("une syllabe en cours n’envoie pas de commande avant la fin de phrase", a
 
   await provider.stop();
 });
+
+test("un aparté hors site laisse Realtime répondre sans couper", async () => {
+  const commands = [];
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-chat" })
+  }).install({
+    video,
+    classifyCommand: async () => "chat",
+    onCommand: async (text) => {
+      commands.push(text);
+      return { kind: "chat" };
+    }
+  });
+
+  await provider.connect({ microphone: false });
+  const session = globalThis.__infoservFakeSession;
+  session.emit("user-speak-started");
+  session.emit("user-transcription", { text: "bonjour comment ça va" });
+  session.emit("user-speak-ended");
+  await wait(600);
+  assert.deepEqual(commands, ["bonjour comment ça va"]);
+  assert.equal(session.interrupted, undefined);
+  assert.equal(provider.realtimeSignal, "natural-reply");
+
+  provider.sendContext("Page visible : Accueil InfoServ2A.");
+  assert.match(session.messages.at(-1), /^\[INFOSERV2A_PAGE_CONTEXT\]/);
+
+  await provider.stop();
+});

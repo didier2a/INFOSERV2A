@@ -39,7 +39,7 @@ Règles non négociables :
 2. Une seule commande à la fois.
 3. Le modèle ne touche pas le DOM.
 4. Un formulaire n’est jamais soumis par Claire.
-5. Après une transcription vocale, Claire attend `[INFOSERV2A_APP_RESULT]` avant de parler.
+5. Après une demande de navigation, Claire attend `[INFOSERV2A_APP_RESULT]` avant de parler. Les apartés hors site restent une conversation Realtime naturelle. Le contexte de page lui est transmis via `[INFOSERV2A_PAGE_CONTEXT]`.
 6. La navigation interne ne recharge pas le document : l’avatar et la session restent.
 
 ## 4. Greffe déjà en place
@@ -49,7 +49,7 @@ Règles non négociables :
 - Surface persistante `assets/js/claire-site-runtime-adapter.mjs`.
 - Laboratoire texte `/claire-lab` (aucun secret, aucune voix).
 - Ancres canoniques : `solutions-sans-fibre`, `audit-nis2`, `supports`, `offre-hebergement`.
-- Contexte LiveAvatar `InfoServ2A Claire Aidant 1.4`.
+- Contexte LiveAvatar `InfoServ2A Claire Aidant 1.5`.
 
 ## 5. Spec Figma
 
@@ -78,7 +78,7 @@ Frames à pousser dans Figma dès que le MCP Figma est authentifié sur le burea
 - `LIVEAVATAR_API_KEY`
 - `OPENAI_API_KEY` ou `LIVEAVATAR_OPENAI_SECRET_ID`
 - optionnel `LIVEAVATAR_AVATAR_ID` (Claire Pocket Guide par défaut)
-- optionnel `LIVEAVATAR_CONTEXT_ID` après la première création du contexte Aidant 1.4. Si une ancienne valeur pointe encore vers 1.3, la supprimer pour forcer la recréation.
+- optionnel `LIVEAVATAR_CONTEXT_ID` après la première création du contexte Aidant 1.5. Si une ancienne valeur pointe encore vers 1.3 ou 1.4, la supprimer pour forcer la recréation.
 
 ## 7. Acceptation
 

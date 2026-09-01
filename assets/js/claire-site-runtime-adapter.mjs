@@ -126,6 +126,7 @@ export class BrowserInfoServ2ASurface {
         detail: { page: pageSummary(declared), navigationCount: this.navigationCount }
       }));
       this.document.querySelector("#contenu")?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+      await this.waitForPresentation();
       return pageSummary(declared);
     } finally {
       this.document.querySelector("#contenu")?.removeAttribute("aria-busy");
@@ -152,7 +153,32 @@ export class BrowserInfoServ2ASurface {
     target.scrollIntoView?.({ block: "start", behavior: "smooth" });
     target.focus?.({ preventScroll: true });
     this.window.setTimeout(() => target.classList.remove("claire-target-highlight"), 3600);
+    await this.waitForPresentation();
     return { id: anchorId };
+  }
+
+  async waitForPresentation(timeoutMs = 720) {
+    const win = this.window;
+    if (!win) return;
+    await new Promise((resolve) => {
+      if (typeof win.requestAnimationFrame === "function") win.requestAnimationFrame(() => resolve());
+      else resolve();
+    });
+    await new Promise((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        resolve();
+      };
+      const timer = win.setTimeout(finish, timeoutMs);
+      if (typeof win.addEventListener === "function") {
+        win.addEventListener("scrollend", () => {
+          win.clearTimeout?.(timer);
+          finish();
+        }, { once: true });
+      }
+    });
   }
 
   prefillQuote(draft) {

@@ -1,7 +1,8 @@
 import {
+  classifyUtterance,
   currentPage,
+  describePageContext,
   mergeSpokenTranscript,
-  routeCommand,
   suggestedPrompts
 } from "./claire-core.mjs";
 import { ClaireRuntimeController } from "./claire-runtime-v2.mjs";
@@ -14,14 +15,14 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-aidant6";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-aidant6";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-aidant7";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-aidant7";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const LIVEAVATAR_CLOUD_FALLBACKS = [
   "https://infoserv2a.infoserv2a.workers.dev",
   "https://cursor-live-avatar-aidant-8f54-infoserv2a.infoserv2a.workers.dev"
 ];
-const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique et aidante Live Avatar. Je suis ici pour vous présenter l’entreprise, comprendre votre besoin et vous guider en langage naturel vers le bon service : cybersécurité, réseaux et Wi-Fi, vidéosurveillance, assistance informatique ou création de sites web. Vous pouvez me parler librement et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
+const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique et aidante Live Avatar. InfoServ2A, à Porto-Vecchio, vous accompagne en vidéosurveillance, sites web, cybersécurité, maintenance et récupération de données. Vous pouvez me parler naturellement, même hors de ces sujets, et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
 
 const FALLBACK_KNOWLEDGE = {
   suggestions: ["Vidéosurveillance", "Création de site web", "Dépannage informatique"],
@@ -198,6 +199,7 @@ export class ClaireCompanion {
     this.lastVoiceCommand = "";
     this.lastVoiceCommandAt = 0;
     this.welcomeShown = false;
+    this.welcomeFallbackTimer = 0;
     this.nodes = {};
     this.provider = null;
     this.providerReadyPromise = null;
@@ -424,7 +426,8 @@ export class ClaireCompanion {
       try {
         await this.provider.connect({ microphone });
         this.setEngineStatus("liveavatar-realtime", "LiveAvatar · OpenAI Realtime · marin");
-        this.showWelcome(greeting);
+        this.pushPageContext();
+        this.scheduleWelcomeTranscript(greeting);
       } catch {
         this.activateLocalFallback("La connexion LiveAvatar a échoué. Le mode local reste silencieux afin de ne pas imiter la voix Realtime de Claire.");
         this.showWelcome(greeting);
@@ -483,9 +486,37 @@ export class ClaireCompanion {
 
   showWelcome(text) {
     if (this.welcomeShown) return;
+    const live = this.nodes.transcript?.querySelector('.claire-turn--companion[data-live="1"]');
+    if (live) {
+      this.welcomeShown = true;
+      return;
+    }
     this.welcomeShown = true;
     this.nodes.transcript?.replaceChildren();
     this.appendTurn("companion", text);
+  }
+
+  scheduleWelcomeTranscript(text) {
+    clearTimeout(this.welcomeFallbackTimer);
+    this.welcomeFallbackTimer = setTimeout(() => this.showWelcome(text), 1800);
+  }
+
+  pushPageContext(snapshot = this.siteAdapter?.snapshot()) {
+    const text = describePageContext(snapshot);
+    if (!text) return false;
+    return this.provider?.sendContext?.(text) || false;
+  }
+
+  verifiedSpeechFor(outcome) {
+    const snapshot = this.siteAdapter?.snapshot() || {};
+    const page = snapshot.page;
+    const section = snapshot.section;
+    const body = outcome?.plan?.response || "";
+    if (!page) return body;
+    const where = section
+      ? `La page « ${page.title} » est affichée, section « ${section.label} ».`
+      : `La page « ${page.title} » est affichée.`;
+    return `${where} ${body}`.replace(/\s+/g, " ").trim();
   }
 
   enterGuidedMode() {
@@ -521,6 +552,7 @@ export class ClaireCompanion {
         onAvatarTranscript: (text) => this.appendLiveCompanion(text),
         onAvatarSpeakEnd: () => this.finalizeLiveCompanionTurn(),
         onStatus: (value, label) => this.setStatus(value, label),
+        classifyCommand: (text) => classifyUtterance(text, this.knowledge, { pathname: location.pathname }).kind,
         onCommand: (text) => this.submit(text, "liveavatar")
       });
     }
@@ -592,6 +624,8 @@ export class ClaireCompanion {
   appendLiveCompanion(text) {
     const value = String(text || "").trim();
     if (!value) return;
+    this.welcomeShown = true;
+    clearTimeout(this.welcomeFallbackTimer);
     const last = this.nodes.transcript?.querySelector('.claire-turn--companion[data-live="1"]');
     if (last) {
       const paragraph = last.querySelector("p");
@@ -602,6 +636,7 @@ export class ClaireCompanion {
       });
       return;
     }
+    this.nodes.transcript?.replaceChildren();
     this.appendTurn("companion", value, { live: true });
   }
 
@@ -614,6 +649,7 @@ export class ClaireCompanion {
   async submit(command, source = "text") {
     const value = String(command || "").trim();
     if (!value) return null;
+    const classified = classifyUtterance(value, this.knowledge, { pathname: location.pathname });
     if (source === "liveavatar") {
       const signature = value.toLocaleLowerCase("fr").replace(/\s+/g, " ");
       const significant = signature.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
@@ -626,17 +662,47 @@ export class ClaireCompanion {
       this.lastVoiceCommand = signature;
       this.lastVoiceCommandAt = now;
     }
-    const direct = routeCommand(value, this.knowledge, { pathname: location.pathname });
-    if (direct.type === "recall") {
+
+    if (classified.kind === "recall" || classified.route?.type === "recall") {
       this.recall();
-      this.appendTurn("companion", direct.speech);
-      this.speak(direct.speech);
-      return direct;
+      this.appendTurn("companion", classified.route.speech);
+      this.speak(classified.route.speech);
+      return classified.route;
     }
 
-    const keepGuided = this.state === "guided";
-    this.setState(keepGuided ? "guided" : "shared");
     this.appendTurn("user", value);
+
+    if (classified.kind === "chat") {
+      this.pushPageContext();
+      this.setStatus("listening", "Claire vous répond");
+      if (source !== "liveavatar") this.provider?.sendUserMessage?.(value);
+      return { kind: "chat", classified };
+    }
+
+    if (classified.kind === "page") {
+      const snapshot = this.siteAdapter?.snapshot() || {};
+      const speech = classified.route.speech || describePageContext(snapshot);
+      this.pushPageContext(snapshot);
+      if (source !== "liveavatar") this.appendTurn("companion", speech);
+      this.speak(speech);
+      this.setStatus("ready", "Contexte de page partagé");
+      return { kind: "page", classified };
+    }
+
+    if (classified.kind === "control" && classified.route?.type === "manual") {
+      this.appendTurn("companion", classified.route.speech);
+      this.enterManualMode();
+      return classified.route;
+    }
+
+    if (classified.kind === "site" && classified.route?.page) {
+      storageSet(STORAGE_MODE, "guided");
+      this.setState("guided");
+    } else {
+      const keepGuided = this.state === "guided";
+      this.setState(keepGuided ? "guided" : "shared");
+    }
+
     try {
       const outcome = await this.runtime.run(value, { pathname: this.surface?.window?.location?.pathname || location.pathname });
       globalThis.dispatchEvent(new CustomEvent("infoserv:claire-command", {
@@ -648,16 +714,17 @@ export class ClaireCompanion {
         return outcome;
       }
 
-      const response = outcome.plan.response || "La demande a été vérifiée par InfoServ2A.";
+      const response = this.verifiedSpeechFor(outcome);
       this.showRuntimeResult(outcome);
       if (outcome.plan.expected?.pageId) {
         storageSet(STORAGE_MODE, "guided");
         this.setState("guided");
         this.renderSuggestions();
       }
-      this.setStatus("ready", "Action vérifiée · Claire reste connectée");
+      this.setStatus("ready", "Page affichée · Claire vous l’explique");
       if (source !== "liveavatar") this.appendTurn("companion", response);
       this.speak(response);
+      this.pushPageContext();
       return outcome;
     } catch (error) {
       const message = "Je n’ai pas pu afficher cette information de manière sûre. La navigation manuelle reste disponible.";
@@ -670,16 +737,12 @@ export class ClaireCompanion {
   }
 
   handleRuntimeEvent(event) {
-    if (event.type === "plan.created" && event.payload.plan?.expected?.pageId && this.state !== "manual") {
-      storageSet(STORAGE_MODE, "guided");
-      this.setState("guided");
-    }
     const labels = {
       interpreting: ["thinking", "J’interprète votre demande…"],
       planning: ["thinking", "Je prépare une action contrôlée…"],
       executing: ["thinking", "J’affiche la rubrique demandée…"],
       verifying: ["thinking", "Je vérifie le résultat affiché…"],
-      complete: ["ready", "Action vérifiée · Claire reste connectée"],
+      complete: ["ready", "Page affichée · Claire vous l’explique"],
       error: ["error", "Action interrompue sans quitter la page"],
       manual: ["ready", "Navigation manuelle activée"]
     };
@@ -711,10 +774,14 @@ export class ClaireCompanion {
       storageSet(STORAGE_MODE, "guided");
       this.setState("guided");
       this.renderSuggestions();
-      this.setStatus("ready", "Page affichée · Claire reste connectée");
+      this.setStatus("ready", "Page affichée · Claire vous l’explique");
       if (announce && snapshot.page) {
-        const text = `Voici « ${snapshot.page.title} ». Claire reste connectée pendant votre navigation.`;
+        const text = this.verifiedSpeechFor({ plan: { response: snapshot.page.summary } });
         this.appendTurn("companion", text);
+        this.speak(text);
+        this.pushPageContext(snapshot);
+      } else {
+        this.pushPageContext(snapshot);
       }
       return true;
     } catch (error) {

@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-aidant6)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-aidant6)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-aidant7)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-aidant7)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -106,9 +106,10 @@ test("Claire accueille l'utilisateur et explique son rôle chez InfoServ2A", asy
     assert.match(source, /Je suis Claire, votre compagne numérique/);
     assert.match(source, /revenir à la navigation manuelle à tout moment/);
   }
-  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.4/);
+  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.5/);
   assert.match(endpoint, /temperature:\s*0\.6/);
-  assert.match(endpoint, /ne produis aucun texte, aucun son, aucun acquittement/);
+  assert.match(endpoint, /INFOSERV2A_PAGE_CONTEXT/);
+  assert.match(endpoint, /Tu peux converser naturellement/);
   assert.match(endpoint, /opening_text:\s*CLAIRE_WELCOME/);
   assert.doesNotMatch(client, /this\.speak\(greeting\)/);
 });
@@ -210,7 +211,7 @@ test("Realtime ne coupe plus la réponse sur la première syllabe", async () => 
   const avatarStarted = provider.match(/AVATAR_SPEAK_STARTED[\s\S]*?AVATAR_TRANSCRIPTION/)?.[0] || "";
   const flushTranscript = provider.match(/async flushTranscript\([\s\S]*?async connect/)?.[0] || "";
   assert.doesNotMatch(userTranscript, /session\.interrupt\(\)/);
-  assert.match(flushTranscript, /cancelUnauthorizedReply\("settled-transcript"\)/);
+  assert.match(flushTranscript, /cancelUnauthorizedReply\("settled-site-command"\)/);
   assert.doesNotMatch(avatarStarted, /clearTranscriptBuffer\(\)/);
   assert.doesNotMatch(flushTranscript, /if \(this\.avatarSpeaking/);
   assert.match(provider, /async pauseListening\(\)/);
@@ -239,15 +240,18 @@ test("la conversation guidée reste visible sur mobile et le site ne passe pas s
   assert.match(mobile, /scroll-margin-top/);
 });
 
-test("une transcription vocale coupe la réponse spontanée puis attend le résultat du site", async () => {
+test("une transcription vocale coupe la réponse spontanée seulement si le site doit agir", async () => {
   const [client, provider] = await Promise.all([
     readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
     readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8")
   ]);
-  assert.match(provider, /cancelUnauthorizedReply\("settled-transcript"\)/);
-  assert.match(provider, /cancelUnauthorizedReply\("user-speak-ended"\)/);
+  assert.match(provider, /cancelUnauthorizedReply\("settled-site-command"\)/);
+  assert.doesNotMatch(provider, /cancelUnauthorizedReply\("user-speak-ended"\)/);
+  assert.match(provider, /natural-reply/);
+  assert.match(provider, /sendContext/);
   assert.match(client, /appendLiveCompanion/);
-  assert.match(client, /plan\.created/);
+  assert.match(client, /classifyUtterance/);
+  assert.match(client, /verifiedSpeechFor/);
   assert.match(client, /source !== "liveavatar"/);
 });
 

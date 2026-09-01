@@ -75,9 +75,9 @@ export class InfoServ2ALiveAvatarProvider {
     this.callbacks = {};
   }
 
-  install({ video, onTranscript, onAvatarTranscript, onAvatarSpeakStart, onAvatarSpeakEnd, onStatus, onCommand } = {}) {
+  install({ video, onTranscript, onAvatarTranscript, onAvatarSpeakStart, onAvatarSpeakEnd, onStatus, onCommand, classifyCommand } = {}) {
     this.video = video || null;
-    this.callbacks = { onTranscript, onAvatarTranscript, onAvatarSpeakStart, onAvatarSpeakEnd, onStatus, onCommand };
+    this.callbacks = { onTranscript, onAvatarTranscript, onAvatarSpeakStart, onAvatarSpeakEnd, onStatus, onCommand, classifyCommand };
     this.callbacks.onStatus?.("ready", "LiveAvatar disponible sur activation");
     return this;
   }
@@ -173,6 +173,25 @@ export class InfoServ2ALiveAvatarProvider {
     return true;
   }
 
+  sendContext(value) {
+    if (!this.session) return false;
+    const prompt = `[INFOSERV2A_PAGE_CONTEXT]\n${value}\nN’y réponds pas. Mémorise seulement la page et la section visibles.`;
+    this.record("conversation:page-context-sent", { characters: String(value).length });
+    this.session.message(prompt);
+    return true;
+  }
+
+  sendUserMessage(value) {
+    const text = String(value || "").trim();
+    if (!this.session || !text) return false;
+    const prompt = `[INFOSERV2A_USER_TEXT]\n${text}\nRéponds naturellement, en tenant compte du contexte de page mémorisé.`;
+    this.record("conversation:user-text-sent", { characters: text.length });
+    this.session.message(prompt);
+    this.armReplyTimer();
+    this.emit("listening", "Claire vous répond…");
+    return true;
+  }
+
   flushPendingSpeech() {
     if (!this.mediaAudible || !this.session || !this.pendingSpeech.length) return;
     const pending = this.pendingSpeech.splice(0);
@@ -254,11 +273,18 @@ export class InfoServ2ALiveAvatarProvider {
     this.transcriptParts = [];
     this.commandInFlight = true;
     this.realtimeSignal = "transcribed";
-    this.emit("thinking", "Je pilote le site InfoServ2A…");
     try {
-      // Couper la réponse Realtime spontanée : seule l’application
-      // peut ensuite faire parler Claire via [INFOSERV2A_APP_RESULT].
-      this.cancelUnauthorizedReply("settled-transcript");
+      let kind = "site";
+      if (typeof this.callbacks.classifyCommand === "function") {
+        kind = (await this.callbacks.classifyCommand(text)) || "site";
+      }
+      if (kind !== "chat") {
+        this.cancelUnauthorizedReply("settled-site-command");
+        this.emit("thinking", "Je pilote le site InfoServ2A…");
+      } else {
+        this.realtimeSignal = "natural-reply";
+        this.emit("listening", "Claire vous répond…");
+      }
       await this.callbacks.onCommand?.(text);
     } finally {
       this.commandInFlight = false;
@@ -422,8 +448,7 @@ export class InfoServ2ALiveAvatarProvider {
       this.userSpeakComplete = true;
       this.realtimeSignal = "input-ended";
       this.record("conversation:user-speak-ended");
-      this.cancelUnauthorizedReply("user-speak-ended");
-      this.emit("thinking", "Je prépare l’action sur le site…");
+      this.emit("thinking", "Un instant…");
       if (this.transcriptParts.length) this.scheduleTranscriptFlush();
     });
     session.on(AgentEventsEnum.USER_TRANSCRIPTION, (event) => {

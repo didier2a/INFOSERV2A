@@ -223,3 +223,36 @@ export function suggestedPrompts(knowledge, pathname = "/") {
   if (page?.prompts?.length) return page.prompts.slice(0, 3);
   return (knowledge.suggestions || []).slice(0, 3);
 }
+
+const CHAT_PATTERN = /\b(bonjour|bonsoir|salut|hello|coucou|merci|ca va|comment va|comment allez|qui es tu|tu es qui|tu t appelles|blague|meteo|histoire|hors sujet|parlons d autre|autre chose|et toi|bonne journee|a bientot)\b/;
+
+export function classifyUtterance(input, knowledge, context = {}) {
+  const route = routeCommand(input, knowledge, context);
+  const query = normalizeText(input);
+
+  if (route.type === "manual" || route.type === "recall") return { kind: "control", route };
+  if (route.type === "action" || route.type === "navigate") return { kind: "site", route };
+  if (route.type === "answer") return { kind: "page", route };
+  if (route.type === "empty") return { kind: "chat", route };
+
+  const serviceSignal = isExplicitNavigation(input)
+    || isIsolatedSiteRequest(input)
+    || isWebSiteRequest(input)
+    || /\b(camera|cameras|surveillance|alarme|devis|wifi|wi-fi|cyber|nis|disque|ssd|contact|hebergement)\b/.test(query);
+
+  if (CHAT_PATTERN.test(query) && !serviceSignal) return { kind: "chat", route };
+  if (route.type === "unknown") return { kind: "chat", route };
+  if (route.page) return { kind: "site", route };
+  return { kind: "chat", route };
+}
+
+export function describePageContext(snapshot = {}) {
+  const page = snapshot.page;
+  if (!page) return "";
+  const section = snapshot.section;
+  return [
+    `Page visible : ${page.title}.`,
+    page.summary,
+    section ? `Section visible : ${section.label}. ${section.response || ""}` : ""
+  ].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+}

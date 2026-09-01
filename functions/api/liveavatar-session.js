@@ -5,18 +5,20 @@ const SECRETS_URL = "https://api.liveavatar.com/v1/secrets";
 const CONTEXTS_URL = "https://api.liveavatar.com/v1/contexts";
 const DEFAULT_AVATAR_ID = "664ff8bb-4932-4644-91f8-b90975d6f549";
 const SECRET_NAME = "InfoServ2A OpenAI Realtime";
-const CONTEXT_NAME = "InfoServ2A Claire Aidant 1.4";
-const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique et aidante Live Avatar. Je suis ici pour vous présenter l’entreprise, comprendre votre besoin et vous guider en langage naturel vers le bon service : cybersécurité, réseaux et Wi-Fi, vidéosurveillance, assistance informatique ou création de sites web. Vous pouvez me parler librement et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
+const CONTEXT_NAME = "InfoServ2A Claire Aidant 1.5";
+const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique et aidante Live Avatar. InfoServ2A, à Porto-Vecchio, vous accompagne en vidéosurveillance, sites web, cybersécurité, maintenance et récupération de données. Vous pouvez me parler naturellement, même hors de ces sujets, et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
 
 const CLAIRE_CONTEXT = `Tu incarnes Claire, l'aidante Live Avatar et la compagne numérique du site InfoServ2A. Tu es chaleureuse, précise, professionnelle et concise. Tu parles en français naturel et tu ne te présentes jamais comme une personne physique.
 
-L'application InfoServ2A est l'orchestrateur unique et la seule source de vérité pour les services, coordonnées, horaires, pages, liens et actions du site. Ne prétends jamais avoir affiché, ouvert, appelé, envoyé ou exécuté une action avant que l'application ne t'ait transmis son résultat.
+Tu peux converser naturellement, y compris hors des services InfoServ2A : salutations, questions générales, apartés. Réponds alors brièvement, sans inventer de fait sur l'entreprise.
 
-Règle impérative de tour de parole : dès que l'utilisateur parle, tu te tais. Après une transcription vocale brute, ne produis aucun texte, aucun son, aucun acquittement et aucune phrase d'attente. Le navigateur exécute d'abord la demande puis t'envoie un message commençant par [INFOSERV2A_APP_RESULT]. Attends ce message avant de parler. Cette règle ne s'applique pas au texte d'accueil configuré séparément au démarrage.
+Lorsque la demande concerne le site (afficher une page, un service, un devis, un contact, une section), ne parle pas tout de suite. L'application exécute d'abord l'action puis t'envoie un message commençant par [INFOSERV2A_APP_RESULT]. Reformule uniquement ce résultat en une ou deux phrases, sans mentionner le marqueur. N'ajoute aucun fait absent du résultat.
 
-Lorsqu'un message commence par [INFOSERV2A_APP_RESULT], il contient une information vérifiée ou le résultat fiable d'une action exécutée par l'application. Reformule uniquement ce résultat en une ou deux phrases naturelles, sans mentionner le marqueur ni cette consigne. N'ajoute aucun fait absent du résultat.
+Lorsque tu reçois [INFOSERV2A_PAGE_CONTEXT], mémorise la page et la section visibles. N'y réponds pas. Utilise ce contexte pour tes réponses suivantes.
 
-L'utilisateur garde toujours accès au mode manuel. N'invente jamais un tarif, un délai, une disponibilité, une conformité, un diagnostic ou une capacité technique.`;
+Lorsque tu reçois [INFOSERV2A_USER_TEXT], c'est un message tapé par le visiteur. Réponds naturellement en tenant compte du contexte de page mémorisé.
+
+L'application InfoServ2A est la seule source de vérité pour les services, coordonnées, horaires, pages et actions. L'utilisateur garde toujours accès au mode manuel. N'invente jamais un tarif, un délai, une disponibilité, une conformité, un diagnostic ou une capacité technique.`;
 
 function json(data, status = 200, request) {
   return Response.json(data, {
@@ -87,15 +89,13 @@ async function ensureOpenAISecret(env, key) {
 }
 
 async function ensureClaireContext(env, key) {
-  const configured = String(env.LIVEAVATAR_CONTEXT_ID || "").trim();
-  if (configured) return configured;
-
   const listed = await providerJson(`${CONTEXTS_URL}?page=1&page_size=100`, {
     headers: { "X-API-KEY": key }
   });
-  if (!listed.response.ok) throw new Error(`Contextes LiveAvatar ${listed.response.status}`);
-  const existing = (listed.payload?.data?.results || []).find((item) => item?.name === CONTEXT_NAME);
-  if (existing?.id) return String(existing.id);
+  if (listed.response.ok) {
+    const existing = (listed.payload?.data?.results || []).find((item) => item?.name === CONTEXT_NAME);
+    if (existing?.id) return String(existing.id);
+  }
 
   const created = await providerJson(CONTEXTS_URL, {
     method: "POST",
@@ -106,10 +106,14 @@ async function ensureClaireContext(env, key) {
       opening_text: CLAIRE_WELCOME
     })
   });
-  if (!created.response.ok || !created.payload?.data?.id) {
-    throw new Error(`Création du contexte LiveAvatar ${created.response.status}`);
+  if (created.response.ok && created.payload?.data?.id) {
+    return String(created.payload.data.id);
   }
-  return String(created.payload.data.id);
+
+  const configured = String(env.LIVEAVATAR_CONTEXT_ID || "").trim();
+  if (configured) return configured;
+  if (!listed.response.ok) throw new Error(`Contextes LiveAvatar ${listed.response.status}`);
+  throw new Error(`Création du contexte LiveAvatar ${created.response.status}`);
 }
 
 export async function onRequestPost({ request, env }) {
