@@ -120,6 +120,7 @@ test("une transcription stabilisée déclenche une seule action et une seule ré
   await provider.connect({ microphone: false });
   provider.stageTranscript("ouvre");
   provider.stageTranscript("ouvre la page vidéosurveillance");
+  provider.userSpeakComplete = true;
   await provider.flushTranscript();
   await provider.speak("La page Vidéosurveillance est affichée.");
 
@@ -128,6 +129,37 @@ test("une transcription stabilisée déclenche une seule action et une seule ré
   assert.equal(session.interrupted, true);
   assert.equal(session.messages.length, 1);
   assert.match(session.messages[0], /^\[INFOSERV2A_APP_RESULT\]/);
+
+  await provider.stop();
+});
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+test("une syllabe en cours n’envoie pas de commande avant la fin de phrase", async () => {
+  const commands = [];
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-phrase" })
+  }).install({
+    video,
+    onCommand: async (text) => commands.push(text)
+  });
+
+  await provider.connect({ microphone: false });
+  const session = globalThis.__infoservFakeSession;
+  session.emit("user-speak-started");
+  session.emit("user-transcription", { text: "montre" });
+  await wait(600);
+  assert.deepEqual(commands, []);
+  assert.equal(provider.realtimeSignal, "buffering-transcript");
+  session.emit("user-transcription", { text: "montre moi la vidéosurveillance" });
+  session.emit("user-speak-ended");
+  await wait(600);
+  assert.deepEqual(commands, ["montre moi la vidéosurveillance"]);
+  assert.equal(session.interrupted, true);
 
   await provider.stop();
 });

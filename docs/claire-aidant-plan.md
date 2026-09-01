@@ -49,7 +49,7 @@ Règles non négociables :
 - Surface persistante `assets/js/claire-site-runtime-adapter.mjs`.
 - Laboratoire texte `/claire-lab` (aucun secret, aucune voix).
 - Ancres canoniques : `solutions-sans-fibre`, `audit-nis2`, `supports`, `offre-hebergement`.
-- Contexte LiveAvatar `InfoServ2A Claire Aidant 1.3`.
+- Contexte LiveAvatar `InfoServ2A Claire Aidant 1.4`.
 
 ## 5. Spec Figma
 
@@ -78,7 +78,7 @@ Frames à pousser dans Figma dès que le MCP Figma est authentifié sur le burea
 - `LIVEAVATAR_API_KEY`
 - `OPENAI_API_KEY` ou `LIVEAVATAR_OPENAI_SECRET_ID`
 - optionnel `LIVEAVATAR_AVATAR_ID` (Claire Pocket Guide par défaut)
-- optionnel `LIVEAVATAR_CONTEXT_ID` après la première création du contexte Aidant 1.3
+- optionnel `LIVEAVATAR_CONTEXT_ID` après la première création du contexte Aidant 1.4. Si une ancienne valeur pointe encore vers 1.3, la supprimer pour forcer la recréation.
 
 ## 7. Acceptation
 

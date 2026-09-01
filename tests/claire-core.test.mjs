@@ -4,6 +4,7 @@ import test from "node:test";
 
 import {
   currentPage,
+  mergeSpokenTranscript,
   normalizeText,
   pageHrefForSession,
   routeCommand,
@@ -28,6 +29,22 @@ test("trouve la vidéosurveillance sans fibre", () => {
   const result = routeCommand("Je cherche une caméra sans fibre", knowledge);
   assert.equal(result.type, "suggest");
   assert.equal(result.page.id, "videosurveillance");
+});
+
+test("une phrase parlée sans internet n’ouvre pas la page site web", () => {
+  const result = routeCommand("Je n’ai pas internet, je veux une caméra", knowledge);
+  assert.equal(result.page.id, "videosurveillance");
+  assert.equal(result.anchor?.id, "solutions-sans-fibre");
+});
+
+test("un site internet pour un commerce n’ouvre pas la vidéosurveillance", () => {
+  const result = routeCommand("Je veux créer un site internet pour mon commerce.", knowledge);
+  assert.equal(result.page.id, "web");
+});
+
+test("fusionne les sous-titres cumulatifs et les morceaux incrémentaux", () => {
+  assert.equal(mergeSpokenTranscript("Voici", "Voici la page"), "Voici la page");
+  assert.equal(mergeSpokenTranscript("Voici la page", "affichée"), "Voici la page affichée");
 });
 
 test("ouvre l’offre d’hébergement sur une commande explicite", () => {

@@ -59,6 +59,7 @@ export function normalizeText(value = "") {
 export function meaningfulTokens(value = "") {
   return normalizeText(value)
     .split(" ")
+    .map((token) => token.replace(/^\.+|\.+$/g, ""))
     .filter((token) => token.length > 1 && !FRENCH_STOP_WORDS.has(token));
 }
 
@@ -120,6 +121,27 @@ export function isExplicitNavigation(value = "") {
   return /^(ouvre|va|allez|affiche|montre|emmene|guide|accede|lance|conduis)\b/.test(normalizeText(value));
 }
 
+export function isIsolatedSiteRequest(value = "") {
+  return /\b(sans (fibre|internet|electricite|connexion|box)|pas (?:d[' ]?)?internet|pas de (fibre|connexion|box|reseau)|zone blanche|site isole)\b/.test(normalizeText(value));
+}
+
+export function isWebSiteRequest(value = "") {
+  return /\b(site (web|internet|vitrine)|creer un site|refonte|hebergement)\b/.test(normalizeText(value));
+}
+
+export function mergeSpokenTranscript(previous, next) {
+  const value = String(next || "").trim();
+  const prior = String(previous || "").trim();
+  if (!value) return prior;
+  if (!prior) return value;
+  const lowerPrev = prior.toLocaleLowerCase("fr");
+  const lowerVal = value.toLocaleLowerCase("fr");
+  if (lowerVal.startsWith(lowerPrev) || lowerPrev.startsWith(lowerVal)) {
+    return value.length >= prior.length ? value : prior;
+  }
+  return `${prior} ${value}`.replace(/\s+/g, " ").trim();
+}
+
 export function currentPage(knowledge, pathname = "/") {
   const clean = pathname.split("?")[0].split("#")[0].replace(/^\//, "") || "index.html";
   return (knowledge.pages || []).find((page) => {
@@ -155,14 +177,23 @@ export function routeCommand(input, knowledge, context = {}) {
   }
 
   const ranked = (knowledge.pages || [])
-    .map((page) => ({ page, score: scorePage(query, page) }))
-    .sort((a, b) => b.score - a.score);
+    .map((page) => ({ page, score: scorePage(query, page) }));
+  if (isWebSiteRequest(query) && !/\b(camera|cameras|surveillance|alarme)\b/.test(query)) {
+    ranked.forEach((entry) => {
+      if (entry.page.id === "web") entry.score += 24;
+    });
+  } else if (isIsolatedSiteRequest(query)) {
+    ranked.forEach((entry) => {
+      if (entry.page.id === "videosurveillance") entry.score += 24;
+    });
+  }
+  ranked.sort((a, b) => b.score - a.score);
   const best = ranked[0];
 
   if (!best || best.score < 5) {
     return {
       type: "unknown",
-      speech: "Je n’ai pas trouvé de rubrique assez précise. Essayez par exemple vidéosurveillance, site web, dépannage, récupération de données ou devis.",
+      speech: "Je n’ai pas trouvé de rubrique assez précise. Dites-moi par exemple vidéosurveillance, site web, dépannage, récupération de données ou devis, et j’affiche la page.",
       suggestions: ["Vidéosurveillance", "Créer un site web", "Dépannage informatique", "Demander un devis"]
     };
   }

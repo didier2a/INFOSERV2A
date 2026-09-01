@@ -183,6 +183,9 @@ export class ClaireRuntimeController {
         this.transition(CONTROLLER_STATES.ERROR, { message: error.message });
       }
       this.publish("command.failed", { message: error.message });
+      if (TRANSITIONS[this.state]?.has(CONTROLLER_STATES.READY)) {
+        this.transition(CONTROLLER_STATES.READY);
+      }
       throw error;
     } finally {
       this.activeCommandId = null;

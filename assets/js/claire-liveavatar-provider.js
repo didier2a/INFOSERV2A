@@ -5,6 +5,7 @@ const TRACK_POLL_MS = 100;
 const MAX_CONNECT_ATTEMPTS = 2;
 const CONNECT_RETRY_DELAY_MS = 1200;
 const TRANSCRIPT_SETTLE_MS = 450;
+const TRANSCRIPT_ORPHAN_MS = 2200;
 const VERIFIED_REPLY_TIMEOUT_MS = 12000;
 
 let sdkPromise = null;
@@ -67,6 +68,7 @@ export class InfoServ2ALiveAvatarProvider {
     this.transcriptTimer = null;
     this.transcriptParts = [];
     this.commandInFlight = false;
+    this.userSpeakComplete = false;
     this.avatarSpeaking = false;
     this.stopping = false;
     this.connectionAttempt = 0;
@@ -203,6 +205,18 @@ export class InfoServ2ALiveAvatarProvider {
     clearTimeout(this.transcriptTimer);
     this.transcriptTimer = null;
     this.transcriptParts = [];
+    this.userSpeakComplete = false;
+  }
+
+  scheduleTranscriptFlush() {
+    clearTimeout(this.transcriptTimer);
+    this.realtimeSignal = "buffering-transcript";
+    this.emit("listening", this.userSpeakComplete ? "Je prépare l’action sur le site…" : "Phrase en cours…");
+    const wait = this.userSpeakComplete ? TRANSCRIPT_SETTLE_MS : TRANSCRIPT_ORPHAN_MS;
+    this.transcriptTimer = setTimeout(
+      () => void this.flushTranscript({ allowIncomplete: !this.userSpeakComplete }),
+      wait
+    );
   }
 
   stageTranscript(value) {
@@ -217,28 +231,27 @@ export class InfoServ2ALiveAvatarProvider {
       this.transcriptParts.push(text);
     }
 
-    clearTimeout(this.transcriptTimer);
-    this.realtimeSignal = "buffering-transcript";
-    this.emit("listening", "Phrase en cours…");
-    this.transcriptTimer = setTimeout(() => void this.flushTranscript(), TRANSCRIPT_SETTLE_MS);
+    this.scheduleTranscriptFlush();
   }
 
-  async flushTranscript() {
+  async flushTranscript({ allowIncomplete = false } = {}) {
     clearTimeout(this.transcriptTimer);
     this.transcriptTimer = null;
-    if (this.commandInFlight) {
-      this.transcriptParts = [];
-      return;
-    }
+    if (this.commandInFlight) return;
     const text = this.transcriptParts.join(" ").replace(/\s+/g, " ").trim();
-    this.transcriptParts = [];
     const significant = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/gi, "");
     if (significant.length < 4) {
       this.realtimeSignal = "waiting-complete-phrase";
       this.emit("listening", "Continuez votre phrase…");
       return;
     }
+    if (!this.userSpeakComplete && !allowIncomplete) {
+      this.realtimeSignal = "waiting-end-of-speech";
+      this.emit("listening", "J’attends la fin de votre phrase…");
+      return;
+    }
 
+    this.transcriptParts = [];
     this.commandInFlight = true;
     this.realtimeSignal = "transcribed";
     this.emit("thinking", "Je pilote le site InfoServ2A…");
@@ -249,6 +262,7 @@ export class InfoServ2ALiveAvatarProvider {
       await this.callbacks.onCommand?.(text);
     } finally {
       this.commandInFlight = false;
+      if (this.transcriptParts.length) this.scheduleTranscriptFlush();
     }
   }
 
@@ -397,15 +411,20 @@ export class InfoServ2ALiveAvatarProvider {
     });
     session.on(AgentEventsEnum.USER_SPEAK_STARTED, () => {
       this.listening = true;
+      this.userSpeakComplete = false;
       this.realtimeSignal = "input-detected";
       this.record("conversation:user-speak-started", { avatarSpeaking: this.avatarSpeaking });
       this.clearReplyTimer();
+      if (this.avatarSpeaking) this.cancelUnauthorizedReply("user-barge-in");
       this.emit("listening", "Je vous écoute");
     });
     session.on(AgentEventsEnum.USER_SPEAK_ENDED, () => {
+      this.userSpeakComplete = true;
       this.realtimeSignal = "input-ended";
       this.record("conversation:user-speak-ended");
+      this.cancelUnauthorizedReply("user-speak-ended");
       this.emit("thinking", "Je prépare l’action sur le site…");
+      if (this.transcriptParts.length) this.scheduleTranscriptFlush();
     });
     session.on(AgentEventsEnum.USER_TRANSCRIPTION, (event) => {
       const text = String(event?.text || "").trim();
@@ -534,6 +553,7 @@ export class InfoServ2ALiveAvatarProvider {
     this.clearReplyTimer();
     this.clearTranscriptBuffer();
     this.commandInFlight = false;
+    this.userSpeakComplete = false;
     this.avatarSpeaking = false;
   }
 
@@ -550,6 +570,7 @@ export class InfoServ2ALiveAvatarProvider {
       videoMuted: Boolean(this.video?.muted),
       realtimeSignal: this.realtimeSignal,
       commandInFlight: this.commandInFlight,
+      userSpeakComplete: this.userSpeakComplete,
       avatarSpeaking: this.avatarSpeaking,
       listening: this.listening,
       connector: "OPENAI_REALTIME",

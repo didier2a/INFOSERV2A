@@ -565,6 +565,11 @@ body.claire-is-guided {
   body.claire-is-guided {
     padding-top: var(--claire-mobile-stage);
     padding-left: 0;
+    scroll-padding-top: calc(var(--claire-mobile-stage) + 12px);
+  }
+  body.claire-is-guided #contenu,
+  body.claire-is-guided #contenu [id] {
+    scroll-margin-top: calc(var(--claire-mobile-stage) + 12px);
   }
   .claire-companion[data-state="guided"] {
     bottom: auto;
@@ -578,7 +583,22 @@ body.claire-is-guided {
   }
   .claire-companion[data-state="guided"] .claire-experience__layout,
   .claire-companion[data-state="guided"] .claire-live-stage { height: var(--claire-mobile-stage); min-height: 0; }
-  .claire-companion[data-state="guided"] .claire-dialogue { display: none; }
+  .claire-companion[data-state="guided"] .claire-dialogue {
+    position: absolute;
+    left: 0.55rem;
+    right: 0.55rem;
+    bottom: 3.9rem;
+    z-index: 4;
+    display: grid;
+    max-height: min(32vh, 210px);
+    border-radius: 18px;
+    background: rgba(251, 250, 246, 0.94);
+    box-shadow: var(--claire-shadow);
+  }
+  .claire-companion[data-state="guided"] .claire-conversation__header,
+  .claire-companion[data-state="guided"] .claire-suggestions,
+  .claire-companion[data-state="guided"] .claire-conversation__footer span { display: none; }
+  .claire-companion[data-state="guided"] .claire-conversation { min-height: 0; }
 }
 
 @media (max-width: 520px) {

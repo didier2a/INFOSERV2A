@@ -1,5 +1,6 @@
 import {
   currentPage,
+  mergeSpokenTranscript,
   routeCommand,
   suggestedPrompts
 } from "./claire-core.mjs";
@@ -13,8 +14,8 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-aidant2";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-aidant2";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-aidant3";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-aidant3";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique et aidante Live Avatar. Je suis ici pour vous présenter l’entreprise, comprendre votre besoin et vous guider en langage naturel vers le bon service : cybersécurité, réseaux et Wi-Fi, vidéosurveillance, assistance informatique ou création de sites web. Vous pouvez me parler librement et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
 
@@ -548,10 +549,10 @@ export class ClaireCompanion {
   appendLiveCompanion(text) {
     const value = String(text || "").trim();
     if (!value) return;
-    const last = this.nodes.transcript?.querySelector(".claire-turn--companion:last-of-type");
-    if (last?.dataset.live === "1") {
+    const last = this.nodes.transcript?.querySelector('.claire-turn--companion[data-live="1"]');
+    if (last) {
       const paragraph = last.querySelector("p");
-      if (paragraph) paragraph.textContent = value;
+      if (paragraph) paragraph.textContent = mergeSpokenTranscript(paragraph.textContent, value);
       requestAnimationFrame(() => {
         const scroller = this.nodes.conversationScroll;
         if (scroller) scroller.scrollTop = scroller.scrollHeight;
@@ -695,7 +696,7 @@ export class ClaireCompanion {
     const actionable = ["suggest", "navigate", "action"].includes(result.type) && result.href;
     if (!actionable) {
       this.nodes.result.hidden = true;
-      this.setState("shared");
+      if (this.state !== "guided") this.setState("shared");
       return;
     }
     const title = result.page?.title || result.label || "Action proposée";
