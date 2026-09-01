@@ -508,11 +508,16 @@ body.claire-is-guided {
   z-index: 4;
   display: grid;
   max-height: min(38vh, 340px);
+  overflow: hidden;
   border-radius: 22px;
   background: rgba(251, 250, 246, 0.94);
   box-shadow: var(--claire-shadow);
 }
-.claire-companion[data-state="guided"] .claire-conversation { min-height: 0; }
+.claire-companion[data-state="guided"] .claire-conversation {
+  min-height: 0;
+  height: 100%;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+}
 .claire-companion[data-state="guided"] .claire-conversation__header h2 { font-size: 1rem; }
 .claire-companion[data-state="guided"] .claire-conversation__footer span { display: none; }
 
@@ -591,6 +596,7 @@ body.claire-is-guided {
     z-index: 4;
     display: grid;
     max-height: min(32vh, 210px);
+    overflow: hidden;
     border-radius: 18px;
     background: rgba(251, 250, 246, 0.94);
     box-shadow: var(--claire-shadow);
@@ -598,7 +604,11 @@ body.claire-is-guided {
   .claire-companion[data-state="guided"] .claire-conversation__header,
   .claire-companion[data-state="guided"] .claire-suggestions,
   .claire-companion[data-state="guided"] .claire-conversation__footer span { display: none; }
-  .claire-companion[data-state="guided"] .claire-conversation { min-height: 0; }
+  .claire-companion[data-state="guided"] .claire-conversation {
+    min-height: 0;
+    height: 100%;
+    grid-template-rows: minmax(0, 1fr) auto auto;
+  }
 }
 
 @media (max-width: 520px) {
