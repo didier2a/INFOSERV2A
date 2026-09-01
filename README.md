@@ -33,17 +33,20 @@ http://localhost:8000
 - `data/` — contenus JSON (services, réalisations, FAQ)
 - `partials/` — header et footer de référence (également intégrés dans chaque page pour fonctionner sans injection JavaScript)
 
-## Claire Live Companion
+## Claire Live Companion — aidante Live Avatar
 
-Le site intègre un compagnon de navigation mobile-first sans exposer de secret :
+Le site intègre Claire, **aidante Live Avatar** mobile-first, sans exposer de secret :
 
 - arrivée immersive avec la même Claire verticale que Pocket Guide, puis scène plein écran ou rail guidé occupant 38 % de l’écran sur ordinateur ;
 - sur mobile 9:16, Claire conserve une scène haute et le site défile en dessous ; aucune bulle de support en bas à droite n’est utilisée ;
 - LiveAvatar est relié à OpenAI Realtime (`gpt-realtime`, voix `marin`) pour le dialogue audio naturel et la synchronisation labiale ;
+- Runtime V2 conserve Claire pendant la navigation interne (`#contenu`, `history.pushState`) ;
 - index explicite de toutes les pages dans `data/site-knowledge.json` ;
-- routage déterministe vers les pages et sections, sans invention de contenu ;
-- mode manuel toujours accessible et préférence conservée pendant la session ;
-- API cliente `window.InfoServClaire.registerProvider(provider)` pour brancher ultérieurement LiveAvatar depuis un service sécurisé.
+- cinq outils déclarés uniquement : `search_site`, `open_service`, `scroll_to`, `open_contact`, `prefill_quote` ;
+- mode manuel toujours accessible et préférence conservée pendant la session.
+
+Plan complet : `docs/claire-aidant-plan.md`.  
+Spec Figma versionnée : `/claire-aidant-figma.html` et `data/claire-aidant-figma.json`.
 
 Le navigateur ne contient aucune clé LiveAvatar ou OpenAI. Un fournisseur temps réel doit obtenir ses jetons éphémères côté serveur, par exemple dans une Cloudflare Pages Function utilisant des secrets Cloudflare.
 

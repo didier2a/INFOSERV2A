@@ -4,7 +4,7 @@
   "updated": "2026-08-31",
   "identity": {
     "companion": "Claire",
-    "role": "Compagne numérique d’InfoServ2A",
+    "role": "Aidante Live Avatar et compagne numérique d’InfoServ2A",
     "phone": "07 45 15 60 76",
     "email": "contact@infoserv2a.pro",
     "area": "Porto-Vecchio et Corse-du-Sud, de Solenzara à Bonifacio",
@@ -48,6 +48,14 @@
       "title": "Création de sites web",
       "summary": "InfoServ2A conçoit, héberge, maintient et modernise des sites web professionnels adaptés à une activité locale.",
       "keywords": ["site", "web", "internet", "refonte", "hébergement", "maintenance", "seo", "visibilité locale", "site vitrine"],
+      "anchors": [
+        {
+          "id": "offre-hebergement",
+          "label": "Hébergement et maintenance",
+          "keywords": ["hébergement", "hebergement", "maintenance", "nom de domaine", "https", "sauvegardes"],
+          "response": "Voici l’offre de création, d’hébergement et de maintenance du site."
+        }
+      ],
       "prompts": ["Je veux créer un site vitrine", "Pouvez-vous refaire mon site ?", "Qui assure la maintenance ?"]
     },
     {

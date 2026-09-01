@@ -34,7 +34,10 @@ export default {
       return methodNotAllowed(["POST", "OPTIONS"]);
     }
 
-    if (pathname === "/claire-lab" || pathname === "/claire-lab/") {
+    if (
+      pathname === "/claire-lab" || pathname === "/claire-lab/"
+      || pathname === "/claire-aidant-figma" || pathname === "/claire-aidant-figma/"
+    ) {
       if (request.method !== "GET" && request.method !== "HEAD") {
         return methodNotAllowed(["GET", "HEAD"]);
       }

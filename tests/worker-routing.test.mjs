@@ -24,6 +24,11 @@ test("le Worker expose le laboratoire Claire sans extension HTML", async () => {
   assert.equal(await response.text(), "asset:/claire-lab");
 });
 
+test("le Worker expose la spec Figma de l’aidante sans extension HTML", async () => {
+  const response = await worker.fetch(new Request("https://infoserv2a.test/claire-aidant-figma"), env());
+  assert.equal(await response.text(), "asset:/claire-aidant-figma");
+});
+
 test("le laboratoire Claire reste en lecture seule au niveau HTTP", async () => {
   const response = await worker.fetch(new Request("https://infoserv2a.test/claire-lab", {
     method: "POST"

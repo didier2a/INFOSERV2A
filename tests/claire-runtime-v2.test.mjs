@@ -220,6 +220,34 @@ test("l’ancre canonique existe dans la page publique", async () => {
   assert.match(html, /id="solutions-sans-fibre"/);
 });
 
+test("l’ancre hébergement existe dans la page publique", async () => {
+  const html = await readFile(
+    new URL("../creation-site-web.html", import.meta.url),
+    "utf8"
+  );
+  assert.match(html, /id="offre-hebergement"/);
+});
+
+test("la spec Figma versionne les huit frames de l’aidante", async () => {
+  const [spec, html, plan] = await Promise.all([
+    readFile(new URL("../data/claire-aidant-figma.json", import.meta.url), "utf8"),
+    readFile(new URL("../claire-aidant-figma.html", import.meta.url), "utf8"),
+    readFile(new URL("../docs/claire-aidant-plan.md", import.meta.url), "utf8")
+  ]);
+  const inventory = JSON.parse(spec);
+  assert.equal(inventory.frames.length, 8);
+  assert.deepEqual(
+    inventory.frames.map((frame) => frame.id),
+    ["F01", "F02", "F03", "F04", "F05", "F06", "F07", "F08"]
+  );
+  for (const frame of inventory.frames) {
+    assert.match(html, new RegExp(`data-figma-frame="${frame.id}"`));
+  }
+  assert.match(plan, /aidante Live Avatar/i);
+  assert.match(plan, /claire-aidant-figma/);
+  assert.doesNotMatch(html + spec, /\bsk-[A-Za-z0-9_-]{20,}\b/);
+});
+
 test("le laboratoire ne charge ni fournisseur temps réel ni secret client", async () => {
   const [html, client, manifestSource] = await Promise.all([
     readFile(new URL("../claire-lab.html", import.meta.url), "utf8"),

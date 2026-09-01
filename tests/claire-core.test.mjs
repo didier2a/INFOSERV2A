@@ -30,6 +30,13 @@ test("trouve la vidéosurveillance sans fibre", () => {
   assert.equal(result.page.id, "videosurveillance");
 });
 
+test("ouvre l’offre d’hébergement sur une commande explicite", () => {
+  const result = routeCommand("Ouvre l’hébergement et la maintenance du site", knowledge);
+  assert.equal(result.type, "navigate");
+  assert.equal(result.page.id, "web");
+  assert.equal(result.href, "creation-site-web.html#offre-hebergement");
+});
+
 test("ouvre directement l’audit NIS 2 sur une commande explicite", () => {
   const result = routeCommand("Ouvre l’audit NIS 2", knowledge);
   assert.equal(result.type, "navigate");

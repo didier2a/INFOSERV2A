@@ -13,10 +13,10 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260831-live12";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260831-live12";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-aidant1";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-aidant1";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
-const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique. Je suis ici pour vous présenter l’entreprise, comprendre votre besoin et vous guider en langage naturel vers le bon service : cybersécurité, réseaux et Wi-Fi, vidéosurveillance, assistance informatique ou création de sites web. Vous pouvez me parler librement et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
+const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique et aidante Live Avatar. Je suis ici pour vous présenter l’entreprise, comprendre votre besoin et vous guider en langage naturel vers le bon service : cybersécurité, réseaux et Wi-Fi, vidéosurveillance, assistance informatique ou création de sites web. Vous pouvez me parler librement et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
 
 const FALLBACK_KNOWLEDGE = {
   suggestions: ["Vidéosurveillance", "Création de site web", "Dépannage informatique"],

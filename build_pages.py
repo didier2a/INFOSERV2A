@@ -6,13 +6,13 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-ASSET_V = "20260831-live12"
+ASSET_V = "20260901-aidant1"
 BRAND = '<span class="brand-name">INFOSERV2A</span>'
 HEADER_MARK_START = "<!-- chrome:header -->"
 HEADER_MARK_END = "<!-- /chrome:header -->"
 FOOTER_MARK_START = "<!-- chrome:footer -->"
 FOOTER_MARK_END = "<!-- /chrome:footer -->"
-STANDALONE_PAGES = {"claire-lab.html"}
+STANDALONE_PAGES = {"claire-lab.html", "claire-aidant-figma.html"}
 
 CURRENT = {
     "index.html": {"/"},
