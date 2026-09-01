@@ -5,7 +5,9 @@ import {
   buildSiteBriefing,
   followSpokenNavigation,
   mergeSpokenTranscript,
-  suggestedPrompts
+  suggestedPrompts,
+  CLAIRE_WELCOME,
+  CLAIRE_OFF_TOPIC_SPEECH
 } from "./claire-core.mjs";
 import { ClaireRuntimeController } from "./claire-runtime-v2.mjs";
 import {
@@ -17,16 +19,14 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-mobile2";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-mobile2";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it1";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it1";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 280;
 const LIVEAVATAR_CLOUD_FALLBACKS = [
   "https://infoserv2a.infoserv2a.workers.dev",
   "https://cursor-live-avatar-aidant-8f54-infoserv2a.infoserv2a.workers.dev"
 ];
-const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique et aidante Live Avatar. InfoServ2A, à Porto-Vecchio, vous accompagne en vidéosurveillance, sites web, cybersécurité, maintenance et récupération de données. Vous pouvez me parler de n’importe quel sujet, comme avec OpenAI Live, m’interrompre à tout moment, et je connais tous les onglets du site pour les parcourir avec vous. Vous pouvez revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
-
 const FALLBACK_KNOWLEDGE = {
   suggestions: ["Vidéosurveillance", "Création de site web", "Dépannage informatique"],
   pages: [
@@ -840,6 +840,18 @@ export class ClaireCompanion {
       this.setStatus("listening", "Claire vous répond");
       if (source !== "liveavatar") this.provider?.sendUserMessage?.(value);
       return { kind: "chat", classified };
+    }
+
+    if (classified.kind === "offtopic") {
+      this.pushPageContext();
+      this.setStatus("listening", "Claire recentre sur l’informatique");
+      if (this.provider?.avatarSpeaking) this.provider.bargeIn?.("off-topic");
+      if (this.provider?.sendOffTopic) {
+        this.provider.sendOffTopic(value);
+      } else {
+        this.appendTurn("companion", CLAIRE_OFF_TOPIC_SPEECH);
+      }
+      return { kind: "offtopic", classified };
     }
 
     if (classified.kind === "page") {

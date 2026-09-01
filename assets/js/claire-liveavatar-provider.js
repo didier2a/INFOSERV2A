@@ -238,7 +238,7 @@ export class InfoServ2ALiveAvatarProvider {
 
   sendBriefing(value) {
     if (!this.session) return false;
-    const prompt = `[INFOSERV2A_SITE_BRIEFING]\n${value}\nN’y réponds pas. Mémorise le catalogue des onglets. Tu restes généraliste, comme OpenAI Live.`;
+    const prompt = `[INFOSERV2A_SITE_BRIEFING]\n${value}\nN’y réponds pas. Mémorise le catalogue des onglets. Tu restes généraliste en informatique seulement. Tu refuses tout sujet hors IT.`;
     this.record("conversation:site-briefing-sent", { characters: String(value).length });
     this.session.message(prompt);
     return true;
@@ -255,11 +255,22 @@ export class InfoServ2ALiveAvatarProvider {
   sendUserMessage(value) {
     const text = String(value || "").trim();
     if (!this.session || !text) return false;
-    const prompt = `[INFOSERV2A_USER_TEXT]\n${text}\nRéponds naturellement, en tenant compte du catalogue InfoServ2A et de l’onglet visible.`;
+    const prompt = `[INFOSERV2A_USER_TEXT]\n${text}\nRéponds naturellement, en français courant, uniquement si c’est de l’informatique. S’il s’agit d’autre chose, refuse poliment et ramène vers l’IT.`;
     this.record("conversation:user-text-sent", { characters: text.length });
     this.session.message(prompt);
     this.armReplyTimer();
     this.emit("listening", "Claire vous répond…");
+    return true;
+  }
+
+  sendOffTopic(value) {
+    const text = String(value || "").trim();
+    if (!this.session || !text) return false;
+    const prompt = `[INFOSERV2A_OFF_TOPIC]\n${text}\nRefuse poliment, sans traiter le fond. Dis que tu restes uniquement dans l’informatique, puis invite à parler d’un appareil, d’un logiciel ou d’un réseau.`;
+    this.record("conversation:off-topic-sent", { characters: text.length });
+    this.session.message(prompt);
+    this.armReplyTimer();
+    this.emit("listening", "Claire recentre sur l’informatique…");
     return true;
   }
 
@@ -359,12 +370,12 @@ export class InfoServ2ALiveAvatarProvider {
       if (typeof this.callbacks.classifyCommand === "function") {
         kind = (await this.callbacks.classifyCommand(text)) || "chat";
       }
-      if (kind !== "chat") {
+      if (kind === "chat" || kind === "offtopic") {
+        this.realtimeSignal = kind === "offtopic" ? "off-topic" : "natural-reply";
+        this.emit("listening", kind === "offtopic" ? "Claire recentre sur l’informatique…" : "Claire vous répond…");
+      } else {
         this.realtimeSignal = "sync-site";
         this.emit("thinking", "Je synchronise la page de droite…");
-      } else {
-        this.realtimeSignal = "natural-reply";
-        this.emit("listening", "Claire vous répond…");
       }
       await this.callbacks.onCommand?.(text);
     } finally {

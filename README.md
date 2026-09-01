@@ -4,7 +4,7 @@ Site professionnel d'InfoServ2A, relié à Cloudflare Workers Builds. La branche
 
 Environnement de validation Cloudflare : `https://infoserv2a.infoserv2a.workers.dev/`.
 
-Preview Claire (cette branche) : `https://cursor-live-avatar-aidant-8f54-infoserv2a.infoserv2a.workers.dev/?claire=1`.
+Preview Claire (cette branche) : `https://cursor-claire-it-only-8f54-infoserv2a.infoserv2a.workers.dev/?claire=1`.
 
 Le domaine public `https://infoserv2a.pro` pointe encore vers **GitHub Pages** (DNS OVH). LiveAvatar n’y démarre pas : Pages ne sert pas `/api/liveavatar-session`. Pour transférer l’URL vers le Worker Cloudflare (sans casser l’e-mail OVH), suivre `docs/activer-claire-sur-infoserv2a-pro.md`.
 
@@ -39,7 +39,7 @@ Le site intègre Claire, **aidante Live Avatar** mobile-first, sans exposer de s
 
 - arrivée immersive avec la même Claire verticale que Pocket Guide, puis scène plein écran ou rail guidé occupant 38 % de l’écran sur ordinateur ;
 - sur mobile 9:16, Claire conserve une scène haute et le site défile en dessous ; aucune bulle de support en bas à droite n’est utilisée ;
-- LiveAvatar est relié à OpenAI Realtime (`gpt-realtime`, voix `marin`) : Claire est généraliste, comme OpenAI Live, et le site est un catalogue d’onglets qu’elle peut parcourir ;
+- LiveAvatar est relié à OpenAI Realtime (`gpt-realtime`, voix `marin`) : Claire accueille à la voix, reste généraliste en informatique seulement, et le site est un catalogue d’onglets qu’elle peut parcourir ;
 - Runtime V2 conserve Claire pendant la navigation interne (`#contenu`, `history.pushState`) ;
 - index explicite de toutes les pages dans `data/site-knowledge.json` ;
 - catalogue d’actions déclaré : `search_site`, `open_service`, `scroll_to`, `open_contact`, `prefill_quote`, `list_catalog`, `explain_page`, `go_home`, `next_page`, `prev_page`, `next_section`, `prev_section` ;

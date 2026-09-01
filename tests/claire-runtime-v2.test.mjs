@@ -34,8 +34,8 @@ test("le manifeste généraliste expose le catalogue d’onglets", () => {
       "prev_section"
     ]
   );
-  assert.equal(manifest.runtimeVersion, "2.1.0-generalist");
-  assert.equal(manifest.mode, "generalist-with-site-catalog");
+  assert.equal(manifest.runtimeVersion, "2.2.0-it");
+  assert.equal(manifest.mode, "it-generalist-with-site-catalog");
   assert.equal(manifest.guardrails.allowDirectDomFromModel, false);
   assert.equal(manifest.guardrails.allowFormSubmission, false);
   assert.equal(manifest.guardrails.defaultUtteranceKind, "chat");
@@ -92,9 +92,16 @@ test("une demande isolée sans fibre ouvre toujours la page, même sans verbe d�
   );
 });
 
-test("une conversation hors site ne planifie aucune navigation", () => {
-  const plan = planCommand("Quelle est la capitale de la France ?", knowledge, manifest);
+test("une conversation informatique hors site ne planifie aucune navigation", () => {
+  const plan = planCommand("Mon disque dur n’est plus accessible", knowledge, manifest);
   assert.equal(plan.mode, "chat");
+  assert.deepEqual(plan.steps, []);
+  assert.equal(plan.expected, null);
+});
+
+test("un sujet hors informatique est classé offtopic sans navigation", () => {
+  const plan = planCommand("Quelle est la capitale de la France ?", knowledge, manifest);
+  assert.equal(plan.mode, "offtopic");
   assert.deepEqual(plan.steps, []);
   assert.equal(plan.expected, null);
 });

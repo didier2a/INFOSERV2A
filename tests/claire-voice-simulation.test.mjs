@@ -76,12 +76,16 @@ const SPOKEN_SCENES = [
   }
 ];
 
-const GENERALIST_CHAT = [
-  "Bonjour, on peut parler d’autre chose ?",
-  "Quelle est la capitale de la France ?",
+const IT_CHAT = [
+  "Bonjour, comment ça va ?",
   "Mon disque dur n’est plus accessible.",
-  "Peux-tu améliorer mon Wi-Fi ?",
-  "Raconte-moi une histoire."
+  "Peux-tu améliorer mon Wi-Fi ?"
+];
+
+const OFF_TOPIC_CHAT = [
+  "Quelle est la capitale de la France ?",
+  "Raconte-moi une histoire.",
+  "Donne-moi une recette de gâteau."
 ];
 
 test("simulation vocale : chaque phrase parlée ouvre la bonne page du site", async () => {
@@ -114,11 +118,17 @@ test("simulation vocale : les sous-titres de Claire restent une seule réplique"
   assert.equal(spoken, "Voici les solutions 4G et solaires.");
 });
 
-test("simulation vocale : un aparté ou un sujet général ne déclenche pas de navigation", () => {
-  for (const heard of GENERALIST_CHAT) {
+test("simulation vocale : un aparté informatique ou hors-sujet ne déclenche pas de navigation", () => {
+  for (const heard of IT_CHAT) {
     assert.equal(classifyUtterance(heard, knowledge).kind, "chat", heard);
     const plan = planCommand(heard, knowledge, manifest);
     assert.equal(plan.mode, "chat", heard);
+    assert.equal(plan.steps.length, 0, heard);
+  }
+  for (const heard of OFF_TOPIC_CHAT) {
+    assert.equal(classifyUtterance(heard, knowledge).kind, "offtopic", heard);
+    const plan = planCommand(heard, knowledge, manifest);
+    assert.equal(plan.mode, "offtopic", heard);
     assert.equal(plan.steps.length, 0, heard);
   }
   for (const scene of SPOKEN_SCENES) {

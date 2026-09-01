@@ -96,6 +96,17 @@ export function planCommand(input, knowledge, manifest, context = {}) {
     });
   }
 
+  if (classified.kind === "offtopic") {
+    return finishPlan({
+      command,
+      route,
+      steps,
+      expected: null,
+      mode: "offtopic",
+      response: null
+    });
+  }
+
   if (classified.kind === "page") {
     steps.push(actionStep("explain_page", {
       page: route.page?.id || current?.id || "home"

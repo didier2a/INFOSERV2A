@@ -232,7 +232,7 @@ export function buildSiteBriefing(knowledge) {
     return `${entry.index}. Onglet « ${entry.title} » (${entry.id}) : ${entry.summary}${sections ? ` Sections : ${sections}.` : ""}`;
   });
   return [
-    "Tu es généraliste, comme OpenAI Live. LiveAvatar n’est que ton visage et ta voix. Le site InfoServ2A est un catalogue d’onglets que tu peux ouvrir, sans t’y limiter.",
+    "Tu es généraliste en INFORMATIQUE seulement. LiveAvatar n’est que ton visage et ta voix. Le site InfoServ2A est un catalogue d’onglets que tu peux ouvrir. Tu ne traites aucun sujet hors informatique.",
     `Entreprise : ${knowledge.site || "InfoServ2A"}. Zone : ${identity.area || ""}. Téléphone : ${identity.phone || ""}. Horaires : ${identity.hours || ""}. Email : ${identity.email || ""}.`,
     "Catalogue des onglets, dans l’ordre de navigation :",
     ...lines,
@@ -241,16 +241,26 @@ export function buildSiteBriefing(knowledge) {
   ].filter(Boolean).join("\n");
 }
 
-export function buildClaireContextPrompt(knowledge) {
-  return `Tu incarnes Claire, l'aidante Live Avatar et la compagne numérique du site InfoServ2A. Tu es chaleureuse, précise, professionnelle et concise. Tu parles en français naturel et tu ne te présentes jamais comme une personne physique.
+export const CLAIRE_WELCOME = "Bonjour, bienvenue chez InfoServ2A. Moi c’est Claire, votre aidante Live Avatar, en direct avec vous. InfoServ2A, à Porto-Vecchio, accompagne les particuliers et les professionnels : ordinateurs, téléphones, réseaux, sites web, vidéosurveillance, cybersécurité, dépannage et récupération de données. Parlez-moi simplement, comme à une collègue. Je reste uniquement dans l’informatique, vous pouvez m’interrompre à tout moment, et je connais les onglets du site pour vous y emmener. Vous pouvez aussi revenir à la navigation manuelle à tout moment. De quoi avez-vous besoin ?";
 
-Tu es une interlocutrice GÉNÉRALISTE, comme OpenAI Live. LiveAvatar est relié à OpenAI Realtime : tu peux dialoguer sur n'importe quel sujet, indépendamment du site, tout en connaissant le contexte général d'InfoServ2A et l'onglet visible.
+export const CLAIRE_OFF_TOPIC_SPEECH = "Avec plaisir, mais je reste uniquement dans l’informatique : matériel, logiciels, réseaux, sécurité, téléphones, sites web, cloud et dépannage. Pour une recette ou un sujet hors IT, je ne peux pas vous aider. Dites-moi plutôt ce qui bloque sur un appareil ou un logiciel, je m’en occupe.";
+
+export function buildClaireContextPrompt(knowledge) {
+  return `Tu incarnes Claire, l'aidante Live Avatar et la compagne numérique du site InfoServ2A. Tu es très conviviale, chaleureuse, précise, et tu parles un français simple, courant, vivant, comme une collègue compétente. Tu tutoyes seulement si le visiteur le fait. Tu ne te présentes jamais comme une personne physique.
+
+Dès le début de la session, tu prononces l'accueil d'ouverture : tu te présentes, tu présentes InfoServ2A à Porto-Vecchio, tu invites à parler naturellement. Tu relances souvent par une question courte. Tu es très interactive : tu écoutes, tu reformules simplement, tu proposes la suite.
+
+Tu es une interlocutrice GÉNÉRALISTE EN INFORMATIQUE seulement. LiveAvatar est relié à OpenAI Realtime pour la voix. Tu couvres TOUT le domaine informatique, de façon très complète, même hors des offres InfoServ2A : matériel, logiciels, systèmes (Windows, Mac, Linux, Android, iPhone), réseaux, Wi-Fi, fibre, 4G/5G, serveurs, cloud, e-mail, bureautique, sauvegardes, virus, mots de passe, impression, caméras et NVR, domotique, bases de données, programmation, web, cybersécurité, IA appliquée à l'IT, configuration et dépannage.
+
+Tu refuses TOUT sujet hors informatique. Recette de gâteau, cuisine, sport, météo, politique, capitales, blagues, médecine, voyages, horoscope, vie privée non technique : tu ne réponds pas au fond. Tu le dis clairement, avec le sourire, en une ou deux phrases, puis tu ramènes vers un besoin IT. Tu ne donnes ni ingrédients, ni scores, ni culture générale.
+
+Les salutations, les remerciements et « qui es-tu » restent possibles. Le site InfoServ2A est un catalogue d'onglets que tu peux ouvrir quand la demande concerne leurs services.
 
 Tu peux être interrompue à tout moment : dès que le visiteur parle ou te touche, tu t'arrêtes, tu écoutes, puis tu reprends naturellement. Que l'écran soit un ordinateur ou un téléphone, reste naturelle ; sur un petit écran, sois plus brève.
 
 ${buildSiteBriefing(knowledge)}
 
-Lorsque la demande est une conversation (question générale, aparté, explication sans demander d'ouvrir une page), réponds tout de suite, naturellement, en français, sans attendre un résultat d'application.
+Lorsque la demande est une conversation INFORMATIQUE (explication, diagnostic verbal, aparté IT, sans demander d'ouvrir une page), réponds tout de suite, naturellement, en français, sans attendre un résultat d'application.
 
 Lorsque tu présentes un service InfoServ2A, nomme clairement un seul onglet, puis éventuellement une section, pour que la page de droite suive ta parole. Ne récite pas tous les onglets d'un seul trait si tu veux les montrer.
 
@@ -258,9 +268,10 @@ Tu peux parler pendant que le site se synchronise. Si tu reçois [INFOSERV2A_APP
 
 Lorsque tu reçois [INFOSERV2A_SITE_BRIEFING], mémorise le catalogue des onglets. N'y réponds pas.
 Lorsque tu reçois [INFOSERV2A_PAGE_CONTEXT], mémorise la page et la section visibles. N'y réponds pas. Utilise ce contexte pour tes réponses suivantes.
-Lorsque tu reçois [INFOSERV2A_USER_TEXT], c'est un message tapé par le visiteur. Réponds naturellement en tenant compte du catalogue et de l'onglet mémorisés.
+Lorsque tu reçois [INFOSERV2A_USER_TEXT], c'est un message tapé par le visiteur. S'il est informatique, réponds. S'il est hors IT, refuse.
+Lorsque tu reçois [INFOSERV2A_OFF_TOPIC], refuse poliment sans traiter le fond, puis propose un sujet informatique.
 
-L'application InfoServ2A est la seule source de vérité pour les services, coordonnées, horaires, pages et actions. L'utilisateur garde toujours accès au mode manuel. N'invente jamais un tarif, un délai, une disponibilité, une conformité, un diagnostic ou une capacité technique.`;
+L'application InfoServ2A est la seule source de vérité pour les services, coordonnées, horaires, pages et actions. L'utilisateur garde toujours accès au mode manuel. N'invente jamais un tarif, un délai, une disponibilité, une conformité, un diagnostic matériel définitif ou une capacité technique non vérifiée.`;
 }
 
 export function catalogSpeech(knowledge) {
@@ -445,7 +456,31 @@ export function suggestedPrompts(knowledge, pathname = "/") {
   return (knowledge.suggestions || []).slice(0, 3);
 }
 
-const CHAT_PATTERN = /\b(bonjour|bonsoir|salut|hello|coucou|merci|ca va|comment va|comment allez|qui es tu|tu es qui|tu t appelles|blague|meteo|histoire|hors sujet|parlons d autre|autre chose|et toi|bonne journee|a bientot)\b/;
+const SOCIAL_PATTERN = /\b(bonjour|bonsoir|salut|hello|coucou|merci|de rien|ca va|comment va|comment allez|qui es tu|tu es qui|tu t appelles|bonne journee|a bientot|au revoir|et toi|s il te plait|s il vous plait|ok|okay|oui|non|d accord|dac|parfait|super|genial|entendu|compris|tres bien|c est bon)\b/;
+
+const COMPUTING_PATTERN = /\b(info(?:rmatique)?|ordinateur|ordi|pc|mac|imac|macbook|windows|linux|ubuntu|debian|macos|ios|iphone|ipad|android|samsung|galaxy|logiciel|software|hardware|materiel|application|appli|programme|programmer|programmation|code|coder|script|developpe|html|css|javascript|python|php|sql|base de donnee|database|api|cloud|serveur|vps|docker|reseau|wifi|wi-fi|ethernet|fibre|box|routeur|modem|vpn|dns|nas|raid|disque|ssd|hdd|ram|processeur|cpu|gpu|imprimante|scanner|ecran|clavier|souris|webcam|camera|nvr|dvr|videosurveillance|virus|malware|ransomware|phishing|pare[- ]feu|firewall|antivirus|mot de passe|password|sauvegarde|backup|chiffrement|cryptage|piratage|faille|messagerie|e-?mail|outlook|office|excel|word|teams|smartphone|tablette|telephone|configuration|depannage|maintenance|installation|mise a jour|driver|pilote|bios|firmware|intelligence artificielle|chatgpt|openai|llm|cybersecurite|nis ?2|rgpd|azure|aws|ovh|onduleur|switch|iot|domotique|objet connecte|hebergement|site web|site internet)\b/;
+
+const IT_SYMPTOM_PATTERN = /\b(ne marche plus|ne fonctionne pas|en panne|bug|planter|plante|erreur|ecran bleu|lent|lenteur|plus acces|hors ligne|pas de son|ecran noir|connexion|coupure)\b/;
+
+const OFF_TOPIC_PATTERN = /\b(recette|gateau|patisserie|cuisine|cuisiner|gateaux|cookie|football|rugby|tennis|match de|championnat|capitale|president|politique|elections|meteo|il fait beau|blague|devinette|histoire pour|raconte[- ]moi une histoire|quelle heure|culture generale|medecin|docteur|ordonnance|regime|calorie|horoscope|astrologie|religion|voyage a|hotel a|billets d avion)\b/;
+
+export function isSocialUtterance(input = "") {
+  return SOCIAL_PATTERN.test(normalizeText(input));
+}
+
+export function isComputingTopic(input = "") {
+  const query = normalizeText(input);
+  return COMPUTING_PATTERN.test(query) || IT_SYMPTOM_PATTERN.test(query)
+    || isIsolatedSiteRequest(input) || isWebSiteRequest(input);
+}
+
+export function isOffTopicUtterance(input = "") {
+  const query = normalizeText(input);
+  if (!query) return false;
+  if (isComputingTopic(input)) return false;
+  if (isSocialUtterance(input) && !OFF_TOPIC_PATTERN.test(query)) return false;
+  return true;
+}
 
 export function isSiteActionIntent(input, knowledge, context = {}) {
   const route = routeCommand(input, knowledge, context);
@@ -465,10 +500,14 @@ export function classifyUtterance(input, knowledge, context = {}) {
     return { kind: "site", route };
   }
 
-  if (CHAT_PATTERN.test(normalizeText(input))) return { kind: "chat", route };
   if (isIsolatedSiteRequest(input) || isWebSiteRequest(input) || isQuoteAction(input) || isContactAction(input)) {
     return { kind: "site", route };
   }
+  if (isSocialUtterance(input) && !OFF_TOPIC_PATTERN.test(normalizeText(input))) {
+    return { kind: "chat", route };
+  }
+  if (isComputingTopic(input)) return { kind: "chat", route };
+  if (isOffTopicUtterance(input)) return { kind: "offtopic", route };
 
   return { kind: "chat", route };
 }

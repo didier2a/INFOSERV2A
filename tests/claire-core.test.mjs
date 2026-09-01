@@ -7,6 +7,7 @@ import {
   buildClaireContextPrompt,
   buildSiteBriefing,
   classifyUtterance,
+  CLAIRE_WELCOME,
   currentPage,
   describePageContext,
   followSpokenNavigation,
@@ -115,13 +116,18 @@ test("privilégie un titre et ses mots-clés", () => {
   assert.ok(scorePage("refonte site web", web) > scorePage("refonte site web", legal));
 });
 
-test("une salutations ou un hors-sujet reste une conversation naturelle", () => {
+test("une salutations ou un sujet informatique reste une conversation naturelle", () => {
   assert.equal(classifyUtterance("Bonjour Claire, comment ça va ?", knowledge).kind, "chat");
-  assert.equal(classifyUtterance("Raconte-moi une blague", knowledge).kind, "chat");
-  assert.equal(classifyUtterance("Quelle heure est-il ?", knowledge).kind, "chat");
-  assert.equal(classifyUtterance("Quelle est la capitale de la France ?", knowledge).kind, "chat");
   assert.equal(classifyUtterance("Mon disque dur n’est plus accessible", knowledge).kind, "chat");
   assert.equal(classifyUtterance("Peux-tu améliorer mon Wi-Fi ?", knowledge).kind, "chat");
+  assert.equal(classifyUtterance("Ok, merci", knowledge).kind, "chat");
+});
+
+test("un sujet hors informatique est refusé sans navigation", () => {
+  assert.equal(classifyUtterance("Raconte-moi une blague", knowledge).kind, "offtopic");
+  assert.equal(classifyUtterance("Quelle heure est-il ?", knowledge).kind, "offtopic");
+  assert.equal(classifyUtterance("Quelle est la capitale de la France ?", knowledge).kind, "offtopic");
+  assert.equal(classifyUtterance("Donne-moi une recette de gâteau", knowledge).kind, "offtopic");
 });
 
 test("une demande de service continue de piloter le site", () => {
@@ -174,10 +180,13 @@ test("le briefing site contient tous les onglets et le prompt généraliste", ()
   for (const page of knowledge.pages) {
     assert.match(briefing, new RegExp(page.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
-  assert.match(briefing, /OpenAI Live/);
-  assert.match(prompt, /interlocutrice GÉNÉRALISTE/);
+  assert.match(briefing, /INFORMATIQUE seulement/);
+  assert.match(prompt, /interlocutrice GÉNÉRALISTE EN INFORMATIQUE/);
   assert.match(prompt, /INFOSERV2A_SITE_BRIEFING/);
+  assert.match(prompt, /INFOSERV2A_OFF_TOPIC/);
   assert.match(prompt, /être interrompue/);
+  assert.match(CLAIRE_WELCOME, /Moi c’est Claire, votre aidante Live Avatar/);
+  assert.match(CLAIRE_WELCOME, /uniquement dans l’informatique/);
   assert.equal(adjacentPage(knowledge, "home", 1).id, "videosurveillance");
   assert.equal(adjacentPage(knowledge, knowledge.pages.at(-1).id, 1).id, "home");
 });

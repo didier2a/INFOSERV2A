@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.1.0",
-  "runtimeVersion": "2.1.0-generalist",
-  "mode": "generalist-with-site-catalog",
+  "runtimeVersion": "2.2.0-it",
+  "mode": "it-generalist-with-site-catalog",
   "site": "InfoServ2A",
   "knowledgeSource": "data/site-knowledge.json",
   "guardrails": {

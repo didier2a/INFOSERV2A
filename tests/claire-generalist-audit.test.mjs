@@ -30,17 +30,21 @@ const companionSource = await readFile(
   "utf8"
 );
 
-test("audit : Claire est généraliste par défaut, comme OpenAI Live", () => {
+test("audit : Claire est généraliste en informatique seulement", () => {
   const prompt = buildClaireContextPrompt(knowledge);
-  assert.match(prompt, /interlocutrice GÉNÉRALISTE/);
-  assert.match(prompt, /OpenAI Live/);
-  assert.match(prompt, /indépendamment du site/);
+  assert.match(prompt, /interlocutrice GÉNÉRALISTE EN INFORMATIQUE/);
+  assert.match(prompt, /refuses TOUT sujet hors informatique/);
   assert.match(prompt, /être interrompue/);
+  assert.match(prompt, /très conviviale/);
   assert.equal(classifyUtterance("Bonjour", knowledge).kind, "chat");
-  assert.equal(classifyUtterance("Quelle est la capitale de l’Italie ?", knowledge).kind, "chat");
-  assert.equal(planCommand("Raconte-moi une blague", knowledge, manifest).mode, "chat");
+  assert.equal(classifyUtterance("Quelle est la capitale de l’Italie ?", knowledge).kind, "offtopic");
+  assert.equal(planCommand("Raconte-moi une blague", knowledge, manifest).mode, "offtopic");
+  assert.equal(planCommand("Mon disque dur n’est plus accessible", knowledge, manifest).mode, "chat");
   assert.match(providerSource, /let kind = "chat"/);
-  assert.match(sessionSource, /InfoServ2A Claire Aidant 1\.8/);
+  assert.match(providerSource, /sendOffTopic/);
+  assert.match(providerSource, /INFOSERV2A_OFF_TOPIC/);
+  assert.match(sessionSource, /InfoServ2A Claire Aidant 1\.9/);
+  assert.match(companionSource, /sendOffTopic/);
 });
 
 test("audit : le catalogue site est injecté et chaque onglet est connu", () => {
