@@ -60,7 +60,7 @@ test("le Worker refuse les méthodes inattendues sur les routes API", async () =
     method: "POST"
   }), env());
   assert.equal(response.status, 405);
-  assert.equal(response.headers.get("Allow"), "GET");
+  assert.equal(response.headers.get("Allow"), "GET, OPTIONS");
 });
 
 test("la route de session échoue proprement sans secret Cloudflare", async () => {

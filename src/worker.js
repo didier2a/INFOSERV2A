@@ -1,4 +1,7 @@
-import { onRequestGet as liveAvatarStatus } from "../functions/api/liveavatar-status.js";
+import {
+  onRequestGet as liveAvatarStatus,
+  onRequestOptions as liveAvatarStatusOptions
+} from "../functions/api/liveavatar-status.js";
 import {
   onRequestOptions as liveAvatarSessionOptions,
   onRequestPost as liveAvatarSession
@@ -24,8 +27,9 @@ export default {
     const { pathname } = new URL(request.url);
 
     if (pathname === "/api/liveavatar-status") {
-      if (request.method !== "GET") return methodNotAllowed(["GET"]);
-      return liveAvatarStatus({ request, env });
+      if (request.method === "GET") return liveAvatarStatus({ request, env });
+      if (request.method === "OPTIONS") return liveAvatarStatusOptions({ request, env });
+      return methodNotAllowed(["GET", "OPTIONS"]);
     }
 
     if (pathname === "/api/liveavatar-session") {

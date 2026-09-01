@@ -14,9 +14,13 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-aidant5";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-aidant5";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-aidant6";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-aidant6";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
+const LIVEAVATAR_CLOUD_FALLBACKS = [
+  "https://infoserv2a.infoserv2a.workers.dev",
+  "https://cursor-live-avatar-aidant-8f54-infoserv2a.infoserv2a.workers.dev"
+];
 const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique et aidante Live Avatar. Je suis ici pour vous présenter l’entreprise, comprendre votre besoin et vous guider en langage naturel vers le bon service : cybersécurité, réseaux et Wi-Fi, vidéosurveillance, assistance informatique ou création de sites web. Vous pouvez me parler librement et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
 
 const FALLBACK_KNOWLEDGE = {
@@ -76,6 +80,34 @@ function storageSet(key, value) {
 
 function storageRemove(key) {
   try { sessionStorage.removeItem(key); } catch { /* Rien à faire. */ }
+}
+
+function liveAvatarStatusUrls() {
+  return [...new Set([globalThis.location.origin, ...LIVEAVATAR_CLOUD_FALLBACKS])]
+    .map((origin) => `${origin}/api/liveavatar-status`);
+}
+
+async function probeLiveAvatarStatus(signal) {
+  let lastUnconfigured = null;
+  for (const url of liveAvatarStatusUrls()) {
+    if (signal?.aborted) break;
+    try {
+      const origin = new URL(url).origin;
+      const response = await fetch(url, {
+        cache: "no-store",
+        credentials: origin === globalThis.location.origin ? "same-origin" : "omit",
+        signal
+      });
+      if (!response.ok) continue;
+      const status = await response.json();
+      const probed = { origin, status };
+      if (status?.configured) return probed;
+      lastUnconfigured = probed;
+    } catch (error) {
+      if (error?.name === "AbortError") break;
+    }
+  }
+  return lastUnconfigured;
 }
 
 function preferredFrenchVoice() {
@@ -170,6 +202,8 @@ export class ClaireCompanion {
     this.provider = null;
     this.providerReadyPromise = null;
     this.liveAvatarStatus = null;
+    this.liveAvatarApiOrigin = null;
+    this.startLock = null;
     this.manifest = FALLBACK_CAPABILITIES;
     this.surface = null;
     this.siteAdapter = null;
@@ -183,6 +217,12 @@ export class ClaireCompanion {
   async init() {
     this.cacheNodes();
     this.bindEvents();
+    this.setEngineStatus("checking", "Préparation de Claire…");
+    this.setStatus("ready", "Appuyez pour parler");
+    this.applyInitialState();
+    this.exposeApi();
+    globalThis.InfoServClaireBoot?.flush?.();
+    this.ensureProviderReady();
     const [knowledge, manifest] = await Promise.all([
       fetch(KNOWLEDGE_URL, { cache: "no-store" })
         .then((response) => response.ok ? response.json() : Promise.reject(new Error(`Knowledge HTTP ${response.status}`)))
@@ -208,7 +248,12 @@ export class ClaireCompanion {
     this.root.setAttribute("aria-busy", "false");
     this.renderSuggestions();
     this.highlightRequestedSection();
+    this.exposeApi();
+    globalThis.InfoServClaireBoot?.flush?.();
+    return this;
+  }
 
+  applyInitialState() {
     const params = new URLSearchParams(location.search);
     const requested = params.get("claire");
     const storedMode = storageGet(STORAGE_MODE);
@@ -226,7 +271,9 @@ export class ClaireCompanion {
       const clean = `${location.pathname}${remaining ? `?${remaining}` : ""}${location.hash}`;
       history.replaceState(history.state, "", clean);
     }
+  }
 
+  exposeApi() {
     globalThis.InfoServClaire = {
       version: "2.0.0-p1",
       companion: this,
@@ -240,8 +287,13 @@ export class ClaireCompanion {
       diagnostic: () => this.diagnostic()
     };
     globalThis.dispatchEvent(new CustomEvent("infoserv:claire-ready", { detail: globalThis.InfoServClaire }));
-    this.providerReadyPromise = this.configureLiveAvatarProvider();
-    return this;
+  }
+
+  ensureProviderReady() {
+    if (!this.providerReadyPromise) {
+      this.providerReadyPromise = this.configureLiveAvatarProvider();
+    }
+    return this.providerReadyPromise;
   }
 
   cacheNodes() {
@@ -349,17 +401,28 @@ export class ClaireCompanion {
   }
 
   async start() {
+    if (this.startLock) return this.startLock;
+    this.startLock = this.connectLiveSession({ microphone: true, state: "shared" });
+    try {
+      return await this.startLock;
+    } finally {
+      this.startLock = null;
+    }
+  }
+
+  async connectLiveSession({ microphone = true, state = "shared" } = {}) {
     storageSet(STORAGE_SEEN, "1");
     storageSet(STORAGE_MODE, "shared");
     this.audioEnabled = true;
     this.provider?.primeAudio?.();
-    this.setState("shared");
+    this.setState(state);
     this.setStatus("connecting", "Connexion à Claire…");
-    await this.providerReadyPromise;
+    this.setEngineStatus("connecting", "Connexion LiveAvatar…");
+    await this.ensureProviderReady();
     const greeting = CLAIRE_WELCOME;
     if (this.provider?.connect) {
       try {
-        await this.provider.connect({ microphone: true });
+        await this.provider.connect({ microphone });
         this.setEngineStatus("liveavatar-realtime", "LiveAvatar · OpenAI Realtime · marin");
         this.showWelcome(greeting);
       } catch {
@@ -415,26 +478,7 @@ export class ClaireCompanion {
   }
 
   async openConversation() {
-    storageSet(STORAGE_MODE, "shared");
-    this.audioEnabled = true;
-    this.provider?.primeAudio?.();
-    this.setState("shared");
-    this.setStatus("connecting", "Connexion à Claire…");
-    await this.providerReadyPromise;
-    if (this.provider?.connect) {
-      try {
-        await this.provider.connect({ microphone: false });
-        this.setEngineStatus("liveavatar-realtime", "LiveAvatar · OpenAI Realtime · marin");
-        this.showWelcome(CLAIRE_WELCOME);
-      } catch {
-        this.activateLocalFallback("La connexion LiveAvatar a échoué. Le mode local reste silencieux afin de ne pas imiter la voix Realtime de Claire.");
-        this.showWelcome(CLAIRE_WELCOME);
-      }
-    } else {
-      this.activateLocalFallback("LiveAvatar et OpenAI Realtime ne sont pas encore disponibles. Le mode local reste silencieux afin de ne pas imiter Claire.");
-      this.showWelcome(CLAIRE_WELCOME);
-    }
-    requestAnimationFrame(() => this.nodes.input?.focus());
+    await this.connectLiveSession({ microphone: false, state: "shared" });
   }
 
   showWelcome(text) {
@@ -490,23 +534,21 @@ export class ClaireCompanion {
     // Ne pas activer la voix locale pendant qu'un contrôle Realtime valide est en cours.
     const timer = setTimeout(() => controller.abort(), LIVEAVATAR_STATUS_TIMEOUT_MS);
     try {
-      const response = await fetch("/api/liveavatar-status", {
-        cache: "no-store",
-        credentials: "same-origin",
-        signal: controller.signal
-      });
-      if (!response.ok) {
+      const probed = await probeLiveAvatarStatus(controller.signal);
+      if (!probed) {
         this.markProviderUnavailable("Le contrôle de configuration LiveAvatar est indisponible.");
         return false;
       }
-      const status = await response.json();
-      this.liveAvatarStatus = status;
-      if (!status.configured) {
+      this.liveAvatarStatus = probed.status;
+      this.liveAvatarApiOrigin = probed.origin;
+      if (!probed.status.configured) {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
       const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js");
-      this.registerProvider(new InfoServ2ALiveAvatarProvider());
+      this.registerProvider(new InfoServ2ALiveAvatarProvider({
+        endpoint: `${probed.origin}/api/liveavatar-session`
+      }));
       return true;
     } catch {
       this.markProviderUnavailable("Impossible de vérifier LiveAvatar. Le mode local de secours est actif.");
@@ -712,6 +754,10 @@ export class ClaireCompanion {
   async toggleMicrophone() {
     this.audioEnabled = true;
     this.provider?.primeAudio?.();
+    if (this.state === "arrival" || this.state === "loading" || !this.provider?.connected) {
+      await this.start();
+      return;
+    }
     try {
       if (this.provider?.toggleListening) {
         try {

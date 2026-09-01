@@ -1,15 +1,12 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-async function loadFunction(relativePath) {
-  const source = await readFile(new URL(`../${relativePath}`, import.meta.url), "utf8");
-  const encoded = Buffer.from(source).toString("base64");
-  return import(`data:text/javascript;base64,${encoded}`);
-}
+import { isAllowedOrigin } from "../functions/api/liveavatar-origin.js";
+import { onRequestGet, onRequestOptions as statusOptions } from "../functions/api/liveavatar-status.js";
+import { onRequestPost, onRequestOptions as sessionOptions } from "../functions/api/liveavatar-session.js";
 
-const statusFunction = await loadFunction("functions/api/liveavatar-status.js");
-const sessionFunction = await loadFunction("functions/api/liveavatar-session.js");
+const statusFunction = { onRequestGet, onRequestOptions: statusOptions };
+const sessionFunction = { onRequestPost, onRequestOptions: sessionOptions };
 
 function request(origin = "https://preview.infoserv2a.pages.dev", body = { appId: "infoserv2a" }) {
   return new Request(`${origin}/api/liveavatar-session`, {
@@ -55,6 +52,39 @@ test("la création de session refuse une origine différente", async () => {
   });
   const response = await sessionFunction.onRequestPost({ request: incoming, env: {} });
   assert.equal(response.status, 403);
+});
+
+test("le domaine public peut demander une session au Worker Cloudflare", async () => {
+  const incoming = new Request("https://infoserv2a.infoserv2a.workers.dev/api/liveavatar-session", {
+    method: "POST",
+    headers: { Origin: "https://infoserv2a.pro", "Content-Type": "application/json" },
+    body: JSON.stringify({ appId: "infoserv2a" })
+  });
+  const response = await sessionFunction.onRequestPost({ request: incoming, env: {} });
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get("Access-Control-Allow-Origin"), "https://infoserv2a.pro");
+});
+
+test("une prévisualisation Workers est une origine autorisée", () => {
+  const request = new Request("https://infoserv2a.infoserv2a.workers.dev/api/liveavatar-session", {
+    method: "POST",
+    headers: { Origin: "https://cursor-live-avatar-aidant-8f54-infoserv2a.infoserv2a.workers.dev" }
+  });
+  assert.equal(isAllowedOrigin(request), true);
+});
+
+test("le préflight CORS accepte infoserv2a.pro", async () => {
+  const incoming = new Request("https://infoserv2a.infoserv2a.workers.dev/api/liveavatar-session", {
+    method: "OPTIONS",
+    headers: {
+      Origin: "https://infoserv2a.pro",
+      "Access-Control-Request-Method": "POST",
+      "Access-Control-Request-Headers": "content-type"
+    }
+  });
+  const response = sessionFunction.onRequestOptions({ request: incoming });
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("Access-Control-Allow-Origin"), "https://infoserv2a.pro");
 });
 
 test("la création de session échoue proprement sans configuration", async () => {

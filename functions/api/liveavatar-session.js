@@ -1,3 +1,5 @@
+import { corsHeaders, corsPreflight, isAllowedOrigin } from "./liveavatar-origin.js";
+
 const TOKEN_URL = "https://api.liveavatar.com/v1/sessions/token";
 const SECRETS_URL = "https://api.liveavatar.com/v1/secrets";
 const CONTEXTS_URL = "https://api.liveavatar.com/v1/contexts";
@@ -16,25 +18,16 @@ Lorsqu'un message commence par [INFOSERV2A_APP_RESULT], il contient une informat
 
 L'utilisateur garde toujours accès au mode manuel. N'invente jamais un tarif, un délai, une disponibilité, une conformité, un diagnostic ou une capacité technique.`;
 
-function json(data, status = 200) {
+function json(data, status = 200, request) {
   return Response.json(data, {
     status,
     headers: {
       "Cache-Control": "no-store",
       "Content-Security-Policy": "default-src 'none'",
-      "X-Content-Type-Options": "nosniff"
+      "X-Content-Type-Options": "nosniff",
+      ...corsHeaders(request)
     }
   });
-}
-
-function sameOrigin(request) {
-  const origin = request.headers.get("Origin");
-  if (!origin) return false;
-  try {
-    return new URL(origin).origin === new URL(request.url).origin;
-  } catch {
-    return false;
-  }
 }
 
 function safeMessage(payload, fallback) {
@@ -120,21 +113,21 @@ async function ensureClaireContext(env, key) {
 }
 
 export async function onRequestPost({ request, env }) {
-  if (!sameOrigin(request)) return json({ error: "Origine non autorisée" }, 403);
+  if (!isAllowedOrigin(request)) return json({ error: "Origine non autorisée" }, 403, request);
 
   const key = liveAvatarKey(env);
-  if (!key) return json({ error: "LiveAvatar non configuré" }, 503);
+  if (!key) return json({ error: "LiveAvatar non configuré" }, 503, request);
   if (!env.OPENAI_API_KEY && !env.LIVEAVATAR_OPENAI_SECRET_ID) {
-    return json({ error: "OpenAI Realtime non configuré" }, 503);
+    return json({ error: "OpenAI Realtime non configuré" }, 503, request);
   }
 
   let input = {};
   try {
     input = await request.json();
   } catch {
-    return json({ error: "Requête JSON invalide" }, 400);
+    return json({ error: "Requête JSON invalide" }, 400, request);
   }
-  if (input.appId !== "infoserv2a") return json({ error: "Application non autorisée" }, 403);
+  if (input.appId !== "infoserv2a") return json({ error: "Application non autorisée" }, 403, request);
 
   try {
     const [secretId, contextId] = await Promise.all([
@@ -165,7 +158,7 @@ export async function onRequestPost({ request, env }) {
     if (!tokenResult.response.ok || !sessionToken) {
       return json({
         error: safeMessage(tokenResult.payload, "Session LiveAvatar Realtime indisponible")
-      }, tokenResult.response.ok ? 502 : tokenResult.response.status);
+      }, tokenResult.response.ok ? 502 : tokenResult.response.status, request);
     }
     return json({
       sessionToken: String(sessionToken),
@@ -176,21 +169,13 @@ export async function onRequestPost({ request, env }) {
       model,
       orientation: "vertical",
       appId: "infoserv2a"
-    });
+    }, 200, request);
   } catch (error) {
     console.error("InfoServ2A LiveAvatar", String(error?.message || error).replace(/sk-[A-Za-z0-9_-]+/g, "[secret]"));
-    return json({ error: "Connexion LiveAvatar Realtime indisponible" }, 502);
+    return json({ error: "Connexion LiveAvatar Realtime indisponible" }, 502, request);
   }
 }
 
 export function onRequestOptions({ request }) {
-  if (!sameOrigin(request)) return new Response(null, { status: 403 });
-  return new Response(null, {
-    status: 204,
-    headers: {
-      "Access-Control-Allow-Methods": "POST,OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-      "Cache-Control": "no-store"
-    }
-  });
+  return corsPreflight(request);
 }

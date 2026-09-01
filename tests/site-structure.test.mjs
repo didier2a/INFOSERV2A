@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-aidant5)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-aidant5)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-aidant6)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-aidant6)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -52,7 +52,8 @@ test("les pages et assets référencés par Claire existent", async () => {
     "claire-lab.html",
     "claire-aidant-figma.html",
     "functions/api/liveavatar-session.js",
-    "functions/api/liveavatar-status.js"
+    "functions/api/liveavatar-status.js",
+    "functions/api/liveavatar-origin.js"
   ];
   await Promise.all(required.map((relative) => access(path.join(ROOT, relative))));
 });
@@ -69,7 +70,8 @@ test("Claire conserve une scène majeure et un mode guidé, jamais une bulle de 
   assert.match(css, /--claire-stage-width: clamp\(360px, 38vw, 540px\)/);
   assert.match(css, /body\.claire-is-guided/);
   assert.doesNotMatch(css, /bottom-right|claire-mini/);
-  assert.match(client, /provider\.connect\(\{ microphone: true \}\)/);
+  assert.match(client, /connectLiveSession\(\{ microphone: true/);
+  assert.match(client, /provider\.connect\(\{ microphone \}\)/);
   assert.match(client, /Mode local · Realtime non configuré/);
   assert.match(client, /LiveAvatar configuré · transport interrompu/);
   assert.match(provider, /AgentEventsEnum\.AVATAR_TRANSCRIPTION/);
@@ -84,6 +86,11 @@ test("le client ne contient aucune clé de fournisseur", async () => {
 test("le contrôle Realtime attend le Worker mobile et n'utilise jamais l'ancienne voix", async () => {
   const client = await readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8");
   assert.match(client, /LIVEAVATAR_STATUS_TIMEOUT_MS\s*=\s*12000/);
+  assert.match(client, /LIVEAVATAR_CLOUD_FALLBACKS/);
+  assert.match(client, /infoserv2a\.infoserv2a\.workers\.dev/);
+  assert.match(client, /probeLiveAvatarStatus/);
+  assert.match(client, /ensureProviderReady/);
+  assert.match(client, /this\.state === "arrival"/);
   assert.doesNotMatch(client, /setTimeout\(\(\) => controller\.abort\(\),\s*1600\)/);
   assert.doesNotMatch(client, /browserVoice\.speak\(greeting\)/);
   assert.match(client, /ancienne voix locale est volontairement désactivée/);
@@ -118,6 +125,7 @@ test("le direct exige les pistes LiveAvatar avant d’annoncer la connexion", as
   assert.match(provider, /TRACK_ATTACH_TIMEOUT_MS\s*=\s*18000/);
   assert.match(provider, /this\.streamReady = true/);
   assert.match(headers, /wss:\/\/\*\.livekit\.cloud/);
+  assert.match(headers, /https:\/\/\*\.infoserv2a\.workers\.dev/);
 });
 
 test("Chrome Android reçoit le son Realtime directement et peut le déverrouiller au toucher", async () => {
@@ -140,7 +148,7 @@ test("l’accueil Realtime est prononcé une seule fois par le contexte LiveAvat
     readFile(path.join(ROOT, "functions/api/liveavatar-session.js"), "utf8")
   ]);
   assert.match(client, /this\.showWelcome\(greeting\)/);
-  assert.match(client, /this\.showWelcome\(CLAIRE_WELCOME\)/);
+  assert.match(client, /const greeting = CLAIRE_WELCOME/);
   assert.doesNotMatch(client, /this\.speak\(greeting\)/);
   assert.doesNotMatch(client, /this\.speak\(CLAIRE_WELCOME\)/);
   assert.match(endpoint, /opening_text:\s*CLAIRE_WELCOME/);
@@ -254,6 +262,12 @@ test("Claire se présente comme aidante Live Avatar", async () => {
   assert.match(header, /aidante LiveAvatar/);
   assert.match(header, /infoserv2a\.claire\.mode/);
   assert.match(header, /requested === "1"/);
+  assert.match(header, /InfoServClaireBoot/);
+  assert.match(header, /Appuyez pour parler/);
+  assert.match(header, /En attente de votre accord/);
+  assert.ok(header.lastIndexOf("InfoServClaireBoot") > header.indexOf("data-claire-engine-status"));
+  assert.doesNotMatch(header, /Vérification LiveAvatar/);
+  assert.doesNotMatch(header, /Connexion en attente/);
   assert.match(client, /aidante Live Avatar/);
   assert.match(endpoint, /aidante Live Avatar/);
   assert.match(knowledge, /Aidante Live Avatar/);
