@@ -3,37 +3,42 @@
 Date : 1er septembre 2026  
 Objectif : que `https://infoserv2a.pro/?claire=1` serve **le même Worker Cloudflare** que la preview, et plus GitHub Pages.
 
-## 1. Pourquoi la preview marche et pas le domaine public
+## 0. Où on en est (mesure du 1er septembre 2026, 19:30 UTC)
 
-Mesure du 1er septembre 2026 :
+Les serveurs de noms sont bien Cloudflare (`ian.ns.cloudflare.com` / `sarah.ns.cloudflare.com`). `www` est déjà le Worker. **La racine `infoserv2a.pro` est encore GitHub Pages.**
 
 | URL | Qui répond | `/api/liveavatar-status` | LiveAvatar |
 |---|---|---|---|
-| [Preview Workers](https://cursor-live-avatar-aidant-8f54-infoserv2a.infoserv2a.workers.dev/?claire=1) | Cloudflare Worker de la branche | `configured: true` (clé LiveAvatar **et** OpenAI) | OK |
-| [Worker `main`](https://infoserv2a.infoserv2a.workers.dev/) | Cloudflare Worker production | `configured: false` (`openAIRealtime: false`) | Non |
-| [https://infoserv2a.pro](https://infoserv2a.pro/?claire=1) | **GitHub Pages** (`server: GitHub.com`) | **404 HTML** (pas de fonction serveur) | Non |
+| [Preview Workers](https://cursor-live-avatar-aidant-8f54-infoserv2a.infoserv2a.workers.dev/?claire=1) | Worker de la branche (Aidant 1.7) | `configured: true` | OK |
+| [https://www.infoserv2a.pro](https://www.infoserv2a.pro/?claire=1) | Worker **production** (`claire-companion.js?v=20260830-live2`) | JSON `configured: false` | Non (clé OpenAI absente) |
+| [Worker `main`](https://infoserv2a.infoserv2a.workers.dev/) | Worker production | `configured: false` (`openAIRealtime: false`) | Non |
+| [https://infoserv2a.pro](https://infoserv2a.pro/?claire=1) | **GitHub Pages** (`server: GitHub.com`, `x-github-request-id`) | **404 HTML** | Non |
 
-Le DNS public n’est **pas** chez Cloudflare :
+Deux clics restent, dans cet ordre :
 
-- Serveurs de noms : `ns13.ovh.net` / `dns13.ovh.net` (OVH).
-- `infoserv2a.pro` A → `185.199.108–111.153` (GitHub Pages).
-- `www` CNAME → `didier2a.github.io`.
-- GitHub Pages est bien déclaré : `cname: infoserv2a.pro`, source `main`.
+1. **Domaine racine** — attacher `infoserv2a.pro` (sans `www`) au Worker. Tant que les enregistrements A GitHub (`185.199.x.x`) existent pour `@`, Cloudflare refuse ou ignore le Custom Domain de la racine. Voir [B4](#b4-attacher-le-domaine-au-worker).
+2. **Secret OpenAI en production** — même valeur que la preview. Sans ça, même `www` et le Worker `main` restent en `configured: false`. Voir [étape A](#étape-a--secrets-production-5-minutes-aucun-dns).
+
+Ne fusionner la [PR #4](https://github.com/didier2a/INFOSERV2A/pull/4) que lorsque vous le demanderez : aujourd’hui la production sert encore l’ancien client `live2`, pas Aidant 1.7.
+
+## 1. Pourquoi la preview marche et pas le domaine public
 
 GitHub Pages ne peut pas exécuter `functions/api/liveavatar-session.js`. Sans ce jeton éphémère, LiveAvatar ne démarre pas. Un simple « transfert d’URL » dans GitHub ne suffit pas : il faut que **le nom de domaine arrive sur le Worker**.
 
-Le client actuellement publié sur `.pro` (`claire-companion.js?v=20260831-live11`) n’appelle que `/api/liveavatar-status` en même origine. Il n’a pas encore le repli vers `*.workers.dev`.
+Le client encore publié sur l’apex (`claire-companion.js?v=20260831-live11`) n’appelle que `/api/liveavatar-status` en même origine. Il n’a pas encore le repli vers `*.workers.dev`.
+
+Historique DNS (avant la bascule NS) : zone chez OVH (`ns13.ovh.net` / `dns13.ovh.net`), A GitHub Pages `185.199.108–111.153`, CNAME `www → didier2a.github.io`. GitHub Pages est toujours déclaré : `cname: infoserv2a.pro`, source `main`.
 
 ## 2. Ce que Cursor ne peut pas faire à votre place
 
-Ces actions sont dans **votre** compte OVH et **votre** compte Cloudflare. Elles exigent d’être connecté en propriétaire du domaine :
+Ces actions sont dans **votre** compte Cloudflare (et OVH pour les NS, déjà faits). Pas de jeton API dans cet environnement, donc je ne peux pas cliquer à votre place :
 
-1. Ajouter la zone `infoserv2a.pro` dans Cloudflare.
-2. Changer les serveurs de noms chez OVH.
+1. ~~Ajouter la zone `infoserv2a.pro` dans Cloudflare.~~ **Fait** (zone Active, NS `ian` / `sarah`).
+2. ~~Changer les serveurs de noms chez OVH.~~ **Fait**.
 3. Coller le secret `OPENAI_API_KEY` sur le Worker **production** (la preview l’a déjà ; `main` non).
-4. Attacher le domaine personnalisé au Worker `infoserv2a`.
+4. Attacher le Custom Domain **`infoserv2a.pro`** (sans `www`) au Worker — `www` est déjà le Worker.
 
-L’e-mail OVH (`mx1/2/3.mail.ovh.net`, SPF `include:mx.ovh.com`) **doit** être recopié **avant** le changement de NS, sinon `contact@` / `devis@` / `support@` cassent.
+L’e-mail OVH (`mx1/2/3.mail.ovh.net`, SPF `include:mx.ovh.com`) doit rester en proxy **gris**. Ne pas orange-clouder les MX.
 
 ## 3. Deux étapes, dans cet ordre
 
@@ -54,9 +59,11 @@ curl -s https://infoserv2a.infoserv2a.workers.dev/api/liveavatar-status
 
 Attendu : `"configured":true` et `"openAIRealtime":true`.
 
-4. Fusionner la PR [#4](https://github.com/didier2a/INFOSERV2A/pull/4) dans `main` pour que le Worker production et, tant que le DNS n’a pas bougé, GitHub Pages reçoivent Claire Aidant 1.7. Après fusion, le site `.pro` pourra aussi appeler le Worker en CORS (repli `LIVEAVATAR_CLOUD_FALLBACKS`) **en attendant** l’étape B.
+4. Fusionner la PR [#4](https://github.com/didier2a/INFOSERV2A/pull/4) dans `main` **seulement si vous le demandez** : ça publie Aidant 1.7 (interruption + synchro de l’onglet) sur le Worker production. Sans fusion, `www` et la racine resteront sur l’ancien client `live2`.
 
 ### Étape B — DNS Cloudflare + domaine du Worker (le vrai transfert d’URL)
+
+B1–B3 sont **faits**. Il reste B4 (racine) puis B5 après recette.
 
 Prérequis : un compte Cloudflare, **le même** que le Worker `infoserv2a` (compte `45aac699cfed86fedb9631852dc1aaeb`).
 
@@ -94,12 +101,17 @@ Le TXT OVH `1|www.infoserv2a.pro` est une redirection interne OVH : inutile une 
 
 #### B4. Attacher le domaine au Worker
 
-Quand la zone est **Active** :
+Quand la zone est **Active**. `www.infoserv2a.pro` est déjà le Worker ; il manque **uniquement** la racine.
 
-1. Worker `infoserv2a` → **Settings → Domains & Routes → Add → Custom Domain**.
-2. Ajouter `infoserv2a.pro`.
-3. Ajouter `www.infoserv2a.pro` (sinon `www` ne reçoit pas Claire).
-4. Cloudflare crée les DNS et le certificat. Les A GitHub Pages disparaissent au profit du Worker.
+Cloudflare **ne peut pas** créer un Custom Domain sur un nom qui a déjà un CNAME, et ignore souvent la racine tant que les A GitHub sont encore là. Il faut d’abord les retirer.
+
+1. [DNS → Records de `infoserv2a.pro`](https://dash.cloudflare.com/45aac699cfed86fedb9631852dc1aaeb/infoserv2a.pro/dns/records).
+2. Pour le nom `@` / `infoserv2a.pro`, **supprimer** les A (et AAAA) vers GitHub Pages : `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`. Ne **pas** toucher aux MX, SPF, `autoconfig`, `autodiscover`.
+3. Worker `infoserv2a` → [Settings → Domains & Routes](https://dash.cloudflare.com/45aac699cfed86fedb9631852dc1aaeb/workers/services/view/infoserv2a/production) → **Add → Custom Domain**.
+4. Taper exactement `infoserv2a.pro` (sans `www`, sans `https://`) → **Add Custom Domain**.
+5. Vérifier que `www.infoserv2a.pro` figure déjà dans la liste. S’il n’y est pas, l’ajouter aussi.
+
+Attendu ensuite : `curl -sI https://infoserv2a.pro/` affiche `server: cloudflare` et **plus** `x-github-request-id`. `/api/liveavatar-status` doit renvoyer du JSON (même si `configured` est encore `false` tant que l’étape A n’est pas faite).
 
 Ne **pas** mettre `"custom_domain": true` dans `wrangler.jsonc` tant que la zone n’est pas Active : un déploiement de **preview** volerait le domaine. Après l’étape B4, on pourra l’ajouter sur `main` uniquement :
 
@@ -141,8 +153,10 @@ Puis hard-reload `https://infoserv2a.pro/?claire=1` : Claire doit se connecter c
 
 | Symptôme | Cause probable | Remède |
 |---|---|---|
-| Claire en mode local sur `.pro`, API 404, `server: GitHub.com` | DNS encore OVH → GitHub Pages | Étape B incomplète |
-| API JSON `"openAIRealtime":false` | Secret OpenAI absent en production | Étape A |
+| `www` est le Worker, l’apex reste `server: GitHub.com` | Custom Domain seulement sur `www`, A GitHub encore sur `@` | Supprimer les A `185.199.x.x` puis ajouter le Custom Domain `infoserv2a.pro` (B4) |
+| Custom Domain refusé (« existing CNAME / DNS record ») | Enregistrements GitHub encore présents | Les supprimer dans DNS → Records, puis réessayer B4 |
+| Claire en mode local sur `.pro`, API 404, `server: GitHub.com` | Racine encore GitHub Pages | B4 incomplet |
+| API JSON `"configured":false` / `"openAIRealtime":false` | Secret OpenAI absent en production | Étape A |
 | Site OK, plus aucun mail | MX / SPF oubliés dans Cloudflare | Recréer le tableau B1, proxy gris |
 | Preview OK, `www` cassé | Custom Domain seulement sur l’apex | Ajouter `www.infoserv2a.pro` |
 | Certificat en erreur | Zone pas encore Active | Attendre les NS, ne pas forcer HTTPS chez OVH |
