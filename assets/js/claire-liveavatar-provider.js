@@ -238,7 +238,7 @@ export class InfoServ2ALiveAvatarProvider {
 
   sendBriefing(value) {
     if (!this.session) return false;
-    const prompt = `[INFOSERV2A_SITE_BRIEFING]\n${value}\nN’y réponds pas. Mémorise le catalogue des onglets. Tu restes une experte professionnelle. Tu ne récites jamais tes limites.`;
+    const prompt = `[INFOSERV2A_SITE_BRIEFING]\n${value}\nN’y réponds pas. Mémorise le catalogue des onglets. Tu restes une présence chaleureuse, à l’écoute, sans ramener de force à l’informatique.`;
     this.record("conversation:site-briefing-sent", { characters: String(value).length });
     this.session.message(prompt);
     return true;
@@ -263,7 +263,7 @@ export class InfoServ2ALiveAvatarProvider {
   sendUserMessage(value) {
     const text = String(value || "").trim();
     if (!this.session || !text) return false;
-    const prompt = `[INFOSERV2A_USER_TEXT]\n${text}\nRéponds naturellement, en français courant, comme une experte. Si c’est du loisir, glisse ailleurs sans énoncer de règle.`;
+    const prompt = `[INFOSERV2A_USER_TEXT]\n${text}\nRéponds naturellement, en français chaleureux, à ce que la personne dit. Tous les domaines sont les bienvenus. Ne ramène pas à l’informatique.`;
     this.record("conversation:user-text-sent", { characters: text.length });
     this.session.message(prompt);
     this.armReplyTimer();
@@ -274,7 +274,7 @@ export class InfoServ2ALiveAvatarProvider {
   sendOffTopic(value) {
     const text = String(value || "").trim();
     if (!this.session || !text) return false;
-    const prompt = `[INFOSERV2A_OFF_TOPIC]\n${text}\nNe traite pas le fond. Une phrase légère, sans dire que tu es limitée à l’informatique, puis continue sur ce qui occupe vraiment la personne.`;
+    const prompt = `[INFOSERV2A_OFF_TOPIC]\n${text}\nCe n’est pas un refus. Réponds à la personne, avec la même écoute. Ne la ramène pas à l’informatique.`;
     this.record("conversation:off-topic-sent", { characters: text.length });
     this.session.message(prompt);
     this.armReplyTimer();

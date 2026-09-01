@@ -10,11 +10,14 @@ import {
   CLAIRE_OFF_TOPIC_SPEECH
 } from "./claire-core.mjs";
 import {
+  formatCaptionContext,
   formatMemoryBriefing,
   hasMemoryContent,
   loadSessionMemory,
   rememberPage,
-  rememberTurn
+  rememberTurn,
+  quoteQuestionnaire,
+  shouldShowQuoteQuest
 } from "./claire-session-memory.mjs";
 import { ClaireRuntimeController } from "./claire-runtime-v2.mjs";
 import {
@@ -26,8 +29,8 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it5";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it5";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it6";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it6";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 280;
 const LIVEAVATAR_CLOUD_FALLBACKS = [
@@ -355,6 +358,10 @@ export class ClaireCompanion {
       engineStatus: find("[data-claire-engine-status]"),
       retry: find("[data-claire-retry]"),
       live: find("[data-claire-live]"),
+      livePrompt: find("[data-claire-live-prompt]"),
+      caption: find("[data-claire-caption]"),
+      captionContext: find("[data-claire-caption-context]"),
+      quest: find("[data-claire-quest]"),
       video: find(".claire-avatar__video")
     };
   }
@@ -520,6 +527,7 @@ export class ClaireCompanion {
       this.lastFocus = document.activeElement;
       requestAnimationFrame(() => this.root.querySelector("[data-claire-start]")?.focus());
     }
+    this.showLivePrompt();
     this.syncViewportShell();
   }
 
@@ -661,6 +669,7 @@ export class ClaireCompanion {
   }
 
   showWelcome(text) {
+    this.updateLiveCaption(text);
     if (this.welcomeShown) return;
     const live = this.nodes.transcript?.querySelector('.claire-turn--companion[data-live="1"]');
     if (live) {
@@ -686,6 +695,7 @@ export class ClaireCompanion {
     const shell = isPhoneShell()
       ? "Appareil : téléphone. Réponses plus courtes."
       : "Appareil : ordinateur.";
+    this.updateLiveContext();
     return this.provider?.sendContext?.(`${text}\n${shell}`) || false;
   }
 
@@ -749,10 +759,12 @@ export class ClaireCompanion {
         },
         onAvatarSpeakStart: () => {
           this.clearSpeechFollow({ keepLastPage: false });
+          this.showLivePrompt();
         },
         onAvatarSpeakEnd: () => {
           this.finalizeLiveCompanionTurn();
           if (this.lastFollowKey) this.pushPageContext();
+          this.updateLiveContext();
         },
         onBargeIn: () => {
           this.clearSpeechFollow({ keepLastPage: false });
@@ -829,6 +841,62 @@ export class ClaireCompanion {
     return article;
   }
 
+  showLivePrompt() {
+    if (!this.nodes.livePrompt) return;
+    if (["arrival", "loading", "manual"].includes(this.state)) {
+      this.nodes.livePrompt.hidden = true;
+      return;
+    }
+    this.nodes.livePrompt.hidden = false;
+    this.updateLiveContext();
+  }
+
+  updateLiveCaption(text) {
+    const value = String(text || "").replace(/\s+/g, " ").trim();
+    if (this.nodes.caption) this.nodes.caption.textContent = value;
+    if (value) this.showLivePrompt();
+    else this.updateLiveContext();
+  }
+
+  updateLiveContext() {
+    const snapshot = this.siteAdapter?.snapshot() || {};
+    const memory = loadSessionMemory();
+    const context = formatCaptionContext({
+      page: snapshot.page,
+      section: snapshot.section,
+      memory
+    });
+    if (this.nodes.captionContext) this.nodes.captionContext.textContent = context;
+    this.renderQuoteQuest(memory, snapshot);
+  }
+
+  renderQuoteQuest(memory, snapshot = {}) {
+    const quest = this.nodes.quest;
+    if (!quest) return;
+    if (!shouldShowQuoteQuest(memory, snapshot.page?.id || snapshot.activePage)) {
+      quest.hidden = true;
+      quest.replaceChildren();
+      return;
+    }
+    quest.hidden = false;
+    quest.replaceChildren();
+    quoteQuestionnaire(memory).forEach((item) => {
+      const li = document.createElement("li");
+      li.dataset.filled = item.value ? "1" : "0";
+      li.dataset.field = item.id;
+      const mark = document.createElement("b");
+      mark.textContent = item.value ? "✓" : "·";
+      const label = document.createElement("span");
+      label.textContent = item.value ? `${item.label} : ${item.value}` : item.label;
+      li.append(mark, label);
+      li.addEventListener("click", () => {
+        const selector = item.id === "description" ? "#devis-description" : `#devis-${item.id}`;
+        document.querySelector(selector)?.focus?.();
+      });
+      quest.append(li);
+    });
+  }
+
   appendLiveCompanion(text) {
     const value = String(text || "").trim();
     if (!value) return;
@@ -838,6 +906,7 @@ export class ClaireCompanion {
     if (last) {
       const paragraph = last.querySelector("p");
       if (paragraph) paragraph.textContent = mergeSpokenTranscript(paragraph.textContent, value);
+      this.updateLiveCaption(paragraph?.textContent || value);
       requestAnimationFrame(() => {
         const scroller = this.nodes.conversationScroll;
         if (scroller) scroller.scrollTop = scroller.scrollHeight;
@@ -846,6 +915,7 @@ export class ClaireCompanion {
     }
     this.nodes.transcript?.replaceChildren();
     this.appendTurn("companion", value, { live: true });
+    this.updateLiveCaption(value);
   }
 
   finalizeLiveCompanionTurn() {
@@ -881,6 +951,7 @@ export class ClaireCompanion {
     }
 
     this.appendTurn("user", value);
+    this.updateLiveContext();
 
     if (classified.kind === "chat") {
       this.pushPageContext();
@@ -892,13 +963,11 @@ export class ClaireCompanion {
     if (classified.kind === "offtopic") {
       this.pushPageContext();
       this.setStatus("listening", "Claire vous répond");
-      if (this.provider?.avatarSpeaking) this.provider.bargeIn?.("off-topic");
-      if (this.provider?.sendOffTopic) {
-        this.provider.sendOffTopic(value);
-      } else {
-        this.appendTurn("companion", CLAIRE_OFF_TOPIC_SPEECH);
+      if (source !== "liveavatar") {
+        if (this.provider?.sendUserMessage) this.provider.sendUserMessage(value);
+        else this.appendTurn("companion", CLAIRE_OFF_TOPIC_SPEECH);
       }
-      return { kind: "offtopic", classified };
+      return { kind: "chat", classified };
     }
 
     if (classified.kind === "page") {

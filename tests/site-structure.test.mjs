@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-it5)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-it5)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-it6)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-it6)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -104,23 +104,23 @@ test("Claire accueille l'utilisateur et explique son rôle chez InfoServ2A", asy
     readFile(path.join(ROOT, "functions/api/liveavatar-session.js"), "utf8"),
     readFile(path.join(ROOT, "assets/js/claire-core.mjs"), "utf8")
   ]);
-  assert.match(core, /Bonjour, bienvenue chez InfoServ2A/);
   assert.match(core, /Moi c’est Claire, votre aidante Live Avatar/);
-  assert.match(core, /revenir à la navigation manuelle à tout moment/);
-  assert.match(core, /m’interrompre à tout moment/);
+  assert.match(core, /Je vous écoute/);
+  assert.match(core, /navigation manuelle reste toujours disponible/);
+  assert.match(core, /être interrompue à tout moment/);
   assert.match(core, /onglets du site/);
   assert.doesNotMatch(core, /Je reste uniquement dans l’informatique/);
   assert.match(client, /CLAIRE_WELCOME/);
   assert.match(endpoint, /CLAIRE_WELCOME/);
-  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.11/);
+  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.12/);
   assert.match(endpoint, /buildClaireContextPrompt/);
-  assert.match(endpoint, /temperature:\s*0\.6/);
+  assert.match(endpoint, /temperature:\s*0\.75/);
   assert.match(endpoint, /opening_text:\s*CLAIRE_WELCOME/);
   assert.match(core, /INFOSERV2A_PAGE_CONTEXT/);
   assert.match(core, /INFOSERV2A_SITE_BRIEFING/);
   assert.match(core, /INFOSERV2A_SESSION_MEMORY/);
   assert.match(core, /INFOSERV2A_OFF_TOPIC/);
-  assert.match(core, /interlocutrice GÉNÉRALISTE PROFESSIONNELLE/);
+  assert.match(core, /interlocutrice humaine/);
   assert.doesNotMatch(client, /this\.speak\(greeting\)/);
   assert.doesNotMatch(core, /n’importe quel sujet/);
 });
@@ -232,6 +232,23 @@ test("Realtime ne coupe plus la réponse sur la première syllabe", async () => 
 test("le champ de pièces jointes masqué ne crée aucun débordement horizontal", async () => {
   const css = await readFile(path.join(ROOT, "assets/css/components.css"), "utf8");
   assert.match(css, /\.form input\.sr-only\s*\{[^}]*width:\s*1px[^}]*min-height:\s*1px[^}]*padding:\s*0[^}]*border:\s*0/s);
+});
+
+test("la parole de Claire s’écrit dans un encart visible, hors de son visage", async () => {
+  const [html, css, client] = await Promise.all([
+    readFile(path.join(ROOT, "partials/header.html"), "utf8"),
+    readFile(path.join(ROOT, "assets/css/claire-companion.css"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8")
+  ]);
+  const desktop = css.split("@media (max-width: 820px)")[0];
+  assert.match(html, /data-claire-live-prompt/);
+  assert.match(html, /data-claire-caption/);
+  assert.match(html, /data-claire-caption-context/);
+  assert.match(html, /data-claire-quest/);
+  assert.match(client, /updateLiveCaption/);
+  assert.match(client, /renderQuoteQuest/);
+  assert.match(desktop, /\[data-state="guided"\] \.claire-live-prompt \{[\s\S]*left: calc\(var\(--claire-stage-width\) \+ 0\.9rem\)/);
+  assert.match(desktop, /\[data-state="guided"\] \.claire-dialogue \{\s*display: none;/);
 });
 
 test("la conversation guidée reste un dock en bas, sans recouvrir Claire", async () => {

@@ -5,9 +5,11 @@ import {
   SESSION_MEMORY_KEY,
   canSubmitQuote,
   extractFactsFromUtterance,
+  formatCaptionContext,
   formatMemoryBriefing,
   hasMemoryContent,
   loadSessionMemory,
+  quoteQuestionnaire,
   rememberTurn,
   saveSessionMemory
 } from "../assets/js/claire-session-memory.mjs";
@@ -59,6 +61,25 @@ test("la mémoire de session survit à une déconnexion simulée", () => {
   assert.match(briefing, /Bonifacio/);
   assert.match(briefing, /Ne redemande pas/);
   assert.equal(hasMemoryContent(afterDisconnect), true);
+});
+
+test("l’encart de contexte montre la page et le questionnaire de devis", () => {
+  const memory = {
+    visitor: { name: "Marie Rossi", phone: "", email: "", city: "Porto-Vecchio" },
+    service: "videosurveillance",
+    need: "Caméra 4G",
+    turns: []
+  };
+  const context = formatCaptionContext({
+    page: { title: "Demande de devis", id: "quote" },
+    memory
+  });
+  assert.match(context, /Demande de devis/);
+  assert.match(context, /Marie Rossi/);
+  assert.match(context, /il manque/);
+  const quest = quoteQuestionnaire(memory);
+  assert.equal(quest.find((item) => item.id === "name").value, "Marie Rossi");
+  assert.equal(quest.find((item) => item.id === "phone").value, "");
 });
 
 test("un devis ne part pas tant que les coordonnées manquent", () => {

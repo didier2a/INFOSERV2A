@@ -1,14 +1,14 @@
 # Plan Claire — aidante Live Avatar d’InfoServ2A
 
 Date : 1er septembre 2026  
-Statut : experte professionnelle (IT, sciences, métiers numériques), mémoire de session navigateur, actions orales (devis / appel / mail), contexte Aidant 1.11  
+Statut : présence chaleureuse, mémoire de session, encart parole + contexte, actions orales, contexte Aidant 1.12  
 Référence visuelle : `/claire-aidant-figma.html` · `data/claire-aidant-figma.json`
 
 ## 1. Intention
 
 Greffer sur le site InfoServ2A la même Claire que Pocket Guide : une aidante audiovisuelle unique, voix OpenAI `marin`, avatar LiveAvatar vertical 9:16. Elle n’est pas une bulle de support. Elle occupe l’arrivée, reste visible pendant la navigation, et rend la main à tout moment.
 
-Claire est une **experte professionnelle**. LiveAvatar n’est que le visage et la voix. Dès l’entrée, elle se présente et présente InfoServ2A. Elle couvre l’informatique, les sciences et tout métier où le numérique intervient. Elle n’énonce pas de limite (« je ne fais que l’IT »). Le loisir (recette, météo, blague) est écarté sans que l’interlocuteur sente une barrière.
+Claire est une **présence chaleureuse**, très à l’écoute. LiveAvatar n’est que le visage et la voix. Dès l’entrée, elle se présente et présente InfoServ2A. Elle répond dans tous les domaines, sans ramener systématiquement à l’informatique. Sa parole s’écrit dans un encart visible (texte + contexte / questionnaire de devis), hors de son visage.
 
 Elle n’invente ni tarif, ni délai, ni diagnostic. Le site reste la source de vérité pour les faits InfoServ2A.
 
@@ -57,7 +57,8 @@ Règles non négociables :
 - Mémoire de session `assets/js/claire-session-memory.mjs` (`sessionStorage`, tant que l’onglet reste ouvert).
 - Laboratoire texte `/claire-lab` (aucun secret, aucune voix).
 - Ancres canoniques : `solutions-sans-fibre`, `audit-nis2`, `supports`, `offre-hebergement`.
-- Contexte LiveAvatar `InfoServ2A Claire Aidant 1.11` (prompt généré depuis `data/site-knowledge.json`, `opening_text` = accueil vocal).
+- Contexte LiveAvatar `InfoServ2A Claire Aidant 1.12` (prompt généré depuis `data/site-knowledge.json`, `opening_text` = accueil vocal).
+- Encart `claire-live-prompt` : parole de Claire + ligne de contexte + questionnaire de devis visible.
 
 ## 5. Spec Figma
 
@@ -86,7 +87,7 @@ Frames à pousser dans Figma dès que le MCP Figma est authentifié sur le burea
 - `LIVEAVATAR_API_KEY`
 - `OPENAI_API_KEY` ou `LIVEAVATAR_OPENAI_SECRET_ID`
 - optionnel `LIVEAVATAR_AVATAR_ID` (Claire Pocket Guide par défaut)
-- optionnel `LIVEAVATAR_CONTEXT_ID` après la première création du contexte Aidant 1.11. Si une ancienne valeur pointe encore vers 1.3–1.10, la supprimer pour forcer la recréation.
+- optionnel `LIVEAVATAR_CONTEXT_ID` après la première création du contexte Aidant 1.12. Si une ancienne valeur pointe encore vers 1.3–1.11, la supprimer pour forcer la recréation.
 
 ## 7. Acceptation
 
@@ -109,12 +110,12 @@ Cahier des charges énoncé : Claire est conviviale ; elle accueille à la voix 
 
 | Exigence | Verdict | Preuve |
 |---|---|---|
-| Accueil vocal dès l’entrée | **Conforme** | `opening_text` = `CLAIRE_WELCOME` (contexte Aidant 1.11). Le client n’appelle pas `speak(greeting)`. |
+| Accueil vocal dès l’entrée | **Conforme** | `opening_text` = `CLAIRE_WELCOME` (contexte Aidant 1.12). Le client n’appelle pas `speak(greeting)`. |
 | Présentation de Claire et d’InfoServ2A | **Conforme** | Accueil unique dans `claire-core.mjs`, importé par le Worker et le client. |
-| Experte professionnelle, limite invisible | **Conforme** | Métiers / sciences / IT → `chat`. Loisir (capitale, blague, recette) → `offtopic` sans réciter de règle. |
+| Présence chaleureuse, tous domaines | **Conforme** | Métiers, sciences, quotidien, curiosité → `chat`. Elle ne ramène pas à l’informatique. Encart parole + contexte visible hors du visage. |
 | Interruption (parler / toucher / Interrompre) | **Conforme** | `bargeIn` sur `USER_SPEAK_STARTED`, transcription, micro, scène et bouton. |
 | Navigation synchronisée avec ce qu’elle dit | **Conforme** | `followSpokenNavigation` zappe l’onglet et la section de droite pendant `AVATAR_TRANSCRIPTION`. |
-| LiveAvatar relié à OpenAI Realtime | **Conforme** | Session LITE, `gpt-realtime`, voix `marin`, température 0.6. LiveAvatar n’est pas le cerveau : c’est le visage. |
+| LiveAvatar relié à OpenAI Realtime | **Conforme** | Session LITE, `gpt-realtime`, voix `marin`, température 0.75. LiveAvatar n’est pas le cerveau : c’est le visage. |
 | Contexte général du site (13 onglets, identité, horaires, téléphone) | **Conforme** | `buildSiteBriefing` + prompt LiveAvatar générés depuis `data/site-knowledge.json`. Envoi `[INFOSERV2A_SITE_BRIEFING]` à la connexion. |
 | Dialogue IT indépendant du site | **Conforme** | Disque, Wi-Fi, salutations → `chat`, aucune navigation. Hors IT → `[INFOSERV2A_OFF_TOPIC]`. Texte tapé IT → `[INFOSERV2A_USER_TEXT]`. |
 | Navigation onglet par onglet | **Conforme** | Outils `next_page` / `prev_page` / `go_home` ; ordre = `knowledge.pages`. Contexte d’onglet renvoyé après chaque changement. |

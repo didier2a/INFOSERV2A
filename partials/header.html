@@ -114,7 +114,7 @@
         <div class="claire-arrival-copy">
           <p class="claire-eyebrow">Aidante Live Avatar</p>
           <h1 id="claireArrivalTitle">Bonjour, je suis Claire. Je vous écoute.</h1>
-          <p id="claireArrivalDescription">Dès que vous me parlez, je me présente et je présente InfoServ2A. Parlez-moi de votre métier, de vos outils, de ce qui bloque. Comme à une collègue.</p>
+          <p id="claireArrivalDescription">Dès que vous me parlez, je me présente. On peut parler de votre métier, d’un outil, d’une idée — ou d’autre chose. Je suis là.</p>
           <div class="claire-arrival-actions">
             <button class="claire-button claire-button--primary" type="button" data-claire-start>
               <span class="claire-button__icon" aria-hidden="true">●</span>
@@ -139,7 +139,7 @@
             <div class="claire-transcript" data-claire-transcript role="log" aria-live="polite" aria-relevant="additions">
               <article class="claire-turn claire-turn--companion">
                 <span>Claire</span>
-                <p>Bonjour. Dites-moi ce que vous souhaitez accomplir, je vais chercher et afficher l’information utile.</p>
+                <p>Bonjour. Je suis là. Dites-moi ce qui vous amène, je vous écoute.</p>
               </article>
             </div>
 
@@ -168,6 +168,18 @@
       </div>
     </div>
   </section>
+
+  <aside class="claire-live-prompt" data-claire-live-prompt hidden>
+    <p class="claire-live-prompt__line claire-live-prompt__line--speech">
+      <span>Claire</span>
+      <em data-claire-caption></em>
+    </p>
+    <p class="claire-live-prompt__line claire-live-prompt__line--context">
+      <span>Contexte</span>
+      <em data-claire-caption-context>Conversation avec Claire</em>
+    </p>
+    <ol class="claire-live-prompt__quest" data-claire-quest hidden></ol>
+  </aside>
 
   <button class="claire-manual-bar" type="button" data-claire-recall aria-label="Reprendre la navigation avec Claire">
     <img src="assets/images/companion/claire-liveavatar-1080x1920.jpg" alt="">

@@ -265,6 +265,38 @@ function buildSummary(memory = {}) {
   return bits.join(" · ");
 }
 
+export function quoteQuestionnaire(memory = {}) {
+  const draft = quotePrefillFromMemory(memory);
+  return [
+    { id: "name", label: "Nom", value: draft.name },
+    { id: "phone", label: "Téléphone", value: draft.phone },
+    { id: "email", label: "E-mail", value: draft.email },
+    { id: "city", label: "Commune", value: draft.city },
+    { id: "service", label: "Service", value: draft.service },
+    { id: "description", label: "Besoin", value: draft.description }
+  ];
+}
+
+export function shouldShowQuoteQuest(memory = {}, pageId = "") {
+  if (pageId === "quote") return true;
+  const visitor = normalizeVisitor(memory.visitor);
+  return Boolean(visitor.name || visitor.phone || visitor.email || visitor.city || memory.need || memory.service);
+}
+
+export function formatCaptionContext({ page, section, memory } = {}) {
+  const bits = [];
+  if (page?.title) bits.push(page.title);
+  if (section?.label) bits.push(section.label);
+  const visitor = normalizeVisitor(memory?.visitor);
+  if (visitor.name) bits.push(visitor.name);
+  if (memory?.service) bits.push(memory.service);
+  if (visitor.city) bits.push(visitor.city);
+  if (shouldShowQuoteQuest(memory, page?.id) && missingQuoteFields(memory).length) {
+    bits.push(`il manque ${describeMissingQuoteFields(memory)}`);
+  }
+  return bits.join(" · ") || "Conversation avec Claire";
+}
+
 export function formatMemoryBriefing(memory = {}) {
   const normalized = normalizeMemory(memory);
   if (!hasMemoryContent(normalized)) {
