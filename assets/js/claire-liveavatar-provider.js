@@ -69,15 +69,16 @@ export class InfoServ2ALiveAvatarProvider {
     this.transcriptParts = [];
     this.commandInFlight = false;
     this.userSpeakComplete = false;
+    this.userSpeaking = false;
     this.avatarSpeaking = false;
     this.stopping = false;
     this.connectionAttempt = 0;
     this.callbacks = {};
   }
 
-  install({ video, onTranscript, onAvatarTranscript, onAvatarSpeakStart, onAvatarSpeakEnd, onStatus, onCommand, classifyCommand } = {}) {
+  install({ video, onTranscript, onAvatarTranscript, onAvatarSpeakStart, onAvatarSpeakEnd, onBargeIn, onStatus, onCommand, classifyCommand } = {}) {
     this.video = video || null;
-    this.callbacks = { onTranscript, onAvatarTranscript, onAvatarSpeakStart, onAvatarSpeakEnd, onStatus, onCommand, classifyCommand };
+    this.callbacks = { onTranscript, onAvatarTranscript, onAvatarSpeakStart, onAvatarSpeakEnd, onBargeIn, onStatus, onCommand, classifyCommand };
     this.callbacks.onStatus?.("ready", "LiveAvatar disponible sur activation");
     return this;
   }
@@ -221,10 +222,20 @@ export class InfoServ2ALiveAvatarProvider {
   }
 
   cancelUnauthorizedReply(reason = "user-command") {
-    this.record("conversation:interrupt-unauthorized", { reason, avatarSpeaking: this.avatarSpeaking });
+    return this.bargeIn(reason);
+  }
+
+  bargeIn(reason = "user-barge-in") {
+    const wasSpeaking = this.avatarSpeaking;
+    this.record("conversation:barge-in", { reason, avatarSpeaking: wasSpeaking });
     try { this.session?.interrupt(); } catch { /* Aucune réponse Realtime à couper. */ }
     this.clearReplyTimer();
+    this.pendingSpeech = [];
     this.avatarSpeaking = false;
+    try { this.session?.startListening(); } catch { /* Le SDK peut déjà écouter. */ }
+    this.listening = true;
+    this.callbacks.onBargeIn?.({ reason, wasSpeaking });
+    this.emit("listening", "Je vous écoute");
     return true;
   }
 
@@ -287,8 +298,8 @@ export class InfoServ2ALiveAvatarProvider {
         kind = (await this.callbacks.classifyCommand(text)) || "chat";
       }
       if (kind !== "chat") {
-        this.cancelUnauthorizedReply("settled-site-command");
-        this.emit("thinking", "Je pilote le site InfoServ2A…");
+        this.realtimeSignal = "sync-site";
+        this.emit("thinking", "Je synchronise la page de droite…");
       } else {
         this.realtimeSignal = "natural-reply";
         this.emit("listening", "Claire vous répond…");
@@ -445,14 +456,16 @@ export class InfoServ2ALiveAvatarProvider {
     });
     session.on(AgentEventsEnum.USER_SPEAK_STARTED, () => {
       this.listening = true;
+      this.userSpeaking = true;
       this.userSpeakComplete = false;
       this.realtimeSignal = "input-detected";
       this.record("conversation:user-speak-started", { avatarSpeaking: this.avatarSpeaking });
       this.clearReplyTimer();
-      if (this.avatarSpeaking) this.cancelUnauthorizedReply("user-barge-in");
+      if (this.avatarSpeaking) this.bargeIn("user-barge-in");
       this.emit("listening", "Je vous écoute");
     });
     session.on(AgentEventsEnum.USER_SPEAK_ENDED, () => {
+      this.userSpeaking = false;
       this.userSpeakComplete = true;
       this.realtimeSignal = "input-ended";
       this.record("conversation:user-speak-ended");
@@ -464,6 +477,7 @@ export class InfoServ2ALiveAvatarProvider {
       if (!text) return;
       this.record("conversation:user-transcription", { characters: text.length });
       this.clearReplyTimer();
+      if (this.avatarSpeaking) this.bargeIn("user-barge-in");
       this.stageTranscript(text);
     });
     session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
@@ -472,7 +486,7 @@ export class InfoServ2ALiveAvatarProvider {
       this.record("conversation:avatar-speak-started");
       this.clearReplyTimer();
       this.callbacks.onAvatarSpeakStart?.();
-      this.emit(this.mediaAudible ? "speaking" : "sound", this.mediaAudible ? "Claire vous répond" : "Touchez Claire pour entendre sa réponse");
+      this.emit(this.mediaAudible ? "speaking" : "sound", this.mediaAudible ? "Parlez ou touchez pour m’interrompre" : "Touchez Claire pour entendre sa réponse");
     });
     session.on(AgentEventsEnum.AVATAR_TRANSCRIPTION, (event) => {
       const text = String(event?.text || "").trim();
@@ -534,6 +548,11 @@ export class InfoServ2ALiveAvatarProvider {
       await this.connect({ microphone: true });
       return this.listening;
     }
+    if (this.avatarSpeaking) {
+      this.bargeIn("mic-tap");
+      await this.ensureMicrophone();
+      return true;
+    }
     const chat = this.session?.voiceChat;
     if (!chat) return false;
     if (String(chat.state) === "INACTIVE" || chat.isMuted) return this.ensureMicrophone();
@@ -572,9 +591,7 @@ export class InfoServ2ALiveAvatarProvider {
   }
 
   interrupt() {
-    this.record("conversation:manual-interrupt");
-    try { this.session?.interrupt(); } catch { /* Aucune réponse en cours. */ }
-    this.emit(this.listening ? "listening" : "ready", this.listening ? "Je vous écoute" : "Prête à vous guider");
+    this.bargeIn("manual-interrupt");
   }
 
   async stop() {
@@ -587,6 +604,7 @@ export class InfoServ2ALiveAvatarProvider {
     this.clearTranscriptBuffer();
     this.commandInFlight = false;
     this.userSpeakComplete = false;
+    this.userSpeaking = false;
     this.avatarSpeaking = false;
   }
 
@@ -604,6 +622,7 @@ export class InfoServ2ALiveAvatarProvider {
       realtimeSignal: this.realtimeSignal,
       commandInFlight: this.commandInFlight,
       userSpeakComplete: this.userSpeakComplete,
+      userSpeaking: this.userSpeaking,
       avatarSpeaking: this.avatarSpeaking,
       listening: this.listening,
       connector: "OPENAI_REALTIME",

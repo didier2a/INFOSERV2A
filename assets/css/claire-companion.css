@@ -552,6 +552,9 @@ body.claire-is-guided {
   .claire-live-stage__caption { bottom: 4.6rem; }
   .claire-live-stage__controls { bottom: .7rem; }
   .claire-stage-control { display: none; }
+  .claire-live-stage[data-presence="speaking"] [data-claire-interrupt] {
+    display: inline-flex;
+  }
   .claire-dialogue {
     min-height: 0;
     padding: 1rem max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));

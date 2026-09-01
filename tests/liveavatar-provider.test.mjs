@@ -127,7 +127,6 @@ test("une transcription stabilisée déclenche une seule action et une seule ré
 
   const session = globalThis.__infoservFakeSession;
   assert.deepEqual(commands, ["ouvre la page vidéosurveillance"]);
-  assert.equal(session.interrupted, true);
   assert.equal(session.messages.length, 1);
   assert.match(session.messages[0], /^\[INFOSERV2A_APP_RESULT\]/);
 
@@ -161,7 +160,35 @@ test("une syllabe en cours n’envoie pas de commande avant la fin de phrase", a
   session.emit("user-speak-ended");
   await wait(600);
   assert.deepEqual(commands, ["montre moi la vidéosurveillance"]);
+  assert.equal(session.interrupted, undefined);
+
+  await provider.stop();
+});
+
+test("parler pendant que Claire s’exprime l’interrompt comme OpenAI Live", async () => {
+  const video = fakeVideo();
+  const barges = [];
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-barge" })
+  }).install({
+    video,
+    onBargeIn: (detail) => barges.push(detail.reason)
+  });
+
+  await provider.connect({ microphone: true });
+  const session = globalThis.__infoservFakeSession;
+  session.emit("avatar-speak-started");
+  assert.equal(provider.avatarSpeaking, true);
+  session.emit("user-speak-started");
   assert.equal(session.interrupted, true);
+  assert.equal(provider.avatarSpeaking, false);
+  assert.equal(provider.userSpeaking, true);
+  session.interrupted = false;
+  session.emit("avatar-speak-started");
+  session.emit("user-transcription", { text: "attends" });
+  assert.equal(session.interrupted, true);
+  assert.ok(barges.includes("user-barge-in"));
 
   await provider.stop();
 });
@@ -193,6 +220,27 @@ test("un aparté hors site laisse Realtime répondre sans couper", async () => {
 
   provider.sendContext("Page visible : Accueil InfoServ2A.");
   assert.match(session.messages.at(-1), /^\[INFOSERV2A_PAGE_CONTEXT\]/);
+
+  await provider.stop();
+});
+
+test("la transcription de Claire est transmise pour synchroniser la page de droite", async () => {
+  const spoken = [];
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-follow" })
+  }).install({
+    video,
+    onAvatarTranscript: (text) => spoken.push(text)
+  });
+
+  await provider.connect({ microphone: true });
+  const session = globalThis.__infoservFakeSession;
+  session.emit("avatar-speak-started");
+  session.emit("avatar-transcription", { text: "Voici l’onglet Vidéosurveillance" });
+  assert.deepEqual(spoken, ["Voici l’onglet Vidéosurveillance"]);
+  assert.equal(provider.avatarSpeaking, true);
 
   await provider.stop();
 });

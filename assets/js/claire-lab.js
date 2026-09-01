@@ -1,4 +1,5 @@
 import { ClaireRuntimeController } from "./claire-runtime-v2.mjs";
+import { followSpokenNavigation } from "./claire-core.mjs";
 import { InfoServ2ALabAdapter } from "./claire-site-adapter.mjs";
 
 const stateLabels = {
@@ -133,7 +134,7 @@ async function loadRuntime() {
     setState(event.state);
     appendEvent(event);
   });
-  return { controller, adapter };
+  return { controller, adapter, knowledge, manifest };
 }
 
 let runtime;
@@ -178,4 +179,49 @@ document.querySelectorAll("[data-lab-command]").forEach((button) => {
   button.addEventListener("click", () => void executeCommand(button.dataset.labCommand || ""));
 });
 
+document.querySelectorAll("[data-lab-follow]").forEach((button) => {
+  button.addEventListener("click", () => void followSpeech(button.dataset.labFollow || ""));
+});
+
 elements.reset.addEventListener("click", () => location.reload());
+
+async function followSpeech(text) {
+  if (!runtime || !text.trim()) return;
+  elements.submit.disabled = true;
+  addTurn("claire", text.trim());
+  try {
+    const snapshot = runtime.adapter.snapshot();
+    const target = followSpokenNavigation(text, runtime.knowledge, {
+      pageId: snapshot.activePage,
+      sectionId: snapshot.activeSection
+    });
+    if (!target) {
+      elements.verification.textContent = "Aucun onglet à suivre";
+      renderPreview(snapshot, { ok: true, reason: "Parole hors navigation" });
+      return;
+    }
+    const results = [];
+    if (target.pageId !== snapshot.activePage) {
+      results.push({ tool: "open_service", output: await runtime.adapter.execute("open_service", { service: target.pageId }) });
+    }
+    if (target.anchorId) {
+      results.push({ tool: "scroll_to", output: await runtime.adapter.execute("scroll_to", { target: target.anchorId }) });
+    }
+    renderPlan({
+      steps: results.map((result) => ({
+        tool: result.tool,
+        reason: "Synchroniser la page de droite avec la parole de Claire.",
+        args: result.tool === "open_service" ? { service: target.pageId } : { target: target.anchorId }
+      }))
+    });
+    const next = runtime.adapter.snapshot();
+    renderPreview(next, { ok: true, pageId: next.activePage, anchorId: next.activeSection });
+    elements.verification.textContent = "Synchronisé";
+  } catch (error) {
+    elements.verification.textContent = "Échec";
+    elements.verification.classList.add("lab-pill--error");
+    addTurn("claire", "Je n’ai pas pu suivre la parole : " + error.message);
+  } finally {
+    elements.submit.disabled = false;
+  }
+}

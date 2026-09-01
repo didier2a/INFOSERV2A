@@ -3,6 +3,7 @@ import {
   currentPage,
   describePageContext,
   buildSiteBriefing,
+  followSpokenNavigation,
   mergeSpokenTranscript,
   suggestedPrompts
 } from "./claire-core.mjs";
@@ -16,14 +17,15 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-aidant8";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-aidant8";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-aidant9";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-aidant9";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
+const SPEECH_FOLLOW_MS = 280;
 const LIVEAVATAR_CLOUD_FALLBACKS = [
   "https://infoserv2a.infoserv2a.workers.dev",
   "https://cursor-live-avatar-aidant-8f54-infoserv2a.infoserv2a.workers.dev"
 ];
-const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique et aidante Live Avatar. InfoServ2A, à Porto-Vecchio, vous accompagne en vidéosurveillance, sites web, cybersécurité, maintenance et récupération de données. Vous pouvez me parler de n’importe quel sujet, comme avec OpenAI Live, et je connais tous les onglets du site pour les parcourir avec vous. Vous pouvez revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
+const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique et aidante Live Avatar. InfoServ2A, à Porto-Vecchio, vous accompagne en vidéosurveillance, sites web, cybersécurité, maintenance et récupération de données. Vous pouvez me parler de n’importe quel sujet, comme avec OpenAI Live, m’interrompre à tout moment, et je connais tous les onglets du site pour les parcourir avec vous. Vous pouvez revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
 
 const FALLBACK_KNOWLEDGE = {
   suggestions: ["Vidéosurveillance", "Création de site web", "Dépannage informatique"],
@@ -209,6 +211,10 @@ export class ClaireCompanion {
     this.lastVoiceCommandAt = 0;
     this.welcomeShown = false;
     this.welcomeFallbackTimer = 0;
+    this.avatarSpoken = "";
+    this.followTimer = 0;
+    this.followInFlight = false;
+    this.lastFollowKey = "";
     this.nodes = {};
     this.provider = null;
     this.providerReadyPromise = null;
@@ -292,6 +298,8 @@ export class ClaireCompanion {
       adapter: this.siteAdapter,
       registerProvider: (provider) => this.registerProvider(provider),
       route: (command) => this.submit(command, "api"),
+      followSpeech: (text) => this.syncSiteToSpeech(text),
+      interrupt: () => this.interrupt(),
       manual: () => this.enterManualMode(),
       recall: () => this.recall(),
       guided: () => this.enterGuidedMode(),
@@ -323,6 +331,7 @@ export class ClaireCompanion {
       input: find("#claireCommand"),
       mic: find("[data-claire-mic]"),
       micLabels: [...this.root.querySelectorAll("[data-claire-mic-label]")],
+      interrupt: find("[data-claire-interrupt]"),
       status: find("[data-claire-status]"),
       engineStatus: find("[data-claire-engine-status]"),
       retry: find("[data-claire-retry]"),
@@ -338,6 +347,10 @@ export class ClaireCompanion {
     this.root.querySelectorAll("[data-claire-guided]").forEach((button) => button.addEventListener("click", () => this.enterGuidedMode()));
     this.root.querySelectorAll("[data-claire-expand]").forEach((button) => button.addEventListener("click", () => void this.openConversation()));
     this.nodes.retry?.addEventListener("click", () => void this.retryLiveAvatar());
+    this.nodes.interrupt?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      this.interrupt();
+    });
     this.nodes.form?.addEventListener("submit", (event) => {
       event.preventDefault();
       const value = this.nodes.input.value.trim();
@@ -348,6 +361,10 @@ export class ClaireCompanion {
     this.nodes.mic?.addEventListener("click", () => void this.toggleMicrophone());
     this.nodes.stage?.addEventListener("click", (event) => {
       if (event.target?.closest?.("button, a, input")) return;
+      if (this.provider?.avatarSpeaking) {
+        this.interrupt();
+        return;
+      }
       void this.provider?.resumeMedia?.();
     });
     this.nodes.resultLink?.addEventListener("click", () => storageSet(STORAGE_MODE, "guided"));
@@ -361,6 +378,10 @@ export class ClaireCompanion {
     });
     document.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
+      if (this.provider?.avatarSpeaking) {
+        this.interrupt();
+        return;
+      }
       if (["arrival", "shared", "action", "guided"].includes(this.state)) this.enterManualMode();
     });
   }
@@ -388,6 +409,7 @@ export class ClaireCompanion {
       this.nodes.mic.setAttribute("aria-label", listening ? "Arrêter le microphone" : "Activer le microphone");
     }
     this.nodes.micLabels?.forEach((node) => { node.textContent = value === "listening" ? "Je vous écoute" : "Parler à Claire"; });
+    if (this.nodes.interrupt) this.nodes.interrupt.hidden = value !== "speaking";
     if (this.nodes.stage) this.nodes.stage.dataset.presence = value;
     this.root.dataset.presence = value;
   }
@@ -559,8 +581,21 @@ export class ClaireCompanion {
         root: this.root,
         video: this.nodes.video,
         onTranscript: (text, final = true) => this.handleTranscript(text, final),
-        onAvatarTranscript: (text) => this.appendLiveCompanion(text),
-        onAvatarSpeakEnd: () => this.finalizeLiveCompanionTurn(),
+        onAvatarTranscript: (text) => {
+          this.appendLiveCompanion(text);
+          this.queueSpeechFollow(text);
+        },
+        onAvatarSpeakStart: () => {
+          this.clearSpeechFollow({ keepLastPage: false });
+        },
+        onAvatarSpeakEnd: () => {
+          this.finalizeLiveCompanionTurn();
+          if (this.lastFollowKey) this.pushPageContext();
+        },
+        onBargeIn: () => {
+          this.clearSpeechFollow({ keepLastPage: false });
+          this.finalizeLiveCompanionTurn();
+        },
         onStatus: (value, label) => this.setStatus(value, label),
         classifyCommand: (text) => classifyUtterance(text, this.knowledge, { pathname: location.pathname }).kind,
         onCommand: (text) => this.submit(text, "liveavatar")
@@ -693,8 +728,10 @@ export class ClaireCompanion {
       const snapshot = this.siteAdapter?.snapshot() || {};
       const speech = classified.route.speech || describePageContext(snapshot);
       this.pushPageContext(snapshot);
-      if (source !== "liveavatar") this.appendTurn("companion", speech);
-      this.speak(speech);
+      if (source !== "liveavatar") {
+        this.appendTurn("companion", speech);
+        this.speak(speech);
+      }
       this.setStatus("ready", "Contexte de page partagé");
       return { kind: "page", classified };
     }
@@ -736,6 +773,10 @@ export class ClaireCompanion {
         this.renderSuggestions();
       }
       this.setStatus("ready", "Page affichée · Claire vous l’explique");
+      if (source === "liveavatar") {
+        if (!this.provider?.avatarSpeaking) this.pushPageContext();
+        return outcome;
+      }
       if (source !== "liveavatar") this.appendTurn("companion", response);
       this.speak(response);
       this.pushPageContext();
@@ -780,14 +821,21 @@ export class ClaireCompanion {
     });
   }
 
-  async navigateInternal(href, { historyMode = "push", announce = true } = {}) {
+  async navigateInternal(href, { historyMode = "push", announce = true, silent = false } = {}) {
     if (!this.siteAdapter) return false;
     try {
-      this.setStatus("thinking", "Navigation contrôlée en cours…");
+      if (!silent) this.setStatus("thinking", "Navigation contrôlée en cours…");
       const snapshot = await this.siteAdapter.navigateHref(href, { historyMode });
       storageSet(STORAGE_MODE, "guided");
       this.setState("guided");
       this.renderSuggestions();
+      if (silent) {
+        this.setStatus(
+          this.provider?.avatarSpeaking ? "speaking" : "ready",
+          this.provider?.avatarSpeaking ? "Parlez ou touchez pour m’interrompre" : "Page synchronisée avec Claire"
+        );
+        return snapshot;
+      }
       this.setStatus("ready", "Page affichée · Claire vous l’explique");
       if (announce && snapshot.page) {
         const text = this.verifiedSpeechFor({ plan: { response: snapshot.page.summary } });
@@ -797,11 +845,60 @@ export class ClaireCompanion {
       } else {
         this.pushPageContext(snapshot);
       }
-      return true;
+      return snapshot;
     } catch (error) {
       this.setStatus("error", "Ce lien ne peut pas être ouvert par Claire");
       this.nodes.live.textContent = String(error?.message || error);
       return false;
+    }
+  }
+
+  clearSpeechFollow({ keepLastPage = false } = {}) {
+    clearTimeout(this.followTimer);
+    this.followTimer = 0;
+    this.avatarSpoken = "";
+    if (!keepLastPage) this.lastFollowKey = "";
+  }
+
+  queueSpeechFollow(text) {
+    this.avatarSpoken = mergeSpokenTranscript(this.avatarSpoken, text);
+    clearTimeout(this.followTimer);
+    this.followTimer = setTimeout(() => void this.syncSiteToSpeech(), SPEECH_FOLLOW_MS);
+  }
+
+  async syncSiteToSpeech(forcedText = "") {
+    if (forcedText) this.avatarSpoken = String(forcedText);
+    if (this.followInFlight || this.state === "manual" || this.runtime?.activeCommandId) return null;
+    if (this.provider?.userSpeaking && !forcedText) return null;
+    const snapshot = this.siteAdapter?.snapshot() || {};
+    const target = followSpokenNavigation(this.avatarSpoken, this.knowledge, {
+      pathname: this.surface?.window?.location?.pathname || location.pathname,
+      pageId: snapshot.activePage || snapshot.page?.id,
+      sectionId: snapshot.activeSection || snapshot.section?.id
+    });
+    if (!target) return null;
+    const key = `${target.pageId}#${target.anchorId || ""}`;
+    if (key === this.lastFollowKey) return null;
+    this.followInFlight = true;
+    try {
+      const href = `${target.page.href}${target.anchorId ? `#${target.anchorId}` : ""}`;
+      const next = await this.navigateInternal(href, {
+        historyMode: this.lastFollowKey ? "replace" : "push",
+        announce: false,
+        silent: true
+      });
+      if (!next) return null;
+      this.lastFollowKey = key;
+      this.showResult({
+        type: "navigate",
+        page: target.page,
+        href,
+        label: target.anchor?.label || target.page.title,
+        speech: ""
+      });
+      return target;
+    } finally {
+      this.followInFlight = false;
     }
   }
 
@@ -882,8 +979,10 @@ export class ClaireCompanion {
   }
 
   interrupt() {
+    this.clearSpeechFollow({ keepLastPage: false });
     if (this.provider?.interrupt) this.provider.interrupt();
     this.browserVoice.interrupt();
+    this.setStatus("listening", "Je vous écoute");
   }
 
   highlightRequestedSection() {

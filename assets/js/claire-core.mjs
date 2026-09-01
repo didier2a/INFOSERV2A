@@ -246,11 +246,15 @@ export function buildClaireContextPrompt(knowledge) {
 
 Tu es une interlocutrice GÉNÉRALISTE, comme OpenAI Live. LiveAvatar est relié à OpenAI Realtime : tu peux dialoguer sur n'importe quel sujet, indépendamment du site, tout en connaissant le contexte général d'InfoServ2A et l'onglet visible.
 
+Tu peux être interrompue à tout moment : dès que le visiteur parle ou te touche, tu t'arrêtes, tu écoutes, puis tu reprends naturellement.
+
 ${buildSiteBriefing(knowledge)}
 
 Lorsque la demande est une conversation (question générale, aparté, explication sans demander d'ouvrir une page), réponds tout de suite, naturellement, en français, sans attendre un résultat d'application.
 
-Lorsque la demande est une action de navigation (ouvrir un onglet, section suivante, devis, contact), ne parle pas tout de suite. L'application exécute d'abord l'action puis t'envoie un message commençant par [INFOSERV2A_APP_RESULT]. Reformule uniquement ce résultat en une ou deux phrases, sans mentionner le marqueur. N'ajoute aucun fait absent du résultat.
+Lorsque tu présentes un service InfoServ2A, nomme clairement un seul onglet, puis éventuellement une section, pour que la page de droite suive ta parole. Ne récite pas tous les onglets d'un seul trait si tu veux les montrer.
+
+Tu peux parler pendant que le site se synchronise. Si tu reçois [INFOSERV2A_APP_RESULT], reformule uniquement ce résultat en une ou deux phrases, sans mentionner le marqueur. N'ajoute aucun fait absent du résultat.
 
 Lorsque tu reçois [INFOSERV2A_SITE_BRIEFING], mémorise le catalogue des onglets. N'y réponds pas.
 Lorsque tu reçois [INFOSERV2A_PAGE_CONTEXT], mémorise la page et la section visibles. N'y réponds pas. Utilise ce contexte pour tes réponses suivantes.
@@ -262,6 +266,54 @@ L'application InfoServ2A est la seule source de vérité pour les services, coor
 export function catalogSpeech(knowledge) {
   const titles = (knowledge.pages || []).map((page) => page.title);
   return `Le site compte ${titles.length} onglets : ${titles.join(", ")}. Je peux les parcourir un par un ou ouvrir celui que vous nommez.`;
+}
+
+export function lastSpeechWindow(text, maxChars = 240) {
+  const clean = String(text || "").replace(/\s+/g, " ").trim();
+  if (clean.length <= maxChars) return clean;
+  const slice = clean.slice(-maxChars);
+  const boundary = slice.search(/[.!?…]\s+/);
+  return boundary >= 0 && boundary < 80 ? slice.slice(boundary + 1).trim() : slice.trim();
+}
+
+export function followSpokenNavigation(text, knowledge, context = {}) {
+  const full = String(text || "").replace(/\s+/g, " ").trim();
+  if (full.length < 16) return null;
+  const titlesHit = (knowledge.pages || []).filter((page) => {
+    const title = normalizeText(page.title);
+    return title.length > 5 && normalizeText(full).includes(title);
+  });
+  if (titlesHit.length >= 3) return null;
+
+  const window = lastSpeechWindow(full);
+  const route = routeCommand(window, knowledge, context);
+  if (!route?.page || ["unknown", "empty", "catalog", "manual", "recall", "action"].includes(route.type)) {
+    return null;
+  }
+
+  const query = normalizeText(window);
+  const titleTokens = normalizeText(route.page.title).split(" ").filter((token) => token.length > 4);
+  const titleHit = titleTokens.some((token) => query.includes(token));
+  const named = titleHit || titlesHit.some((page) => page.id === route.page.id);
+  const cue = /\b(voici|voila|onglet|rubrique|cette page|cette section|a droite|ci-contre|je vous montre|regardons|on voit|cette offre|solutions sans fibre|audit nis|hebergement)\b/.test(query);
+  if (!cue && !named && !isIsolatedSiteRequest(window) && !isWebSiteRequest(window)) {
+    return null;
+  }
+  if (route.page.id === "home" && !/\baccueil\b/.test(query)) return null;
+
+  const currentPageId = context.pageId || currentPage(knowledge, context.pathname || "/")?.id || null;
+  const currentAnchor = context.sectionId || null;
+  const nextAnchor = route.anchor?.id || null;
+  if (route.page.id === currentPageId && nextAnchor === currentAnchor) return null;
+  if (route.page.id === currentPageId && !nextAnchor) return null;
+
+  return {
+    pageId: route.page.id,
+    anchorId: nextAnchor,
+    href: route.href,
+    page: route.page,
+    anchor: route.anchor || null
+  };
 }
 
 export function mergeSpokenTranscript(previous, next) {

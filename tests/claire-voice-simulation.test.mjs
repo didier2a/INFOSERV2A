@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { classifyUtterance, mergeSpokenTranscript, routeCommand } from "../assets/js/claire-core.mjs";
+import { classifyUtterance, followSpokenNavigation, mergeSpokenTranscript, routeCommand } from "../assets/js/claire-core.mjs";
 import { ClaireRuntimeController, planCommand } from "../assets/js/claire-runtime-v2.mjs";
 import { InfoServ2ASiteAdapter } from "../assets/js/claire-site-runtime-adapter.mjs";
 
@@ -124,6 +124,40 @@ test("simulation vocale : un aparté ou un sujet général ne déclenche pas de 
   for (const scene of SPOKEN_SCENES) {
     assert.equal(classifyUtterance(scene.heard, knowledge).kind, "site", scene.heard);
   }
+});
+
+test("simulation vocale : la parole de Claire ouvre l’onglet lu à droite", async () => {
+  const surface = new MockPersistentSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const chunks = [
+    "Voici",
+    "Voici l’onglet Vidéosurveillance",
+    "Voici l’onglet Vidéosurveillance et les solutions sans fibre."
+  ];
+  let spoken = "";
+  let context = { pageId: "home", sectionId: null };
+  let last = null;
+  for (const chunk of chunks) {
+    spoken = mergeSpokenTranscript(spoken, chunk);
+    const target = followSpokenNavigation(spoken, knowledge, context);
+    if (!target) continue;
+    last = target;
+    if (target.pageId !== context.pageId) {
+      await adapter.execute("open_service", { service: target.pageId });
+    }
+    if (target.anchorId) {
+      await adapter.execute("scroll_to", { target: target.anchorId });
+    }
+    context = { pageId: target.pageId, sectionId: target.anchorId };
+  }
+  assert.equal(last.pageId, "videosurveillance");
+  assert.equal(last.anchorId, "solutions-sans-fibre");
+  assert.equal(adapter.snapshot().activePage, "videosurveillance");
+  assert.equal(adapter.snapshot().activeSection, "solutions-sans-fibre");
+  assert.equal(
+    followSpokenNavigation("Je comprends, votre disque dur n’est plus accessible.", knowledge, { pageId: "home" }),
+    null
+  );
 });
 
 test("simulation vocale : l’onglet suivant parcourt le catalogue", async () => {

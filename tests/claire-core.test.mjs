@@ -9,6 +9,7 @@ import {
   classifyUtterance,
   currentPage,
   describePageContext,
+  followSpokenNavigation,
   mergeSpokenTranscript,
   normalizeText,
   pageHrefForSession,
@@ -141,6 +142,31 @@ test("une question sur la page courante partage le contexte sans changer de rubr
   }), /Création de sites web/);
 });
 
+test("la parole de Claire synchronise l’onglet et la section visibles", () => {
+  const first = followSpokenNavigation(
+    "Voici l’onglet Vidéosurveillance et les solutions sans fibre.",
+    knowledge,
+    { pageId: "home" }
+  );
+  assert.equal(first.pageId, "videosurveillance");
+  assert.equal(first.anchorId, "solutions-sans-fibre");
+  const same = followSpokenNavigation(
+    "Voici l’onglet Vidéosurveillance et les solutions sans fibre.",
+    knowledge,
+    { pageId: "videosurveillance", sectionId: "solutions-sans-fibre" }
+  );
+  assert.equal(same, null);
+  assert.equal(followSpokenNavigation("Quelle est la capitale de la France ?", knowledge), null);
+  assert.equal(
+    followSpokenNavigation("Je comprends, votre disque dur n’est plus accessible.", knowledge, { pageId: "home" }),
+    null
+  );
+  assert.equal(followSpokenNavigation(
+    "Le site compte 13 onglets : Accueil InfoServ2A, Vidéosurveillance, Création de sites web, Cybersécurité et intelligence artificielle.",
+    knowledge
+  ), null);
+});
+
 test("le briefing site contient tous les onglets et le prompt généraliste", () => {
   const briefing = buildSiteBriefing(knowledge);
   const prompt = buildClaireContextPrompt(knowledge);
@@ -151,6 +177,7 @@ test("le briefing site contient tous les onglets et le prompt généraliste", ()
   assert.match(briefing, /OpenAI Live/);
   assert.match(prompt, /interlocutrice GÉNÉRALISTE/);
   assert.match(prompt, /INFOSERV2A_SITE_BRIEFING/);
+  assert.match(prompt, /être interrompue/);
   assert.equal(adjacentPage(knowledge, "home", 1).id, "videosurveillance");
   assert.equal(adjacentPage(knowledge, knowledge.pages.at(-1).id, 1).id, "home");
 });

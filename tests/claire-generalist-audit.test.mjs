@@ -35,11 +35,12 @@ test("audit : Claire est généraliste par défaut, comme OpenAI Live", () => {
   assert.match(prompt, /interlocutrice GÉNÉRALISTE/);
   assert.match(prompt, /OpenAI Live/);
   assert.match(prompt, /indépendamment du site/);
+  assert.match(prompt, /être interrompue/);
   assert.equal(classifyUtterance("Bonjour", knowledge).kind, "chat");
   assert.equal(classifyUtterance("Quelle est la capitale de l’Italie ?", knowledge).kind, "chat");
   assert.equal(planCommand("Raconte-moi une blague", knowledge, manifest).mode, "chat");
   assert.match(providerSource, /let kind = "chat"/);
-  assert.match(sessionSource, /InfoServ2A Claire Aidant 1\.6/);
+  assert.match(sessionSource, /InfoServ2A Claire Aidant 1\.7/);
 });
 
 test("audit : le catalogue site est injecté et chaque onglet est connu", () => {
@@ -74,4 +75,14 @@ test("audit : une intention de service continue d’agir sans soumettre de formu
   assert.ok(quote.steps.some((step) => step.tool === "prefill_quote"));
   assert.equal(manifest.guardrails.allowFormSubmission, false);
   assert.equal(manifest.guardrails.allowDirectDomFromModel, false);
+});
+
+test("audit : l’interruption et le suivi de parole sont branchés", () => {
+  assert.match(providerSource, /async bargeIn|bargeIn\(reason/);
+  assert.match(providerSource, /session\?\.interrupt\(\)/);
+  assert.match(providerSource, /if \(this\.avatarSpeaking\) this\.bargeIn\("user-barge-in"\)/);
+  assert.match(companionSource, /followSpokenNavigation/);
+  assert.match(companionSource, /queueSpeechFollow/);
+  assert.match(companionSource, /provider\?\.userSpeaking/);
+  assert.doesNotMatch(companionSource, /listening && !this\.provider\.avatarSpeaking/);
 });
