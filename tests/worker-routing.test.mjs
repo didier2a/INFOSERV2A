@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import worker from "../src/worker.js";
@@ -75,4 +76,12 @@ test("la route de session échoue proprement sans secret Cloudflare", async () =
   const response = await worker.fetch(request, env());
   assert.equal(response.status, 503);
   assert.equal((await response.json()).error, "LiveAvatar non configuré");
+});
+
+test("le Worker n’attache pas encore infoserv2a.pro pour ne pas voler le domaine depuis une preview", async () => {
+  const source = await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8");
+  const uncommented = source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+  assert.doesNotMatch(uncommented, /custom_domain/);
+  assert.doesNotMatch(uncommented, /infoserv2a\.pro/);
+  assert.match(source, /docs\/activer-claire-sur-infoserv2a-pro\.md/);
 });

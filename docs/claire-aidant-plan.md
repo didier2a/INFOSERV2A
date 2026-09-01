@@ -121,4 +121,4 @@ Cahier des charges énoncé : Claire n’est pas limitée au site ; LiveAvatar e
 | Demandes de service encore actionnables | **Conforme** | Verbe d’ouverture, site isolé / sans internet, création de site, devis, contact, appel/e-mail, catalogue, onglet suivant. |
 | Garde-fous inchangés | **Conforme** | Pas de DOM depuis le modèle, pas de soumission de formulaire, une commande à la fois, mode manuel, session persistante `#contenu`. |
 
-Hors périmètre inchangé : `infoserv2a.pro` est encore servi par GitHub Pages, donc `/api/liveavatar-session` y reste absent jusqu’au bascule DNS Cloudflare. La prévisualisation Workers de cette branche porte les secrets.
+Hors périmètre DNS : `infoserv2a.pro` est encore servi par GitHub Pages (NS OVH → IPs `185.199.x.x`). `/api/liveavatar-session` y répond 404. La prévisualisation Workers de cette branche porte les secrets. Procédure de bascule, inventaire MX/SPF et custom domain : `docs/activer-claire-sur-infoserv2a-pro.md`.

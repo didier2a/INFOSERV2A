@@ -14,4 +14,12 @@
       "/claire-aidant-figma/"
     ]
   }
+  // Domaines personnalisés : NE PAS activer ici tant que la zone infoserv2a.pro
+  // n’est pas Active dans Cloudflare. Un custom_domain sur cette config serait
+  // aussi déployé sur les previews de branche et volerait le domaine public.
+  // Procédure : docs/activer-claire-sur-infoserv2a-pro.md étape B4.
+  // "routes": [
+  //   { "pattern": "infoserv2a.pro", "custom_domain": true },
+  //   { "pattern": "www.infoserv2a.pro", "custom_domain": true }
+  // ]
 }
