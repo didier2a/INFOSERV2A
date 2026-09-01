@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-it2)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-it2)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-it3)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-it3)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -236,15 +236,13 @@ test("la conversation guidée reste un dock en bas, sans recouvrir Claire", asyn
   const css = await readFile(path.join(ROOT, "assets/css/claire-companion.css"), "utf8");
   const desktop = css.split("@media (max-width: 820px)")[0];
   const mobile = css.split("@media (max-width: 820px)")[1].split("@media")[0];
-  assert.match(desktop, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*position: fixed/);
-  assert.match(desktop, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*max-height: 64px/);
+  assert.match(desktop, /\[data-state="guided"\] \.claire-dialogue \{\s*display: none;/);
+  assert.match(desktop, /\[data-transcript="open"\] \.claire-dialogue \{[\s\S]*position: fixed/);
   assert.match(desktop, /left: calc\(var\(--claire-stage-width\) \+ 0\.75rem\)/);
   assert.doesNotMatch(desktop, /max-height: min\(38vh, 340px\)/);
-  assert.doesNotMatch(desktop, /\[data-state="guided"\] \.claire-dialogue \{ display: none; \}/);
-  assert.match(mobile, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*position: fixed/);
-  assert.match(mobile, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*max-height: 60px/);
+  assert.match(mobile, /\[data-state="guided"\] \.claire-dialogue \{\s*display: none;/);
+  assert.match(mobile, /\[data-transcript="open"\] \.claire-dialogue \{[\s\S]*position: fixed/);
   assert.doesNotMatch(mobile, /max-height: min\(32vh, 210px\)/);
-  assert.doesNotMatch(mobile, /\[data-state="guided"\] \.claire-dialogue \{ display: none; \}/);
   assert.match(mobile, /scroll-padding-top/);
   assert.match(mobile, /scroll-margin-top/);
   assert.match(mobile, /--claire-vvh/);

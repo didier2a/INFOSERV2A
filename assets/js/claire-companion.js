@@ -19,8 +19,8 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it2";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it2";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it3";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it3";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 280;
 const LIVEAVATAR_CLOUD_FALLBACKS = [
