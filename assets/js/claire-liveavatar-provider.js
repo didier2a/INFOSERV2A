@@ -173,9 +173,17 @@ export class InfoServ2ALiveAvatarProvider {
     return true;
   }
 
+  sendBriefing(value) {
+    if (!this.session) return false;
+    const prompt = `[INFOSERV2A_SITE_BRIEFING]\n${value}\nN’y réponds pas. Mémorise le catalogue des onglets. Tu restes généraliste, comme OpenAI Live.`;
+    this.record("conversation:site-briefing-sent", { characters: String(value).length });
+    this.session.message(prompt);
+    return true;
+  }
+
   sendContext(value) {
     if (!this.session) return false;
-    const prompt = `[INFOSERV2A_PAGE_CONTEXT]\n${value}\nN’y réponds pas. Mémorise seulement la page et la section visibles.`;
+    const prompt = `[INFOSERV2A_PAGE_CONTEXT]\n${value}\nN’y réponds pas. Mémorise seulement l’onglet et la section visibles.`;
     this.record("conversation:page-context-sent", { characters: String(value).length });
     this.session.message(prompt);
     return true;
@@ -184,7 +192,7 @@ export class InfoServ2ALiveAvatarProvider {
   sendUserMessage(value) {
     const text = String(value || "").trim();
     if (!this.session || !text) return false;
-    const prompt = `[INFOSERV2A_USER_TEXT]\n${text}\nRéponds naturellement, en tenant compte du contexte de page mémorisé.`;
+    const prompt = `[INFOSERV2A_USER_TEXT]\n${text}\nRéponds naturellement, en tenant compte du catalogue InfoServ2A et de l’onglet visible.`;
     this.record("conversation:user-text-sent", { characters: text.length });
     this.session.message(prompt);
     this.armReplyTimer();
@@ -274,9 +282,9 @@ export class InfoServ2ALiveAvatarProvider {
     this.commandInFlight = true;
     this.realtimeSignal = "transcribed";
     try {
-      let kind = "site";
+      let kind = "chat";
       if (typeof this.callbacks.classifyCommand === "function") {
-        kind = (await this.callbacks.classifyCommand(text)) || "site";
+        kind = (await this.callbacks.classifyCommand(text)) || "chat";
       }
       if (kind !== "chat") {
         this.cancelUnauthorizedReply("settled-site-command");

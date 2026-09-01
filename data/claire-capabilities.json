@@ -1,7 +1,7 @@
 {
-  "schemaVersion": "1.0.0",
-  "runtimeVersion": "2.0.0-p1",
-  "mode": "controlled-site",
+  "schemaVersion": "1.1.0",
+  "runtimeVersion": "2.1.0-generalist",
+  "mode": "generalist-with-site-catalog",
   "site": "InfoServ2A",
   "knowledgeSource": "data/site-knowledge.json",
   "guardrails": {
@@ -10,7 +10,8 @@
     "allowDirectDomFromModel": false,
     "allowFormSubmission": false,
     "manualModeAlwaysAvailable": true,
-    "recordEveryTransition": true
+    "recordEveryTransition": true,
+    "defaultUtteranceKind": "chat"
   },
   "tools": [
     {
@@ -22,14 +23,14 @@
     },
     {
       "name": "open_service",
-      "description": "Affiche une page déclarée dans la surface persistante du site sans interrompre Claire.",
+      "description": "Ouvre un onglet déclaré dans la surface persistante sans interrompre Claire.",
       "sideEffect": "controlled-navigation",
       "confirmation": "never",
       "required": ["service"]
     },
     {
       "name": "scroll_to",
-      "description": "Positionne la surface persistante sur une ancre déclarée de la page active.",
+      "description": "Positionne la surface persistante sur une ancre déclarée de l’onglet actif.",
       "sideEffect": "controlled-scroll",
       "confirmation": "never",
       "required": ["target"]
@@ -47,6 +48,55 @@
       "sideEffect": "draft-only",
       "confirmation": "never",
       "required": ["description"]
+    },
+    {
+      "name": "list_catalog",
+      "description": "Énumère tous les onglets et sections du site sans changer de page.",
+      "sideEffect": "none",
+      "confirmation": "never",
+      "required": []
+    },
+    {
+      "name": "explain_page",
+      "description": "Décrit l’onglet et la section actuellement visibles, sans navigation.",
+      "sideEffect": "none",
+      "confirmation": "never",
+      "required": []
+    },
+    {
+      "name": "go_home",
+      "description": "Revient à l’onglet d’accueil InfoServ2A.",
+      "sideEffect": "controlled-navigation",
+      "confirmation": "never",
+      "required": []
+    },
+    {
+      "name": "next_page",
+      "description": "Ouvre l’onglet suivant du catalogue, dans l’ordre du site.",
+      "sideEffect": "controlled-navigation",
+      "confirmation": "never",
+      "required": []
+    },
+    {
+      "name": "prev_page",
+      "description": "Ouvre l’onglet précédent du catalogue, dans l’ordre du site.",
+      "sideEffect": "controlled-navigation",
+      "confirmation": "never",
+      "required": []
+    },
+    {
+      "name": "next_section",
+      "description": "Passe à la section suivante de l’onglet visible.",
+      "sideEffect": "controlled-scroll",
+      "confirmation": "never",
+      "required": []
+    },
+    {
+      "name": "prev_section",
+      "description": "Passe à la section précédente de l’onglet visible.",
+      "sideEffect": "controlled-scroll",
+      "confirmation": "never",
+      "required": []
     }
   ]
 }

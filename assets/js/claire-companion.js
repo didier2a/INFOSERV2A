@@ -2,6 +2,7 @@ import {
   classifyUtterance,
   currentPage,
   describePageContext,
+  buildSiteBriefing,
   mergeSpokenTranscript,
   suggestedPrompts
 } from "./claire-core.mjs";
@@ -15,14 +16,14 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-aidant7";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-aidant7";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-aidant8";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-aidant8";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const LIVEAVATAR_CLOUD_FALLBACKS = [
   "https://infoserv2a.infoserv2a.workers.dev",
   "https://cursor-live-avatar-aidant-8f54-infoserv2a.infoserv2a.workers.dev"
 ];
-const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique et aidante Live Avatar. InfoServ2A, à Porto-Vecchio, vous accompagne en vidéosurveillance, sites web, cybersécurité, maintenance et récupération de données. Vous pouvez me parler naturellement, même hors de ces sujets, et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
+const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique et aidante Live Avatar. InfoServ2A, à Porto-Vecchio, vous accompagne en vidéosurveillance, sites web, cybersécurité, maintenance et récupération de données. Vous pouvez me parler de n’importe quel sujet, comme avec OpenAI Live, et je connais tous les onglets du site pour les parcourir avec vous. Vous pouvez revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
 
 const FALLBACK_KNOWLEDGE = {
   suggestions: ["Vidéosurveillance", "Création de site web", "Dépannage informatique"],
@@ -53,21 +54,29 @@ const FALLBACK_KNOWLEDGE = {
 };
 
 const FALLBACK_CAPABILITIES = {
-  runtimeVersion: "2.0.0-p1",
-  mode: "controlled-site",
+  runtimeVersion: "2.1.0-generalist",
+  mode: "generalist-with-site-catalog",
   guardrails: {
     maxConcurrentCommands: 1,
     requireDeclaredTools: true,
     allowDirectDomFromModel: false,
     allowFormSubmission: false,
-    manualModeAlwaysAvailable: true
+    manualModeAlwaysAvailable: true,
+    defaultUtteranceKind: "chat"
   },
   tools: [
     { name: "search_site", required: ["query"] },
     { name: "open_service", required: ["service"] },
     { name: "scroll_to", required: ["target"] },
     { name: "open_contact", required: [] },
-    { name: "prefill_quote", required: ["description"] }
+    { name: "prefill_quote", required: ["description"] },
+    { name: "list_catalog", required: [] },
+    { name: "explain_page", required: [] },
+    { name: "go_home", required: [] },
+    { name: "next_page", required: [] },
+    { name: "prev_page", required: [] },
+    { name: "next_section", required: [] },
+    { name: "prev_section", required: [] }
   ]
 };
 
@@ -277,7 +286,7 @@ export class ClaireCompanion {
 
   exposeApi() {
     globalThis.InfoServClaire = {
-      version: "2.0.0-p1",
+      version: "2.1.0-generalist",
       companion: this,
       runtime: this.runtime,
       adapter: this.siteAdapter,
@@ -426,6 +435,7 @@ export class ClaireCompanion {
       try {
         await this.provider.connect({ microphone });
         this.setEngineStatus("liveavatar-realtime", "LiveAvatar · OpenAI Realtime · marin");
+        this.provider.sendBriefing?.(buildSiteBriefing(this.knowledge));
         this.pushPageContext();
         this.scheduleWelcomeTranscript(greeting);
       } catch {
@@ -704,7 +714,11 @@ export class ClaireCompanion {
     }
 
     try {
-      const outcome = await this.runtime.run(value, { pathname: this.surface?.window?.location?.pathname || location.pathname });
+      const outcome = await this.runtime.run(value, {
+        pathname: this.surface?.window?.location?.pathname || location.pathname,
+        pageId: this.siteAdapter?.view?.activePage,
+        sectionId: this.siteAdapter?.view?.activeSection
+      });
       globalThis.dispatchEvent(new CustomEvent("infoserv:claire-command", {
         detail: { command: value, source, outcome }
       }));
@@ -884,7 +898,7 @@ export class ClaireCompanion {
 
   diagnostic() {
     return {
-      version: "2.0.0-p1",
+      version: "2.1.0-generalist",
       state: this.state,
       provider: this.provider?.id || "browser-native-fallback",
       liveAvatarConfigured: Boolean(this.liveAvatarStatus?.configured),

@@ -1,4 +1,4 @@
-import { scorePage } from "./claire-core.mjs";
+import { adjacentPage, adjacentSection, catalogEntries, pageById, scorePage } from "./claire-core.mjs";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -69,6 +69,40 @@ export class InfoServ2ALabAdapter {
         };
         this.view.submitted = false;
         return { page: { id: page.id, title: page.title, href: page.href }, draft: clone(this.view.quoteDraft), submitted: false };
+      }
+      case "list_catalog": {
+        const pages = catalogEntries(this.knowledge);
+        this.view.catalog = pages;
+        return { pages: clone(pages) };
+      }
+      case "explain_page": {
+        const page = this.pageById(args.page) || this.pageById(this.view.activePage) || pageById(this.knowledge, "home");
+        if (!page) throw new Error("Aucun onglet à expliquer");
+        const section = page.anchors?.find((anchor) => anchor.id === this.view.activeSection) || null;
+        return { page: { id: page.id, title: page.title, href: page.href, summary: page.summary }, section: section ? clone(section) : null };
+      }
+      case "go_home": {
+        const page = this.pageById("home");
+        if (!page) throw new Error("Onglet d’accueil absent de l’index");
+        this.view.activePage = page.id;
+        this.view.activeSection = null;
+        return { page: { id: page.id, title: page.title, href: page.href, summary: page.summary } };
+      }
+      case "next_page":
+      case "prev_page": {
+        const page = adjacentPage(this.knowledge, this.view.activePage || "home", tool === "next_page" ? 1 : -1);
+        if (!page) throw new Error("Catalogue d’onglets vide");
+        this.view.activePage = page.id;
+        this.view.activeSection = null;
+        return { page: { id: page.id, title: page.title, href: page.href, summary: page.summary } };
+      }
+      case "next_section":
+      case "prev_section": {
+        const page = this.pageById(this.view.activePage);
+        const target = adjacentSection(page, this.view.activeSection, tool === "next_section" ? 1 : -1);
+        if (!target) return { page: page ? { id: page.id, title: page.title } : null, anchor: null, atEnd: true };
+        this.view.activeSection = target.id;
+        return { anchor: clone(target) };
       }
       default:
         throw new Error("Outil non implémenté : " + tool);

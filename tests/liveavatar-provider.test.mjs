@@ -114,6 +114,7 @@ test("une transcription stabilisée déclenche une seule action et une seule ré
     fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-command" })
   }).install({
     video,
+    classifyCommand: async () => "site",
     onCommand: async (text) => commands.push(text)
   });
 
@@ -145,6 +146,7 @@ test("une syllabe en cours n’envoie pas de commande avant la fin de phrase", a
     fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-phrase" })
   }).install({
     video,
+    classifyCommand: async () => "site",
     onCommand: async (text) => commands.push(text)
   });
 

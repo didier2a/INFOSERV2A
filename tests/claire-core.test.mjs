@@ -3,6 +3,9 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
+  adjacentPage,
+  buildClaireContextPrompt,
+  buildSiteBriefing,
   classifyUtterance,
   currentPage,
   describePageContext,
@@ -115,12 +118,17 @@ test("une salutations ou un hors-sujet reste une conversation naturelle", () => 
   assert.equal(classifyUtterance("Bonjour Claire, comment ça va ?", knowledge).kind, "chat");
   assert.equal(classifyUtterance("Raconte-moi une blague", knowledge).kind, "chat");
   assert.equal(classifyUtterance("Quelle heure est-il ?", knowledge).kind, "chat");
+  assert.equal(classifyUtterance("Quelle est la capitale de la France ?", knowledge).kind, "chat");
+  assert.equal(classifyUtterance("Mon disque dur n’est plus accessible", knowledge).kind, "chat");
+  assert.equal(classifyUtterance("Peux-tu améliorer mon Wi-Fi ?", knowledge).kind, "chat");
 });
 
 test("une demande de service continue de piloter le site", () => {
   assert.equal(classifyUtterance("Je n’ai pas internet, je veux une caméra", knowledge).kind, "site");
   assert.equal(classifyUtterance("Montre-moi la vidéosurveillance sans fibre", knowledge).kind, "site");
   assert.equal(classifyUtterance("Je voudrais un devis gratuit", knowledge).kind, "site");
+  assert.equal(classifyUtterance("Onglet suivant", knowledge).kind, "site");
+  assert.equal(classifyUtterance("Quels sont les onglets du site ?", knowledge).kind, "site");
 });
 
 test("une question sur la page courante partage le contexte sans changer de rubrique", () => {
@@ -131,4 +139,18 @@ test("une question sur la page courante partage le contexte sans changer de rubr
     page: classified.route.page,
     section: null
   }), /Création de sites web/);
+});
+
+test("le briefing site contient tous les onglets et le prompt généraliste", () => {
+  const briefing = buildSiteBriefing(knowledge);
+  const prompt = buildClaireContextPrompt(knowledge);
+  assert.equal(knowledge.pages.length, 13);
+  for (const page of knowledge.pages) {
+    assert.match(briefing, new RegExp(page.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.match(briefing, /OpenAI Live/);
+  assert.match(prompt, /interlocutrice GÉNÉRALISTE/);
+  assert.match(prompt, /INFOSERV2A_SITE_BRIEFING/);
+  assert.equal(adjacentPage(knowledge, "home", 1).id, "videosurveillance");
+  assert.equal(adjacentPage(knowledge, knowledge.pages.at(-1).id, 1).id, "home");
 });

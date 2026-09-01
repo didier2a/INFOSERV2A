@@ -1,4 +1,4 @@
-import { currentPage, scorePage } from "./claire-core.mjs";
+import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -285,6 +285,45 @@ export class InfoServ2ASiteAdapter {
         const form = this.surface.prefillQuote(this.view.quoteDraft);
         this.view.submitted = false;
         return { page: pageSummary(page), draft: clone(this.view.quoteDraft), form, submitted: false, persistentSession: true };
+      }
+      case "list_catalog": {
+        const pages = catalogEntries(this.knowledge);
+        this.view.catalog = pages;
+        return { pages: clone(pages), persistentSession: true };
+      }
+      case "explain_page": {
+        const page = this.pageById(args.page) || this.pageById(this.view.activePage) || pageById(this.knowledge, "home");
+        if (!page) throw new Error("Aucun onglet à expliquer");
+        const section = page.anchors?.find((anchor) => anchor.id === this.view.activeSection) || null;
+        return { page: pageSummary(page), section: section ? clone(section) : null, persistentSession: true };
+      }
+      case "go_home": {
+        const page = this.pageById("home");
+        if (!page) throw new Error("Onglet d’accueil absent de l’index");
+        if (this.view.activePage !== page.id) await this.surface.openPage(page);
+        this.view.activePage = page.id;
+        this.view.activeSection = null;
+        return { page: pageSummary(page), persistentSession: true };
+      }
+      case "next_page":
+      case "prev_page": {
+        const page = adjacentPage(this.knowledge, this.view.activePage || "home", tool === "next_page" ? 1 : -1);
+        if (!page) throw new Error("Catalogue d’onglets vide");
+        if (this.view.activePage !== page.id) await this.surface.openPage(page);
+        this.view.activePage = page.id;
+        this.view.activeSection = null;
+        return { page: pageSummary(page), persistentSession: true };
+      }
+      case "next_section":
+      case "prev_section": {
+        const page = this.pageById(this.view.activePage);
+        const target = adjacentSection(page, this.view.activeSection, tool === "next_section" ? 1 : -1);
+        if (!target) {
+          return { page: page ? pageSummary(page) : null, anchor: null, atEnd: true, persistentSession: true };
+        }
+        await this.surface.scrollTo(target.id);
+        this.view.activeSection = target.id;
+        return { anchor: clone(target), persistentSession: true };
       }
       default:
         throw new Error("Outil non implémenté : " + tool);

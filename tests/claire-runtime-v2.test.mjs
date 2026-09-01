@@ -16,15 +16,29 @@ const manifest = JSON.parse(
   await readFile(new URL("../data/claire-capabilities.json", import.meta.url), "utf8")
 );
 
-test("le manifeste P1 n’expose que les cinq outils déclarés", () => {
+test("le manifeste généraliste expose le catalogue d’onglets", () => {
   assert.deepEqual(
     manifest.tools.map((tool) => tool.name),
-    ["search_site", "open_service", "scroll_to", "open_contact", "prefill_quote"]
+    [
+      "search_site",
+      "open_service",
+      "scroll_to",
+      "open_contact",
+      "prefill_quote",
+      "list_catalog",
+      "explain_page",
+      "go_home",
+      "next_page",
+      "prev_page",
+      "next_section",
+      "prev_section"
+    ]
   );
-  assert.equal(manifest.runtimeVersion, "2.0.0-p1");
-  assert.equal(manifest.mode, "controlled-site");
+  assert.equal(manifest.runtimeVersion, "2.1.0-generalist");
+  assert.equal(manifest.mode, "generalist-with-site-catalog");
   assert.equal(manifest.guardrails.allowDirectDomFromModel, false);
   assert.equal(manifest.guardrails.allowFormSubmission, false);
+  assert.equal(manifest.guardrails.defaultUtteranceKind, "chat");
 });
 
 class MockPersistentSurface {
@@ -64,7 +78,7 @@ class MockPersistentSurface {
   }
 }
 
-test("une phrase parlée sans verbe d’ouverture pilote quand même la page", () => {
+test("une demande isolée sans fibre ouvre toujours la page, même sans verbe d’ouverture", () => {
   const plan = planCommand(
     "Je cherche une caméra pour un terrain sans internet.",
     knowledge,
@@ -76,6 +90,27 @@ test("une phrase parlée sans verbe d’ouverture pilote quand même la page", (
     plan.steps.map((step) => step.tool),
     ["search_site", "open_service", "scroll_to"]
   );
+});
+
+test("une conversation hors site ne planifie aucune navigation", () => {
+  const plan = planCommand("Quelle est la capitale de la France ?", knowledge, manifest);
+  assert.equal(plan.mode, "chat");
+  assert.deepEqual(plan.steps, []);
+  assert.equal(plan.expected, null);
+});
+
+test("le catalogue et l’onglet suivant sont des actions déclarées", async () => {
+  const catalog = planCommand("Quels sont les onglets du site ?", knowledge, manifest);
+  assert.equal(catalog.steps[0].tool, "list_catalog");
+  assert.equal(catalog.expected, null);
+
+  const surface = new MockPersistentSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const outcome = await controller.run("Onglet suivant.", { pageId: "home" });
+  assert.equal(outcome.plan.steps[0].tool, "next_page");
+  assert.equal(outcome.verification.pageId, "videosurveillance");
+  assert.equal(adapter.snapshot().activePage, "videosurveillance");
 });
 
 test("le scénario sans fibre produit le plan canonique exact", () => {

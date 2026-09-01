@@ -70,20 +70,18 @@ const SPOKEN_SCENES = [
     anchorId: "audit-nis2"
   },
   {
-    heard: "Mon disque dur n’est plus accessible.",
-    pageId: "data-recovery",
-    anchorId: "supports"
-  },
-  {
-    heard: "Peux-tu améliorer mon Wi-Fi ?",
-    pageId: "home-support",
-    anchorId: null
-  },
-  {
     heard: "Je voudrais un devis gratuit.",
     pageId: "quote",
     anchorId: null
   }
+];
+
+const GENERALIST_CHAT = [
+  "Bonjour, on peut parler d’autre chose ?",
+  "Quelle est la capitale de la France ?",
+  "Mon disque dur n’est plus accessible.",
+  "Peux-tu améliorer mon Wi-Fi ?",
+  "Raconte-moi une histoire."
 ];
 
 test("simulation vocale : chaque phrase parlée ouvre la bonne page du site", async () => {
@@ -116,9 +114,24 @@ test("simulation vocale : les sous-titres de Claire restent une seule réplique"
   assert.equal(spoken, "Voici les solutions 4G et solaires.");
 });
 
-test("simulation vocale : un aparté ne déclenche pas de navigation", () => {
-  assert.equal(classifyUtterance("Bonjour, on peut parler d’autre chose ?", knowledge).kind, "chat");
+test("simulation vocale : un aparté ou un sujet général ne déclenche pas de navigation", () => {
+  for (const heard of GENERALIST_CHAT) {
+    assert.equal(classifyUtterance(heard, knowledge).kind, "chat", heard);
+    const plan = planCommand(heard, knowledge, manifest);
+    assert.equal(plan.mode, "chat", heard);
+    assert.equal(plan.steps.length, 0, heard);
+  }
   for (const scene of SPOKEN_SCENES) {
     assert.equal(classifyUtterance(scene.heard, knowledge).kind, "site", scene.heard);
   }
+});
+
+test("simulation vocale : l’onglet suivant parcourt le catalogue", async () => {
+  const surface = new MockPersistentSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const first = await controller.run("Onglet suivant.", { pageId: "home" });
+  assert.equal(first.verification.pageId, "videosurveillance");
+  const second = await controller.run("Onglet suivant.", { pageId: "videosurveillance" });
+  assert.equal(second.verification.pageId, "web");
 });

@@ -1,24 +1,16 @@
 import { corsHeaders, corsPreflight, isAllowedOrigin } from "./liveavatar-origin.js";
+import { buildClaireContextPrompt } from "../../assets/js/claire-core.mjs";
+import knowledge from "../../data/site-knowledge.json" with { type: "json" };
 
 const TOKEN_URL = "https://api.liveavatar.com/v1/sessions/token";
 const SECRETS_URL = "https://api.liveavatar.com/v1/secrets";
 const CONTEXTS_URL = "https://api.liveavatar.com/v1/contexts";
 const DEFAULT_AVATAR_ID = "664ff8bb-4932-4644-91f8-b90975d6f549";
 const SECRET_NAME = "InfoServ2A OpenAI Realtime";
-const CONTEXT_NAME = "InfoServ2A Claire Aidant 1.5";
-const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique et aidante Live Avatar. InfoServ2A, à Porto-Vecchio, vous accompagne en vidéosurveillance, sites web, cybersécurité, maintenance et récupération de données. Vous pouvez me parler naturellement, même hors de ces sujets, et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
+const CONTEXT_NAME = "InfoServ2A Claire Aidant 1.6";
+const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique et aidante Live Avatar. InfoServ2A, à Porto-Vecchio, vous accompagne en vidéosurveillance, sites web, cybersécurité, maintenance et récupération de données. Vous pouvez me parler de n’importe quel sujet, comme avec OpenAI Live, et je connais tous les onglets du site pour les parcourir avec vous. Vous pouvez revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
 
-const CLAIRE_CONTEXT = `Tu incarnes Claire, l'aidante Live Avatar et la compagne numérique du site InfoServ2A. Tu es chaleureuse, précise, professionnelle et concise. Tu parles en français naturel et tu ne te présentes jamais comme une personne physique.
-
-Tu peux converser naturellement, y compris hors des services InfoServ2A : salutations, questions générales, apartés. Réponds alors brièvement, sans inventer de fait sur l'entreprise.
-
-Lorsque la demande concerne le site (afficher une page, un service, un devis, un contact, une section), ne parle pas tout de suite. L'application exécute d'abord l'action puis t'envoie un message commençant par [INFOSERV2A_APP_RESULT]. Reformule uniquement ce résultat en une ou deux phrases, sans mentionner le marqueur. N'ajoute aucun fait absent du résultat.
-
-Lorsque tu reçois [INFOSERV2A_PAGE_CONTEXT], mémorise la page et la section visibles. N'y réponds pas. Utilise ce contexte pour tes réponses suivantes.
-
-Lorsque tu reçois [INFOSERV2A_USER_TEXT], c'est un message tapé par le visiteur. Réponds naturellement en tenant compte du contexte de page mémorisé.
-
-L'application InfoServ2A est la seule source de vérité pour les services, coordonnées, horaires, pages et actions. L'utilisateur garde toujours accès au mode manuel. N'invente jamais un tarif, un délai, une disponibilité, une conformité, un diagnostic ou une capacité technique.`;
+const CLAIRE_CONTEXT = buildClaireContextPrompt(knowledge);
 
 function json(data, status = 200, request) {
   return Response.json(data, {

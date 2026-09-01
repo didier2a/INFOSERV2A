@@ -1,4 +1,12 @@
-import { normalizeText, routeCommand } from "./claire-core.mjs";
+import {
+  adjacentPage,
+  adjacentSection,
+  classifyUtterance,
+  catalogSpeech,
+  normalizeText,
+  pageById,
+  resolveCurrentPage
+} from "./claire-core.mjs";
 
 export const CONTROLLER_STATES = Object.freeze({
   READY: "ready",
@@ -41,13 +49,32 @@ function actionStep(tool, args, reason) {
   return { tool, args, reason };
 }
 
+function finishPlan({ command, route, steps, expected, mode, response }) {
+  return {
+    mode,
+    command,
+    normalizedCommand: normalizeText(command),
+    intent: route.type || mode,
+    steps,
+    expected,
+    response,
+    suggestions: route.suggestions || []
+  };
+}
+
 export function planCommand(input, knowledge, manifest, context = {}) {
   const command = String(input || "").trim();
   const routingCommand = command.replace(/[.!?…,:;]+$/u, "").trim();
-  const route = routeCommand(routingCommand, knowledge, context);
+  const classified = classifyUtterance(routingCommand, knowledge, context);
+  const route = classified.route || {};
   const steps = [];
+  const current = resolveCurrentPage(knowledge, context);
+  const toolMap = declaredTools(manifest);
+  const validate = () => {
+    steps.forEach((step) => validateToolCall(step, toolMap));
+  };
 
-  if (route.type === "manual") {
+  if (classified.kind === "control" && route.type === "manual") {
     return {
       mode: "manual",
       command,
@@ -58,6 +85,99 @@ export function planCommand(input, knowledge, manifest, context = {}) {
     };
   }
 
+  if (classified.kind === "chat") {
+    return finishPlan({
+      command,
+      route,
+      steps,
+      expected: null,
+      mode: "chat",
+      response: null
+    });
+  }
+
+  if (classified.kind === "page") {
+    steps.push(actionStep("explain_page", {
+      page: route.page?.id || current?.id || "home"
+    }, "Décrire l’onglet actuellement visible sans changer de page."));
+    validate();
+    return finishPlan({
+      command,
+      route,
+      steps,
+      expected: null,
+      mode: "page",
+      response: route.speech
+    });
+  }
+
+  if (route.type === "catalog" || route.action === "list_catalog") {
+    steps.push(actionStep("list_catalog", {}, "Énumérer tous les onglets du site."));
+    validate();
+    return finishPlan({
+      command,
+      route,
+      steps,
+      expected: null,
+      mode: "controlled",
+      response: route.speech || catalogSpeech(knowledge)
+    });
+  }
+
+  if (route.action === "next_page" || route.action === "prev_page") {
+    const direction = route.action === "next_page" ? 1 : -1;
+    const page = adjacentPage(knowledge, current?.id || "home", direction);
+    steps.push(actionStep(route.action, { from: current?.id || "home" }, "Parcourir le catalogue onglet par onglet."));
+    validate();
+    return finishPlan({
+      command,
+      route,
+      steps,
+      expected: page ? { pageId: page.id, anchorId: null } : null,
+      mode: "controlled",
+      response: page ? `Voici l’onglet « ${page.title} ». ${page.summary}` : route.speech
+    });
+  }
+
+  if (route.action === "next_section" || route.action === "prev_section") {
+    const direction = route.action === "next_section" ? 1 : -1;
+    const page = current || resolveCurrentPage(knowledge, { pathname: "/" });
+    const target = adjacentSection(page, context.sectionId || null, direction);
+    steps.push(actionStep(route.action, {
+      from: context.sectionId || null
+    }, "Parcourir les sections de l’onglet visible."));
+    validate();
+    return finishPlan({
+      command,
+      route,
+      steps,
+      expected: {
+        pageId: page?.id || current?.id || "home",
+        anchorId: target?.id || context.sectionId || null
+      },
+      mode: "controlled",
+      response: target
+        ? (target.response || `Voici la section « ${target.label} ».`)
+        : (direction > 0
+          ? "Vous êtes déjà à la dernière section de cet onglet."
+          : "Vous êtes déjà au début de cet onglet.")
+    });
+  }
+
+  if (route.action === "go_home") {
+    const home = route.page || pageById(knowledge, "home");
+    steps.push(actionStep("go_home", {}, "Revenir à l’onglet d’accueil."));
+    validate();
+    return finishPlan({
+      command,
+      route,
+      steps,
+      expected: { pageId: home?.id || "home", anchorId: null },
+      mode: "controlled",
+      response: home?.summary || route.speech
+    });
+  }
+
   if (route.type === "action" && (route.action === "call" || route.action === "email")) {
     steps.push(actionStep("open_contact", { channel: route.action }, "Présenter le canal demandé sans le déclencher."));
   } else if (route.page) {
@@ -65,7 +185,7 @@ export function planCommand(input, knowledge, manifest, context = {}) {
     if (route.page.id === "contact") {
       steps.push(actionStep("open_contact", { channel: "form" }, "Afficher les moyens de contact."));
     } else {
-      steps.push(actionStep("open_service", { service: route.page.id }, "Ouvrir la page dans l’aperçu contrôlé."));
+      steps.push(actionStep("open_service", { service: route.page.id }, "Ouvrir l’onglet dans l’aperçu contrôlé."));
     }
     if (route.page.id === "quote") {
       steps.push(actionStep("prefill_quote", {
@@ -78,8 +198,7 @@ export function planCommand(input, knowledge, manifest, context = {}) {
     }
   }
 
-  const toolMap = declaredTools(manifest);
-  steps.forEach((step) => validateToolCall(step, toolMap));
+  validate();
   const expected = route.page ? {
     pageId: route.page.id,
     anchorId: route.anchor?.id || null
@@ -88,16 +207,14 @@ export function planCommand(input, knowledge, manifest, context = {}) {
     anchorId: null
   } : null;
 
-  return {
-    mode: "controlled",
+  return finishPlan({
     command,
-    normalizedCommand: normalizeText(command),
-    intent: route.type,
+    route,
     steps,
     expected,
-    response: route.anchor?.response || route.speech,
-    suggestions: route.suggestions || []
-  };
+    mode: "controlled",
+    response: route.anchor?.response || route.speech
+  });
 }
 
 export class ClaireRuntimeController {
