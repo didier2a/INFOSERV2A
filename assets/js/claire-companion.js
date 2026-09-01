@@ -9,6 +9,13 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH
 } from "./claire-core.mjs";
+import {
+  formatMemoryBriefing,
+  hasMemoryContent,
+  loadSessionMemory,
+  rememberPage,
+  rememberTurn
+} from "./claire-session-memory.mjs";
 import { ClaireRuntimeController } from "./claire-runtime-v2.mjs";
 import {
   BrowserInfoServ2ASurface,
@@ -19,8 +26,8 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it4";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it4";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it5";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it5";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 280;
 const LIVEAVATAR_CLOUD_FALLBACKS = [
@@ -56,13 +63,13 @@ const FALLBACK_KNOWLEDGE = {
 };
 
 const FALLBACK_CAPABILITIES = {
-  runtimeVersion: "2.1.0-generalist",
+  runtimeVersion: "2.3.0-memory",
   mode: "generalist-with-site-catalog",
   guardrails: {
     maxConcurrentCommands: 1,
     requireDeclaredTools: true,
     allowDirectDomFromModel: false,
-    allowFormSubmission: false,
+    allowFormSubmission: true,
     manualModeAlwaysAvailable: true,
     defaultUtteranceKind: "chat"
   },
@@ -72,6 +79,9 @@ const FALLBACK_CAPABILITIES = {
     { name: "scroll_to", required: ["target"] },
     { name: "open_contact", required: [] },
     { name: "prefill_quote", required: ["description"] },
+    { name: "submit_quote", required: [] },
+    { name: "start_call", required: [] },
+    { name: "compose_email", required: [] },
     { name: "list_catalog", required: [] },
     { name: "explain_page", required: [] },
     { name: "go_home", required: [] },
@@ -578,6 +588,7 @@ export class ClaireCompanion {
         await this.provider.connect({ microphone: microphoneRequested });
         this.setEngineStatus("liveavatar-realtime", "LiveAvatar · OpenAI Realtime · marin");
         this.provider.sendBriefing?.(buildSiteBriefing(this.knowledge));
+        this.sendSessionMemory();
         this.pushPageContext();
         this.scheduleWelcomeTranscript(greeting);
         void this.keepScreenAwake();
@@ -669,10 +680,20 @@ export class ClaireCompanion {
   pushPageContext(snapshot = this.siteAdapter?.snapshot()) {
     const text = describePageContext(snapshot);
     if (!text) return false;
+    if (snapshot?.page?.title) {
+      rememberPage(this.surface?.window?.location?.pathname || location.pathname, snapshot.page.title);
+    }
     const shell = isPhoneShell()
       ? "Appareil : téléphone. Réponses plus courtes."
       : "Appareil : ordinateur.";
     return this.provider?.sendContext?.(`${text}\n${shell}`) || false;
+  }
+
+  sendSessionMemory() {
+    const memory = loadSessionMemory();
+    if (!hasMemoryContent(memory)) return false;
+    const briefing = formatMemoryBriefing(memory);
+    return this.provider?.sendMemory?.(briefing) || this.provider?.sendContext?.(briefing) || false;
   }
 
   verifiedSpeechFor(outcome) {
@@ -706,6 +727,9 @@ export class ClaireCompanion {
     if (this.nodes.retry) this.nodes.retry.hidden = true;
     try {
       await this.provider.connect({ microphone: true });
+      this.provider.sendBriefing?.(buildSiteBriefing(this.knowledge));
+      this.sendSessionMemory();
+      this.pushPageContext();
     } catch {
       this.activateLocalFallback("LiveAvatar reste indisponible. Vérifiez les secrets Cloudflare puis réessayez.");
     }
@@ -786,8 +810,9 @@ export class ClaireCompanion {
     });
   }
 
-  appendTurn(role, text, { live = false } = {}) {
+  appendTurn(role, text, { live = false, remember = true } = {}) {
     if (!this.nodes.transcript || !text) return null;
+    if (remember && !live) rememberTurn(role === "user" ? "user" : "companion", text);
     const article = document.createElement("article");
     article.className = `claire-turn claire-turn--${role}`;
     if (live) article.dataset.live = "1";
@@ -825,6 +850,8 @@ export class ClaireCompanion {
 
   finalizeLiveCompanionTurn() {
     this.nodes.transcript?.querySelectorAll('.claire-turn--companion[data-live="1"]').forEach((node) => {
+      const spoken = node.querySelector("p")?.textContent;
+      if (spoken) rememberTurn("companion", spoken);
       delete node.dataset.live;
     });
   }
@@ -904,7 +931,8 @@ export class ClaireCompanion {
       const outcome = await this.runtime.run(value, {
         pathname: this.surface?.window?.location?.pathname || location.pathname,
         pageId: this.siteAdapter?.view?.activePage,
-        sectionId: this.siteAdapter?.view?.activeSection
+        sectionId: this.siteAdapter?.view?.activeSection,
+        memory: loadSessionMemory()
       });
       globalThis.dispatchEvent(new CustomEvent("infoserv:claire-command", {
         detail: { command: value, source, outcome }

@@ -18,6 +18,17 @@ function pageSummary(page) {
   };
 }
 
+function quoteDraftFromArgs(args = {}) {
+  return {
+    name: String(args.name || "").slice(0, 80),
+    phone: String(args.phone || "").slice(0, 40),
+    email: String(args.email || "").slice(0, 120),
+    city: String(args.city || "").slice(0, 80),
+    service: String(args.service || "").slice(0, 80),
+    description: String(args.description || "").slice(0, 500)
+  };
+}
+
 export class BrowserInfoServ2ASurface {
   constructor({
     knowledge,
@@ -181,20 +192,72 @@ export class BrowserInfoServ2ASurface {
     });
   }
 
-  prefillQuote(draft) {
-    const service = this.document.querySelector("#devis-service");
-    const description = this.document.querySelector("#devis-description");
-    if (service && draft.service) {
-      const needle = String(draft.service).toLocaleLowerCase("fr");
-      const option = [...service.options].find((item) => {
-        const value = item.value.toLocaleLowerCase("fr");
+  fillQuoteField(selector, value) {
+    const field = this.document.querySelector(selector);
+    if (!field || !value) return Boolean(field);
+    if (field.tagName === "SELECT") {
+      const needle = String(value).toLocaleLowerCase("fr");
+      const option = [...field.options].find((item) => {
+        const optionValue = item.value.toLocaleLowerCase("fr");
         const label = item.textContent.trim().toLocaleLowerCase("fr");
-        return value === needle || label.includes(needle);
+        return optionValue === needle || label.includes(needle);
       });
-      if (option) service.value = option.value;
+      if (option) field.value = option.value;
+    } else {
+      field.value = value;
     }
-    if (description) description.value = draft.description;
-    return { serviceFound: Boolean(service), descriptionFound: Boolean(description), submitted: false };
+    return true;
+  }
+
+  prefillQuote(draft = {}) {
+    const filled = {
+      nameFound: this.fillQuoteField("#devis-name", draft.name),
+      phoneFound: this.fillQuoteField("#devis-phone", draft.phone),
+      emailFound: this.fillQuoteField("#devis-email", draft.email),
+      cityFound: this.fillQuoteField("#devis-city", draft.city),
+      serviceFound: this.fillQuoteField("#devis-service", draft.service),
+      descriptionFound: this.fillQuoteField("#devis-description", draft.description)
+    };
+    return { ...filled, submitted: false };
+  }
+
+  quoteMissingFields() {
+    return ["name", "phone", "email", "city", "service", "description"].filter((key) => {
+      const field = this.document.querySelector(`#devis-${key}`);
+      return !field || !String(field.value || "").trim();
+    });
+  }
+
+  submitQuote(draft = {}) {
+    const formState = this.prefillQuote(draft);
+    const form = this.document.querySelector("#devis-form");
+    const missing = this.quoteMissingFields();
+    if (!form || missing.length) {
+      return { ...formState, submitted: false, missing };
+    }
+    if (typeof form.requestSubmit === "function") form.requestSubmit();
+    else form.dispatchEvent(new this.window.Event("submit", { bubbles: true, cancelable: true }));
+    return { ...formState, submitted: true, missing: [] };
+  }
+
+  launchHref(href) {
+    const target = String(href || "").trim();
+    if (!target) return { href: "", launched: false };
+    try {
+      this.window.location.href = target;
+      return { href: target, launched: true };
+    } catch {
+      return { href: target, launched: false };
+    }
+  }
+
+  composeEmail(draft = {}) {
+    const params = new URLSearchParams();
+    if (draft.subject) params.set("subject", draft.subject);
+    if (draft.body) params.set("body", draft.body);
+    const query = params.toString();
+    const href = `mailto:${draft.to || "contact@infoserv2a.pro"}${query ? `?${query}` : ""}`;
+    return this.launchHref(href);
   }
 
   snapshot() {
@@ -278,13 +341,70 @@ export class InfoServ2ASiteAdapter {
         if (this.view.activePage !== page.id) await this.surface.openPage(page);
         this.view.activePage = page.id;
         this.view.activeSection = null;
-        this.view.quoteDraft = {
-          service: String(args.service || "").slice(0, 80),
-          description: String(args.description || "").slice(0, 500)
-        };
+        this.view.quoteDraft = quoteDraftFromArgs(args);
         const form = this.surface.prefillQuote(this.view.quoteDraft);
         this.view.submitted = false;
         return { page: pageSummary(page), draft: clone(this.view.quoteDraft), form, submitted: false, persistentSession: true };
+      }
+      case "submit_quote": {
+        const page = this.pageById("quote");
+        if (!page) throw new Error("Page devis absente de l’index");
+        if (this.view.activePage !== page.id) await this.surface.openPage(page);
+        this.view.activePage = page.id;
+        this.view.activeSection = null;
+        this.view.quoteDraft = quoteDraftFromArgs(args);
+        const form = this.surface.submitQuote
+          ? this.surface.submitQuote(this.view.quoteDraft)
+          : this.surface.prefillQuote(this.view.quoteDraft);
+        this.view.submitted = Boolean(form.submitted);
+        return {
+          page: pageSummary(page),
+          draft: clone(this.view.quoteDraft),
+          form,
+          submitted: this.view.submitted,
+          missing: form.missing || [],
+          persistentSession: true
+        };
+      }
+      case "start_call": {
+        const page = this.pageById("contact");
+        if (!page) throw new Error("Page contact absente de l’index");
+        if (this.view.activePage !== page.id) await this.surface.openPage(page);
+        this.view.activePage = page.id;
+        this.view.activeSection = null;
+        this.view.contactChannel = "call";
+        const href = String(args.href || "tel:+33745156076");
+        const launched = this.surface.launchHref?.(href) || { href, launched: false };
+        return {
+          page: pageSummary(page),
+          channel: "call",
+          href,
+          triggered: Boolean(launched.launched),
+          persistentSession: true
+        };
+      }
+      case "compose_email": {
+        const page = this.pageById("contact");
+        if (!page) throw new Error("Page contact absente de l’index");
+        if (this.view.activePage !== page.id) await this.surface.openPage(page);
+        this.view.activePage = page.id;
+        this.view.activeSection = null;
+        this.view.contactChannel = "email";
+        const draft = {
+          to: String(args.to || "contact@infoserv2a.pro"),
+          subject: String(args.subject || "Contact InfoServ2A"),
+          body: String(args.body || "")
+        };
+        const launched = this.surface.composeEmail
+          ? this.surface.composeEmail(draft)
+          : this.surface.launchHref?.(`mailto:${draft.to}`) || { href: `mailto:${draft.to}`, launched: false };
+        return {
+          page: pageSummary(page),
+          channel: "email",
+          draft,
+          triggered: Boolean(launched.launched),
+          persistentSession: true
+        };
       }
       case "list_catalog": {
         const pages = catalogEntries(this.knowledge);

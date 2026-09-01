@@ -7,6 +7,12 @@ import {
   pageById,
   resolveCurrentPage
 } from "./claire-core.mjs";
+import {
+  canSubmitQuote,
+  describeMissingQuoteFields,
+  emailDraftFromMemory,
+  quotePrefillFromMemory
+} from "./claire-session-memory.mjs";
 
 export const CONTROLLER_STATES = Object.freeze({
   READY: "ready",
@@ -189,8 +195,19 @@ export function planCommand(input, knowledge, manifest, context = {}) {
     });
   }
 
-  if (route.type === "action" && (route.action === "call" || route.action === "email")) {
-    steps.push(actionStep("open_contact", { channel: route.action }, "Présenter le canal demandé sans le déclencher."));
+  if (route.type === "action" && route.action === "submit_quote") {
+    const draft = quotePrefillFromMemory(context.memory, { fallbackDescription: command });
+    if (canSubmitQuote(context.memory, { fallbackDescription: command })) {
+      steps.push(actionStep("submit_quote", draft, "Envoyer la demande de devis à partir du contexte oral."));
+    } else {
+      steps.push(actionStep("prefill_quote", draft, "Préparer le devis et demander à l’oral ce qui manque."));
+    }
+  } else if (route.type === "action" && route.action === "call") {
+    steps.push(actionStep("start_call", {
+      href: route.href || "tel:+33745156076"
+    }, "Lancer l’appel vers InfoServ2A."));
+  } else if (route.type === "action" && route.action === "email") {
+    steps.push(actionStep("compose_email", emailDraftFromMemory(context.memory), "Ouvrir un e-mail prérempli."));
   } else if (route.page) {
     steps.push(actionStep("search_site", { query: command }, "Identifier la page et la section les plus pertinentes."));
     if (route.page.id === "contact") {
@@ -199,10 +216,8 @@ export function planCommand(input, knowledge, manifest, context = {}) {
       steps.push(actionStep("open_service", { service: route.page.id }, "Ouvrir l’onglet dans l’aperçu contrôlé."));
     }
     if (route.page.id === "quote") {
-      steps.push(actionStep("prefill_quote", {
-        service: "",
-        description: command
-      }, "Préparer un brouillon sans jamais soumettre le formulaire."));
+      const draft = quotePrefillFromMemory(context.memory, { fallbackDescription: command });
+      steps.push(actionStep("prefill_quote", draft, "Préparer un brouillon. L’envoi n’a lieu que sur demande orale explicite."));
     }
     if (route.anchor?.id) {
       steps.push(actionStep("scroll_to", { target: route.anchor.id }, "Positionner l’aperçu sur la section déclarée."));
@@ -213,10 +228,19 @@ export function planCommand(input, knowledge, manifest, context = {}) {
   const expected = route.page ? {
     pageId: route.page.id,
     anchorId: route.anchor?.id || null
+  } : route.action === "submit_quote" ? {
+    pageId: "quote",
+    anchorId: null
   } : route.type === "action" ? {
     pageId: "contact",
     anchorId: null
   } : null;
+
+  let response = route.anchor?.response || route.speech;
+  if (route.action === "submit_quote" && !canSubmitQuote(context.memory, { fallbackDescription: command })) {
+    const missing = describeMissingQuoteFields(context.memory, { fallbackDescription: command });
+    response = `Je prépare le devis. Il me manque encore ${missing}.`;
+  }
 
   return finishPlan({
     command,
@@ -224,7 +248,7 @@ export function planCommand(input, knowledge, manifest, context = {}) {
     steps,
     expected,
     mode: "controlled",
-    response: route.anchor?.response || route.speech
+    response
   });
 }
 

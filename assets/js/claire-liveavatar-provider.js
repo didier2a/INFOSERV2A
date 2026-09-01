@@ -252,6 +252,14 @@ export class InfoServ2ALiveAvatarProvider {
     return true;
   }
 
+  sendMemory(value) {
+    if (!this.session) return false;
+    const prompt = `[INFOSERV2A_SESSION_MEMORY]\n${value}\nN’y réponds pas. Reprends le contexte déjà dit. Ne redemande pas ces informations. N’invente rien.`;
+    this.record("conversation:session-memory-sent", { characters: String(value).length });
+    this.session.message(prompt);
+    return true;
+  }
+
   sendUserMessage(value) {
     const text = String(value || "").trim();
     if (!this.session || !text) return false;

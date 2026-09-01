@@ -4,6 +4,10 @@ const FRENCH_STOP_WORDS = new Set([
   "ou", "par", "pas", "pour", "que", "qui", "sur", "tu", "un", "une", "vous"
 ]);
 
+const SUBMIT_QUOTE_PATTERN = /\b(envoie|envoi|transmet(?:s|tre)?|soumet(?:s|tre)?|valide|confirme)\b.{0,48}\b(devis|demande de devis)\b|\bdevis\b.{0,24}\b(envoie|envoi|transmis|soumis)\b/;
+const CALL_PATTERN = /\b(appelez|appelle|appeler|un appel|je t appelle|nous appeler|rappelez|rappeler|lancer un appel|passe(?:r)? (?:un )?appel)\b/;
+const EMAIL_PATTERN = /\b((?:envoie(?:r)?|ecris|ecrire|ouvre|ouvrir|compose(?:r)?) (?:un )?(?:e-?mail|courriel|mail)|envoyer un message|(?:par|un) e-?mail|adresse (?:e-?mail|mail))\b/;
+
 const DIRECT_INTENTS = [
   {
     id: "manual",
@@ -22,25 +26,34 @@ const DIRECT_INTENTS = [
     }
   },
   {
+    id: "submit_quote",
+    pattern: SUBMIT_QUOTE_PATTERN,
+    response: {
+      type: "action",
+      action: "submit_quote",
+      speech: "J’envoie la demande de devis à partir de ce que vous m’avez dit."
+    }
+  },
+  {
     id: "call",
-    pattern: /\b(appel(?:er|le)?|telephone(?:r)?|numero de telephone)\b/,
+    pattern: CALL_PATTERN,
     response: {
       type: "action",
       action: "call",
       href: "tel:+33745156076",
       label: "Appeler le 07 45 15 60 76",
-      speech: "Vous pouvez appeler InfoServ2A au 07 45 15 60 76, du lundi au samedi. Je vous laisse confirmer l’appel."
+      speech: "J’ouvre l’appel vers InfoServ2A, au 07 45 15 60 76."
     }
   },
   {
     id: "email",
-    pattern: /\b(e-?mail|courriel|adresse mail|envoyer un message)\b/,
+    pattern: EMAIL_PATTERN,
     response: {
       type: "action",
       action: "email",
       href: "mailto:contact@infoserv2a.pro",
       label: "Écrire à contact@infoserv2a.pro",
-      speech: "L’adresse est contact@infoserv2a.pro. Je vous laisse confirmer l’ouverture de votre messagerie."
+      speech: "J’ouvre un e-mail prérempli pour InfoServ2A."
     }
   }
 ];
@@ -138,6 +151,18 @@ export function isQuoteAction(value = "") {
     || /\bdevis (?:gratuit|s il vous plait|svp)\b/.test(query);
 }
 
+export function isSubmitQuoteAction(value = "") {
+  return SUBMIT_QUOTE_PATTERN.test(normalizeText(value));
+}
+
+export function isCallAction(value = "") {
+  return CALL_PATTERN.test(normalizeText(value));
+}
+
+export function isEmailAction(value = "") {
+  return EMAIL_PATTERN.test(normalizeText(value));
+}
+
 export function isContactAction(value = "") {
   const query = normalizeText(value);
   return /\b(contacter|prendre contact|vous joindre|coordonnees)\b/.test(query)
@@ -176,6 +201,9 @@ export const CATALOG_TOOL_NAMES = Object.freeze([
   "scroll_to",
   "open_contact",
   "prefill_quote",
+  "submit_quote",
+  "start_call",
+  "compose_email",
   "list_catalog",
   "explain_page",
   "go_home",
@@ -236,8 +264,8 @@ export function buildSiteBriefing(knowledge) {
     `Entreprise : ${knowledge.site || "InfoServ2A"}. Zone : ${identity.area || ""}. Téléphone : ${identity.phone || ""}. Horaires : ${identity.hours || ""}. Email : ${identity.email || ""}.`,
     "Catalogue des onglets, dans l’ordre de navigation :",
     ...lines,
-    "Actions possibles : ouvrir un onglet, onglet suivant ou précédent, section suivante ou précédente, accueil, catalogue, contact, devis (brouillon seulement), expliquer la page visible.",
-    "N’invente ni tarif, ni délai, ni diagnostic. Ne soumets jamais un formulaire."
+    "Actions possibles : ouvrir un onglet, onglet suivant ou précédent, section suivante ou précédente, accueil, catalogue, contact, devis (brouillon, ou envoi si le visiteur le demande clairement), appeler InfoServ2A, écrire un e-mail, expliquer la page visible.",
+    "N’invente ni tarif, ni délai, ni diagnostic. N’invente jamais une coordonnée. N’envoie un devis que sur demande orale explicite."
   ].filter(Boolean).join("\n");
 }
 
@@ -268,8 +296,11 @@ Tu peux parler pendant que le site se synchronise. Si tu reçois [INFOSERV2A_APP
 
 Lorsque tu reçois [INFOSERV2A_SITE_BRIEFING], mémorise le catalogue des onglets. N'y réponds pas.
 Lorsque tu reçois [INFOSERV2A_PAGE_CONTEXT], mémorise la page et la section visibles. N'y réponds pas. Utilise ce contexte pour tes réponses suivantes.
+Lorsque tu reçois [INFOSERV2A_SESSION_MEMORY], c’est le contexte déjà dit dans cet onglet de navigateur. Mémorise-le. N’y réponds pas. Ne fais pas répéter le visiteur.
 Lorsque tu reçois [INFOSERV2A_USER_TEXT], c'est un message tapé par le visiteur. Réponds en experte si c’est professionnel, scientifique ou technique. Si c’est du loisir, glisse ailleurs sans énoncer de limite.
 Lorsque tu reçois [INFOSERV2A_OFF_TOPIC], ne traite pas le fond. Une phrase légère, puis tu continues sur ce qui occupe vraiment la personne. Jamais de phrase du type « je ne parle que d’informatique ».
+
+Sur demande orale explicite, tu peux : préremplir un devis ; l’envoyer seulement si le visiteur dit clairement « envoie » ou « transmets » le devis ; ouvrir un appel vers InfoServ2A ; ouvrir un e-mail prérempli. N’invente jamais un nom, un téléphone, un e-mail ou une commune. S’il manque un champ pour l’envoi, demande-le à l’oral.
 
 L'application InfoServ2A est la seule source de vérité pour les services, coordonnées, horaires, pages et actions. L'utilisateur garde toujours accès au mode manuel. N'invente jamais un tarif, un délai, une disponibilité, une conformité, un diagnostic matériel définitif ou une capacité technique non vérifiée.`;
 }
@@ -408,6 +439,19 @@ export function routeCommand(input, knowledge, context = {}) {
     }
   }
 
+  if (isContactAction(raw)) {
+    const page = pageById(knowledge, "contact");
+    if (page) {
+      return {
+        type: "navigate",
+        page,
+        href: page.href,
+        label: page.title,
+        speech: page.summary
+      };
+    }
+  }
+
   const ranked = (knowledge.pages || [])
     .map((page) => ({ page, score: scorePage(query, page) }));
   if (isWebSiteRequest(query) && !/\b(camera|cameras|surveillance|alarme)\b/.test(query)) {
@@ -492,7 +536,8 @@ export function isSiteActionIntent(input, knowledge, context = {}) {
   const route = routeCommand(input, knowledge, context);
   if (route.type === "navigate" || route.type === "action" || route.type === "catalog") return true;
   if (isIsolatedSiteRequest(input) || isWebSiteRequest(input)) return true;
-  if (isQuoteAction(input) || isContactAction(input)) return true;
+  if (isQuoteAction(input) || isSubmitQuoteAction(input) || isContactAction(input)) return true;
+  if (isCallAction(input) || isEmailAction(input)) return true;
   return false;
 }
 
@@ -506,7 +551,15 @@ export function classifyUtterance(input, knowledge, context = {}) {
     return { kind: "site", route };
   }
 
-  if (isIsolatedSiteRequest(input) || isWebSiteRequest(input) || isQuoteAction(input) || isContactAction(input)) {
+  if (
+    isIsolatedSiteRequest(input)
+    || isWebSiteRequest(input)
+    || isQuoteAction(input)
+    || isSubmitQuoteAction(input)
+    || isContactAction(input)
+    || isCallAction(input)
+    || isEmailAction(input)
+  ) {
     return { kind: "site", route };
   }
   if (isSocialUtterance(input) && !OFF_TOPIC_PATTERN.test(normalizeText(input))) {

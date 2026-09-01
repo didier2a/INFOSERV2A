@@ -1,7 +1,7 @@
 # Plan Claire — aidante Live Avatar d’InfoServ2A
 
 Date : 1er septembre 2026  
-Statut : experte professionnelle (IT, sciences, métiers numériques), accueil vocal, navigation sans pop-up, contexte Aidant 1.10  
+Statut : experte professionnelle (IT, sciences, métiers numériques), mémoire de session navigateur, actions orales (devis / appel / mail), contexte Aidant 1.11  
 Référence visuelle : `/claire-aidant-figma.html` · `data/claire-aidant-figma.json`
 
 ## 1. Intention
@@ -52,11 +52,12 @@ Règles non négociables :
 ## 4. Greffe déjà en place
 
 - Scène LiveAvatar sur les 13 pages publiques.
-- Contrôleur `assets/js/claire-runtime-v2.mjs` et manifeste `data/claire-capabilities.json` (12 outils).
+- Contrôleur `assets/js/claire-runtime-v2.mjs` et manifeste `data/claire-capabilities.json` (15 outils).
 - Surface persistante `assets/js/claire-site-runtime-adapter.mjs`.
+- Mémoire de session `assets/js/claire-session-memory.mjs` (`sessionStorage`, tant que l’onglet reste ouvert).
 - Laboratoire texte `/claire-lab` (aucun secret, aucune voix).
 - Ancres canoniques : `solutions-sans-fibre`, `audit-nis2`, `supports`, `offre-hebergement`.
-- Contexte LiveAvatar `InfoServ2A Claire Aidant 1.10` (prompt généré depuis `data/site-knowledge.json`, `opening_text` = accueil vocal).
+- Contexte LiveAvatar `InfoServ2A Claire Aidant 1.11` (prompt généré depuis `data/site-knowledge.json`, `opening_text` = accueil vocal).
 
 ## 5. Spec Figma
 
@@ -85,7 +86,7 @@ Frames à pousser dans Figma dès que le MCP Figma est authentifié sur le burea
 - `LIVEAVATAR_API_KEY`
 - `OPENAI_API_KEY` ou `LIVEAVATAR_OPENAI_SECRET_ID`
 - optionnel `LIVEAVATAR_AVATAR_ID` (Claire Pocket Guide par défaut)
-- optionnel `LIVEAVATAR_CONTEXT_ID` après la première création du contexte Aidant 1.10. Si une ancienne valeur pointe encore vers 1.3–1.9, la supprimer pour forcer la recréation.
+- optionnel `LIVEAVATAR_CONTEXT_ID` après la première création du contexte Aidant 1.11. Si une ancienne valeur pointe encore vers 1.3–1.10, la supprimer pour forcer la recréation.
 
 ## 7. Acceptation
 
@@ -95,7 +96,7 @@ Frames à pousser dans Figma dès que le MCP Figma est authentifié sur le burea
 4. « Onglet suivant » / « onglet précédent » parcourt les 13 pages dans l’ordre du catalogue.
 5. « Quels sont les onglets du site ? » énumère le catalogue sans changer de page.
 6. Un clic interne ne détruit pas la session LiveAvatar.
-7. Contact et devis n’envoient rien tout seuls.
+7. Contact et devis n’envoient rien tout seuls. « Envoie le devis », « appelle InfoServ2A » ou « envoie un mail » déclenchent l’action orale, sans inventer de coordonnées.
 8. Le laboratoire `/claire-lab` fonctionne sans secret.
 9. La planche `/claire-aidant-figma` documente les 8 frames.
 10. Le contre-test physique Galaxy S22 reste obligatoire avant de déclarer le son mobile validé.
@@ -108,7 +109,7 @@ Cahier des charges énoncé : Claire est conviviale ; elle accueille à la voix 
 
 | Exigence | Verdict | Preuve |
 |---|---|---|
-| Accueil vocal dès l’entrée | **Conforme** | `opening_text` = `CLAIRE_WELCOME` (contexte Aidant 1.10). Le client n’appelle pas `speak(greeting)`. |
+| Accueil vocal dès l’entrée | **Conforme** | `opening_text` = `CLAIRE_WELCOME` (contexte Aidant 1.11). Le client n’appelle pas `speak(greeting)`. |
 | Présentation de Claire et d’InfoServ2A | **Conforme** | Accueil unique dans `claire-core.mjs`, importé par le Worker et le client. |
 | Experte professionnelle, limite invisible | **Conforme** | Métiers / sciences / IT → `chat`. Loisir (capitale, blague, recette) → `offtopic` sans réciter de règle. |
 | Interruption (parler / toucher / Interrompre) | **Conforme** | `bargeIn` sur `USER_SPEAK_STARTED`, transcription, micro, scène et bouton. |
@@ -118,9 +119,9 @@ Cahier des charges énoncé : Claire est conviviale ; elle accueille à la voix 
 | Dialogue IT indépendant du site | **Conforme** | Disque, Wi-Fi, salutations → `chat`, aucune navigation. Hors IT → `[INFOSERV2A_OFF_TOPIC]`. Texte tapé IT → `[INFOSERV2A_USER_TEXT]`. |
 | Navigation onglet par onglet | **Conforme** | Outils `next_page` / `prev_page` / `go_home` ; ordre = `knowledge.pages`. Contexte d’onglet renvoyé après chaque changement. |
 | Sections à l’intérieur d’un onglet | **Conforme** | `next_section` / `prev_section` / `scroll_to` / `explain_page`. |
-| Catalogue d’actions complet | **Conforme** | 12 outils déclarés dans `data/claire-capabilities.json` : recherche, ouverture, défilement, contact, devis, catalogue, explication, accueil, onglet ±, section ±. |
+| Catalogue d’actions complet | **Conforme** | 15 outils déclarés dans `data/claire-capabilities.json` : recherche, ouverture, défilement, contact, devis (brouillon / envoi), appel, e-mail, catalogue, explication, accueil, onglet ±, section ±. |
 | Ne pas hijacker une phrase générale vers une page | **Conforme** | Un simple mot-clé (`disque`, `wifi`, `caméra` sans « sans fibre ») ne déclenche plus `open_service`. |
 | Demandes de service encore actionnables | **Conforme** | Verbe d’ouverture, site isolé / sans internet, création de site, devis, contact, appel/e-mail, catalogue, onglet suivant. |
-| Garde-fous inchangés | **Conforme** | Pas de DOM depuis le modèle, pas de soumission de formulaire, une commande à la fois, mode manuel, session persistante `#contenu`. |
+| Garde-fous | **Conforme** | Pas de DOM depuis le modèle. Soumission de devis seulement sur demande orale explicite, sans inventer de coordonnées. Une commande à la fois, mode manuel, session persistante `#contenu`. |
 
 Hors périmètre DNS : `infoserv2a.pro` est encore servi par GitHub Pages (NS OVH → IPs `185.199.x.x`). `/api/liveavatar-session` y répond 404. La prévisualisation Workers de cette branche porte les secrets. Procédure de bascule, inventaire MX/SPF et custom domain : `docs/activer-claire-sur-infoserv2a-pro.md`.

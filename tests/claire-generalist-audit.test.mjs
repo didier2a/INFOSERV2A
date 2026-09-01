@@ -45,7 +45,7 @@ test("audit : Claire est une experte professionnelle, sans réciter de limite", 
   assert.match(providerSource, /let kind = "chat"/);
   assert.match(providerSource, /sendOffTopic/);
   assert.match(providerSource, /INFOSERV2A_OFF_TOPIC/);
-  assert.match(sessionSource, /InfoServ2A Claire Aidant 1\.10/);
+  assert.match(sessionSource, /InfoServ2A Claire Aidant 1\.11/);
   assert.match(companionSource, /sendOffTopic/);
 });
 
@@ -74,12 +74,13 @@ test("audit : le catalogue d’actions couvre la navigation onglet par onglet", 
   assert.equal(planCommand("Explique cette page", knowledge, manifest, { pathname: "/contact.html" }).mode, "page");
 });
 
-test("audit : une intention de service continue d’agir sans soumettre de formulaire", () => {
+test("audit : une intention de service continue d’agir ; l’envoi n’a lieu que sur demande orale", () => {
   const isolated = planCommand("Je n’ai pas internet, je veux une caméra", knowledge, manifest);
   assert.equal(isolated.expected.pageId, "videosurveillance");
   const quote = planCommand("Je voudrais un devis gratuit", knowledge, manifest);
   assert.ok(quote.steps.some((step) => step.tool === "prefill_quote"));
-  assert.equal(manifest.guardrails.allowFormSubmission, false);
+  assert.ok(!quote.steps.some((step) => step.tool === "submit_quote"));
+  assert.equal(manifest.guardrails.allowFormSubmission, true);
   assert.equal(manifest.guardrails.allowDirectDomFromModel, false);
 });
 

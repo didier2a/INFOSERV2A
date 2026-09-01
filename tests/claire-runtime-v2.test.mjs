@@ -25,6 +25,9 @@ test("le manifeste généraliste expose le catalogue d’onglets", () => {
       "scroll_to",
       "open_contact",
       "prefill_quote",
+      "submit_quote",
+      "start_call",
+      "compose_email",
       "list_catalog",
       "explain_page",
       "go_home",
@@ -34,10 +37,10 @@ test("le manifeste généraliste expose le catalogue d’onglets", () => {
       "prev_section"
     ]
   );
-  assert.equal(manifest.runtimeVersion, "2.2.0-it");
+  assert.equal(manifest.runtimeVersion, "2.3.0-memory");
   assert.equal(manifest.mode, "it-generalist-with-site-catalog");
   assert.equal(manifest.guardrails.allowDirectDomFromModel, false);
-  assert.equal(manifest.guardrails.allowFormSubmission, false);
+  assert.equal(manifest.guardrails.allowFormSubmission, true);
   assert.equal(manifest.guardrails.defaultUtteranceKind, "chat");
 });
 
@@ -66,6 +69,23 @@ class MockPersistentSurface {
     this.calls.push(["prefillQuote", draft.description]);
     this.draft = draft;
     return { serviceFound: true, descriptionFound: true, submitted: false };
+  }
+
+  submitQuote(draft) {
+    this.calls.push(["submitQuote", draft]);
+    this.draft = draft;
+    this.submitted = true;
+    return { submitted: true, missing: [] };
+  }
+
+  launchHref(href) {
+    this.calls.push(["launchHref", href]);
+    return { href, launched: true };
+  }
+
+  composeEmail(draft) {
+    this.calls.push(["composeEmail", draft]);
+    return this.launchHref(`mailto:${draft.to || "contact@infoserv2a.pro"}`);
   }
 
   snapshot() {
@@ -227,13 +247,14 @@ test("une deuxième commande est refusée tant que la première est active", asy
 test("le contact est affiché sans déclencher appel ou email", async () => {
   const adapter = new InfoServ2ALabAdapter({ knowledge, manifest });
   const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
-  const outcome = await controller.run("Je voudrais vous contacter par email.");
+  const outcome = await controller.run("Je voudrais prendre contact.");
   const snapshot = adapter.snapshot();
   assert.equal(outcome.verification.ok, true);
   assert.equal(outcome.verification.pageId, "contact");
   assert.equal(snapshot.activePage, "contact");
-  assert.equal(snapshot.contactChannel, "email");
+  assert.equal(snapshot.contactChannel, "form");
   assert.equal(snapshot.submitted, false);
+  assert.equal(snapshot.lastLaunch, undefined);
 });
 
 test("le devis reste un brouillon non soumis", async () => {
@@ -262,10 +283,64 @@ test("P1 affiche le contact sans lancer l’appel ni la messagerie", async () =>
   const surface = new MockPersistentSurface();
   const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
   const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
-  const outcome = await controller.run("Je voudrais vous contacter par email.");
+  const outcome = await controller.run("Je voudrais prendre contact.");
   assert.equal(outcome.verification.ok, true);
-  assert.equal(adapter.snapshot().contactChannel, "email");
-  assert.ok(!surface.calls.some(([name]) => name === "call" || name === "email"));
+  assert.equal(adapter.snapshot().contactChannel, "form");
+  assert.ok(!surface.calls.some(([name]) => ["call", "email", "launchHref", "composeEmail"].includes(name)));
+});
+
+test("un appel oral ouvre le numéro InfoServ2A", async () => {
+  const surface = new MockPersistentSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const plan = planCommand("Appelle InfoServ2A", knowledge, manifest);
+  assert.equal(plan.steps[0].tool, "start_call");
+  const outcome = await controller.run("Appelle InfoServ2A");
+  assert.equal(outcome.verification.pageId, "contact");
+  assert.ok(surface.calls.some(([name, href]) => name === "launchHref" && String(href).startsWith("tel:")));
+});
+
+test("un mail oral ouvre une messagerie préremplie", async () => {
+  const surface = new MockPersistentSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const memory = {
+    visitor: { name: "Didier", phone: "", email: "didier@example.com", city: "" },
+    need: "Site vitrine pour mon commerce",
+    service: "creation-site-web",
+    turns: []
+  };
+  const plan = planCommand("Envoie un mail", knowledge, manifest, { memory });
+  assert.equal(plan.steps[0].tool, "compose_email");
+  const outcome = await controller.run("Envoie un mail", { memory });
+  assert.equal(outcome.verification.pageId, "contact");
+  assert.ok(surface.calls.some(([name]) => name === "composeEmail"));
+});
+
+test("envoie le devis ne part que si le contexte a les coordonnées", async () => {
+  const empty = planCommand("Envoie le devis", knowledge, manifest);
+  assert.ok(empty.steps.some((step) => step.tool === "prefill_quote"));
+  assert.ok(!empty.steps.some((step) => step.tool === "submit_quote"));
+
+  const memory = {
+    visitor: {
+      name: "Marie Rossi",
+      phone: "07 45 15 60 76",
+      email: "marie@example.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé",
+    turns: []
+  };
+  const ready = planCommand("Envoie le devis", knowledge, manifest, { memory });
+  assert.ok(ready.steps.some((step) => step.tool === "submit_quote"));
+
+  const adapter = new InfoServ2ALabAdapter({ knowledge, manifest });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const outcome = await controller.run("Envoie le devis", { memory });
+  assert.equal(adapter.snapshot().submitted, true);
+  assert.equal(outcome.verification.pageId, "quote");
 });
 
 test("l’ancre canonique existe dans la page publique", async () => {

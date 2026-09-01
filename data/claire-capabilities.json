@@ -1,6 +1,6 @@
 {
-  "schemaVersion": "1.1.0",
-  "runtimeVersion": "2.2.0-it",
+  "schemaVersion": "1.2.0",
+  "runtimeVersion": "2.3.0-memory",
   "mode": "it-generalist-with-site-catalog",
   "site": "InfoServ2A",
   "knowledgeSource": "data/site-knowledge.json",
@@ -8,7 +8,7 @@
     "maxConcurrentCommands": 1,
     "requireDeclaredTools": true,
     "allowDirectDomFromModel": false,
-    "allowFormSubmission": false,
+    "allowFormSubmission": true,
     "manualModeAlwaysAvailable": true,
     "recordEveryTransition": true,
     "defaultUtteranceKind": "chat"
@@ -48,6 +48,27 @@
       "sideEffect": "draft-only",
       "confirmation": "never",
       "required": ["description"]
+    },
+    {
+      "name": "submit_quote",
+      "description": "Préremplit puis envoie la demande de devis uniquement après une demande orale explicite, sans inventer de coordonnées.",
+      "sideEffect": "form-submission",
+      "confirmation": "spoken-explicit",
+      "required": []
+    },
+    {
+      "name": "start_call",
+      "description": "Ouvre l’appel vers le numéro public InfoServ2A.",
+      "sideEffect": "external-launch",
+      "confirmation": "spoken-explicit",
+      "required": []
+    },
+    {
+      "name": "compose_email",
+      "description": "Ouvre un e-mail prérempli vers contact@infoserv2a.pro à partir du contexte de session.",
+      "sideEffect": "external-launch",
+      "confirmation": "spoken-explicit",
+      "required": []
     },
     {
       "name": "list_catalog",

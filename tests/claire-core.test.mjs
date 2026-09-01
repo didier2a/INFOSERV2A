@@ -80,6 +80,18 @@ test("ne déclenche pas automatiquement un appel", () => {
   assert.match(result.href, /^tel:/);
 });
 
+test("un téléphone en panne reste une conversation, pas un appel", () => {
+  assert.equal(classifyUtterance("Mon téléphone ne marche plus", knowledge).kind, "chat");
+  assert.notEqual(routeCommand("Mon téléphone ne marche plus", knowledge).action, "call");
+});
+
+test("envoie le devis, un appel ou un mail sont des actions orales", () => {
+  assert.equal(routeCommand("Envoie le devis", knowledge).action, "submit_quote");
+  assert.equal(routeCommand("Appelle InfoServ2A", knowledge).action, "call");
+  assert.equal(routeCommand("Envoie un mail", knowledge).action, "email");
+  assert.equal(classifyUtterance("Je voudrais un devis gratuit", knowledge).kind, "site");
+});
+
 test("restitue immédiatement la navigation manuelle", () => {
   const result = routeCommand("Je préfère le mode manuel", knowledge);
   assert.equal(result.type, "manual");
@@ -186,6 +198,7 @@ test("le briefing site contient tous les onglets et le prompt généraliste", ()
   assert.match(prompt, /interlocutrice GÉNÉRALISTE PROFESSIONNELLE/);
   assert.match(prompt, /ne doit jamais sentir une barrière/);
   assert.match(prompt, /INFOSERV2A_SITE_BRIEFING/);
+  assert.match(prompt, /INFOSERV2A_SESSION_MEMORY/);
   assert.match(prompt, /INFOSERV2A_OFF_TOPIC/);
   assert.match(prompt, /être interrompue/);
   assert.match(CLAIRE_WELCOME, /Moi c’est Claire, votre aidante Live Avatar/);

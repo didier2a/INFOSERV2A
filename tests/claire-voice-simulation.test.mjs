@@ -38,6 +38,21 @@ class MockPersistentSurface {
     return { serviceFound: true, descriptionFound: true, submitted: false };
   }
 
+  submitQuote(draft) {
+    this.calls.push(["submitQuote", draft]);
+    return { submitted: true, missing: [] };
+  }
+
+  launchHref(href) {
+    this.calls.push(["launchHref", href]);
+    return { href, launched: true };
+  }
+
+  composeEmail(draft) {
+    this.calls.push(["composeEmail", draft]);
+    return this.launchHref(`mailto:${draft.to || "contact@infoserv2a.pro"}`);
+  }
+
   snapshot() {
     return {
       activePage: this.activePage,
@@ -79,6 +94,7 @@ const SPOKEN_SCENES = [
 const IT_CHAT = [
   "Bonjour, comment ça va ?",
   "Mon disque dur n’est plus accessible.",
+  "Mon téléphone ne marche plus.",
   "Peux-tu améliorer mon Wi-Fi ?",
   "Comment un laboratoire archive ses analyses ?"
 ];

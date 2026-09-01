@@ -64,11 +64,71 @@ export class InfoServ2ALabAdapter {
         this.view.activePage = page.id;
         this.view.activeSection = null;
         this.view.quoteDraft = {
+          name: String(args.name || "").slice(0, 80),
+          phone: String(args.phone || "").slice(0, 40),
+          email: String(args.email || "").slice(0, 120),
+          city: String(args.city || "").slice(0, 80),
           service: String(args.service || "").slice(0, 80),
           description: String(args.description || "").slice(0, 500)
         };
         this.view.submitted = false;
         return { page: { id: page.id, title: page.title, href: page.href }, draft: clone(this.view.quoteDraft), submitted: false };
+      }
+      case "submit_quote": {
+        const page = this.pageById("quote");
+        if (!page) throw new Error("Page devis absente de l’index");
+        this.view.activePage = page.id;
+        this.view.activeSection = null;
+        this.view.quoteDraft = {
+          name: String(args.name || "").slice(0, 80),
+          phone: String(args.phone || "").slice(0, 40),
+          email: String(args.email || "").slice(0, 120),
+          city: String(args.city || "").slice(0, 80),
+          service: String(args.service || "").slice(0, 80),
+          description: String(args.description || "").slice(0, 500)
+        };
+        const missing = ["name", "phone", "email", "city", "service", "description"]
+          .filter((key) => !this.view.quoteDraft[key]);
+        this.view.submitted = missing.length === 0;
+        return {
+          page: { id: page.id, title: page.title, href: page.href },
+          draft: clone(this.view.quoteDraft),
+          submitted: this.view.submitted,
+          missing
+        };
+      }
+      case "start_call": {
+        const page = this.pageById("contact");
+        if (!page) throw new Error("Page contact absente de l’index");
+        this.view.activePage = page.id;
+        this.view.activeSection = null;
+        this.view.contactChannel = "call";
+        this.view.lastLaunch = { type: "call", href: String(args.href || "tel:+33745156076") };
+        return {
+          page: { id: page.id, title: page.title, href: page.href },
+          channel: "call",
+          href: this.view.lastLaunch.href,
+          triggered: true
+        };
+      }
+      case "compose_email": {
+        const page = this.pageById("contact");
+        if (!page) throw new Error("Page contact absente de l’index");
+        this.view.activePage = page.id;
+        this.view.activeSection = null;
+        this.view.contactChannel = "email";
+        this.view.lastLaunch = {
+          type: "email",
+          to: String(args.to || "contact@infoserv2a.pro"),
+          subject: String(args.subject || "Contact InfoServ2A"),
+          body: String(args.body || "")
+        };
+        return {
+          page: { id: page.id, title: page.title, href: page.href },
+          channel: "email",
+          draft: clone(this.view.lastLaunch),
+          triggered: true
+        };
       }
       case "list_catalog": {
         const pages = catalogEntries(this.knowledge);

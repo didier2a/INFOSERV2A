@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-it4)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-it4)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-it5)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-it5)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -41,6 +41,7 @@ test("les pages et assets référencés par Claire existent", async () => {
     "assets/images/companion/claire-liveavatar-1080x1920.jpg",
     "assets/js/claire-companion.js",
     "assets/js/claire-core.mjs",
+    "assets/js/claire-session-memory.mjs",
     "assets/js/claire-runtime-v2.mjs",
     "assets/js/claire-site-runtime-adapter.mjs",
     "assets/js/claire-liveavatar-provider.js",
@@ -111,12 +112,13 @@ test("Claire accueille l'utilisateur et explique son rôle chez InfoServ2A", asy
   assert.doesNotMatch(core, /Je reste uniquement dans l’informatique/);
   assert.match(client, /CLAIRE_WELCOME/);
   assert.match(endpoint, /CLAIRE_WELCOME/);
-  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.10/);
+  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.11/);
   assert.match(endpoint, /buildClaireContextPrompt/);
   assert.match(endpoint, /temperature:\s*0\.6/);
   assert.match(endpoint, /opening_text:\s*CLAIRE_WELCOME/);
   assert.match(core, /INFOSERV2A_PAGE_CONTEXT/);
   assert.match(core, /INFOSERV2A_SITE_BRIEFING/);
+  assert.match(core, /INFOSERV2A_SESSION_MEMORY/);
   assert.match(core, /INFOSERV2A_OFF_TOPIC/);
   assert.match(core, /interlocutrice GÉNÉRALISTE PROFESSIONNELLE/);
   assert.doesNotMatch(client, /this\.speak\(greeting\)/);
@@ -291,8 +293,11 @@ test("une transcription vocale coupe la réponse spontanée seulement si le site
   assert.match(client, /\[data-claire-interrupt\]/);
   assert.match(client, /toggleGuidedTranscript/);
   assert.match(client, /sendBriefing/);
+  assert.match(client, /sendSessionMemory/);
   assert.match(provider, /sendBriefing/);
+  assert.match(provider, /sendMemory/);
   assert.match(provider, /INFOSERV2A_SITE_BRIEFING/);
+  assert.match(provider, /INFOSERV2A_SESSION_MEMORY/);
   assert.match(provider, /let kind = "chat"/);
 });
 
