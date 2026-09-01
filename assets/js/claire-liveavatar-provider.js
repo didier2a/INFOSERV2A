@@ -4,7 +4,8 @@ const TRACK_ATTACH_TIMEOUT_MS = 18000;
 const TRACK_POLL_MS = 100;
 const MAX_CONNECT_ATTEMPTS = 2;
 const CONNECT_RETRY_DELAY_MS = 1200;
-const TRANSCRIPT_SETTLE_MS = 950;
+const TRANSCRIPT_SETTLE_MS = 450;
+const VERIFIED_REPLY_TIMEOUT_MS = 12000;
 
 let sdkPromise = null;
 
@@ -165,6 +166,7 @@ export class InfoServ2ALiveAvatarProvider {
     const prompt = `[INFOSERV2A_APP_RESULT]\nInformation vérifiée par le site : ${value}\nRéponds en français naturel, brièvement, sans ajouter de fait ni prétendre avoir réalisé une autre action.`;
     this.record("conversation:verified-result-sent", { characters: String(value).length });
     this.session.message(prompt);
+    this.armReplyTimer();
     this.emit("thinking", "Claire prépare sa réponse…");
     return true;
   }
@@ -185,8 +187,16 @@ export class InfoServ2ALiveAvatarProvider {
     this.replyTimer = setTimeout(() => {
       if (this.realtimeSignal === "reply-started") return;
       this.realtimeSignal = "reply-timeout";
-      this.emit("error", "Micro reçu, mais OpenAI Realtime ne renvoie pas de réponse");
-    }, 12000);
+      this.emit("error", "Le site a répondu, mais Claire n’a pas encore pu le dire à voix haute");
+    }, VERIFIED_REPLY_TIMEOUT_MS);
+  }
+
+  cancelUnauthorizedReply(reason = "user-command") {
+    this.record("conversation:interrupt-unauthorized", { reason, avatarSpeaking: this.avatarSpeaking });
+    try { this.session?.interrupt(); } catch { /* Aucune réponse Realtime à couper. */ }
+    this.clearReplyTimer();
+    this.avatarSpeaking = false;
+    return true;
   }
 
   clearTranscriptBuffer() {
@@ -231,8 +241,11 @@ export class InfoServ2ALiveAvatarProvider {
 
     this.commandInFlight = true;
     this.realtimeSignal = "transcribed";
-    this.emit("thinking", "Transcription reçue · préparation de la réponse…");
+    this.emit("thinking", "Je pilote le site InfoServ2A…");
     try {
+      // Couper la réponse Realtime spontanée : seule l’application
+      // peut ensuite faire parler Claire via [INFOSERV2A_APP_RESULT].
+      this.cancelUnauthorizedReply("settled-transcript");
       await this.callbacks.onCommand?.(text);
     } finally {
       this.commandInFlight = false;
@@ -392,8 +405,7 @@ export class InfoServ2ALiveAvatarProvider {
     session.on(AgentEventsEnum.USER_SPEAK_ENDED, () => {
       this.realtimeSignal = "input-ended";
       this.record("conversation:user-speak-ended");
-      this.armReplyTimer();
-      this.emit("thinking", "Micro transmis · attente de la transcription…");
+      this.emit("thinking", "Je prépare l’action sur le site…");
     });
     session.on(AgentEventsEnum.USER_TRANSCRIPTION, (event) => {
       const text = String(event?.text || "").trim();

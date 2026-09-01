@@ -125,6 +125,7 @@ test("une transcription stabilisée déclenche une seule action et une seule ré
 
   const session = globalThis.__infoservFakeSession;
   assert.deepEqual(commands, ["ouvre la page vidéosurveillance"]);
+  assert.equal(session.interrupted, true);
   assert.equal(session.messages.length, 1);
   assert.match(session.messages[0], /^\[INFOSERV2A_APP_RESULT\]/);
 

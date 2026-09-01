@@ -64,6 +64,20 @@ class MockPersistentSurface {
   }
 }
 
+test("une phrase parlée sans verbe d’ouverture pilote quand même la page", () => {
+  const plan = planCommand(
+    "Je cherche une caméra pour un terrain sans internet.",
+    knowledge,
+    manifest
+  );
+  assert.equal(plan.expected.pageId, "videosurveillance");
+  assert.equal(plan.expected.anchorId, "solutions-sans-fibre");
+  assert.deepEqual(
+    plan.steps.map((step) => step.tool),
+    ["search_site", "open_service", "scroll_to"]
+  );
+});
+
 test("le scénario sans fibre produit le plan canonique exact", () => {
   const plan = planCommand(
     "Affiche les solutions de vidéosurveillance sans fibre.",
@@ -95,7 +109,7 @@ test("le contrôleur exécute, vérifie et journalise une seule action à la foi
   const outcome = await controller.run(
     "Affiche les solutions de vidéosurveillance sans fibre."
   );
-  assert.equal(outcome.state, "complete");
+  assert.equal(outcome.state, "ready");
   assert.equal(outcome.verification.ok, true);
   assert.deepEqual(
     outcome.results.map((result) => result.tool),
@@ -105,7 +119,7 @@ test("le contrôleur exécute, vérifie et journalise une seule action à la foi
     controller.events
       .filter((event) => event.type === "state.changed")
       .map((event) => event.payload.next),
-    ["interpreting", "planning", "executing", "verifying", "complete"]
+    ["interpreting", "planning", "executing", "verifying", "complete", "ready"]
   );
   const snapshot = adapter.snapshot();
   assert.equal(snapshot.activePage, "videosurveillance");

@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-aidant1)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-aidant1)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-aidant2)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-aidant2)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -153,9 +153,9 @@ test("le diagnostic mobile distingue micro, transcription et réponse Realtime",
   assert.match(client, /infoserv:claire-telemetry/);
   assert.match(client, /Diagnostic S22/);
   assert.match(provider, /input-detected/);
-  assert.match(provider, /Transcription reçue/);
+  assert.match(provider, /Je pilote le site InfoServ2A/);
   assert.match(provider, /reply-started/);
-  assert.match(provider, /Micro reçu, mais OpenAI Realtime ne renvoie pas de réponse/);
+  assert.match(provider, /Le site a répondu, mais Claire n’a pas encore pu le dire à voix haute/);
   assert.match(provider, /SESSION_STOPPED/);
 });
 
@@ -164,7 +164,7 @@ test("les syllabes et doublons ne peuvent plus piloter la navigation", async () 
     readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
     readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8")
   ]);
-  assert.match(provider, /TRANSCRIPT_SETTLE_MS\s*=\s*950/);
+  assert.match(provider, /TRANSCRIPT_SETTLE_MS\s*=\s*450/);
   assert.match(provider, /significant\.length < 4/);
   assert.match(provider, /buffering-transcript/);
   const speakingStart = provider.match(/AVATAR_SPEAK_STARTED[\s\S]*?AVATAR_TRANSCRIPTION/)?.[0] || "";
@@ -201,6 +201,7 @@ test("Realtime ne coupe plus la réponse sur la première syllabe", async () => 
   const avatarStarted = provider.match(/AVATAR_SPEAK_STARTED[\s\S]*?AVATAR_TRANSCRIPTION/)?.[0] || "";
   const flushTranscript = provider.match(/async flushTranscript\(\)[\s\S]*?async connect/)?.[0] || "";
   assert.doesNotMatch(userTranscript, /session\.interrupt\(\)/);
+  assert.match(flushTranscript, /cancelUnauthorizedReply\("settled-transcript"\)/);
   assert.doesNotMatch(avatarStarted, /clearTranscriptBuffer\(\)/);
   assert.doesNotMatch(flushTranscript, /if \(this\.avatarSpeaking/);
   assert.match(provider, /async pauseListening\(\)/);
@@ -210,6 +211,24 @@ test("Realtime ne coupe plus la réponse sur la première syllabe", async () => 
 test("le champ de pièces jointes masqué ne crée aucun débordement horizontal", async () => {
   const css = await readFile(path.join(ROOT, "assets/css/components.css"), "utf8");
   assert.match(css, /\.form input\.sr-only\s*\{[^}]*width:\s*1px[^}]*min-height:\s*1px[^}]*padding:\s*0[^}]*border:\s*0/s);
+});
+
+test("la conversation guidée reste visible à côté du site sur ordinateur", async () => {
+  const css = await readFile(path.join(ROOT, "assets/css/claire-companion.css"), "utf8");
+  const desktop = css.split("@media (max-width: 820px)")[0];
+  assert.match(desktop, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*position: absolute/);
+  assert.doesNotMatch(desktop, /\[data-state="guided"\] \.claire-dialogue \{ display: none; \}/);
+});
+
+test("une transcription vocale coupe la réponse spontanée puis attend le résultat du site", async () => {
+  const [client, provider] = await Promise.all([
+    readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8")
+  ]);
+  assert.match(provider, /cancelUnauthorizedReply\("settled-transcript"\)/);
+  assert.match(client, /appendLiveCompanion/);
+  assert.match(client, /plan\.created/);
+  assert.match(client, /source !== "liveavatar"/);
 });
 
 test("Claire se présente comme aidante Live Avatar", async () => {

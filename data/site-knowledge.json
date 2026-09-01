@@ -31,12 +31,12 @@
       "href": "videosurveillance.html",
       "title": "Vidéosurveillance",
       "summary": "InfoServ2A étudie et installe des solutions de vidéosurveillance pour maisons, commerces, chantiers et sites isolés, y compris en 4G/5G ou avec alimentation solaire selon le contexte.",
-      "keywords": ["camera", "caméras", "surveillance", "sécurité", "4g", "5g", "solaire", "sans fibre", "sans électricité", "chantier", "commerce", "maison"],
+      "keywords": ["camera", "caméras", "surveillance", "sécurité", "4g", "5g", "solaire", "sans fibre", "sans électricité", "sans internet", "connexion", "chantier", "commerce", "maison"],
       "anchors": [
         {
           "id": "solutions-sans-fibre",
           "label": "Solutions sans fibre",
-          "keywords": ["sans fibre", "zone blanche", "4g", "5g", "solaire", "site isolé", "sans électricité"],
+          "keywords": ["sans fibre", "sans internet", "zone blanche", "4g", "5g", "solaire", "site isolé", "sans électricité", "connexion"],
           "response": "Voici les solutions 4G, 5G et solaires adaptées aux sites sans fibre."
         }
       ],

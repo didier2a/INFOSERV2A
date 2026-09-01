@@ -13,8 +13,8 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-aidant1";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-aidant1";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-aidant2";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-aidant2";
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique et aidante Live Avatar. Je suis ici pour vous présenter l’entreprise, comprendre votre besoin et vous guider en langage naturel vers le bon service : cybersécurité, réseaux et Wi-Fi, vidéosurveillance, assistance informatique ou création de sites web. Vous pouvez me parler librement et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
 
@@ -472,7 +472,8 @@ export class ClaireCompanion {
         root: this.root,
         video: this.nodes.video,
         onTranscript: (text, final = true) => this.handleTranscript(text, final),
-        onAvatarTranscript: (text) => this.appendTurn("companion", text),
+        onAvatarTranscript: (text) => this.appendLiveCompanion(text),
+        onAvatarSpeakEnd: () => this.finalizeLiveCompanionTurn(),
         onStatus: (value, label) => this.setStatus(value, label),
         onCommand: (text) => this.submit(text, "liveavatar")
       });
@@ -526,10 +527,11 @@ export class ClaireCompanion {
     });
   }
 
-  appendTurn(role, text) {
-    if (!this.nodes.transcript || !text) return;
+  appendTurn(role, text, { live = false } = {}) {
+    if (!this.nodes.transcript || !text) return null;
     const article = document.createElement("article");
     article.className = `claire-turn claire-turn--${role}`;
+    if (live) article.dataset.live = "1";
     const label = document.createElement("span");
     label.textContent = role === "user" ? "Vous" : "Claire";
     const paragraph = document.createElement("p");
@@ -539,6 +541,29 @@ export class ClaireCompanion {
     requestAnimationFrame(() => {
       const scroller = this.nodes.conversationScroll;
       if (scroller) scroller.scrollTop = scroller.scrollHeight;
+    });
+    return article;
+  }
+
+  appendLiveCompanion(text) {
+    const value = String(text || "").trim();
+    if (!value) return;
+    const last = this.nodes.transcript?.querySelector(".claire-turn--companion:last-of-type");
+    if (last?.dataset.live === "1") {
+      const paragraph = last.querySelector("p");
+      if (paragraph) paragraph.textContent = value;
+      requestAnimationFrame(() => {
+        const scroller = this.nodes.conversationScroll;
+        if (scroller) scroller.scrollTop = scroller.scrollHeight;
+      });
+      return;
+    }
+    this.appendTurn("companion", value, { live: true });
+  }
+
+  finalizeLiveCompanionTurn() {
+    this.nodes.transcript?.querySelectorAll('.claire-turn--companion[data-live="1"]').forEach((node) => {
+      delete node.dataset.live;
     });
   }
 
@@ -569,7 +594,7 @@ export class ClaireCompanion {
     this.setState(keepGuided ? "guided" : "shared");
     this.appendTurn("user", value);
     try {
-      const outcome = await this.runtime.run(value, { pathname: location.pathname });
+      const outcome = await this.runtime.run(value, { pathname: this.surface?.window?.location?.pathname || location.pathname });
       globalThis.dispatchEvent(new CustomEvent("infoserv:claire-command", {
         detail: { command: value, source, outcome }
       }));
@@ -580,7 +605,6 @@ export class ClaireCompanion {
       }
 
       const response = outcome.plan.response || "La demande a été vérifiée par InfoServ2A.";
-      this.appendTurn("companion", response);
       this.showRuntimeResult(outcome);
       if (outcome.plan.expected?.pageId) {
         storageSet(STORAGE_MODE, "guided");
@@ -588,6 +612,7 @@ export class ClaireCompanion {
         this.renderSuggestions();
       }
       this.setStatus("ready", "Action vérifiée · Claire reste connectée");
+      if (source !== "liveavatar") this.appendTurn("companion", response);
       this.speak(response);
       return outcome;
     } catch (error) {
@@ -601,6 +626,10 @@ export class ClaireCompanion {
   }
 
   handleRuntimeEvent(event) {
+    if (event.type === "plan.created" && event.payload.plan?.expected?.pageId && this.state !== "manual") {
+      storageSet(STORAGE_MODE, "guided");
+      this.setState("guided");
+    }
     const labels = {
       interpreting: ["thinking", "J’interprète votre demande…"],
       planning: ["thinking", "Je prépare une action contrôlée…"],

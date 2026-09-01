@@ -17,9 +17,9 @@ const TRANSITIONS = Object.freeze({
   planning: new Set(["executing", "verifying", "error"]),
   executing: new Set(["verifying", "error"]),
   verifying: new Set(["complete", "error"]),
-  complete: new Set(["interpreting"]),
-  error: new Set(["interpreting"]),
-  manual: new Set(["interpreting"])
+  complete: new Set(["interpreting", "ready"]),
+  error: new Set(["interpreting", "ready"]),
+  manual: new Set(["interpreting", "ready"])
 });
 
 function declaredTools(manifest) {
@@ -176,6 +176,7 @@ export class ClaireRuntimeController {
       if (!verification.ok) throw new Error(verification.reason || "Vérification impossible");
       this.transition(CONTROLLER_STATES.COMPLETE);
       this.publish("command.completed", { plan, results, verification });
+      this.transition(CONTROLLER_STATES.READY);
       return { commandId, plan, results, verification, state: this.state };
     } catch (error) {
       if (this.state !== CONTROLLER_STATES.ERROR) {
