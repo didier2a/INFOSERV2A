@@ -1,6 +1,8 @@
 (function () {
-  const form = document.querySelector("#devis-form");
-  if (!form || !window.InfoServ) return;
+  function initQuoteForm(root = document) {
+  const form = root.querySelector?.("#devis-form");
+  if (!form || !window.InfoServ || form.dataset.infoservBound === "true") return;
+  form.dataset.infoservBound = "true";
   const api = window.InfoServ;
   const filesInput = form.querySelector("#devis-files");
   const dropzone = form.querySelector(".dropzone");
@@ -147,4 +149,8 @@
         api.showStatus(form, "error", "L'envoi n'a pas pu aboutir. Vous pouvez nous écrire à devis@infoserv2a.pro.");
       });
   });
+  }
+
+  initQuoteForm();
+  document.addEventListener("infoserv:content-changed", () => initQuoteForm(document.querySelector("#contenu")));
 })();

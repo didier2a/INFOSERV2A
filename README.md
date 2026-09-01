@@ -4,9 +4,9 @@ Site professionnel d'InfoServ2A, relié à Cloudflare Workers Builds. La branche
 
 Environnement de validation Cloudflare : `https://infoserv2a.infoserv2a.workers.dev/`.
 
-Dernier déclenchement de validation Cloudflare : 30 août 2026 à 15 h 47 (Europe/Paris).
+Preview Claire (cette branche) : `https://cursor-live-avatar-aidant-8f54-infoserv2a.infoserv2a.workers.dev/?claire=1`.
 
-Futur domaine : `https://infoserv2a.pro`
+Le domaine public `https://infoserv2a.pro` pointe encore vers **GitHub Pages** (DNS OVH). LiveAvatar n’y démarre pas : Pages ne sert pas `/api/liveavatar-session`. Pour transférer l’URL vers le Worker Cloudflare (sans casser l’e-mail OVH), suivre `docs/activer-claire-sur-infoserv2a-pro.md`.
 
 ## Lancement local
 
@@ -33,17 +33,20 @@ http://localhost:8000
 - `data/` — contenus JSON (services, réalisations, FAQ)
 - `partials/` — header et footer de référence (également intégrés dans chaque page pour fonctionner sans injection JavaScript)
 
-## Claire Live Companion
+## Claire Live Companion — aidante Live Avatar
 
-Le site intègre un compagnon de navigation mobile-first sans exposer de secret :
+Le site intègre Claire, **aidante Live Avatar** mobile-first, sans exposer de secret :
 
 - arrivée immersive avec la même Claire verticale que Pocket Guide, puis scène plein écran ou rail guidé occupant 38 % de l’écran sur ordinateur ;
 - sur mobile 9:16, Claire conserve une scène haute et le site défile en dessous ; aucune bulle de support en bas à droite n’est utilisée ;
-- LiveAvatar est relié à OpenAI Realtime (`gpt-realtime`, voix `marin`) pour le dialogue audio naturel et la synchronisation labiale ;
+- LiveAvatar est relié à OpenAI Realtime (`gpt-realtime`, voix `marin`) : Claire est généraliste, comme OpenAI Live, et le site est un catalogue d’onglets qu’elle peut parcourir ;
+- Runtime V2 conserve Claire pendant la navigation interne (`#contenu`, `history.pushState`) ;
 - index explicite de toutes les pages dans `data/site-knowledge.json` ;
-- routage déterministe vers les pages et sections, sans invention de contenu ;
-- mode manuel toujours accessible et préférence conservée pendant la session ;
-- API cliente `window.InfoServClaire.registerProvider(provider)` pour brancher ultérieurement LiveAvatar depuis un service sécurisé.
+- catalogue d’actions déclaré : `search_site`, `open_service`, `scroll_to`, `open_contact`, `prefill_quote`, `list_catalog`, `explain_page`, `go_home`, `next_page`, `prev_page`, `next_section`, `prev_section` ;
+- mode manuel toujours accessible et préférence conservée pendant la session.
+
+Plan complet : `docs/claire-aidant-plan.md`.  
+Spec Figma versionnée : `/claire-aidant-figma.html` et `data/claire-aidant-figma.json`.
 
 Le navigateur ne contient aucune clé LiveAvatar ou OpenAI. Un fournisseur temps réel doit obtenir ses jetons éphémères côté serveur, par exemple dans une Cloudflare Pages Function utilisant des secrets Cloudflare.
 
@@ -86,6 +89,37 @@ Pour tester le moteur de routage :
 
 ```bash
 node --test tests/claire-core.test.mjs
+```
+
+## Claire Runtime V2 — laboratoire P0
+
+La route isolée **/claire-lab** valide le contrôleur avant de rebrancher la
+voix et l’avatar. Elle ne charge ni OpenAI Realtime, ni LiveKit, ni LiveAvatar
+et n’utilise aucun secret côté navigateur.
+
+```bash
+python -m http.server 8000
+```
+
+Puis ouvrir **http://localhost:8000/claire-lab.html**.
+
+Le laboratoire sépare :
+
+- le manifeste **data/claire-capabilities.json**, qui limite les actions au
+  catalogue d’onglets déclaré (recherche, ouverture, sections, contact, devis,
+  accueil, onglet suivant/précédent) ;
+- le contrôleur **assets/js/claire-runtime-v2.mjs**, source de vérité de la
+  machine à états et du journal ;
+- l’adaptateur **assets/js/claire-site-adapter.mjs**, qui simule le site sans
+  navigation ni soumission ;
+- l’interface **claire-lab.html**, responsive S22, tablette et ordinateur.
+
+Le scénario P0 de référence est : « Affiche les solutions de vidéosurveillance
+sans fibre. » Il doit exécuter dans l’ordre **search_site**, **open_service**,
+**scroll_to**, puis vérifier la page et l’ancre attendues.
+
+```bash
+node --test tests/claire-runtime-v2.test.mjs
 ```
 
 ## Formulaires

@@ -6,12 +6,13 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-ASSET_V = "20260831-live11"
+ASSET_V = "20260901-mobile2"
 BRAND = '<span class="brand-name">INFOSERV2A</span>'
 HEADER_MARK_START = "<!-- chrome:header -->"
 HEADER_MARK_END = "<!-- /chrome:header -->"
 FOOTER_MARK_START = "<!-- chrome:footer -->"
 FOOTER_MARK_END = "<!-- /chrome:footer -->"
+STANDALONE_PAGES = {"claire-lab.html", "claire-aidant-figma.html"}
 
 CURRENT = {
     "index.html": {"/"},
@@ -65,6 +66,25 @@ SEO = {
         "description": "Dépannage à distance à Porto-Vecchio : Windows, Mac, Linux, Android et Apple. Intervention ponctuelle sur devis.",
     },
 }
+
+
+def patch_viewport(html: str) -> str:
+    html = re.sub(
+        r'<meta name="viewport" content="[^"]*">',
+        '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
+        html,
+        count=1,
+    )
+    if 'name="mobile-web-app-capable"' not in html:
+        html = html.replace(
+            '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
+            '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
+            '  <meta name="mobile-web-app-capable" content="yes">\n'
+            '  <meta name="apple-mobile-web-app-capable" content="yes">\n'
+            '  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">',
+            1,
+        )
+    return html
 
 
 def apply_current(html: str, page: str) -> str:
@@ -256,10 +276,17 @@ def main() -> None:
     for path in sorted(ROOT.glob("*.html")):
         page = path.name
         html = path.read_text(encoding="utf-8")
+        if page in STANDALONE_PAGES:
+            html = patch_viewport(html)
+            html = cache_bust(html)
+            path.write_text(html, encoding="utf-8", newline="\n")
+            print("updated", page)
+            continue
         html = inject_header(html, apply_current(header_src, page))
         html = inject_footer(html, apply_current(footer_src, page))
         html = wrap_main(html)
         html = ensure_companion_assets(html)
+        html = patch_viewport(html)
         html = cache_bust(html)
         html = patch_seo(html, page)
         path.write_text(html, encoding="utf-8", newline="\n")

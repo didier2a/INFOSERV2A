@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "1.0.0",
+  "fileName": "InfoServ2A — Claire Aidant Live Avatar",
+  "status": "source-of-truth-in-repo",
+  "note": "Pousser ces frames dans Figma dès que le MCP Figma est authentifié dans Cursor Desktop.",
+  "specUrl": "/claire-aidant-figma.html",
+  "productFont": "Avenir Next / Segoe UI Variable",
+  "brandFont": "Orbitron",
+  "tokens": {
+    "color/navy": "#0a192f",
+    "color/ink": "#071827",
+    "color/teal": "#43b8ad",
+    "color/teal-dark": "#16776f",
+    "color/ivory": "#fbfaf6",
+    "color/sand": "#eee8dc",
+    "color/muted": "#5b6975",
+    "color/link": "#1c4d8c",
+    "space/stage-desktop": "clamp(360px, 38vw, 540px)",
+    "space/stage-mobile": "clamp(330px, 45svh, 470px)",
+    "radius/control": "999px",
+    "radius/card": "20px"
+  },
+  "components": [
+    { "name": "ClaireStage", "source": "figure.claire-live-stage" },
+    { "name": "ClairePrimaryButton", "source": "button.claire-button--primary" },
+    { "name": "ClaireQuietButton", "source": "button.claire-button--quiet" },
+    { "name": "ClaireVoiceControl", "source": "button.claire-voice-control" },
+    { "name": "ClaireManualBar", "source": "button.claire-manual-bar" },
+    { "name": "ClaireResultCard", "source": "article.claire-result" }
+  ],
+  "frames": [
+    {
+      "id": "F01",
+      "name": "Accueil aidante / desktop",
+      "viewport": "1440x900",
+      "state": "arrival",
+      "sections": ["brand bar", "portrait 9:16", "titre", "CTA Parler", "CTA manuel", "privacy"]
+    },
+    {
+      "id": "F02",
+      "name": "Accueil aidante / mobile",
+      "viewport": "390x844",
+      "state": "arrival",
+      "sections": ["scène haute", "copie", "CTA pleine largeur"]
+    },
+    {
+      "id": "F03",
+      "name": "Conversation",
+      "viewport": "1440x900",
+      "state": "shared",
+      "sections": ["portrait", "transcript", "suggestions", "résultat vérifié", "champ texte"]
+    },
+    {
+      "id": "F04",
+      "name": "Rail guidé / desktop",
+      "viewport": "1440x900",
+      "state": "guided",
+      "sections": ["rail 38%", "site #contenu", "micro", "mode manuel"]
+    },
+    {
+      "id": "F05",
+      "name": "Guidé / mobile 9:16",
+      "viewport": "390x844",
+      "state": "guided",
+      "sections": ["scène haute", "site en dessous", "dock Appeler / Devis"]
+    },
+    {
+      "id": "F06",
+      "name": "Rappel manuel",
+      "viewport": "390x844",
+      "state": "manual",
+      "sections": ["site complet", "barre Reprendre avec Claire"]
+    },
+    {
+      "id": "F07",
+      "name": "Laboratoire Runtime V2",
+      "viewport": "1280x800",
+      "state": "lab",
+      "sections": ["portrait statique", "plan d’outils", "aperçu isolé"]
+    },
+    {
+      "id": "F08",
+      "name": "États de présence",
+      "viewport": "1440x420",
+      "state": "presence",
+      "variants": ["ready", "listening", "thinking", "speaking", "error"]
+    }
+  ]
+}

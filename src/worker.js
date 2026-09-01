@@ -1,4 +1,7 @@
-import { onRequestGet as liveAvatarStatus } from "../functions/api/liveavatar-status.js";
+import {
+  onRequestGet as liveAvatarStatus,
+  onRequestOptions as liveAvatarStatusOptions
+} from "../functions/api/liveavatar-status.js";
 import {
   onRequestOptions as liveAvatarSessionOptions,
   onRequestPost as liveAvatarSession
@@ -24,14 +27,25 @@ export default {
     const { pathname } = new URL(request.url);
 
     if (pathname === "/api/liveavatar-status") {
-      if (request.method !== "GET") return methodNotAllowed(["GET"]);
-      return liveAvatarStatus({ request, env });
+      if (request.method === "GET") return liveAvatarStatus({ request, env });
+      if (request.method === "OPTIONS") return liveAvatarStatusOptions({ request, env });
+      return methodNotAllowed(["GET", "OPTIONS"]);
     }
 
     if (pathname === "/api/liveavatar-session") {
       if (request.method === "POST") return liveAvatarSession({ request, env });
       if (request.method === "OPTIONS") return liveAvatarSessionOptions({ request, env });
       return methodNotAllowed(["POST", "OPTIONS"]);
+    }
+
+    if (
+      pathname === "/claire-lab" || pathname === "/claire-lab/"
+      || pathname === "/claire-aidant-figma" || pathname === "/claire-aidant-figma/"
+    ) {
+      if (request.method !== "GET" && request.method !== "HEAD") {
+        return methodNotAllowed(["GET", "HEAD"]);
+      }
+      return env.ASSETS.fetch(request);
     }
 
     return env.ASSETS.fetch(request);

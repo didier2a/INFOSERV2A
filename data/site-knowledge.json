@@ -1,10 +1,10 @@
 {
   "version": "1.0.0",
   "site": "InfoServ2A",
-  "updated": "2026-08-30",
+  "updated": "2026-09-01",
   "identity": {
     "companion": "Claire",
-    "role": "Compagne numérique d’InfoServ2A",
+    "role": "Aidante Live Avatar et compagne numérique d’InfoServ2A",
     "phone": "07 45 15 60 76",
     "email": "contact@infoserv2a.pro",
     "area": "Porto-Vecchio et Corse-du-Sud, de Solenzara à Bonifacio",
@@ -31,7 +31,15 @@
       "href": "videosurveillance.html",
       "title": "Vidéosurveillance",
       "summary": "InfoServ2A étudie et installe des solutions de vidéosurveillance pour maisons, commerces, chantiers et sites isolés, y compris en 4G/5G ou avec alimentation solaire selon le contexte.",
-      "keywords": ["camera", "caméras", "surveillance", "sécurité", "4g", "5g", "solaire", "sans fibre", "sans électricité", "chantier", "commerce", "maison"],
+      "keywords": ["camera", "caméras", "surveillance", "sécurité", "4g", "5g", "solaire", "sans fibre", "sans électricité", "sans internet", "pas internet", "pas de fibre", "sans connexion", "zone blanche", "connexion", "chantier", "commerce", "maison"],
+      "anchors": [
+        {
+          "id": "solutions-sans-fibre",
+          "label": "Solutions sans fibre",
+          "keywords": ["sans fibre", "sans internet", "pas internet", "pas de fibre", "zone blanche", "4g", "5g", "solaire", "site isolé", "sans électricité", "sans connexion", "connexion"],
+          "response": "Voici les solutions 4G, 5G et solaires adaptées aux sites sans fibre."
+        }
+      ],
       "prompts": ["Une caméra peut-elle fonctionner sans fibre ?", "Parlez-moi des solutions solaires", "Je veux sécuriser un commerce"]
     },
     {
@@ -40,6 +48,14 @@
       "title": "Création de sites web",
       "summary": "InfoServ2A conçoit, héberge, maintient et modernise des sites web professionnels adaptés à une activité locale.",
       "keywords": ["site", "web", "internet", "refonte", "hébergement", "maintenance", "seo", "visibilité locale", "site vitrine"],
+      "anchors": [
+        {
+          "id": "offre-hebergement",
+          "label": "Hébergement et maintenance",
+          "keywords": ["hébergement", "hebergement", "maintenance", "nom de domaine", "https", "sauvegardes"],
+          "response": "Voici l’offre de création, d’hébergement et de maintenance du site."
+        }
+      ],
       "prompts": ["Je veux créer un site vitrine", "Pouvez-vous refaire mon site ?", "Qui assure la maintenance ?"]
     },
     {
@@ -52,7 +68,7 @@
         {
           "id": "audit-nis2",
           "label": "Audit NIS 2",
-          "keywords": ["nis2", "nis 2", "audit réseau", "rapport", "conformité"]
+          "keywords": ["nis2", "nis 2", "nice2", "nice 2", "audit réseau", "rapport", "conformité"]
         }
       ],
       "prompts": ["Expliquez-moi l’audit NIS 2", "Comment sécuriser mon réseau ?", "Quel accompagnement IA proposez-vous ?"]

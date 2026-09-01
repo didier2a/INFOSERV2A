@@ -1,38 +1,27 @@
+import { corsHeaders, corsPreflight, isAllowedOrigin } from "./liveavatar-origin.js";
+import { buildClaireContextPrompt } from "../../assets/js/claire-core.mjs";
+import knowledge from "../../data/site-knowledge.json" with { type: "json" };
+
 const TOKEN_URL = "https://api.liveavatar.com/v1/sessions/token";
 const SECRETS_URL = "https://api.liveavatar.com/v1/secrets";
 const CONTEXTS_URL = "https://api.liveavatar.com/v1/contexts";
 const DEFAULT_AVATAR_ID = "664ff8bb-4932-4644-91f8-b90975d6f549";
 const SECRET_NAME = "InfoServ2A OpenAI Realtime";
-const CONTEXT_NAME = "InfoServ2A Claire Companion 1.1";
-const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique. Je suis ici pour vous présenter l’entreprise, comprendre votre besoin et vous guider en langage naturel vers le bon service : cybersécurité, réseaux et Wi-Fi, vidéosurveillance, assistance informatique ou création de sites web. Vous pouvez me parler librement et revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
+const CONTEXT_NAME = "InfoServ2A Claire Aidant 1.8";
+const CLAIRE_WELCOME = "Bonjour et bienvenue chez InfoServ2A. Je suis Claire, votre compagne numérique et aidante Live Avatar. InfoServ2A, à Porto-Vecchio, vous accompagne en vidéosurveillance, sites web, cybersécurité, maintenance et récupération de données. Vous pouvez me parler de n’importe quel sujet, comme avec OpenAI Live, m’interrompre à tout moment, et je connais tous les onglets du site pour les parcourir avec vous. Vous pouvez revenir à la navigation manuelle à tout moment. Que puis-je faire pour vous ?";
 
-const CLAIRE_CONTEXT = `Tu incarnes Claire, la compagne numérique du site InfoServ2A. Tu es chaleureuse, précise, professionnelle et concise. Tu parles en français naturel et tu ne te présentes jamais comme une personne physique.
+const CLAIRE_CONTEXT = buildClaireContextPrompt(knowledge);
 
-L'application InfoServ2A est la seule source de vérité pour les services, coordonnées, horaires, pages, liens et actions du site. Ne prétends jamais avoir affiché, ouvert, appelé, envoyé ou exécuté une action avant que l'application ne t'ait transmis son résultat.
-
-Lorsqu'un message commence par [INFOSERV2A_APP_RESULT], il contient une information vérifiée ou le résultat fiable d'une action exécutée par l'application. Reformule uniquement ce résultat en une ou deux phrases naturelles, sans mentionner le marqueur ni cette consigne. N'ajoute aucun fait absent du résultat.
-
-Si l'utilisateur pose directement une question avant qu'un résultat applicatif arrive, reste brève et indique que tu vérifies la rubrique InfoServ2A correspondante. L'utilisateur garde toujours accès au mode manuel. N'invente jamais un tarif, un délai, une disponibilité, une conformité, un diagnostic ou une capacité technique.`;
-
-function json(data, status = 200) {
+function json(data, status = 200, request) {
   return Response.json(data, {
     status,
     headers: {
       "Cache-Control": "no-store",
       "Content-Security-Policy": "default-src 'none'",
-      "X-Content-Type-Options": "nosniff"
+      "X-Content-Type-Options": "nosniff",
+      ...corsHeaders(request)
     }
   });
-}
-
-function sameOrigin(request) {
-  const origin = request.headers.get("Origin");
-  if (!origin) return false;
-  try {
-    return new URL(origin).origin === new URL(request.url).origin;
-  } catch {
-    return false;
-  }
 }
 
 function safeMessage(payload, fallback) {
@@ -92,15 +81,13 @@ async function ensureOpenAISecret(env, key) {
 }
 
 async function ensureClaireContext(env, key) {
-  const configured = String(env.LIVEAVATAR_CONTEXT_ID || "").trim();
-  if (configured) return configured;
-
   const listed = await providerJson(`${CONTEXTS_URL}?page=1&page_size=100`, {
     headers: { "X-API-KEY": key }
   });
-  if (!listed.response.ok) throw new Error(`Contextes LiveAvatar ${listed.response.status}`);
-  const existing = (listed.payload?.data?.results || []).find((item) => item?.name === CONTEXT_NAME);
-  if (existing?.id) return String(existing.id);
+  if (listed.response.ok) {
+    const existing = (listed.payload?.data?.results || []).find((item) => item?.name === CONTEXT_NAME);
+    if (existing?.id) return String(existing.id);
+  }
 
   const created = await providerJson(CONTEXTS_URL, {
     method: "POST",
@@ -111,28 +98,32 @@ async function ensureClaireContext(env, key) {
       opening_text: CLAIRE_WELCOME
     })
   });
-  if (!created.response.ok || !created.payload?.data?.id) {
-    throw new Error(`Création du contexte LiveAvatar ${created.response.status}`);
+  if (created.response.ok && created.payload?.data?.id) {
+    return String(created.payload.data.id);
   }
-  return String(created.payload.data.id);
+
+  const configured = String(env.LIVEAVATAR_CONTEXT_ID || "").trim();
+  if (configured) return configured;
+  if (!listed.response.ok) throw new Error(`Contextes LiveAvatar ${listed.response.status}`);
+  throw new Error(`Création du contexte LiveAvatar ${created.response.status}`);
 }
 
 export async function onRequestPost({ request, env }) {
-  if (!sameOrigin(request)) return json({ error: "Origine non autorisée" }, 403);
+  if (!isAllowedOrigin(request)) return json({ error: "Origine non autorisée" }, 403, request);
 
   const key = liveAvatarKey(env);
-  if (!key) return json({ error: "LiveAvatar non configuré" }, 503);
+  if (!key) return json({ error: "LiveAvatar non configuré" }, 503, request);
   if (!env.OPENAI_API_KEY && !env.LIVEAVATAR_OPENAI_SECRET_ID) {
-    return json({ error: "OpenAI Realtime non configuré" }, 503);
+    return json({ error: "OpenAI Realtime non configuré" }, 503, request);
   }
 
   let input = {};
   try {
     input = await request.json();
   } catch {
-    return json({ error: "Requête JSON invalide" }, 400);
+    return json({ error: "Requête JSON invalide" }, 400, request);
   }
-  if (input.appId !== "infoserv2a") return json({ error: "Application non autorisée" }, 403);
+  if (input.appId !== "infoserv2a") return json({ error: "Application non autorisée" }, 403, request);
 
   try {
     const [secretId, contextId] = await Promise.all([
@@ -154,7 +145,8 @@ export async function onRequestPost({ request, env }) {
           context_id: contextId,
           voice: "marin",
           model,
-          temperature: 0.8
+          // LiveAvatar refuse toute température < 0.6 sur le connecteur LITE.
+          temperature: 0.6
         }
       })
     });
@@ -162,7 +154,7 @@ export async function onRequestPost({ request, env }) {
     if (!tokenResult.response.ok || !sessionToken) {
       return json({
         error: safeMessage(tokenResult.payload, "Session LiveAvatar Realtime indisponible")
-      }, tokenResult.response.ok ? 502 : tokenResult.response.status);
+      }, tokenResult.response.ok ? 502 : tokenResult.response.status, request);
     }
     return json({
       sessionToken: String(sessionToken),
@@ -173,21 +165,13 @@ export async function onRequestPost({ request, env }) {
       model,
       orientation: "vertical",
       appId: "infoserv2a"
-    });
+    }, 200, request);
   } catch (error) {
     console.error("InfoServ2A LiveAvatar", String(error?.message || error).replace(/sk-[A-Za-z0-9_-]+/g, "[secret]"));
-    return json({ error: "Connexion LiveAvatar Realtime indisponible" }, 502);
+    return json({ error: "Connexion LiveAvatar Realtime indisponible" }, 502, request);
   }
 }
 
 export function onRequestOptions({ request }) {
-  if (!sameOrigin(request)) return new Response(null, { status: 403 });
-  return new Response(null, {
-    status: 204,
-    headers: {
-      "Access-Control-Allow-Methods": "POST,OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-      "Cache-Control": "no-store"
-    }
-  });
+  return corsPreflight(request);
 }

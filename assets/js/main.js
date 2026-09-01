@@ -39,13 +39,19 @@
     window.addEventListener("scroll", onScroll, { passive: true });
   }
 
-  document.querySelectorAll(".faq details").forEach((item) => {
-    const summary = item.querySelector("summary");
-    if (!summary) return;
-    const sync = () => summary.setAttribute("aria-expanded", item.open ? "true" : "false");
-    summary.setAttribute("aria-expanded", item.open ? "true" : "false");
-    item.addEventListener("toggle", sync);
-  });
+  const initFaq = (root = document) => {
+    root.querySelectorAll?.(".faq details").forEach((item) => {
+      if (item.dataset.infoservBound === "true") return;
+      const summary = item.querySelector("summary");
+      if (!summary) return;
+      item.dataset.infoservBound = "true";
+      const sync = () => summary.setAttribute("aria-expanded", item.open ? "true" : "false");
+      sync();
+      item.addEventListener("toggle", sync);
+    });
+  };
+  initFaq();
+  document.addEventListener("infoserv:content-changed", () => initFaq(document.querySelector("#contenu")));
 
   window.InfoServ = {
     maxFiles: 5,
