@@ -22,11 +22,11 @@
   <link rel="icon" href="assets/images/logo/favicon.png?v=2" type="image/png" sizes="192x192">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
   <link rel="manifest" href="site.webmanifest">
-  <link rel="stylesheet" href="assets/css/variables.css?v=20260901-aidant4">
-  <link rel="stylesheet" href="assets/css/main.css?v=20260901-aidant4">
-  <link rel="stylesheet" href="assets/css/components.css?v=20260901-aidant4">
-  <link rel="stylesheet" href="assets/css/responsive.css?v=20260901-aidant4">
-  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260901-aidant4">
+  <link rel="stylesheet" href="assets/css/variables.css?v=20260901-aidant5">
+  <link rel="stylesheet" href="assets/css/main.css?v=20260901-aidant5">
+  <link rel="stylesheet" href="assets/css/components.css?v=20260901-aidant5">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=20260901-aidant5">
+  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260901-aidant5">
   <script type="application/ld+json">{
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
@@ -139,6 +139,29 @@
 </div>
 
 <div class="claire-companion" id="claireCompanion" data-state="loading" data-provider="checking" aria-busy="true">
+  <script>
+    (function () {
+      var root = document.getElementById("claireCompanion");
+      if (!root) return;
+      var requested = new URLSearchParams(location.search).get("claire");
+      var stored = null;
+      var seen = null;
+      try {
+        stored = sessionStorage.getItem("infoserv2a.claire.mode");
+        seen = sessionStorage.getItem("infoserv2a.claire.seen");
+      } catch (error) { /* Navigation reste possible sans stockage. */ }
+      var next = "arrival";
+      if (requested === "1" || requested === "start") next = "arrival";
+      else if (requested === "guided" || requested === "continue" || stored === "guided") next = "guided";
+      else if (stored === "shared") next = "shared";
+      else if (stored === "manual" || seen === "1") next = "manual";
+      root.setAttribute("data-state", next);
+      root.setAttribute("aria-busy", "false");
+      document.body.classList.toggle("claire-arrival-open", next === "arrival");
+      document.body.classList.toggle("claire-conversation-open", next === "shared");
+      document.body.classList.toggle("claire-is-guided", next === "guided");
+    })();
+  </script>
   <div class="claire-companion__backdrop" aria-hidden="true"></div>
 
   <section class="claire-experience" role="dialog" aria-modal="true" aria-labelledby="claireArrivalTitle" aria-describedby="claireArrivalDescription">
@@ -242,6 +265,7 @@
   <p class="sr-only" data-claire-live aria-live="assertive"></p>
 </div>
 <!-- /chrome:header -->
+
 
 
 
@@ -446,8 +470,9 @@
 
 
 
-<script src="assets/js/main.js?v=20260901-aidant4" defer></script>
-  <script src="assets/js/navigation.js?v=20260901-aidant4" defer></script>
-  <script type="module" src="assets/js/claire-companion.js?v=20260901-aidant4"></script>
+
+<script src="assets/js/main.js?v=20260901-aidant5" defer></script>
+  <script src="assets/js/navigation.js?v=20260901-aidant5" defer></script>
+  <script type="module" src="assets/js/claire-companion.js?v=20260901-aidant5"></script>
 </body>
 </html>

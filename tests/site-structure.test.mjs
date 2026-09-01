@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-aidant4)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-aidant4)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-aidant5)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-aidant5)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -251,6 +251,8 @@ test("Claire se présente comme aidante Live Avatar", async () => {
   ]);
   assert.match(header, /CLAIRE AIDANT LIVE/);
   assert.match(header, /aidante LiveAvatar/);
+  assert.match(header, /infoserv2a\.claire\.mode/);
+  assert.match(header, /requested === "1"/);
   assert.match(client, /aidante Live Avatar/);
   assert.match(endpoint, /aidante Live Avatar/);
   assert.match(knowledge, /Aidante Live Avatar/);

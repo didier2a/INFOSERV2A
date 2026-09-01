@@ -470,6 +470,7 @@
 .claire-manual-bar small { overflow: hidden; opacity: .72; text-overflow: ellipsis; white-space: nowrap; }
 .claire-manual-bar b { padding-right: 0.45rem; color: #7fe0d4; font-size: 0.78rem; }
 
+.claire-companion[data-state="loading"] .claire-experience,
 .claire-companion[data-state="arrival"] .claire-experience,
 .claire-companion[data-state="shared"] .claire-experience,
 .claire-companion[data-state="action"] .claire-experience,
