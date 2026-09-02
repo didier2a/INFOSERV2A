@@ -273,16 +273,36 @@ export class BrowserInfoServ2ASurface {
     });
   }
 
-  submitQuote(draft = {}) {
+  async submitQuote(draft = {}) {
     const formState = this.prefillQuote(draft);
     const form = this.document.querySelector("#devis-form");
     const missing = this.quoteMissingFields();
     if (!form || missing.length) {
-      return { ...formState, submitted: false, missing };
+      return { ...formState, submitted: false, sent: false, missing };
     }
-    if (typeof form.requestSubmit === "function") form.requestSubmit();
-    else form.dispatchEvent(new this.window.Event("submit", { bubbles: true, cancelable: true }));
-    return { ...formState, submitted: true, missing: [] };
+    const payload = {
+      kind: "devis",
+      name: this.document.querySelector("#devis-name")?.value || draft.name || "",
+      phone: this.document.querySelector("#devis-phone")?.value || draft.phone || "",
+      email: this.document.querySelector("#devis-email")?.value || draft.email || "",
+      city: this.document.querySelector("#devis-city")?.value || draft.city || "",
+      service: this.document.querySelector("#devis-service")?.value || draft.service || "",
+      description: this.document.querySelector("#devis-description")?.value || draft.description || "",
+      website: this.document.querySelector("#devis-form [name='website']")?.value || ""
+    };
+    const result = await this.sendSiteEmail(payload);
+    this.showFormStatus("#devis-form", result, "devis@infoserv2a.pro");
+    return {
+      ...formState,
+      submitted: Boolean(result.sent),
+      sent: Boolean(result.sent),
+      pendingActivation: Boolean(result.pendingActivation),
+      configured: result.configured,
+      inbox: result.inbox,
+      replyTo: result.replyTo,
+      missing: result.missing || [],
+      error: result.error || ""
+    };
   }
 
   launchHref(href) {
@@ -296,13 +316,80 @@ export class BrowserInfoServ2ASurface {
     }
   }
 
-  composeEmail(draft = {}) {
-    const params = new URLSearchParams();
-    if (draft.subject) params.set("subject", draft.subject);
-    if (draft.body) params.set("body", draft.body);
-    const query = params.toString();
-    const href = `mailto:${draft.to || "contact@infoserv2a.pro"}${query ? `?${query}` : ""}`;
-    return this.launchHref(href);
+  async sendSiteEmail(payload) {
+    if (typeof this.window.InfoServ?.sendSiteEmail === "function") {
+      return this.window.InfoServ.sendSiteEmail(payload);
+    }
+    const response = await this.fetchImpl("/api/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify(payload || {})
+    });
+    const data = await response.json().catch(() => ({}));
+    return {
+      ok: response.ok,
+      status: response.status,
+      sent: Boolean(data.sent),
+      pendingActivation: Boolean(data.pendingActivation),
+      configured: data.configured !== false,
+      inbox: data.inbox || "",
+      replyTo: data.replyTo || "",
+      missing: Array.isArray(data.missing) ? data.missing : [],
+      error: data.error || "",
+      message: data.message || ""
+    };
+  }
+
+  showFormStatus(selector, result, fallbackInbox) {
+    const form = this.document.querySelector(selector);
+    const api = this.window.InfoServ;
+    if (!form || !api?.showStatus) return;
+    if (result.pendingActivation) {
+      api.showStatus(form, "ok", result.message || `Un e-mail d’activation arrive dans ${result.inbox || fallbackInbox}.`);
+      return;
+    }
+    if (result.sent) {
+      api.showStatus(form, "ok", `Message transmis vers ${result.inbox || fallbackInbox}.`);
+      return;
+    }
+    api.showStatus(form, "error", result.error || "L’envoi n’a pas pu aboutir.");
+  }
+
+  prefillContact(draft = {}) {
+    this.fillQuoteField("#contact-name", draft.name);
+    this.fillQuoteField("#contact-email", draft.email || draft.replyTo);
+    this.fillQuoteField("#contact-phone", draft.phone);
+    this.fillQuoteField("#contact-message", draft.message || draft.body);
+    return {
+      name: this.document.querySelector("#contact-name")?.value || "",
+      email: this.document.querySelector("#contact-email")?.value || "",
+      phone: this.document.querySelector("#contact-phone")?.value || "",
+      message: this.document.querySelector("#contact-message")?.value || ""
+    };
+  }
+
+  async composeEmail(draft = {}) {
+    const fields = this.prefillContact(draft);
+    const missing = ["name", "email", "message"].filter((key) => !String(fields[key] || "").trim());
+    if (missing.length) {
+      return { sent: false, triggered: false, missing, inbox: "contact@infoserv2a.pro" };
+    }
+    const result = await this.sendSiteEmail({
+      kind: "contact",
+      name: fields.name,
+      email: fields.email,
+      phone: fields.phone,
+      message: fields.message,
+      website: this.document.querySelector("#contact-form [name='website']")?.value || ""
+    });
+    this.showFormStatus("#contact-form", result, "contact@infoserv2a.pro");
+    return {
+      ...result,
+      draft,
+      triggered: Boolean(result.sent),
+      missing: result.missing || []
+    };
   }
 
   snapshot() {
@@ -403,15 +490,21 @@ export class InfoServ2ASiteAdapter {
         this.view.activeSection = null;
         this.view.quoteDraft = quoteDraftFromArgs(args);
         const form = this.surface.submitQuote
-          ? this.surface.submitQuote(this.view.quoteDraft)
+          ? await this.surface.submitQuote(this.view.quoteDraft)
           : this.surface.prefillQuote(this.view.quoteDraft);
-        this.view.submitted = Boolean(form.submitted);
+        this.view.submitted = Boolean(form.sent || form.submitted);
         return {
           page: pageSummary(page),
           draft: clone(this.view.quoteDraft),
           form,
           submitted: this.view.submitted,
+          sent: Boolean(form.sent),
+          pendingActivation: Boolean(form.pendingActivation),
+          configured: form.configured,
+          inbox: form.inbox || "devis@infoserv2a.pro",
+          replyTo: form.replyTo || this.view.quoteDraft.email,
           missing: form.missing || [],
+          error: form.error || "",
           persistentSession: true
         };
       }
@@ -445,13 +538,32 @@ export class InfoServ2ASiteAdapter {
           body: String(args.body || "")
         };
         const launched = this.surface.composeEmail
-          ? this.surface.composeEmail(draft)
-          : this.surface.launchHref?.(`mailto:${draft.to}`) || { href: `mailto:${draft.to}`, launched: false };
+          ? await this.surface.composeEmail({
+            ...draft,
+            name: args.name,
+            email: args.email,
+            phone: args.phone,
+            message: args.message || draft.body
+          })
+          : await this.surface.sendSiteEmail?.({
+            kind: "contact",
+            name: args.name,
+            email: args.email,
+            phone: args.phone,
+            message: args.message || draft.body
+          }) || { sent: false, configured: false };
         return {
           page: pageSummary(page),
           channel: "email",
           draft,
-          triggered: Boolean(launched.launched),
+          sent: Boolean(launched.sent),
+          pendingActivation: Boolean(launched.pendingActivation),
+          configured: launched.configured,
+          inbox: launched.inbox || draft.to,
+          replyTo: launched.replyTo || args.email || "",
+          missing: launched.missing || [],
+          error: launched.error || "",
+          triggered: Boolean(launched.sent),
           persistentSession: true
         };
       }

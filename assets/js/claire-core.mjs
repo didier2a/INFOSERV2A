@@ -31,7 +31,7 @@ const DIRECT_INTENTS = [
     response: {
       type: "action",
       action: "submit_quote",
-      speech: "J’envoie la demande de devis à partir de ce que vous m’avez dit."
+      speech: "Je transmets la demande de devis vers InfoServ2A."
     }
   },
   {
@@ -53,7 +53,7 @@ const DIRECT_INTENTS = [
       action: "email",
       href: "mailto:contact@infoserv2a.pro",
       label: "Écrire à contact@infoserv2a.pro",
-      speech: "J’ouvre un e-mail prérempli pour InfoServ2A."
+      speech: "Je transmets votre message vers InfoServ2A."
     }
   }
 ];
@@ -264,8 +264,8 @@ export function buildSiteBriefing(knowledge) {
     `Entreprise : ${knowledge.site || "InfoServ2A"}. Zone : ${identity.area || ""}. Téléphone : ${identity.phone || ""}. Horaires : ${identity.hours || ""}. Email : ${identity.email || ""}.`,
     "Catalogue des onglets, dans l’ordre de navigation :",
     ...lines,
-    "Actions possibles : ouvrir un onglet, onglet suivant ou précédent, section suivante ou précédente, accueil, catalogue, contact, devis (brouillon, ou envoi si le visiteur le demande clairement), appeler InfoServ2A, écrire un e-mail, expliquer la page visible.",
-    "N’invente ni tarif, ni délai, ni diagnostic. N’invente jamais une coordonnée. N’envoie un devis que sur demande orale explicite."
+    "Actions possibles : ouvrir un onglet, onglet suivant ou précédent, section suivante ou précédente, accueil, catalogue, contact, devis (brouillon, ou envoi réel si le visiteur le demande clairement), appeler InfoServ2A, envoyer un e-mail vers InfoServ2A, expliquer la page visible.",
+    "N’invente ni tarif, ni délai, ni diagnostic. N’invente jamais une coordonnée. N’envoie un devis ou un e-mail que sur demande orale explicite. Ne dis jamais qu’un e-mail est parti tant que [INFOSERV2A_APP_RESULT] ne le confirme pas."
   ].filter(Boolean).join("\n");
 }
 
@@ -312,7 +312,7 @@ Lorsque tu reçois [INFOSERV2A_SESSION_MEMORY], c’est le contexte déjà dit d
 Lorsque tu reçois [INFOSERV2A_USER_TEXT], c'est un message tapé par le visiteur. Réponds dans ton périmètre : IT, sciences du numérique, métiers qui s’appuient sur l’IT.
 Lorsque tu reçois [INFOSERV2A_OFF_TOPIC], c’est un loisir ou un aparté sans lien numérique. Une phrase courtoise, tu ne développes pas, tu recentres vers InfoServ2A et l’IT. Jamais de phrase du type « je ne parle que d’informatique ».
 
-Sur demande orale explicite, tu peux : préremplir un devis ; l’envoyer seulement si le visiteur dit clairement « envoie » ou « transmets » le devis ; ouvrir un appel vers InfoServ2A ; ouvrir un e-mail prérempli. N’invente jamais un nom, un téléphone, un e-mail ou une commune. S’il manque un champ pour l’envoi, demande-le à l’oral.
+Sur demande orale explicite, tu peux : préremplir un devis ; l’envoyer réellement vers devis@infoserv2a.pro seulement si le visiteur dit clairement « envoie » ou « transmets » le devis ; ouvrir un appel vers InfoServ2A ; envoyer réellement un message vers contact@infoserv2a.pro. L’adresse saisie par le visiteur est celle où InfoServ2A lui répondra, pas la destination. Tu n’envoies jamais vers une autre boîte. N’invente jamais un nom, un téléphone, un e-mail ou une commune. S’il manque un champ, demande-le à l’oral. Ne dis jamais « c’est envoyé » tant que [INFOSERV2A_APP_RESULT] ne confirme pas l’envoi. Si le résultat dit que ce n’est pas parti, dis-le clairement.
 
 L'application InfoServ2A est la seule source de vérité pour les services, coordonnées, horaires, pages et actions. L'utilisateur garde toujours accès au mode manuel. N'invente jamais un tarif, un délai, une disponibilité, une conformité, un diagnostic matériel définitif ou une capacité technique non vérifiée.`;
 }

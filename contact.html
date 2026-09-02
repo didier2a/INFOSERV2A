@@ -25,11 +25,11 @@
   <link rel="icon" href="assets/images/logo/favicon.png?v=2" type="image/png" sizes="192x192">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
   <link rel="manifest" href="site.webmanifest">
-  <link rel="stylesheet" href="assets/css/variables.css?v=20260902-it16">
-  <link rel="stylesheet" href="assets/css/main.css?v=20260902-it16">
-  <link rel="stylesheet" href="assets/css/components.css?v=20260902-it16">
-  <link rel="stylesheet" href="assets/css/responsive.css?v=20260902-it16">
-  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260902-it16">
+  <link rel="stylesheet" href="assets/css/variables.css?v=20260902-it17">
+  <link rel="stylesheet" href="assets/css/main.css?v=20260902-it17">
+  <link rel="stylesheet" href="assets/css/components.css?v=20260902-it17">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=20260902-it17">
+  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260902-it17">
   <script type="application/ld+json">{
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
@@ -371,6 +371,7 @@
 
 
 
+
 <main id="contenu" class="site-main">
   
     <section class="page-hero"><div class="container">
@@ -417,14 +418,15 @@
     </div></section>
     <section class="section section--soft"><div class="container" style="max-width:40rem">
         <h2>Écrire à <span class="brand-name">INFOSERV2A</span></h2>
-        <form class="form" id="contact-form" novalidate data-mail="contact@infoserv2a.pro">
+        <form class="form" id="contact-form" novalidate data-mail="contact@infoserv2a.pro" data-endpoint="/api/send-email">
           <div class="form-field"><label for="contact-name">Nom</label><input id="contact-name" name="name" autocomplete="name" required><span class="field-error"></span></div>
           <div class="form-field"><label for="contact-email">E-mail</label><input id="contact-email" name="email" type="email" autocomplete="email" required><span class="field-error"></span></div>
           <div class="form-field"><label for="contact-phone">Téléphone</label><input id="contact-phone" name="phone" type="tel" autocomplete="tel"><span class="field-error"></span></div>
           <div class="form-field"><label for="contact-message">Message</label><textarea id="contact-message" name="message" required></textarea><span class="field-error"></span></div>
+          <div class="sr-only" aria-hidden="true"><label for="contact-website">Site web</label><input id="contact-website" name="website" tabindex="-1" autocomplete="off"></div>
           <button class="btn btn--primary" type="submit">Envoyer le message</button>
           <p class="form-status" role="status"></p>
-          <p class="muted">Les informations transmises sont utilisées uniquement pour répondre à votre demande. L'envoi ouvre votre logiciel de messagerie vers contact@infoserv2a.pro.</p>
+          <p class="muted">Les informations transmises sont utilisées uniquement pour répondre à votre demande. Le message part réellement vers contact@infoserv2a.pro. Votre e-mail sert uniquement à vous répondre.</p>
         </form>
       </div>
     </section>
@@ -528,9 +530,10 @@
 
 
 
-<script src="assets/js/main.js?v=20260902-it16" defer></script>
-  <script src="assets/js/navigation.js?v=20260902-it16" defer></script>
-  <script src="assets/js/contact.js?v=20260902-it16" defer></script>
-  <script type="module" src="assets/js/claire-companion.js?v=20260902-it16"></script>
+
+<script src="assets/js/main.js?v=20260902-it17" defer></script>
+  <script src="assets/js/navigation.js?v=20260902-it17" defer></script>
+  <script src="assets/js/contact.js?v=20260902-it17" defer></script>
+  <script type="module" src="assets/js/claire-companion.js?v=20260902-it17"></script>
 </body>
 </html>

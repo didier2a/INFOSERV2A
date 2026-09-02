@@ -198,7 +198,7 @@ export function planCommand(input, knowledge, manifest, context = {}) {
   if (route.type === "action" && route.action === "submit_quote") {
     const draft = quotePrefillFromMemory(context.memory, { fallbackDescription: command });
     if (canSubmitQuote(context.memory, { fallbackDescription: command })) {
-      steps.push(actionStep("submit_quote", draft, "Envoyer la demande de devis à partir du contexte oral."));
+      steps.push(actionStep("submit_quote", draft, "Envoyer réellement la demande de devis vers InfoServ2A."));
     } else {
       steps.push(actionStep("prefill_quote", draft, "Préparer le devis et demander à l’oral ce qui manque."));
     }
@@ -207,7 +207,7 @@ export function planCommand(input, knowledge, manifest, context = {}) {
       href: route.href || "tel:+33745156076"
     }, "Lancer l’appel vers InfoServ2A."));
   } else if (route.type === "action" && route.action === "email") {
-    steps.push(actionStep("compose_email", emailDraftFromMemory(context.memory), "Ouvrir un e-mail prérempli."));
+    steps.push(actionStep("compose_email", emailDraftFromMemory(context.memory), "Envoyer réellement le message vers contact@infoserv2a.pro."));
   } else if (route.page) {
     steps.push(actionStep("search_site", { query: command }, "Identifier la page et la section les plus pertinentes."));
     if (route.page.id === "contact") {

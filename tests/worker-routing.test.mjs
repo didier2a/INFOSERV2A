@@ -78,6 +78,14 @@ test("la route de session échoue proprement sans secret Cloudflare", async () =
   assert.equal((await response.json()).error, "LiveAvatar non configuré");
 });
 
+test("le Worker expose le statut d’envoi d’e-mail", async () => {
+  const response = await worker.fetch(new Request("https://infoserv2a.test/api/send-email"), env({
+    EMAIL_PROVIDER: "none"
+  }));
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).configured, false);
+});
+
 test("le Worker n’attache pas encore infoserv2a.pro pour ne pas voler le domaine depuis une preview", async () => {
   const source = await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8");
   const uncommented = source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

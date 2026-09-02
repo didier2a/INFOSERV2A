@@ -6,6 +6,11 @@ import {
   onRequestOptions as liveAvatarSessionOptions,
   onRequestPost as liveAvatarSession
 } from "../functions/api/liveavatar-session.js";
+import {
+  onRequestGet as sendEmailStatus,
+  onRequestOptions as sendEmailOptions,
+  onRequestPost as sendEmail
+} from "../functions/api/send-email.js";
 
 function methodNotAllowed(allowed) {
   return Response.json(
@@ -36,6 +41,13 @@ export default {
       if (request.method === "POST") return liveAvatarSession({ request, env });
       if (request.method === "OPTIONS") return liveAvatarSessionOptions({ request, env });
       return methodNotAllowed(["POST", "OPTIONS"]);
+    }
+
+    if (pathname === "/api/send-email") {
+      if (request.method === "GET") return sendEmailStatus({ request, env });
+      if (request.method === "POST") return sendEmail({ request, env });
+      if (request.method === "OPTIONS") return sendEmailOptions({ request, env });
+      return methodNotAllowed(["GET", "POST", "OPTIONS"]);
     }
 
     if (

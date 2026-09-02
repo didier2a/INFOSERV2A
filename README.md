@@ -68,6 +68,7 @@ Les fonctions serveur sont dans `functions/api/` et le point d’entrée Cloudfl
 
 - `liveavatar-status.js` active automatiquement l’adaptateur seulement si les bindings requis existent ;
 - `liveavatar-session.js` accepte uniquement une requête de même origine, crée ou réutilise le contexte Claire et renvoie un jeton de session de cinq minutes ;
+- `send-email.js` envoie réellement contact et devis vers `contact@` / `devis@infoserv2a.pro` (Resend si `RESEND_API_KEY`, sinon FormSubmit). Claire ne dit « c’est parti » que si cette route confirme l’envoi ;
 - en cas d’absence ou d’échec LiveAvatar, l’interface indique explicitement que la voix native du navigateur est un mode local de secours.
 
 Bindings Cloudflare à créer sans fichier local :

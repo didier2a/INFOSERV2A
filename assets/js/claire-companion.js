@@ -24,6 +24,7 @@ import {
   quoteQuestionnaire,
   shouldShowQuoteQuest
 } from "./claire-session-memory.mjs";
+import { describeEmailSendOutcome } from "./site-email.mjs";
 import { ClaireRuntimeController } from "./claire-runtime-v2.mjs";
 import {
   BrowserInfoServ2ASurface,
@@ -34,8 +35,8 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260902-it16";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260902-it16";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260902-it17";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260902-it17";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -762,6 +763,8 @@ export class ClaireCompanion {
   }
 
   verifiedSpeechFor(outcome) {
+    const sendSpeech = describeEmailSendOutcome(outcome);
+    if (sendSpeech) return sendSpeech;
     const snapshot = this.siteAdapter?.snapshot() || {};
     const page = snapshot.page;
     const section = snapshot.section;
@@ -1181,6 +1184,9 @@ export class ClaireCompanion {
       }
       this.setStatus("ready", "Page affichée · Claire vous l’explique");
       if (source === "liveavatar") {
+        if (describeEmailSendOutcome(outcome)) {
+          this.provider?.sendPrompt?.(response);
+        }
         this.pushPageContext();
         return outcome;
       }

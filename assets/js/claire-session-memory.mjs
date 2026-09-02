@@ -237,7 +237,11 @@ export function emailDraftFromMemory(memory = {}) {
   return {
     to: "contact@infoserv2a.pro",
     subject: `Contact InfoServ2A${who}`,
-    body: lines.join("\n").trim()
+    body: lines.join("\n").trim(),
+    name: visitor.name,
+    email: visitor.email,
+    phone: visitor.phone,
+    message: compact(memory.need) || "Bonjour, je souhaite être recontacté(e) au sujet de ma demande."
   };
 }
 

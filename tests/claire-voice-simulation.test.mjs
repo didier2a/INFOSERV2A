@@ -48,9 +48,19 @@ class MockPersistentSurface {
     return { href, launched: true };
   }
 
-  composeEmail(draft) {
+  async sendSiteEmail(payload) {
+    this.calls.push(["sendSiteEmail", payload]);
+    return { sent: true, inbox: "contact@infoserv2a.pro", replyTo: payload.email || "" };
+  }
+
+  async composeEmail(draft) {
     this.calls.push(["composeEmail", draft]);
-    return this.launchHref(`mailto:${draft.to || "contact@infoserv2a.pro"}`);
+    return this.sendSiteEmail({
+      kind: "contact",
+      name: draft.name,
+      email: draft.email,
+      message: draft.message || draft.body
+    });
   }
 
   snapshot() {

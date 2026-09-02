@@ -31,40 +31,28 @@
         return;
       }
 
-      if (api.isLocal) {
-        api.showStatus(
-          form,
-          "ok",
-          "Mode local : votre demande a été validée. Aucun e-mail n'est envoyé depuis cet ordinateur."
-        );
+      const send = api.sendSiteEmail
+        ? api.sendSiteEmail({
+            kind: "contact",
+            name: name.value,
+            email: email.value,
+            phone: phone.value,
+            message: message.value,
+            website: form.querySelector("[name='website']")?.value || ""
+          })
+        : Promise.reject(new Error("send"));
+
+      send.then((result) => {
+        if (result.pendingActivation) {
+          api.showStatus(form, "ok", result.message || "Un e-mail d’activation arrive dans " + (result.inbox || "contact@infoserv2a.pro") + ". Confirmez-le, puis renvoyez le message.");
+          return;
+        }
+        if (!result.sent) throw new Error(result.error || "network");
+        api.showStatus(form, "ok", "Votre message a bien été transmis vers " + (result.inbox || "contact@infoserv2a.pro") + ".");
         form.reset();
-        return;
-      }
-
-      if (!form.dataset.endpoint) {
-        const mail = form.dataset.mail || "contact@infoserv2a.pro";
-        const subject = encodeURIComponent("Contact InfoServ2A");
-        const body = encodeURIComponent(
-          "Nom : " + name.value + "\nE-mail : " + email.value + "\nTéléphone : " + (phone.value || "") + "\n\n" + message.value
-        );
-        window.location.href = "mailto:" + mail + "?subject=" + subject + "&body=" + body;
-        api.showStatus(form, "ok", "Votre logiciel de messagerie va s'ouvrir. Vérifiez le message puis envoyez-le à " + mail + ".");
-        return;
-      }
-
-      fetch(form.dataset.endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(Object.fromEntries(new FormData(form)))
-      })
-        .then((response) => {
-          if (!response.ok) throw new Error("network");
-          api.showStatus(form, "ok", "Votre message a bien été transmis.");
-          form.reset();
-        })
-        .catch(() => {
-          api.showStatus(form, "error", "L'envoi n'a pas pu aboutir. Vous pouvez nous écrire à contact@infoserv2a.pro.");
-        });
+      }).catch(() => {
+        api.showStatus(form, "error", "L'envoi n'a pas pu aboutir. Vous pouvez nous écrire à contact@infoserv2a.pro.");
+      });
     });
   }
 

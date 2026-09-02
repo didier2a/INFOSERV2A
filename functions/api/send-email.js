@@ -1,0 +1,266 @@
+import { corsHeaders, corsPreflight, isAllowedOrigin } from "./liveavatar-origin.js";
+
+export const CONTACT_INBOX = "contact@infoserv2a.pro";
+export const DEVIS_INBOX = "devis@infoserv2a.pro";
+export const DEFAULT_FROM = "InfoServ2A <noreply@infoserv2a.pro>";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const RATE_LIMIT = 6;
+const RATE_WINDOW_MS = 10 * 60 * 1000;
+const hits = new Map();
+
+function json(data, status = 200, request) {
+  return Response.json(data, {
+    status,
+    headers: {
+      "Cache-Control": "no-store",
+      "Content-Security-Policy": "default-src 'none'",
+      "X-Content-Type-Options": "nosniff",
+      ...corsHeaders(request)
+    }
+  });
+}
+
+export function resetEmailRateLimit() {
+  hits.clear();
+}
+
+export function allowEmailRequest(ip, now = Date.now(), limit = RATE_LIMIT, windowMs = RATE_WINDOW_MS) {
+  const key = String(ip || "unknown");
+  const bucket = (hits.get(key) || []).filter((stamp) => now - stamp < windowMs);
+  if (bucket.length >= limit) {
+    hits.set(key, bucket);
+    return false;
+  }
+  bucket.push(now);
+  hits.set(key, bucket);
+  return true;
+}
+
+export function compactField(value, max) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
+}
+
+export function resolveEmailProvider(env = {}) {
+  if (typeof env.EMAIL?.send === "function") return "cloudflare-email";
+  if (String(env.RESEND_API_KEY || "").trim()) return "resend";
+  const forced = String(env.EMAIL_PROVIDER || "formsubmit").trim().toLowerCase();
+  if (forced === "none" || forced === "off") return "none";
+  return "formsubmit";
+}
+
+export function emailConfigured(env = {}) {
+  return resolveEmailProvider(env) !== "none";
+}
+
+export function inboxForKind(kind, env = {}) {
+  if (kind === "devis") return compactField(env.DEVIS_INBOX, 120) || DEVIS_INBOX;
+  return compactField(env.CONTACT_INBOX, 120) || CONTACT_INBOX;
+}
+
+export function normalizeEmailPayload(input = {}, env = {}) {
+  const kind = String(input.kind || "").trim() === "devis" ? "devis" : "contact";
+  const honeypot = compactField(input.website || input.company_url || input._honey, 80);
+  const name = compactField(input.name, 80);
+  const email = compactField(input.email, 120);
+  const phone = compactField(input.phone, 40);
+  const city = compactField(input.city, 80);
+  const service = compactField(input.service, 80);
+  const message = compactField(input.message || input.description || input.body, 4000);
+  const files = compactField(input.files, 400);
+  const missing = [];
+  if (!name) missing.push("name");
+  if (!email || !EMAIL_RE.test(email)) missing.push("email");
+  if (kind === "devis") {
+    if (!phone) missing.push("phone");
+    if (!city) missing.push("city");
+    if (!service) missing.push("service");
+    if (!message) missing.push("description");
+  } else if (!message) {
+    missing.push("message");
+  }
+  const inbox = compactField(env.EMAIL_TEST_INBOX, 120) || inboxForKind(kind, env);
+  const subject = kind === "devis"
+    ? `Demande de devis InfoServ2A${name ? ` — ${name}` : ""}`
+    : `Contact InfoServ2A${name ? ` — ${name}` : ""}`;
+  const lines = [
+    `Canal : ${kind === "devis" ? "demande de devis" : "message de contact"}`,
+    `Nom : ${name}`,
+    `E-mail : ${email}`,
+    phone && `Téléphone : ${phone}`,
+    city && `Commune : ${city}`,
+    service && `Service : ${service}`,
+    files && `Fichiers mentionnés (non joints par le site) : ${files}`,
+    "",
+    message
+  ].filter((line, index, list) => line || list[index - 1]);
+  return {
+    kind,
+    honeypot: Boolean(honeypot),
+    missing,
+    inbox,
+    replyTo: email,
+    subject,
+    text: lines.join("\n").trim(),
+    fields: { name, email, phone, city, service, message, files }
+  };
+}
+
+function formSubmitActivated(payload) {
+  const blob = JSON.stringify(payload || {}).toLowerCase();
+  return !/activate|confirm your email|check your inbox to activate|pending/.test(blob);
+}
+
+async function deliverViaResend(env, mail) {
+  const from = compactField(env.RESEND_FROM, 160) || DEFAULT_FROM;
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${String(env.RESEND_API_KEY).trim()}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from,
+      to: [mail.inbox],
+      reply_to: mail.replyTo,
+      subject: mail.subject,
+      text: mail.text
+    })
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error("Resend a refusé l’envoi");
+    error.status = 502;
+    error.detail = payload;
+    throw error;
+  }
+  return { provider: "resend", id: payload.id || "", pendingActivation: false };
+}
+
+async function deliverViaCloudflare(env, mail) {
+  const from = compactField(env.EMAIL_FROM, 160) || DEFAULT_FROM;
+  const result = await env.EMAIL.send({
+    from,
+    to: mail.inbox,
+    reply_to: mail.replyTo,
+    subject: mail.subject,
+    text: mail.text
+  });
+  return { provider: "cloudflare-email", id: result?.messageId || "", pendingActivation: false };
+}
+
+async function deliverViaFormSubmit(mail) {
+  const response = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(mail.inbox)}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    body: JSON.stringify({
+      name: mail.fields.name,
+      email: mail.fields.email,
+      message: mail.text,
+      _subject: mail.subject,
+      _template: "box",
+      _captcha: "false",
+      _replyto: mail.replyTo
+    })
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error("Le relais d’e-mail a refusé l’envoi");
+    error.status = 502;
+    throw error;
+  }
+  const pendingActivation = !formSubmitActivated(payload);
+  return {
+    provider: "formsubmit",
+    id: "",
+    pendingActivation,
+    providerMessage: compactField(payload.message || payload.success, 240)
+  };
+}
+
+export async function deliverSiteEmail(env, mail) {
+  const provider = resolveEmailProvider(env);
+  if (provider === "none") {
+    const error = new Error("Envoi d’e-mail non configuré");
+    error.status = 503;
+    throw error;
+  }
+  if (provider === "cloudflare-email") return deliverViaCloudflare(env, mail);
+  if (provider === "resend") return deliverViaResend(env, mail);
+  return deliverViaFormSubmit(mail);
+}
+
+export function onRequestOptions({ request }) {
+  return corsPreflight(request);
+}
+
+export function onRequestGet({ env, request }) {
+  const provider = resolveEmailProvider(env);
+  return json({
+    configured: provider !== "none",
+    provider: provider === "none" ? null : provider,
+    inboxes: {
+      contact: inboxForKind("contact", env),
+      devis: inboxForKind("devis", env)
+    }
+  }, 200, request);
+}
+
+export async function onRequestPost({ request, env }) {
+  if (!isAllowedOrigin(request)) return json({ error: "Origine non autorisée", sent: false }, 403, request);
+  const provider = resolveEmailProvider(env);
+  if (provider === "none") {
+    return json({ error: "Envoi d’e-mail non configuré", sent: false, configured: false }, 503, request);
+  }
+  const ip = request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For") || "";
+  if (!allowEmailRequest(ip)) {
+    return json({ error: "Trop de tentatives. Réessayez dans quelques minutes.", sent: false }, 429, request);
+  }
+
+  let input = {};
+  try {
+    input = await request.json();
+  } catch {
+    return json({ error: "Requête JSON invalide", sent: false }, 400, request);
+  }
+
+  const mail = normalizeEmailPayload(input, env);
+  if (mail.honeypot) {
+    return json({ sent: true, inbox: mail.inbox, replyTo: mail.replyTo, ignored: true }, 200, request);
+  }
+  if (mail.missing.length) {
+    return json({
+      error: "Champs incomplets",
+      sent: false,
+      missing: mail.missing,
+      inbox: mail.inbox
+    }, 400, request);
+  }
+
+  try {
+    const delivery = await deliverSiteEmail(env, mail);
+    return json({
+      sent: !delivery.pendingActivation,
+      pendingActivation: Boolean(delivery.pendingActivation),
+      configured: true,
+      provider: delivery.provider,
+      inbox: mail.inbox,
+      replyTo: mail.replyTo,
+      id: delivery.id || "",
+      message: delivery.pendingActivation
+        ? `Premier envoi : un e-mail d’activation arrive dans ${mail.inbox}. Ouvrez-le, confirmez, puis renvoyez la demande.`
+        : `Message transmis vers ${mail.inbox}.`
+    }, delivery.pendingActivation ? 202 : 200, request);
+  } catch (error) {
+    const status = Number(error.status) || 502;
+    return json({
+      error: status === 503 ? error.message : "L’envoi n’a pas pu aboutir",
+      sent: false,
+      configured: provider !== "none",
+      inbox: mail.inbox
+    }, status, request);
+  }
+}

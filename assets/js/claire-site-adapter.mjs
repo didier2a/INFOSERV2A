@@ -94,6 +94,9 @@ export class InfoServ2ALabAdapter {
           page: { id: page.id, title: page.title, href: page.href },
           draft: clone(this.view.quoteDraft),
           submitted: this.view.submitted,
+          sent: this.view.submitted,
+          inbox: "devis@infoserv2a.pro",
+          replyTo: this.view.quoteDraft.email,
           missing
         };
       }
@@ -127,6 +130,9 @@ export class InfoServ2ALabAdapter {
           page: { id: page.id, title: page.title, href: page.href },
           channel: "email",
           draft: clone(this.view.lastLaunch),
+          sent: true,
+          inbox: this.view.lastLaunch.to,
+          replyTo: args.email || "",
           triggered: true
         };
       }

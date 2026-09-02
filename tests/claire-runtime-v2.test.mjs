@@ -71,11 +71,12 @@ class MockPersistentSurface {
     return { serviceFound: true, descriptionFound: true, submitted: false };
   }
 
-  submitQuote(draft) {
+  async submitQuote(draft) {
     this.calls.push(["submitQuote", draft]);
     this.draft = draft;
     this.submitted = true;
-    return { submitted: true, missing: [] };
+    const result = await this.sendSiteEmail({ kind: "devis", ...draft });
+    return { submitted: true, sent: true, missing: [], ...result };
   }
 
   launchHref(href) {
@@ -83,9 +84,24 @@ class MockPersistentSurface {
     return { href, launched: true };
   }
 
-  composeEmail(draft) {
+  async sendSiteEmail(payload) {
+    this.calls.push(["sendSiteEmail", payload]);
+    return {
+      sent: true,
+      inbox: payload.kind === "devis" ? "devis@infoserv2a.pro" : "contact@infoserv2a.pro",
+      replyTo: payload.email || "",
+      provider: "test"
+    };
+  }
+
+  async composeEmail(draft) {
     this.calls.push(["composeEmail", draft]);
-    return this.launchHref(`mailto:${draft.to || "contact@infoserv2a.pro"}`);
+    return this.sendSiteEmail({
+      kind: "contact",
+      name: draft.name,
+      email: draft.email,
+      message: draft.message || draft.body
+    });
   }
 
   snapshot() {
@@ -300,7 +316,7 @@ test("un appel oral ouvre le numéro InfoServ2A", async () => {
   assert.ok(surface.calls.some(([name, href]) => name === "launchHref" && String(href).startsWith("tel:")));
 });
 
-test("un mail oral ouvre une messagerie préremplie", async () => {
+test("un mail oral envoie réellement vers InfoServ2A", async () => {
   const surface = new MockPersistentSurface();
   const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
   const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
@@ -314,7 +330,11 @@ test("un mail oral ouvre une messagerie préremplie", async () => {
   assert.equal(plan.steps[0].tool, "compose_email");
   const outcome = await controller.run("Envoie un mail", { memory });
   assert.equal(outcome.verification.pageId, "contact");
-  assert.ok(surface.calls.some(([name]) => name === "composeEmail"));
+  const mail = outcome.results.find((item) => item.tool === "compose_email");
+  assert.equal(mail.output.sent, true);
+  assert.equal(mail.output.inbox, "contact@infoserv2a.pro");
+  assert.ok(surface.calls.some(([name]) => name === "sendSiteEmail"));
+  assert.ok(!surface.calls.some(([, href]) => String(href || "").startsWith("mailto:")));
 });
 
 test("envoie le devis ne part que si le contexte a les coordonnées", async () => {
