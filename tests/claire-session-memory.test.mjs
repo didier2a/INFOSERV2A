@@ -112,5 +112,7 @@ test("un marqueur interne LiveAvatar n’alimente pas la mémoire ni le question
   assert.equal(leaked.turns.length, 0);
   assert.equal(shouldShowQuoteQuest(leaked, "home"), false);
   assert.equal(shouldShowQuoteQuest({ service: "videosurveillance" }, "home"), false);
+  assert.equal(shouldShowQuoteQuest({ need: "caméra 4G" }, "home"), false);
   assert.equal(shouldShowQuoteQuest({ visitor: { name: "Marie" } }, "home"), true);
+  assert.equal(shouldShowQuoteQuest({ visitor: { name: "Marie" } }, "quote"), true);
 });

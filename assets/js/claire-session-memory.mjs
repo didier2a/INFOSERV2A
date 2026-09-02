@@ -280,7 +280,7 @@ export function quoteQuestionnaire(memory = {}) {
 export function shouldShowQuoteQuest(memory = {}, pageId = "") {
   if (pageId === "quote") return true;
   const visitor = normalizeVisitor(memory.visitor);
-  return Boolean(visitor.name || visitor.phone || visitor.email || visitor.city || memory.need);
+  return Boolean(visitor.name || visitor.phone || visitor.email || visitor.city);
 }
 
 export function formatCaptionContext({ page, section, memory } = {}) {
