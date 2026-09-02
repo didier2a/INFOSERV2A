@@ -2,7 +2,7 @@ import { corsHeaders, corsPreflight, isAllowedOrigin } from "./liveavatar-origin
 
 export const CONTACT_INBOX = "contact@infoserv2a.pro";
 export const DEVIS_INBOX = CONTACT_INBOX;
-export const DEFAULT_FROM = "InfoServ2A <noreply@infoserv2a.pro>";
+export const DEFAULT_FROM = "InfoServ2A <contact@infoserv2a.pro>";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RATE_LIMIT = 6;
@@ -113,6 +113,14 @@ function formSubmitActivated(payload) {
   return !/activate|confirm your email|check your inbox to activate|pending/.test(blob);
 }
 
+function mailAsHtml(text) {
+  const escaped = String(text || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return `<pre style="font-family:sans-serif;font-size:15px;white-space:pre-wrap">${escaped}</pre>`;
+}
+
 async function deliverViaResend(env, mail) {
   const from = compactField(env.RESEND_FROM, 160) || DEFAULT_FROM;
   const response = await fetch("https://api.resend.com/emails", {
@@ -126,7 +134,8 @@ async function deliverViaResend(env, mail) {
       to: [mail.inbox],
       reply_to: mail.replyTo,
       subject: mail.subject,
-      text: mail.text
+      text: mail.text,
+      html: mailAsHtml(mail.text)
     })
   });
   const payload = await response.json().catch(() => ({}));

@@ -6,6 +6,7 @@ import {
   allowEmailRequest,
   deliverSiteEmail,
   emailConfigured,
+  DEFAULT_FROM,
   normalizeEmailPayload,
   onRequestGet,
   onRequestPost,
@@ -43,6 +44,38 @@ test("sans relais, l’envoi n’est pas configuré", () => {
 test("Resend ou le binding Cloudflare activent l’envoi", () => {
   assert.equal(resolveEmailProvider({ RESEND_API_KEY: "re_test" }), "resend");
   assert.equal(resolveEmailProvider({ EMAIL: { send() {} } }), "cloudflare-email");
+});
+
+test("l’expéditeur par défaut n’est plus noreply", () => {
+  assert.match(DEFAULT_FROM, /contact@infoserv2a\.pro/);
+  assert.doesNotMatch(DEFAULT_FROM, /noreply@/);
+});
+
+test("Resend envoie depuis contact@ avec texte et HTML", async () => {
+  const previous = globalThis.fetch;
+  const sent = [];
+  globalThis.fetch = async (url, options) => {
+    sent.push({ url: String(url), body: JSON.parse(options.body) });
+    return Response.json({ id: "re-1" });
+  };
+  try {
+    const delivery = await deliverSiteEmail({ RESEND_API_KEY: "re_test" }, normalizeEmailPayload({
+      kind: "devis",
+      name: "Marie Rossi",
+      phone: "07 45 15 60 76",
+      email: "marie@example.com",
+      city: "Porto-Vecchio",
+      service: "videosurveillance",
+      description: "Caméra 4G"
+    }));
+    assert.equal(delivery.provider, "resend");
+    assert.equal(sent[0].body.from, "InfoServ2A <contact@infoserv2a.pro>");
+    assert.equal(sent[0].body.to[0], "contact@infoserv2a.pro");
+    assert.match(sent[0].body.subject, /devis/i);
+    assert.match(sent[0].body.html, /Caméra 4G/);
+  } finally {
+    globalThis.fetch = previous;
+  }
 });
 
 test("le payload refuse un message incomplet et ignore le honeypot", () => {
@@ -219,7 +252,7 @@ test("GET ?id résume le statut Resend sans le corps du message", async () => {
       id: "mail-1",
       last_event: "bounced",
       to: ["contact@infoserv2a.pro"],
-      from: "InfoServ2A <noreply@infoserv2a.pro>",
+      from: "InfoServ2A <contact@infoserv2a.pro>",
       subject: "Contact InfoServ2A — Test",
       created_at: "2026-09-02T22:20:00Z",
       html: "<p>secret</p>",
