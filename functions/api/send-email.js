@@ -204,6 +204,11 @@ export function onRequestGet({ env, request }) {
   return json({
     configured: provider !== "none",
     provider: provider === "none" ? null : provider,
+    secrets: {
+      resend: Boolean(String(env.RESEND_API_KEY || "").trim()),
+      from: Boolean(String(env.RESEND_FROM || "").trim()),
+      testInbox: Boolean(String(env.EMAIL_TEST_INBOX || "").trim())
+    },
     inboxes: {
       contact: inboxForKind("contact", env),
       devis: inboxForKind("devis", env)

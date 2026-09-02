@@ -62,6 +62,7 @@ test("GET /api/send-email décrit le fournisseur sans secret", async () => {
   assert.deepEqual(await response.json(), {
     configured: false,
     provider: null,
+    secrets: { resend: false, from: false, testInbox: false },
     inboxes: {
       contact: "contact@infoserv2a.pro",
       devis: "devis@infoserv2a.pro"
