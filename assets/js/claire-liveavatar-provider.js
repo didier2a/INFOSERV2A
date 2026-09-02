@@ -77,6 +77,8 @@ export class InfoServ2ALiveAvatarProvider {
     this.stopping = false;
     this.connectionAttempt = 0;
     this.silentSendAt = 0;
+    this.pendingLiveSpeech = null;
+    this.lastLocalContext = null;
     this.callbacks = {};
   }
 
@@ -231,42 +233,93 @@ export class InfoServ2ALiveAvatarProvider {
     throw new Error(`Pistes LiveAvatar incomplètes (audio=${last.audio}, vidéo=${last.video}).`);
   }
 
-  sendSilentMessage(prompt, event) {
+  // LiveAvatar LITE : session.message() publie avatar.speak_response.
+  // Ce n’est pas un tour silencieux. Le contexte de page, le briefing et la
+  // mémoire restent locaux : les injecter coupe l’audio OpenAI et désynchronise
+  // les lèvres. OpenAI Realtime gère déjà le VAD ; on n’appelle interrupt()
+  // que sur une action explicite (Interrompre, tap micro, portrait).
+  keepLocalNote(kind, prompt, event) {
+    const text = String(prompt || "").trim();
+    if (!text) return false;
+    this.lastLocalContext = { kind, text };
+    this.record(event, { characters: text.length, liveInjected: false });
+    return true;
+  }
+
+  dispatchLiveSpeech(text, event) {
+    if (!this.session) return false;
+    this.silentSendAt = Date.now();
+    this.record(event, { characters: text.length, liveInjected: true });
+    try {
+      this.session.message(text);
+      return true;
+    } catch (error) {
+      this.record("conversation:speak-rejected", {
+        event,
+        message: String(error?.message || error).slice(0, 160)
+      });
+      return false;
+    }
+  }
+
+  speakLiveMessage(prompt, event) {
     if (!this.session) return false;
     const text = String(prompt || "").trim();
     if (!text) return false;
-    this.silentSendAt = Date.now();
-    this.record(event, { characters: text.length });
-    this.session.message(text);
-    return true;
+    if (this.avatarSpeaking) {
+      this.pendingLiveSpeech = { text, event };
+      this.record("conversation:speech-queued", { event, characters: text.length });
+      return "queued";
+    }
+    return this.dispatchLiveSpeech(text, event) ? "sent" : false;
+  }
+
+  flushQueuedLiveSpeech() {
+    if (!this.session || this.avatarSpeaking || this.userSpeaking) return false;
+    const queued = this.pendingLiveSpeech;
+    if (!queued) return false;
+    this.pendingLiveSpeech = null;
+    return this.dispatchLiveSpeech(queued.text, queued.event);
+  }
+
+  sendSilentMessage(prompt, event) {
+    return this.speakLiveMessage(prompt, event) !== false;
   }
 
   sendPrompt(value) {
     const prompt = `[INFOSERV2A_APP_RESULT]\nInformation vérifiée par le site : ${value}\nRéponds en français naturel, brièvement, sans ajouter de fait ni prétendre avoir réalisé une autre action.`;
-    if (!this.sendSilentMessage(prompt, "conversation:verified-result-sent")) return false;
+    const sent = this.speakLiveMessage(prompt, "conversation:verified-result-sent");
+    if (!sent) return false;
+    if (sent === "queued") {
+      this.emit("thinking", "Claire termine sa phrase…");
+      return true;
+    }
     this.armReplyTimer();
     this.emit("thinking", "Claire prépare sa réponse…");
     return true;
   }
 
   sendBriefing(value) {
-    return this.sendSilentMessage(
+    return this.keepLocalNote(
+      "briefing",
       `[INFOSERV2A_SITE_BRIEFING]\n${value}\nN’y réponds pas. Mémorise le catalogue des onglets. Tu restes une présence chaleureuse, à l’écoute, sans ramener de force à l’informatique.`,
-      "conversation:site-briefing-sent"
+      "conversation:site-briefing-kept"
     );
   }
 
   sendContext(value) {
-    return this.sendSilentMessage(
+    return this.keepLocalNote(
+      "page",
       `[INFOSERV2A_PAGE_CONTEXT]\n${value}\nN’y réponds pas. Mémorise seulement l’onglet et la section visibles.`,
-      "conversation:page-context-sent"
+      "conversation:page-context-kept"
     );
   }
 
   sendMemory(value) {
-    return this.sendSilentMessage(
+    return this.keepLocalNote(
+      "memory",
       `[INFOSERV2A_SESSION_MEMORY]\n${value}\nN’y réponds pas. Reprends le contexte déjà dit. Ne redemande pas ces informations. N’invente rien.`,
-      "conversation:session-memory-sent"
+      "conversation:session-memory-kept"
     );
   }
 
@@ -274,7 +327,12 @@ export class InfoServ2ALiveAvatarProvider {
     const text = String(value || "").trim();
     if (!text) return false;
     const prompt = `[INFOSERV2A_USER_TEXT]\n${text}\nRéponds naturellement, en français chaleureux, à ce que la personne dit. Tous les domaines sont les bienvenus. Ne ramène pas à l’informatique.`;
-    if (!this.sendSilentMessage(prompt, "conversation:user-text-sent")) return false;
+    const sent = this.speakLiveMessage(prompt, "conversation:user-text-sent");
+    if (!sent) return false;
+    if (sent === "queued") {
+      this.emit("listening", "Claire termine sa phrase…");
+      return true;
+    }
     this.armReplyTimer();
     this.emit("listening", "Claire vous répond…");
     return true;
@@ -284,7 +342,12 @@ export class InfoServ2ALiveAvatarProvider {
     const text = String(value || "").trim();
     if (!text) return false;
     const prompt = `[INFOSERV2A_OFF_TOPIC]\n${text}\nCe n’est pas un refus. Réponds à la personne, avec la même écoute. Ne la ramène pas à l’informatique.`;
-    if (!this.sendSilentMessage(prompt, "conversation:off-topic-sent")) return false;
+    const sent = this.speakLiveMessage(prompt, "conversation:off-topic-sent");
+    if (!sent) return false;
+    if (sent === "queued") {
+      this.emit("listening", "Claire termine sa phrase…");
+      return true;
+    }
     this.armReplyTimer();
     this.emit("listening", "Claire vous répond…");
     return true;
@@ -320,6 +383,7 @@ export class InfoServ2ALiveAvatarProvider {
     try { this.session?.interrupt(); } catch { /* Aucune réponse Realtime à couper. */ }
     this.clearReplyTimer();
     this.pendingSpeech = [];
+    this.pendingLiveSpeech = null;
     this.avatarSpeaking = false;
     try { this.session?.startListening(); } catch { /* Le SDK peut déjà écouter. */ }
     this.listening = true;
@@ -551,7 +615,6 @@ export class InfoServ2ALiveAvatarProvider {
       this.realtimeSignal = "input-detected";
       this.record("conversation:user-speak-started", { avatarSpeaking: this.avatarSpeaking });
       this.clearReplyTimer();
-      if (this.avatarSpeaking) this.bargeIn("user-barge-in");
       this.emit("listening", "Je vous écoute");
     });
     session.on(AgentEventsEnum.USER_SPEAK_ENDED, () => {
@@ -571,7 +634,6 @@ export class InfoServ2ALiveAvatarProvider {
       }
       this.record("conversation:user-transcription", { characters: text.length });
       this.clearReplyTimer();
-      if (this.avatarSpeaking) this.bargeIn("user-barge-in");
       this.stageTranscript(text);
     });
     session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
@@ -591,6 +653,7 @@ export class InfoServ2ALiveAvatarProvider {
       this.realtimeSignal = "reply-ended";
       this.record("conversation:avatar-speak-ended");
       this.clearReplyTimer();
+      this.flushQueuedLiveSpeech();
       this.callbacks.onAvatarSpeakEnd?.();
       this.emit(this.listening ? "listening" : "ready", this.listening ? "Je vous écoute" : "Prête à vous guider");
     });
@@ -692,6 +755,7 @@ export class InfoServ2ALiveAvatarProvider {
     const session = this.session;
     await this.disposeSession(session);
     this.pendingSpeech = [];
+    this.pendingLiveSpeech = null;
     this.realtimeSignal = "idle";
     this.setTransportState("idle");
     this.clearReplyTimer();
@@ -718,6 +782,8 @@ export class InfoServ2ALiveAvatarProvider {
       userSpeakComplete: this.userSpeakComplete,
       userSpeaking: this.userSpeaking,
       avatarSpeaking: this.avatarSpeaking,
+      queuedSpeech: Boolean(this.pendingLiveSpeech),
+      localContextKind: this.lastLocalContext?.kind || null,
       listening: this.listening,
       connector: "OPENAI_REALTIME",
       transport: "ephemeral-session-token",

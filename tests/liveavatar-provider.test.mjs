@@ -172,7 +172,7 @@ test("une syllabe en cours n’envoie pas de commande avant la fin de phrase", a
   await provider.stop();
 });
 
-test("parler pendant que Claire s’exprime l’interrompt comme OpenAI Live", async () => {
+test("un VAD ou une syllabe ne coupe plus Claire ; seul Interrompre le fait", async () => {
   const video = fakeVideo();
   const barges = [];
   const provider = new InfoServ2ALiveAvatarProvider({
@@ -188,14 +188,16 @@ test("parler pendant que Claire s’exprime l’interrompt comme OpenAI Live", a
   session.emit("avatar-speak-started");
   assert.equal(provider.avatarSpeaking, true);
   session.emit("user-speak-started");
+  assert.equal(session.interrupted, undefined);
+  assert.equal(provider.avatarSpeaking, true);
+  assert.equal(provider.userSpeaking, true);
+  session.emit("user-transcription", { text: "attends" });
+  assert.equal(session.interrupted, undefined);
+  assert.equal(provider.avatarSpeaking, true);
+  provider.interrupt();
   assert.equal(session.interrupted, true);
   assert.equal(provider.avatarSpeaking, false);
-  assert.equal(provider.userSpeaking, true);
-  session.interrupted = false;
-  session.emit("avatar-speak-started");
-  session.emit("user-transcription", { text: "attends" });
-  assert.equal(session.interrupted, true);
-  assert.ok(barges.includes("user-barge-in"));
+  assert.ok(barges.includes("manual-interrupt"));
 
   await provider.stop();
 });
@@ -225,8 +227,13 @@ test("un aparté hors site laisse Realtime répondre sans couper", async () => {
   assert.equal(session.interrupted, undefined);
   assert.equal(provider.realtimeSignal, "natural-reply");
 
+  const before = session.messages.length;
   provider.sendContext("Page visible : Accueil InfoServ2A.");
-  assert.match(session.messages.at(-1), /^\[INFOSERV2A_PAGE_CONTEXT\]/);
+  provider.sendBriefing("Catalogue local.");
+  provider.sendMemory("Déjà dit : nom Paul.");
+  assert.equal(session.messages.length, before);
+  assert.equal(session.interrupted, undefined);
+  assert.equal(provider.lastLocalContext?.kind, "memory");
 
   await provider.stop();
 });
@@ -280,6 +287,36 @@ test("la transcription de Claire est transmise pour synchroniser la page de droi
   session.emit("avatar-transcription", { text: "Voici l’onglet Vidéosurveillance" });
   assert.deepEqual(spoken, ["Voici l’onglet Vidéosurveillance"]);
   assert.equal(provider.avatarSpeaking, true);
+
+  await provider.stop();
+});
+
+test("le contexte de page n’entre jamais dans le pipeline vocal pendant que Claire parle", async () => {
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-context-quiet" })
+  }).install({ video });
+
+  await provider.connect({ microphone: true });
+  const session = globalThis.__infoservFakeSession;
+  session.emit("avatar-speak-started");
+  provider.sendContext("Onglet visible : Accueil InfoServ2A.");
+  provider.sendBriefing("Catalogue.");
+  provider.sendMemory("Nom déjà dit.");
+  assert.equal(session.messages.length, 0);
+  assert.equal(session.interrupted, undefined);
+  assert.equal(provider.avatarSpeaking, true);
+  assert.equal(provider.lastLocalContext?.kind, "memory");
+
+  const queued = provider.sendUserMessage("merci Claire");
+  assert.equal(queued, true);
+  assert.equal(session.messages.length, 0);
+  assert.equal(provider.diagnostic().queuedSpeech, true);
+  session.emit("avatar-speak-ended");
+  assert.equal(provider.avatarSpeaking, false);
+  assert.match(session.messages.at(-1), /^\[INFOSERV2A_USER_TEXT\]/);
+  assert.equal(provider.diagnostic().queuedSpeech, false);
 
   await provider.stop();
 });

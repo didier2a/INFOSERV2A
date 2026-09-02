@@ -30,8 +30,8 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it8";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it8";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it9";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it9";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -411,7 +411,7 @@ export class ClaireCompanion {
     document.addEventListener("click", (event) => this.handleSiteLink(event));
     globalThis.addEventListener("popstate", () => {
       if (this.state === "manual" || !this.siteAdapter) return;
-      void this.navigateInternal(location.href, { historyMode: "pop", announce: false });
+      void this.navigateInternal(location.href, { historyMode: "pop", announce: false, silent: true });
     });
     globalThis.addEventListener("infoserv:claire-telemetry", (event) => {
       this.showRealtimeTelemetry(event.detail);
@@ -694,7 +694,6 @@ export class ClaireCompanion {
   pushPageContext(snapshot = this.siteAdapter?.snapshot()) {
     const text = describePageContext(snapshot);
     if (!text) return false;
-    if (this.provider?.avatarSpeaking) return false;
     const pathname = this.surface?.window?.location?.pathname || location.pathname;
     const signature = `${pathname}|${snapshot?.section?.id || ""}|${snapshot?.page?.id || ""}`;
     if (signature === this.lastContextSignature) return false;
@@ -706,7 +705,7 @@ export class ClaireCompanion {
       : "Appareil : ordinateur.";
     this.lastContextSignature = signature;
     this.updateLiveContext();
-    return this.provider?.sendContext?.(`${text}\n${shell}`) || false;
+    return this.provider?.sendContext?.(`${text}\n${shell}`) || true;
   }
 
   scheduleSilentSiteSync() {
@@ -717,7 +716,6 @@ export class ClaireCompanion {
 
   flushSilentSiteSync() {
     if (!this.pendingSilentSync) return false;
-    if (this.provider?.avatarSpeaking) return false;
     this.pendingSilentSync = false;
     clearTimeout(this.silentSyncTimer);
     this.silentSyncTimer = 0;
@@ -788,8 +786,6 @@ export class ClaireCompanion {
         },
         onAvatarSpeakEnd: () => {
           this.finalizeLiveCompanionTurn();
-          this.flushSilentSiteSync();
-          if (this.lastFollowKey) this.pushPageContext();
           this.updateLiveContext();
         },
         onBargeIn: () => {
@@ -1053,7 +1049,7 @@ export class ClaireCompanion {
       }
       this.setStatus("ready", "Page affichée · Claire vous l’explique");
       if (source === "liveavatar") {
-        if (!this.provider?.avatarSpeaking) this.pushPageContext();
+        this.pushPageContext();
         return outcome;
       }
       if (source !== "liveavatar") this.appendTurn("companion", response);
@@ -1201,7 +1197,7 @@ export class ClaireCompanion {
     try { url = new URL(link.href, location.href); } catch { return; }
     if (url.origin !== location.origin || !this.siteAdapter?.pageForHref(url.href)) return;
     event.preventDefault();
-    void this.navigateInternal(url.href);
+    void this.navigateInternal(url.href, { announce: false, silent: true });
   }
 
   showResult(result) {

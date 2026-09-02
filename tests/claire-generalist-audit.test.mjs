@@ -47,8 +47,10 @@ test("audit : Claire est une présence chaleureuse, sans ramener à l’IT", () 
   assert.match(providerSource, /let kind = "chat"/);
   assert.match(providerSource, /sendOffTopic/);
   assert.match(providerSource, /INFOSERV2A_OFF_TOPIC/);
-  assert.match(sessionSource, /InfoServ2A Claire Aidant 1\.12/);
+  assert.match(sessionSource, /InfoServ2A Claire Aidant 1\.13/);
   assert.match(companionSource, /updateLiveCaption/);
+  assert.match(prompt, /changement de page ou de section à droite/);
+  assert.match(providerSource, /liveInjected: false/);
 });
 
 test("audit : le catalogue site est injecté et chaque onglet est connu", () => {
@@ -89,7 +91,8 @@ test("audit : une intention de service continue d’agir ; l’envoi n’a lieu 
 test("audit : l’interruption et le suivi de parole sont branchés", () => {
   assert.match(providerSource, /async bargeIn|bargeIn\(reason/);
   assert.match(providerSource, /session\?\.interrupt\(\)/);
-  assert.match(providerSource, /if \(this\.avatarSpeaking\) this\.bargeIn\("user-barge-in"\)/);
+  assert.match(providerSource, /bargeIn\("manual-interrupt"\)/);
+  assert.doesNotMatch(providerSource, /if \(this\.avatarSpeaking\) this\.bargeIn\("user-barge-in"\)/);
   assert.match(companionSource, /followSpokenNavigation/);
   assert.match(companionSource, /queueSpeechFollow/);
   assert.match(companionSource, /provider\?\.userSpeaking/);
