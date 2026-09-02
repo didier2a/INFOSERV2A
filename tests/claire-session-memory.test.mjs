@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   SESSION_MEMORY_KEY,
   canSubmitQuote,
+  describeQuoteChecklist,
   extractFactsFromUtterance,
   formatCaptionContext,
   formatMemoryBriefing,
@@ -30,6 +31,16 @@ function memoryStorage(seed = null) {
     }
   };
 }
+
+test("extrait un e-mail dicté avec arobase et une commune corsée", () => {
+  const spoken = extractFactsFromUtterance(
+    "Didier, Porto-Vecchio, mon mail c'est infoserv2a arobase gmail point com, je veux une caméra"
+  );
+  assert.equal(spoken.email, "infoserv2a@gmail.com");
+  assert.equal(spoken.city, "Porto-Vecchio");
+  assert.equal(spoken.service, "videosurveillance");
+  assert.equal(spoken.name, undefined);
+});
 
 test("extrait nom, téléphone, e-mail, commune et besoin sans inventer", () => {
   const facts = extractFactsFromUtterance(
@@ -103,6 +114,33 @@ test("hors devis, CONTEXTE n’affiche que la page visible", () => {
     memory
   });
   assert.equal(home, "Accueil InfoServ2A");
+});
+
+test("le checklist dit à l’oral ce qui manque et ne prétend pas que c’est parti", () => {
+  const incomplete = describeQuoteChecklist({
+    visitor: { name: "Didier", phone: "", email: "", city: "Porto-Vecchio" },
+    service: "videosurveillance",
+    need: "Caméra 4G"
+  });
+  assert.equal(incomplete.complete, false);
+  assert.match(incomplete.speech, /n’envoie pas/);
+  assert.match(incomplete.speech, /téléphone/);
+  assert.match(incomplete.speech, /e-mail/);
+  assert.doesNotMatch(incomplete.speech, /bien été envoyé|c’est parti/);
+  const complete = describeQuoteChecklist({
+    visitor: {
+      name: "Marie Rossi",
+      phone: "07 45 15 60 76",
+      email: "marie@example.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G"
+  });
+  assert.equal(complete.complete, true);
+  assert.match(complete.speech, /complet/);
+  assert.match(complete.speech, /envoie le devis/);
+  assert.doesNotMatch(complete.speech, /bien été envoyé/);
 });
 
 test("un devis ne part pas tant que les coordonnées manquent", () => {

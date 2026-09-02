@@ -10,14 +10,28 @@ export const QUOTE_REQUIRED_FIELDS = Object.freeze([
 
 const MAX_TURNS = 24;
 const MAX_TURN_CHARS = 320;
-const QUOTE_FIELD_LABELS = Object.freeze({
+export const QUOTE_FIELD_LABELS = Object.freeze({
   name: "votre nom",
   phone: "votre téléphone",
   email: "votre e-mail",
   city: "votre commune",
   service: "le type de service",
-  description: "la description du besoin"
+  description: "la description du besoin",
+  message: "le message"
 });
+
+const KNOWN_CITIES = Object.freeze([
+  ["porto-vecchio", "Porto-Vecchio"],
+  ["porto vecchio", "Porto-Vecchio"],
+  ["bonifacio", "Bonifacio"],
+  ["propriano", "Propriano"],
+  ["sartene", "Sartène"],
+  ["ajaccio", "Ajaccio"],
+  ["bastia", "Bastia"],
+  ["corte", "Corte"],
+  ["figari", "Figari"],
+  ["lecci", "Lecci"]
+]);
 
 function now() {
   return Date.now();
@@ -133,22 +147,48 @@ function isThinUtterance(text = "") {
     && query.length < 28;
 }
 
+export function joinFrenchList(items = []) {
+  const labels = items.map((item) => compact(item)).filter(Boolean);
+  if (!labels.length) return "";
+  if (labels.length === 1) return labels[0];
+  return `${labels.slice(0, -1).join(", ")} et ${labels.at(-1)}`;
+}
+
+function extractSpokenEmail(text = "") {
+  const raw = compact(text);
+  const direct = raw.match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/);
+  if (direct) return direct[0];
+  const spoken = folded(text).match(
+    /([a-z0-9._+-]+)\s+(?:arobase|arrobase|at)\s+([a-z0-9-]+)(?:\s+(?:point|dot)\s+([a-z]{2,})|\.([a-z]{2,}))/
+  );
+  if (!spoken) return "";
+  const tld = spoken[3] || spoken[4];
+  return tld ? `${spoken[1]}@${spoken[2]}.${tld}` : "";
+}
+
+function extractKnownCity(text = "") {
+  const query = folded(text);
+  const hit = KNOWN_CITIES.find(([needle]) => new RegExp(`\\b${needle}\\b`).test(query));
+  return hit ? hit[1] : "";
+}
+
 export function extractFactsFromUtterance(text = "") {
   const raw = compact(text);
   const facts = {};
   if (!raw) return facts;
 
-  const email = raw.match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/);
-  if (email) facts.email = email[0];
+  const email = extractSpokenEmail(raw);
+  if (email) facts.email = email;
 
-  const phone = raw.match(/(?:\+33|0)\s*[1-9](?:[\s.-]?\d{2}){4}/);
+  const phone = raw.match(/(?:\+33|0033|0)\s*[1-9](?:[\s.-]?\d{2}){4}/);
   if (phone) facts.phone = compact(phone[0]);
 
-  const name = raw.match(/(?:je m['’]appelle|mon nom est|moi c['’]est)\s+([A-Za-zÀ-ÿ'’-]+(?:\s+[A-Za-zÀ-ÿ'’-]+){0,2})/i);
+  const name = raw.match(/(?:je m['’]appelle|mon nom est|moi c['’]est|je suis(?!\s+(?:de|à|a|au|aux|en)\b))\s+([A-Za-zÀ-ÿ'’-]+(?:\s+[A-Za-zÀ-ÿ'’-]+){0,2})/i);
   if (name) facts.name = compact(name[1]);
 
   const city = raw.match(/(?:j['’]habite(?:\s+(?:à|a|au|aux|en))?\s+|je suis de\s+|je vis (?:à|a)\s+)([A-Za-zÀ-ÿ'’-]+(?:[- ][A-Za-zÀ-ÿ'’-]+){0,2})/i);
   if (city) facts.city = compact(city[1]);
+  else if (extractKnownCity(raw)) facts.city = extractKnownCity(raw);
 
   const service = inferService(raw);
   if (service) facts.service = service;
@@ -215,11 +255,31 @@ export function canSubmitQuote(memory = {}, extras = {}) {
 }
 
 export function describeMissingQuoteFields(memory = {}, extras = {}) {
-  const missing = missingQuoteFields(memory, extras);
-  const labels = missing.map((key) => QUOTE_FIELD_LABELS[key] || key);
-  if (!labels.length) return "";
-  if (labels.length === 1) return labels[0];
-  return `${labels.slice(0, -1).join(", ")} et ${labels.at(-1)}`;
+  return joinFrenchList(missingQuoteFields(memory, extras).map((key) => QUOTE_FIELD_LABELS[key] || key));
+}
+
+export function describeQuoteChecklist(memory = {}, extras = {}) {
+  const draft = quotePrefillFromMemory(memory, extras);
+  const missing = QUOTE_REQUIRED_FIELDS.filter((key) => !compact(draft[key]));
+  const filled = QUOTE_REQUIRED_FIELDS.filter((key) => compact(draft[key]));
+  const missingSpeech = joinFrenchList(missing.map((key) => QUOTE_FIELD_LABELS[key] || key));
+  const filledSpeech = joinFrenchList(filled.map((key) => QUOTE_FIELD_LABELS[key] || key));
+  if (missing.length) {
+    return {
+      complete: false,
+      missing,
+      filled,
+      speech: filledSpeech
+        ? `Je n’envoie pas le devis. Il manque encore ${missingSpeech}. J’ai déjà ${filledSpeech}.`
+        : `Je n’envoie pas le devis. Il manque encore ${missingSpeech}.`
+    };
+  }
+  return {
+    complete: true,
+    missing: [],
+    filled,
+    speech: `Le devis est complet : ${filledSpeech}. Dites « envoie le devis » pour que je le transmette vers contact@infoserv2a.pro. Rien n’est parti tant que le site n’a pas confirmé l’envoi.`
+  };
 }
 
 export function emailDraftFromMemory(memory = {}) {

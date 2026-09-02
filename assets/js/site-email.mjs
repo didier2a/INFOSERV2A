@@ -1,3 +1,5 @@
+import { QUOTE_FIELD_LABELS, joinFrenchList } from "./claire-session-memory.mjs";
+
 export const SITE_EMAIL_PATH = "/api/send-email";
 
 export async function postSiteEmail(payload, fetchImpl = globalThis.fetch) {
@@ -23,12 +25,25 @@ export async function postSiteEmail(payload, fetchImpl = globalThis.fetch) {
   };
 }
 
+function missingFieldSpeech(keys = []) {
+  return joinFrenchList((keys || []).map((key) => QUOTE_FIELD_LABELS[key] || key));
+}
+
 export function describeEmailSendOutcome(outcome) {
-  const result = (outcome?.results || []).find((item) => item.tool === "compose_email" || item.tool === "submit_quote");
+  const result = (outcome?.results || []).find((item) => (
+    item.tool === "compose_email" || item.tool === "submit_quote" || item.tool === "prefill_quote"
+  ));
   if (!result) return "";
   const output = result.output || {};
   const inbox = output.inbox || "contact@infoserv2a.pro";
   const reply = output.replyTo ? ` La réponse arrivera sur ${output.replyTo}.` : "";
+  const missing = Array.isArray(output.missing) ? output.missing : [];
+  if (missing.length) {
+    return `Je n’ai pas envoyé. Il manque encore ${missingFieldSpeech(missing)}.`;
+  }
+  if (result.tool === "prefill_quote") {
+    return `Le devis est complet. Dites « envoie le devis » pour le transmettre vers ${inbox}. Rien n’est encore parti.`;
+  }
   if (output.sent) {
     return result.tool === "submit_quote"
       ? `La demande de devis a bien été envoyée vers ${inbox}.${reply}`
@@ -36,9 +51,6 @@ export function describeEmailSendOutcome(outcome) {
   }
   if (output.pendingActivation) {
     return `Je n’ai pas encore transmis le message. Un e-mail d’activation arrive dans ${inbox}. Ouvrez-le, confirmez, puis redemandez-moi d’envoyer.`;
-  }
-  if (Array.isArray(output.missing) && output.missing.length) {
-    return `Je n’ai pas envoyé le message. Il me manque encore ${output.missing.join(", ")}.`;
   }
   if (output.configured === false) {
     return "Je n’ai pas pu envoyer l’e-mail depuis le site : l’envoi automatique n’est pas encore branché.";

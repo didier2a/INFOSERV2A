@@ -9,7 +9,7 @@ import {
 } from "./claire-core.mjs";
 import {
   canSubmitQuote,
-  describeMissingQuoteFields,
+  describeQuoteChecklist,
   emailDraftFromMemory,
   quotePrefillFromMemory
 } from "./claire-session-memory.mjs";
@@ -237,9 +237,13 @@ export function planCommand(input, knowledge, manifest, context = {}) {
   } : null;
 
   let response = route.anchor?.response || route.speech;
-  if (route.action === "submit_quote" && !canSubmitQuote(context.memory, { fallbackDescription: command })) {
-    const missing = describeMissingQuoteFields(context.memory, { fallbackDescription: command });
-    response = `Je prépare le devis. Il me manque encore ${missing}.`;
+  if (route.action === "submit_quote" || route.page?.id === "quote") {
+    const checklist = describeQuoteChecklist(context.memory, { fallbackDescription: command });
+    if (!checklist.complete || route.action !== "submit_quote") {
+      response = checklist.speech;
+    } else {
+      response = "Je transmets la demande de devis. Je ne confirmerai l’envoi que lorsque le site l’aura vraiment envoyé.";
+    }
   }
 
   return finishPlan({

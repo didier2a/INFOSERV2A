@@ -301,4 +301,16 @@ test("Claire ne dit pas que c’est parti si l’API n’a pas envoyé", () => {
   });
   assert.match(ok, /bien été envoyé vers contact@infoserv2a\.pro/);
   assert.match(ok, /didier@example.com/);
+  const incomplete = describeEmailSendOutcome({
+    results: [{ tool: "submit_quote", output: { sent: true, missing: ["email", "phone"], inbox: "contact@infoserv2a.pro" } }]
+  });
+  assert.match(incomplete, /n’ai pas envoyé/);
+  assert.match(incomplete, /e-mail/);
+  assert.match(incomplete, /téléphone/);
+  assert.doesNotMatch(incomplete, /bien été envoyé/);
+  const prefill = describeEmailSendOutcome({
+    results: [{ tool: "prefill_quote", output: { sent: false, missing: ["city"] } }]
+  });
+  assert.match(prefill, /commune/);
+  assert.doesNotMatch(prefill, /bien été envoyé/);
 });

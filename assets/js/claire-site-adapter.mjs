@@ -72,7 +72,15 @@ export class InfoServ2ALabAdapter {
           description: String(args.description || "").slice(0, 500)
         };
         this.view.submitted = false;
-        return { page: { id: page.id, title: page.title, href: page.href }, draft: clone(this.view.quoteDraft), submitted: false };
+        const missing = ["name", "phone", "email", "city", "service", "description"]
+          .filter((key) => !this.view.quoteDraft[key]);
+        return {
+          page: { id: page.id, title: page.title, href: page.href },
+          draft: clone(this.view.quoteDraft),
+          submitted: false,
+          sent: false,
+          missing
+        };
       }
       case "submit_quote": {
         const page = this.pageById("quote");

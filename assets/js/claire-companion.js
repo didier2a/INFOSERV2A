@@ -35,8 +35,8 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260902-it19";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260902-it19";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260902-it20";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260902-it20";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -1159,7 +1159,9 @@ export class ClaireCompanion {
       this.setState(keepGuided ? "guided" : "shared");
     }
 
-    const emailAction = classified.route?.action === "email" || classified.route?.action === "submit_quote";
+    const emailAction = classified.route?.action === "email"
+      || classified.route?.action === "submit_quote"
+      || classified.route?.page?.id === "quote";
     if (source === "liveavatar" && emailAction) {
       this.provider?.bargeIn?.("email-send");
     }

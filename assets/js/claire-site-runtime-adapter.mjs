@@ -480,7 +480,19 @@ export class InfoServ2ASiteAdapter {
         this.view.quoteDraft = quoteDraftFromArgs(args);
         const form = this.surface.prefillQuote(this.view.quoteDraft);
         this.view.submitted = false;
-        return { page: pageSummary(page), draft: clone(this.view.quoteDraft), form, submitted: false, persistentSession: true };
+        const missing = this.surface.quoteMissingFields
+          ? this.surface.quoteMissingFields()
+          : ["name", "phone", "email", "city", "service", "description"].filter((key) => !String(this.view.quoteDraft[key] || "").trim());
+        return {
+          page: pageSummary(page),
+          draft: clone(this.view.quoteDraft),
+          form,
+          submitted: false,
+          sent: false,
+          missing,
+          inbox: "contact@infoserv2a.pro",
+          persistentSession: true
+        };
       }
       case "submit_quote": {
         const page = this.pageById("quote");

@@ -341,6 +341,8 @@ test("envoie le devis ne part que si le contexte a les coordonnées", async () =
   const empty = planCommand("Envoie le devis", knowledge, manifest);
   assert.ok(empty.steps.some((step) => step.tool === "prefill_quote"));
   assert.ok(!empty.steps.some((step) => step.tool === "submit_quote"));
+  assert.match(empty.response, /n’envoie pas/);
+  assert.doesNotMatch(empty.response, /bien été envoyé|c’est parti/);
 
   const memory = {
     visitor: {
