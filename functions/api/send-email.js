@@ -2,7 +2,7 @@ import { corsHeaders, corsPreflight, isAllowedOrigin } from "./liveavatar-origin
 
 export const CONTACT_INBOX = "contact@infoserv2a.pro";
 export const DEVIS_INBOX = CONTACT_INBOX;
-export const DEFAULT_FROM = "InfoServ2A <contact@infoserv2a.pro>";
+export const DEFAULT_FROM = "InfoServ2A <site@infoserv2a.pro>";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RATE_LIMIT = 6;
@@ -86,6 +86,10 @@ export function normalizeEmailPayload(input = {}, env = {}) {
     ? `Demande de devis InfoServ2A${name ? ` — ${name}` : ""}`
     : `Contact InfoServ2A${name ? ` — ${name}` : ""}`;
   const lines = [
+    kind === "devis"
+      ? "Nouvelle demande de devis reçue depuis le site www.infoserv2a.pro."
+      : "Nouveau message reçu depuis le site www.infoserv2a.pro.",
+    "",
     `Canal : ${kind === "devis" ? "demande de devis" : "message de contact"}`,
     `Nom : ${name}`,
     `E-mail : ${email}`,

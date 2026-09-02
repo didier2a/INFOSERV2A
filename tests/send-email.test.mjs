@@ -46,9 +46,10 @@ test("Resend ou le binding Cloudflare activent l’envoi", () => {
   assert.equal(resolveEmailProvider({ EMAIL: { send() {} } }), "cloudflare-email");
 });
 
-test("l’expéditeur par défaut n’est plus noreply", () => {
-  assert.match(DEFAULT_FROM, /contact@infoserv2a\.pro/);
+test("l’expéditeur par défaut n’est plus noreply ni la boîte contact@", () => {
+  assert.match(DEFAULT_FROM, /site@infoserv2a\.pro/);
   assert.doesNotMatch(DEFAULT_FROM, /noreply@/);
+  assert.doesNotMatch(DEFAULT_FROM, /contact@/);
 });
 
 test("Resend envoie depuis contact@ avec texte et HTML", async () => {
@@ -69,7 +70,7 @@ test("Resend envoie depuis contact@ avec texte et HTML", async () => {
       description: "Caméra 4G"
     }));
     assert.equal(delivery.provider, "resend");
-    assert.equal(sent[0].body.from, "InfoServ2A <contact@infoserv2a.pro>");
+    assert.equal(sent[0].body.from, "InfoServ2A <site@infoserv2a.pro>");
     assert.equal(sent[0].body.to[0], "contact@infoserv2a.pro");
     assert.match(sent[0].body.subject, /devis/i);
     assert.match(sent[0].body.html, /Caméra 4G/);
@@ -252,7 +253,7 @@ test("GET ?id résume le statut Resend sans le corps du message", async () => {
       id: "mail-1",
       last_event: "bounced",
       to: ["contact@infoserv2a.pro"],
-      from: "InfoServ2A <contact@infoserv2a.pro>",
+      from: "InfoServ2A <site@infoserv2a.pro>",
       subject: "Contact InfoServ2A — Test",
       created_at: "2026-09-02T22:20:00Z",
       html: "<p>secret</p>",
