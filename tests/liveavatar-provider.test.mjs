@@ -190,7 +190,7 @@ test("un VAD ou une syllabe ne coupe plus Claire ; seul Interrompre le fait", as
   session.emit("user-speak-started");
   assert.equal(session.interrupted, undefined);
   assert.equal(provider.avatarSpeaking, true);
-  assert.equal(provider.userSpeaking, true);
+  assert.equal(provider.userSpeaking, false);
   session.emit("user-transcription", { text: "attends" });
   assert.equal(session.interrupted, undefined);
   assert.equal(provider.avatarSpeaking, true);

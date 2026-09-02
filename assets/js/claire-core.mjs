@@ -298,7 +298,7 @@ ${buildSiteBriefing(knowledge)}
 
 Lorsque la personne parle — métier, science, outil, quotidien, ou simple curiosité — réponds tout de suite, naturellement, en français, sans attendre un résultat d'application. Ne ramène pas la conversation à l’informatique.
 
-Lorsque tu présentes un service InfoServ2A, nomme clairement un seul onglet, puis éventuellement une section, pour que la page de droite suive ta parole. Ne récite pas tous les onglets d'un seul trait si tu veux les montrer.
+Lorsque tu présentes un service InfoServ2A, nomme clairement un seul onglet (par exemple Vidéosurveillance, Création de sites web), puis éventuellement une section, pour que la page de droite s’ouvre toute seule. Tu n’as pas à commenter ce changement. Ne récite pas tous les onglets d'un seul trait si tu veux les montrer.
 
 Si tu reçois [INFOSERV2A_APP_RESULT], reformule uniquement ce résultat en une ou deux phrases, sans mentionner le marqueur. N'ajoute aucun fait absent du résultat. Si tu es déjà en train de parler, tu termines d’abord ta phrase.
 
@@ -329,24 +329,35 @@ export function lastSpeechWindow(text, maxChars = 240) {
 export function followSpokenNavigation(text, knowledge, context = {}) {
   const full = String(text || "").replace(/\s+/g, " ").trim();
   if (full.length < 16) return null;
+  const window = lastSpeechWindow(full);
+  const windowNorm = normalizeText(window);
   const titlesHit = (knowledge.pages || []).filter((page) => {
     const title = normalizeText(page.title);
-    return title.length > 5 && normalizeText(full).includes(title);
+    return title.length > 5 && windowNorm.includes(title);
   });
   if (titlesHit.length >= 3) return null;
 
-  const window = lastSpeechWindow(full);
   const route = routeCommand(window, knowledge, context);
   if (!route?.page || ["unknown", "empty", "catalog", "manual", "recall", "action"].includes(route.type)) {
     return null;
   }
 
-  const query = normalizeText(window);
+  const query = windowNorm;
   const titleTokens = normalizeText(route.page.title).split(" ").filter((token) => token.length > 4);
   const titleHit = titleTokens.some((token) => query.includes(token));
   const named = titleHit || titlesHit.some((page) => page.id === route.page.id);
-  const cue = /\b(voici|voila|onglet|rubrique|cette page|cette section|a droite|ci-contre|je vous montre|regardons|on voit|cette offre|solutions sans fibre|audit nis|hebergement)\b/.test(query);
-  if (!cue && !named && !isIsolatedSiteRequest(window) && !isWebSiteRequest(window)) {
+  const cue = /\b(voici|voila|onglet|rubrique|cette page|cette section|a droite|ci-contre|je vous montre|regardons|on voit|cette offre|solutions sans fibre|audit nis|hebergement|parlons de|concernant|s agissant)\b/.test(query);
+  const ranked = (knowledge.pages || [])
+    .map((page) => ({ page, score: scorePage(window, page) }))
+    .sort((a, b) => b.score - a.score);
+  const best = ranked[0];
+  const second = ranked[1];
+  const unique = Boolean(
+    best?.page?.id === route.page.id
+    && best.score >= 8
+    && (!second || best.score - second.score >= 8)
+  );
+  if (!cue && !named && !unique && !isIsolatedSiteRequest(window) && !isWebSiteRequest(window)) {
     return null;
   }
   if (route.page.id === "home" && !/\baccueil\b/.test(query)) return null;
@@ -569,6 +580,12 @@ export function classifyUtterance(input, knowledge, context = {}) {
     || isEmailAction(input)
   ) {
     return { kind: "site", route };
+  }
+  if (route.type === "suggest" && route.page) {
+    const title = normalizeText(route.page.title);
+    if (title.length > 5 && normalizeText(input).includes(title)) {
+      return { kind: "site", route };
+    }
   }
   if (isSocialUtterance(input) && !OFF_TOPIC_PATTERN.test(normalizeText(input))) {
     return { kind: "chat", route };

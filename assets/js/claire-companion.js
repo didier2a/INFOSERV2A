@@ -30,8 +30,8 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it10";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it10";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it11";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it11";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -781,7 +781,6 @@ export class ClaireCompanion {
           this.queueSpeechFollow(text);
         },
         onAvatarSpeakStart: () => {
-          this.clearSpeechFollow({ keepLastPage: false });
           this.showLivePrompt();
         },
         onAvatarSpeakEnd: () => {
@@ -1169,7 +1168,7 @@ export class ClaireCompanion {
   async syncSiteToSpeech(forcedText = "") {
     if (forcedText) this.avatarSpoken = String(forcedText);
     if (this.followInFlight || this.state === "manual" || this.runtime?.activeCommandId) return null;
-    if (this.provider?.userSpeaking && !forcedText) return null;
+    if (this.provider?.userSpeaking && !this.provider?.avatarSpeaking && !forcedText) return null;
     const target = followSpokenNavigation(this.avatarSpoken, this.knowledge, this.speechFollowContext());
     if (!target) return null;
     const key = `${target.pageId}#${target.anchorId || ""}`;

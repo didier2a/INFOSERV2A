@@ -610,8 +610,10 @@ export class InfoServ2ALiveAvatarProvider {
       if (!this.stopping) this.emit("error", "Session LiveAvatar interrompue · touchez le micro pour reconnecter");
     });
     session.on(AgentEventsEnum.USER_SPEAK_STARTED, () => {
-      if (this.isSilentEchoWindow()) {
-        this.record("conversation:silent-echo-ignored", { reason: "user-speak-started" });
+      if (this.isSilentEchoWindow() || this.avatarSpeaking) {
+        this.record("conversation:silent-echo-ignored", {
+          reason: this.avatarSpeaking ? "avatar-echo" : "user-speak-started"
+        });
         return;
       }
       this.listening = true;
@@ -633,8 +635,8 @@ export class InfoServ2ALiveAvatarProvider {
     session.on(AgentEventsEnum.USER_TRANSCRIPTION, (event) => {
       const text = String(event?.text || "").trim();
       if (!text) return;
-      if (isInternalSitePrompt(text) || this.isSilentEchoWindow()) {
-        this.record("conversation:internal-ignored", { characters: text.length });
+      if (isInternalSitePrompt(text) || this.isSilentEchoWindow() || this.avatarSpeaking) {
+        this.record("conversation:internal-ignored", { characters: text.length, avatarSpeaking: this.avatarSpeaking });
         return;
       }
       this.record("conversation:user-transcription", { characters: text.length });

@@ -147,6 +147,7 @@ test("un sujet hors site reste une conversation, sans navigation", () => {
 test("une demande de service continue de piloter le site", () => {
   assert.equal(classifyUtterance("Je n’ai pas internet, je veux une caméra", knowledge).kind, "site");
   assert.equal(classifyUtterance("Montre-moi la vidéosurveillance sans fibre", knowledge).kind, "site");
+  assert.equal(classifyUtterance("Je veux de la vidéosurveillance", knowledge).kind, "site");
   assert.equal(classifyUtterance("Je voudrais un devis gratuit", knowledge).kind, "site");
   assert.equal(classifyUtterance("Onglet suivant", knowledge).kind, "site");
   assert.equal(classifyUtterance("Quels sont les onglets du site ?", knowledge).kind, "site");
@@ -178,8 +179,12 @@ test("la parole de Claire synchronise l’onglet et la section visibles", () => 
   assert.equal(same, null);
   assert.equal(followSpokenNavigation("Quelle est la capitale de la France ?", knowledge), null);
   assert.equal(
-    followSpokenNavigation("Je comprends, votre disque dur n’est plus accessible.", knowledge, { pageId: "home" }),
-    null
+    followSpokenNavigation("Pour sécuriser votre maison, on peut poser des caméras, y compris en 4G.", knowledge, { pageId: "home" })?.pageId,
+    "videosurveillance"
+  );
+  assert.equal(
+    followSpokenNavigation("La maintenance à distance permet d’intervenir sur Windows et Mac.", knowledge, { pageId: "home" })?.pageId,
+    "remote-support"
   );
   assert.equal(followSpokenNavigation(
     "Le site compte 13 onglets : Accueil InfoServ2A, Vidéosurveillance, Création de sites web, Cybersécurité et intelligence artificielle.",

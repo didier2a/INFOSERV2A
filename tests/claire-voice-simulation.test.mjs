@@ -182,8 +182,8 @@ test("simulation vocale : la parole de Claire ouvre l’onglet lu à droite", as
   assert.equal(adapter.snapshot().activePage, "videosurveillance");
   assert.equal(adapter.snapshot().activeSection, "solutions-sans-fibre");
   assert.equal(
-    followSpokenNavigation("Je comprends, votre disque dur n’est plus accessible.", knowledge, { pageId: "home" }),
-    null
+    followSpokenNavigation("Je comprends, votre disque dur n’est plus accessible.", knowledge, { pageId: "home" })?.pageId,
+    "data-recovery"
   );
 });
 
