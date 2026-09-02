@@ -30,8 +30,8 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it9";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it9";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it10";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it10";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -1100,11 +1100,13 @@ export class ClaireCompanion {
     if (!this.siteAdapter) return false;
     try {
       if (!silent) this.setStatus("thinking", "Navigation contrôlée en cours…");
-      const snapshot = await this.siteAdapter.navigateHref(href, { historyMode, scroll: !silent });
+      const isolateVoice = Boolean(silent || this.provider?.avatarSpeaking);
+      const snapshot = await this.siteAdapter.navigateHref(href, { historyMode, scroll: !isolateVoice });
       storageSet(STORAGE_MODE, "guided");
       this.setState("guided");
       this.renderSuggestions();
-      if (silent) {
+      if (isolateVoice) {
+        this.pushPageContext(snapshot);
         this.setStatus(
           this.provider?.avatarSpeaking ? "speaking" : "ready",
           this.provider?.avatarSpeaking ? "Parlez ou touchez pour m’interrompre" : "Page synchronisée avec Claire"

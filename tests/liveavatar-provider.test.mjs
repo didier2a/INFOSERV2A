@@ -313,9 +313,12 @@ test("le contexte de page n’entre jamais dans le pipeline vocal pendant que Cl
   assert.equal(queued, true);
   assert.equal(session.messages.length, 0);
   assert.equal(provider.diagnostic().queuedSpeech, true);
+  provider.speak("La page Contact est affichée.");
+  assert.equal(session.messages.length, 0);
   session.emit("avatar-speak-ended");
   assert.equal(provider.avatarSpeaking, false);
   assert.match(session.messages.at(-1), /^\[INFOSERV2A_USER_TEXT\]/);
+  assert.equal(session.messages.some((value) => String(value).includes("APP_RESULT")), false);
   assert.equal(provider.diagnostic().queuedSpeech, false);
 
   await provider.stop();

@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-it9)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-it9)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-it10)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-it10)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -319,6 +319,7 @@ test("une transcription vocale coupe la réponse spontanée seulement si le site
   assert.match(client, /toggleGuidedTranscript/);
   assert.match(client, /handleSiteLink/);
   assert.match(client, /announce: false, silent: true/);
+  assert.match(client, /isolateVoice/);
   assert.match(client, /sendBriefing/);
   assert.match(client, /sendSessionMemory/);
   assert.match(provider, /sendBriefing/);
@@ -370,7 +371,7 @@ test("la parole de Claire enchaîne les pages sans coupure nette", async () => {
   assert.match(client, /SPEECH_FOLLOW_MS\s*=\s*360/);
   assert.match(client, /prefetchSpeechTarget/);
   assert.match(client, /prefetchLikelyPages/);
-  assert.match(client, /scroll: !silent/);
+  assert.match(client, /scroll: !isolateVoice/);
   assert.match(speakEnd, /finalizeLiveCompanionTurn/);
   assert.doesNotMatch(speakEnd, /pushPageContext|flushSilentSiteSync|sendContext|sendBriefing|sendMemory/);
   assert.doesNotMatch(liveTurn, /replaceChildren/);
