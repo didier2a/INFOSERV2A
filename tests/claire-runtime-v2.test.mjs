@@ -88,7 +88,7 @@ class MockPersistentSurface {
     this.calls.push(["sendSiteEmail", payload]);
     return {
       sent: true,
-      inbox: payload.kind === "devis" ? "devis@infoserv2a.pro" : "contact@infoserv2a.pro",
+      inbox: "contact@infoserv2a.pro",
       replyTo: payload.email || "",
       provider: "test"
     };

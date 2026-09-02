@@ -128,14 +128,14 @@
 
     send.then((result) => {
       if (result.pendingActivation) {
-        api.showStatus(form, "ok", result.message || "Un e-mail d’activation arrive dans " + (result.inbox || "devis@infoserv2a.pro") + ". Confirmez-le, puis renvoyez la demande.");
+        api.showStatus(form, "ok", result.message || "Un e-mail d’activation arrive dans " + (result.inbox || "contact@infoserv2a.pro") + ". Confirmez-le, puis renvoyez la demande.");
         return;
       }
       if (!result.sent) throw new Error(result.error || "network");
-      api.showStatus(form, "ok", "Votre demande de devis a bien été transmise vers " + (result.inbox || "devis@infoserv2a.pro") + ". Les fichiers listés ne sont pas joints : envoyez-les en réponse si besoin.");
+      api.showStatus(form, "ok", "Votre demande de devis a bien été transmise vers " + (result.inbox || "contact@infoserv2a.pro") + ". Les fichiers listés ne sont pas joints : envoyez-les en réponse si besoin.");
       form.reset();
     }).catch(() => {
-      api.showStatus(form, "error", "L'envoi n'a pas pu aboutir. Vous pouvez nous écrire à devis@infoserv2a.pro.");
+      api.showStatus(form, "error", "L'envoi n'a pas pu aboutir. Vous pouvez nous écrire à contact@infoserv2a.pro.");
     });
   });
   }

@@ -95,7 +95,7 @@ export class InfoServ2ALabAdapter {
           draft: clone(this.view.quoteDraft),
           submitted: this.view.submitted,
           sent: this.view.submitted,
-          inbox: "devis@infoserv2a.pro",
+          inbox: "contact@infoserv2a.pro",
           replyTo: this.view.quoteDraft.email,
           missing
         };

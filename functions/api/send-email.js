@@ -1,7 +1,7 @@
 import { corsHeaders, corsPreflight, isAllowedOrigin } from "./liveavatar-origin.js";
 
 export const CONTACT_INBOX = "contact@infoserv2a.pro";
-export const DEVIS_INBOX = "devis@infoserv2a.pro";
+export const DEVIS_INBOX = CONTACT_INBOX;
 export const DEFAULT_FROM = "InfoServ2A <noreply@infoserv2a.pro>";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -54,7 +54,9 @@ export function emailConfigured(env = {}) {
 }
 
 export function inboxForKind(kind, env = {}) {
-  if (kind === "devis") return compactField(env.DEVIS_INBOX, 120) || DEVIS_INBOX;
+  if (kind === "devis") {
+    return compactField(env.DEVIS_INBOX, 120) || compactField(env.CONTACT_INBOX, 120) || CONTACT_INBOX;
+  }
   return compactField(env.CONTACT_INBOX, 120) || CONTACT_INBOX;
 }
 

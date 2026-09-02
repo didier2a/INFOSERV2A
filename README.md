@@ -68,7 +68,7 @@ Les fonctions serveur sont dans `functions/api/` et le point d’entrée Cloudfl
 
 - `liveavatar-status.js` active automatiquement l’adaptateur seulement si les bindings requis existent ;
 - `liveavatar-session.js` accepte uniquement une requête de même origine, crée ou réutilise le contexte Claire et renvoie un jeton de session de cinq minutes ;
-- `send-email.js` envoie réellement contact et devis vers `contact@` / `devis@infoserv2a.pro` **seulement** si le secret `RESEND_API_KEY` est présent et le domaine vérifié chez Resend. FormSubmit est bloqué depuis un Worker. Claire ne dit « c’est parti » que si cette route confirme l’envoi ;
+- `send-email.js` envoie réellement contact **et devis** vers `contact@infoserv2a.pro` tant que `devis@` n’existe pas (`DEVIS_INBOX` pour basculer plus tard). Secret `RESEND_API_KEY` et domaine Resend vérifié. Claire ne dit « c’est parti » que si cette route confirme l’envoi ;
 - en cas d’absence ou d’échec LiveAvatar, l’interface indique explicitement que la voix native du navigateur est un mode local de secours.
 
 Bindings Cloudflare à créer sans fichier local :
@@ -127,12 +127,7 @@ node --test tests/claire-runtime-v2.test.mjs
 
 En local, l'envoi est simulé. Un message indique clairement qu'aucun e-mail n'a été envoyé.
 
-Plus tard, brancher :
-
-- contact → `contact@infoserv2a.pro` via `data-endpoint` sur `#contact-form`
-- devis → `devis@infoserv2a.pro` via `data-endpoint` sur `#devis-form`
-
-L'assistance client est prévue à `support@infoserv2a.pro`.
+Contact et devis partent vers `contact@infoserv2a.pro`. Quand la boîte `devis@` existera, poser la variable `DEVIS_INBOX`. L'assistance client reste prévue à `support@infoserv2a.pro`.
 
 ## Points restant à faire avant la mise en production
 

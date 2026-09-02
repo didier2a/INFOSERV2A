@@ -291,7 +291,7 @@ export class BrowserInfoServ2ASurface {
       website: this.document.querySelector("#devis-form [name='website']")?.value || ""
     };
     const result = await this.sendSiteEmail(payload);
-    this.showFormStatus("#devis-form", result, "devis@infoserv2a.pro");
+    this.showFormStatus("#devis-form", result, "contact@infoserv2a.pro");
     return {
       ...formState,
       submitted: Boolean(result.sent),
@@ -501,7 +501,7 @@ export class InfoServ2ASiteAdapter {
           sent: Boolean(form.sent),
           pendingActivation: Boolean(form.pendingActivation),
           configured: form.configured,
-          inbox: form.inbox || "devis@infoserv2a.pro",
+          inbox: form.inbox || "contact@infoserv2a.pro",
           replyTo: form.replyTo || this.view.quoteDraft.email,
           missing: form.missing || [],
           error: form.error || "",

@@ -65,7 +65,7 @@ test("GET /api/send-email décrit le fournisseur sans secret", async () => {
     secrets: { resend: false, from: false },
     inboxes: {
       contact: "contact@infoserv2a.pro",
-      devis: "devis@infoserv2a.pro"
+      devis: "contact@infoserv2a.pro"
     }
   });
 });
@@ -107,6 +107,19 @@ test("POST envoie réellement via le binding Cloudflare", async () => {
   assert.match(sent[0].text, /Essai d’envoi réel/);
 });
 
+test("DEVIS_INBOX permet d’ouvrir devis@ plus tard", () => {
+  const mail = normalizeEmailPayload({
+    kind: "devis",
+    name: "Marie Rossi",
+    phone: "07 45 15 60 76",
+    email: "marie@example.com",
+    city: "Porto-Vecchio",
+    service: "videosurveillance",
+    description: "Caméra 4G"
+  }, { DEVIS_INBOX: "devis@infoserv2a.pro" });
+  assert.equal(mail.inbox, "devis@infoserv2a.pro");
+});
+
 test("EMAIL_TEST_INBOX ne détourne plus vers Gmail", () => {
   const mail = normalizeEmailPayload({
     kind: "contact",
@@ -117,7 +130,7 @@ test("EMAIL_TEST_INBOX ne détourne plus vers Gmail", () => {
   assert.equal(mail.inbox, "contact@infoserv2a.pro");
 });
 
-test("POST devis part vers devis@ et non vers l’adresse du visiteur", async () => {
+test("POST devis part vers contact@ tant que devis@ n’existe pas", async () => {
   resetEmailRateLimit();
   const sent = [];
   const response = await onRequestPost({
@@ -141,8 +154,8 @@ test("POST devis part vers devis@ et non vers l’adresse du visiteur", async ()
   });
   const payload = await response.json();
   assert.equal(payload.sent, true);
-  assert.equal(payload.inbox, "devis@infoserv2a.pro");
-  assert.equal(sent[0].to, "devis@infoserv2a.pro");
+  assert.equal(payload.inbox, "contact@infoserv2a.pro");
+  assert.equal(sent[0].to, "contact@infoserv2a.pro");
   assert.equal(sent[0].reply_to, "marie@example.com");
 });
 

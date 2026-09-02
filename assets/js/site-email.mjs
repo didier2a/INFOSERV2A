@@ -27,7 +27,7 @@ export function describeEmailSendOutcome(outcome) {
   const result = (outcome?.results || []).find((item) => item.tool === "compose_email" || item.tool === "submit_quote");
   if (!result) return "";
   const output = result.output || {};
-  const inbox = output.inbox || (result.tool === "submit_quote" ? "devis@infoserv2a.pro" : "contact@infoserv2a.pro");
+  const inbox = output.inbox || "contact@infoserv2a.pro";
   const reply = output.replyTo ? ` La réponse arrivera sur ${output.replyTo}.` : "";
   if (output.sent) {
     return result.tool === "submit_quote"
