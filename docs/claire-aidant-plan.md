@@ -106,6 +106,8 @@ Frames à pousser dans Figma dès que le MCP Figma est authentifié sur le burea
 
 ## 8. Audit cahier des charges — informatique seulement + catalogue d’onglets
 
+**Remplacé pour l’ergonomie / le contrôle partagé :** `docs/claire-audit-ergonomie-cybernetique.md` (2 septembre 2026, indice 58 % → cible 82 %). Le tableau ci-dessous décrit l’intention produit d’origine ; il n’est plus la recette de navigation bidirectionnelle.
+
 Cahier des charges énoncé : Claire est conviviale ; elle accueille à la voix dès l’entrée en communication ; elle se présente et présente l’entreprise ; langage naturel ; domaine IT uniquement.
 
 | Exigence | Verdict | Preuve |
