@@ -143,9 +143,9 @@ test("simulation vocale : un aparté informatique ou hors-sujet ne déclenche pa
     assert.equal(plan.steps.length, 0, heard);
   }
   for (const heard of OFF_TOPIC_CHAT) {
-    assert.equal(classifyUtterance(heard, knowledge).kind, "chat", heard);
+    assert.equal(classifyUtterance(heard, knowledge).kind, "offtopic", heard);
     const plan = planCommand(heard, knowledge, manifest);
-    assert.equal(plan.mode, "chat", heard);
+    assert.equal(plan.mode, "offtopic", heard);
     assert.equal(plan.steps.length, 0, heard);
   }
   for (const scene of SPOKEN_SCENES) {

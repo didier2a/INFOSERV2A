@@ -308,7 +308,7 @@ export class InfoServ2ALiveAvatarProvider {
   sendBriefing(value) {
     return this.keepLocalNote(
       "briefing",
-      `[INFOSERV2A_SITE_BRIEFING]\n${value}\nN’y réponds pas. Mémorise le catalogue des onglets. Tu restes une présence chaleureuse, à l’écoute, sans ramener de force à l’informatique.`,
+      `[INFOSERV2A_SITE_BRIEFING]\n${value}\nN’y réponds pas. Mémorise le catalogue des onglets. Tu restes l’aidante IT d’InfoServ2A : ouverte aux métiers du numérique, tu recentres un loisir vers l’informatique.`,
       "conversation:site-briefing-kept"
     );
   }
@@ -332,7 +332,7 @@ export class InfoServ2ALiveAvatarProvider {
   sendUserMessage(value) {
     const text = String(value || "").trim();
     if (!text) return false;
-    const prompt = `[INFOSERV2A_USER_TEXT]\n${text}\nRéponds naturellement, en français chaleureux, à ce que la personne dit. Tous les domaines sont les bienvenus. Ne ramène pas à l’informatique.`;
+    const prompt = `[INFOSERV2A_USER_TEXT]\n${text}\nRéponds naturellement, en français professionnel et accueillant. Périmètre : IT, sciences du numérique, métiers qui s’appuient sur l’informatique.`;
     const sent = this.speakLiveMessage(prompt, "conversation:user-text-sent");
     if (!sent) return false;
     if (sent === "queued") {
@@ -347,7 +347,7 @@ export class InfoServ2ALiveAvatarProvider {
   sendOffTopic(value) {
     const text = String(value || "").trim();
     if (!text) return false;
-    const prompt = `[INFOSERV2A_OFF_TOPIC]\n${text}\nCe n’est pas un refus. Réponds à la personne, avec la même écoute. Ne la ramène pas à l’informatique.`;
+    const prompt = `[INFOSERV2A_OFF_TOPIC]\n${text}\nLoisir ou aparté sans lien numérique : une phrase courtoise, tu ne développes pas, tu recentres vers InfoServ2A et l’IT. Pas de recette, pas de match, pas de cours hors sol. Jamais « je ne parle que d’informatique ».`;
     const sent = this.speakLiveMessage(prompt, "conversation:off-topic-sent");
     if (!sent) return false;
     if (sent === "queued") {

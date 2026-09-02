@@ -139,14 +139,16 @@ test("une salutations ou un sujet professionnel reste une conversation naturelle
   assert.equal(classifyUtterance("Peux-tu améliorer mon Wi-Fi ?", knowledge).kind, "chat");
   assert.equal(classifyUtterance("Comment un hôpital gère ses dossiers patients ?", knowledge).kind, "chat");
   assert.equal(classifyUtterance("On cherche un logiciel pour le laboratoire", knowledge).kind, "chat");
+  assert.equal(classifyUtterance("Je tiens un restaurant à Bonifacio", knowledge).kind, "chat");
+  assert.equal(classifyUtterance("Je suis médecin, j’ai un cabinet", knowledge).kind, "chat");
   assert.equal(classifyUtterance("Ok, merci", knowledge).kind, "chat");
 });
 
-test("un sujet hors site reste une conversation, sans navigation", () => {
-  assert.equal(classifyUtterance("Raconte-moi une blague", knowledge).kind, "chat");
-  assert.equal(classifyUtterance("Quelle heure est-il ?", knowledge).kind, "chat");
-  assert.equal(classifyUtterance("Quelle est la capitale de la France ?", knowledge).kind, "chat");
-  assert.equal(classifyUtterance("Donne-moi une recette de gâteau", knowledge).kind, "chat");
+test("un loisir sans lien IT recentre, sans ouvrir une page", () => {
+  assert.equal(classifyUtterance("Raconte-moi une blague", knowledge).kind, "offtopic");
+  assert.equal(classifyUtterance("Quelle heure est-il ?", knowledge).kind, "offtopic");
+  assert.equal(classifyUtterance("Quelle est la capitale de la France ?", knowledge).kind, "offtopic");
+  assert.equal(classifyUtterance("Donne-moi une recette de gâteau", knowledge).kind, "offtopic");
 });
 
 test("une demande de service continue de piloter le site", () => {
@@ -197,17 +199,19 @@ test("la parole de Claire synchronise l’onglet et la section visibles", () => 
   ), null);
 });
 
-test("le briefing site contient tous les onglets et le prompt généraliste", () => {
+test("le briefing site contient tous les onglets et le rôle consultante IT", () => {
   const briefing = buildSiteBriefing(knowledge);
   const prompt = buildClaireContextPrompt(knowledge);
   assert.equal(knowledge.pages.length, 13);
   for (const page of knowledge.pages) {
     assert.match(briefing, new RegExp(page.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
-  assert.match(briefing, /présence chaleureuse/);
-  assert.match(prompt, /interlocutrice humaine/);
-  assert.match(prompt, /ne doit jamais sentir une barrière/);
-  assert.match(prompt, /sans ramener systématiquement à l’informatique/);
+  assert.match(briefing, /consultante IT ouverte/);
+  assert.match(prompt, /interlocutrice professionnelle/);
+  assert.match(prompt, /recentres vers InfoServ2A et l’IT/);
+  assert.match(prompt, /pas la recette/);
+  assert.doesNotMatch(prompt, /sans ramener systématiquement à l’informatique/);
+  assert.doesNotMatch(prompt, /tous les domaines : métiers, sciences, arts/);
   assert.match(prompt, /INFOSERV2A_SITE_BRIEFING/);
   assert.match(prompt, /INFOSERV2A_SESSION_MEMORY/);
   assert.match(prompt, /INFOSERV2A_OFF_TOPIC/);

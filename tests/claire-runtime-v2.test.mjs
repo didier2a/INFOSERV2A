@@ -119,9 +119,9 @@ test("une conversation informatique hors site ne planifie aucune navigation", ()
   assert.equal(plan.expected, null);
 });
 
-test("un sujet hors site reste une conversation, sans navigation", () => {
+test("un loisir hors IT reste une conversation, sans navigation", () => {
   const plan = planCommand("Quelle est la capitale de la France ?", knowledge, manifest);
-  assert.equal(plan.mode, "chat");
+  assert.equal(plan.mode, "offtopic");
   assert.deepEqual(plan.steps, []);
   assert.equal(plan.expected, null);
 });

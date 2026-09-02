@@ -34,8 +34,8 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260902-it15";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260902-it15";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260902-it16";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260902-it16";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -1124,7 +1124,7 @@ export class ClaireCompanion {
     if (classified.kind === "offtopic") {
       this.setStatus("listening", "Claire vous répond");
       if (source !== "liveavatar") {
-        if (this.provider?.sendUserMessage) this.provider.sendUserMessage(value);
+        if (this.provider?.sendOffTopic) this.provider.sendOffTopic(value);
         else this.appendTurn("companion", CLAIRE_OFF_TOPIC_SPEECH);
       }
       return { kind: "chat", classified };
