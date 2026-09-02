@@ -6,7 +6,7 @@ const FRENCH_STOP_WORDS = new Set([
 
 const SUBMIT_QUOTE_PATTERN = /\b(envoie|envoi|transmet(?:s|tre)?|soumet(?:s|tre)?|valide|confirme)\b.{0,48}\b(devis|demande de devis)\b|\bdevis\b.{0,24}\b(envoie|envoi|transmis|soumis)\b/;
 const CALL_PATTERN = /\b(appelez|appelle|appeler|un appel|je t appelle|nous appeler|rappelez|rappeler|lancer un appel|passe(?:r)? (?:un )?appel)\b/;
-const EMAIL_PATTERN = /\b((?:envoie(?:r)?|ecris|ecrire|ouvre|ouvrir|compose(?:r)?) (?:un )?(?:e-?mail|courriel|mail)|envoyer un message|(?:par|un) e-?mail|adresse (?:e-?mail|mail))\b/;
+const EMAIL_PATTERN = /\b((?:envoie(?:r)?|ecris|ecrire|ouvre|ouvrir|compose(?:r)?|transmet(?:s|tre)?) (?:l[ea] |un |cet |cette )?(?:e-?mail|courriel|mail|message)|envoyer un message|(?:par|un) e-?mail|adresse (?:e-?mail|mail))\b/;
 
 const DIRECT_INTENTS = [
   {
@@ -312,7 +312,7 @@ Lorsque tu reçois [INFOSERV2A_SESSION_MEMORY], c’est le contexte déjà dit d
 Lorsque tu reçois [INFOSERV2A_USER_TEXT], c'est un message tapé par le visiteur. Réponds dans ton périmètre : IT, sciences du numérique, métiers qui s’appuient sur l’IT.
 Lorsque tu reçois [INFOSERV2A_OFF_TOPIC], c’est un loisir ou un aparté sans lien numérique. Une phrase courtoise, tu ne développes pas, tu recentres vers InfoServ2A et l’IT. Jamais de phrase du type « je ne parle que d’informatique ».
 
-Sur demande orale explicite, tu peux : préremplir un devis ; l’envoyer réellement vers devis@infoserv2a.pro seulement si le visiteur dit clairement « envoie » ou « transmets » le devis ; ouvrir un appel vers InfoServ2A ; envoyer réellement un message vers contact@infoserv2a.pro. L’adresse saisie par le visiteur est celle où InfoServ2A lui répondra, pas la destination. Tu n’envoies jamais vers une autre boîte. N’invente jamais un nom, un téléphone, un e-mail ou une commune. S’il manque un champ, demande-le à l’oral. Ne dis jamais « c’est envoyé » tant que [INFOSERV2A_APP_RESULT] ne confirme pas l’envoi. Si le résultat dit que ce n’est pas parti, dis-le clairement.
+Sur demande orale explicite, le site peut envoyer un message vers contact@infoserv2a.pro ou un devis vers devis@infoserv2a.pro. L’adresse saisie par le visiteur est celle où InfoServ2A lui répondra, pas la destination. Tu n’envoies jamais toi-même. Nommer contact@ n’est pas une preuve d’envoi. Tant que tu n’as pas reçu [INFOSERV2A_APP_RESULT] avec « bien été envoyé », dis que tu t’en occupes ou qu’il manque un champ — jamais « c’est parti ». Si le résultat dit que ce n’est pas parti, dis-le clairement.
 
 L'application InfoServ2A est la seule source de vérité pour les services, coordonnées, horaires, pages et actions. L'utilisateur garde toujours accès au mode manuel. N'invente jamais un tarif, un délai, une disponibilité, une conformité, un diagnostic matériel définitif ou une capacité technique non vérifiée.`;
 }

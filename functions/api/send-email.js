@@ -44,9 +44,9 @@ export function compactField(value, max) {
 export function resolveEmailProvider(env = {}) {
   if (typeof env.EMAIL?.send === "function") return "cloudflare-email";
   if (String(env.RESEND_API_KEY || "").trim()) return "resend";
-  const forced = String(env.EMAIL_PROVIDER || "formsubmit").trim().toLowerCase();
-  if (forced === "none" || forced === "off") return "none";
-  return "formsubmit";
+  const forced = String(env.EMAIL_PROVIDER || "none").trim().toLowerCase();
+  if (forced === "formsubmit") return "formsubmit";
+  return "none";
 }
 
 export function emailConfigured(env = {}) {
@@ -112,7 +112,7 @@ function formSubmitActivated(payload) {
 }
 
 async function deliverViaResend(env, mail) {
-  const from = compactField(env.RESEND_FROM, 160) || DEFAULT_FROM;
+  const from = compactField(env.RESEND_FROM, 160) || "InfoServ2A <beth.t@example.com>";
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -129,7 +129,7 @@ async function deliverViaResend(env, mail) {
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error("Resend a refusé l’envoi");
+    const error = new Error(compactField(payload.message || payload.error, 200) || "Resend a refusé l’envoi");
     error.status = 502;
     error.detail = payload;
     throw error;
@@ -166,9 +166,11 @@ async function deliverViaFormSubmit(mail) {
       _replyto: mail.replyTo
     })
   });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const error = new Error("Le relais d’e-mail a refusé l’envoi");
+  const raw = await response.text();
+  let payload = {};
+  try { payload = JSON.parse(raw); } catch { payload = {}; }
+  if (!response.ok || /just a moment|cf-mitigated|challenge/i.test(raw)) {
+    const error = new Error("Le relais FormSubmit est bloqué. Utilisez Resend (RESEND_API_KEY).");
     error.status = 502;
     throw error;
   }
@@ -257,7 +259,7 @@ export async function onRequestPost({ request, env }) {
   } catch (error) {
     const status = Number(error.status) || 502;
     return json({
-      error: status === 503 ? error.message : "L’envoi n’a pas pu aboutir",
+      error: status === 503 ? error.message : (error.message || "L’envoi n’a pas pu aboutir"),
       sent: false,
       configured: provider !== "none",
       inbox: mail.inbox

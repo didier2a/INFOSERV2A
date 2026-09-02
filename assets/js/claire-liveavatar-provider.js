@@ -268,7 +268,9 @@ export class InfoServ2ALiveAvatarProvider {
     const text = String(prompt || "").trim();
     if (!text) return false;
     if (this.avatarSpeaking) {
-      const canWait = event === "conversation:user-text-sent" || event === "conversation:off-topic-sent";
+      const canWait = event === "conversation:user-text-sent"
+        || event === "conversation:off-topic-sent"
+        || event === "conversation:email-result-sent";
       if (!canWait) {
         this.record("conversation:speech-dropped", { event, characters: text.length });
         return "dropped";
@@ -290,6 +292,13 @@ export class InfoServ2ALiveAvatarProvider {
 
   sendSilentMessage(prompt, event) {
     return this.speakLiveMessage(prompt, event) !== false;
+  }
+
+  sendEmailResult(value) {
+    return this.speakLiveMessage(
+      `[INFOSERV2A_APP_RESULT]\nInformation vérifiée par le site : ${value}\nRéponds en français naturel, brièvement, sans ajouter de fait ni prétendre avoir réalisé une autre action.`,
+      "conversation:email-result-sent"
+    ) !== false;
   }
 
   sendPrompt(value) {

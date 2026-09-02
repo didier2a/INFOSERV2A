@@ -79,9 +79,7 @@ test("la route de session échoue proprement sans secret Cloudflare", async () =
 });
 
 test("le Worker expose le statut d’envoi d’e-mail", async () => {
-  const response = await worker.fetch(new Request("https://infoserv2a.test/api/send-email"), env({
-    EMAIL_PROVIDER: "none"
-  }));
+  const response = await worker.fetch(new Request("https://infoserv2a.test/api/send-email"), env());
   assert.equal(response.status, 200);
   assert.equal((await response.json()).configured, false);
 });

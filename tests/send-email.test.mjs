@@ -33,8 +33,9 @@ function post(body, { origin = "https://www.infoserv2a.pro", url = "https://www.
 }
 
 test("sans relais, l’envoi n’est pas configuré", () => {
+  assert.equal(resolveEmailProvider({}), "none");
   assert.equal(resolveEmailProvider({ EMAIL_PROVIDER: "none" }), "none");
-  assert.equal(emailConfigured({ EMAIL_PROVIDER: "none" }), false);
+  assert.equal(emailConfigured({}), false);
 });
 
 test("Resend ou le binding Cloudflare activent l’envoi", () => {
@@ -56,9 +57,7 @@ test("le payload refuse un message incomplet et ignore le honeypot", () => {
 });
 
 test("GET /api/send-email décrit le fournisseur sans secret", async () => {
-  const response = await worker.fetch(new Request("https://infoserv2a.test/api/send-email"), env({
-    EMAIL_PROVIDER: "none"
-  }));
+  const response = await worker.fetch(new Request("https://infoserv2a.test/api/send-email"), env());
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), {
     configured: false,
@@ -134,6 +133,27 @@ test("POST devis part vers devis@ et non vers l’adresse du visiteur", async ()
   assert.equal(payload.inbox, "devis@infoserv2a.pro");
   assert.equal(sent[0].to, "devis@infoserv2a.pro");
   assert.equal(sent[0].reply_to, "marie@example.com");
+});
+
+test("un challenge Cloudflare FormSubmit est un échec, pas un envoi", async () => {
+  const previous = globalThis.fetch;
+  globalThis.fetch = async () => new Response("<html>Just a moment...</html>", {
+    status: 403,
+    headers: { "cf-mitigated": "challenge" }
+  });
+  try {
+    await assert.rejects(
+      () => deliverSiteEmail({ EMAIL_PROVIDER: "formsubmit" }, normalizeEmailPayload({
+        kind: "contact",
+        name: "Didier",
+        email: "didier@example.com",
+        message: "Ne doit pas partir"
+      })),
+      /FormSubmit est bloqué/
+    );
+  } finally {
+    globalThis.fetch = previous;
+  }
 });
 
 test("FormSubmit signale une activation au lieu de prétendre que c’est parti", async () => {
