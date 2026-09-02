@@ -173,9 +173,9 @@ export function mergeFacts(memory, facts = {}) {
 }
 
 export function rememberTurn(role, text, storage = globalThis.sessionStorage) {
-  let memory = loadSessionMemory(storage);
   const clean = compact(text).slice(0, MAX_TURN_CHARS);
-  if (!clean) return memory;
+  if (!clean || /\[INFOSERV2A_[A-Z0-9_]+\]/.test(clean)) return loadSessionMemory(storage);
+  let memory = loadSessionMemory(storage);
   memory.turns.push({
     role: role === "user" ? "user" : "companion",
     text: clean,
@@ -280,7 +280,7 @@ export function quoteQuestionnaire(memory = {}) {
 export function shouldShowQuoteQuest(memory = {}, pageId = "") {
   if (pageId === "quote") return true;
   const visitor = normalizeVisitor(memory.visitor);
-  return Boolean(visitor.name || visitor.phone || visitor.email || visitor.city || memory.need || memory.service);
+  return Boolean(visitor.name || visitor.phone || visitor.email || visitor.city || memory.need);
 }
 
 export function formatCaptionContext({ page, section, memory } = {}) {

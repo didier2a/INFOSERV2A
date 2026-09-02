@@ -11,7 +11,8 @@ import {
   loadSessionMemory,
   quoteQuestionnaire,
   rememberTurn,
-  saveSessionMemory
+  saveSessionMemory,
+  shouldShowQuoteQuest
 } from "../assets/js/claire-session-memory.mjs";
 
 function memoryStorage(seed = null) {
@@ -98,4 +99,18 @@ test("un devis ne part pas tant que les coordonnées manquent", () => {
     need: "Caméra sans fibre pour un hangar."
   }, storage);
   assert.equal(canSubmitQuote(complete), true);
+});
+
+test("un marqueur interne LiveAvatar n’alimente pas la mémoire ni le questionnaire", () => {
+  const storage = memoryStorage();
+  const leaked = rememberTurn(
+    "user",
+    "[INFOSERV2A_PAGE_CONTEXT]\nOnglet visible : Accueil InfoServ2A. Vidéosurveillance. Appareil : téléphone.",
+    storage
+  );
+  assert.equal(leaked.service, "");
+  assert.equal(leaked.turns.length, 0);
+  assert.equal(shouldShowQuoteQuest(leaked, "home"), false);
+  assert.equal(shouldShowQuoteQuest({ service: "videosurveillance" }, "home"), false);
+  assert.equal(shouldShowQuoteQuest({ visitor: { name: "Marie" } }, "home"), true);
 });

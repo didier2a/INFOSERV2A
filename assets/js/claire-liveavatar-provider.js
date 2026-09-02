@@ -1,5 +1,8 @@
+import { isInternalSitePrompt } from "./claire-core.mjs";
+
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;
+const SILENT_ECHO_GUARD_MS = 1600;
 const TRACK_ATTACH_TIMEOUT_MS = 18000;
 const TRACK_POLL_MS = 100;
 const MAX_CONNECT_ATTEMPTS = 2;
@@ -73,6 +76,7 @@ export class InfoServ2ALiveAvatarProvider {
     this.avatarSpeaking = false;
     this.stopping = false;
     this.connectionAttempt = 0;
+    this.silentSendAt = 0;
     this.callbacks = {};
   }
 
@@ -212,6 +216,7 @@ export class InfoServ2ALiveAvatarProvider {
         const stream = this.video?.srcObject;
         stream?.getTracks?.().forEach((track) => {
           track.addEventListener?.("ended", () => {
+            if (this.stopping) return;
             this.streamReady = false;
             this.setTransportState("track-ended", { kind: track.kind });
             this.emit("error", `Piste ${track.kind === "audio" ? "audio" : "vidéo"} interrompue`);
@@ -226,46 +231,50 @@ export class InfoServ2ALiveAvatarProvider {
     throw new Error(`Pistes LiveAvatar incomplètes (audio=${last.audio}, vidéo=${last.video}).`);
   }
 
-  sendPrompt(value) {
+  sendSilentMessage(prompt, event) {
     if (!this.session) return false;
+    const text = String(prompt || "").trim();
+    if (!text) return false;
+    this.silentSendAt = Date.now();
+    this.record(event, { characters: text.length });
+    this.session.message(text);
+    return true;
+  }
+
+  sendPrompt(value) {
     const prompt = `[INFOSERV2A_APP_RESULT]\nInformation vérifiée par le site : ${value}\nRéponds en français naturel, brièvement, sans ajouter de fait ni prétendre avoir réalisé une autre action.`;
-    this.record("conversation:verified-result-sent", { characters: String(value).length });
-    this.session.message(prompt);
+    if (!this.sendSilentMessage(prompt, "conversation:verified-result-sent")) return false;
     this.armReplyTimer();
     this.emit("thinking", "Claire prépare sa réponse…");
     return true;
   }
 
   sendBriefing(value) {
-    if (!this.session) return false;
-    const prompt = `[INFOSERV2A_SITE_BRIEFING]\n${value}\nN’y réponds pas. Mémorise le catalogue des onglets. Tu restes une présence chaleureuse, à l’écoute, sans ramener de force à l’informatique.`;
-    this.record("conversation:site-briefing-sent", { characters: String(value).length });
-    this.session.message(prompt);
-    return true;
+    return this.sendSilentMessage(
+      `[INFOSERV2A_SITE_BRIEFING]\n${value}\nN’y réponds pas. Mémorise le catalogue des onglets. Tu restes une présence chaleureuse, à l’écoute, sans ramener de force à l’informatique.`,
+      "conversation:site-briefing-sent"
+    );
   }
 
   sendContext(value) {
-    if (!this.session) return false;
-    const prompt = `[INFOSERV2A_PAGE_CONTEXT]\n${value}\nN’y réponds pas. Mémorise seulement l’onglet et la section visibles.`;
-    this.record("conversation:page-context-sent", { characters: String(value).length });
-    this.session.message(prompt);
-    return true;
+    return this.sendSilentMessage(
+      `[INFOSERV2A_PAGE_CONTEXT]\n${value}\nN’y réponds pas. Mémorise seulement l’onglet et la section visibles.`,
+      "conversation:page-context-sent"
+    );
   }
 
   sendMemory(value) {
-    if (!this.session) return false;
-    const prompt = `[INFOSERV2A_SESSION_MEMORY]\n${value}\nN’y réponds pas. Reprends le contexte déjà dit. Ne redemande pas ces informations. N’invente rien.`;
-    this.record("conversation:session-memory-sent", { characters: String(value).length });
-    this.session.message(prompt);
-    return true;
+    return this.sendSilentMessage(
+      `[INFOSERV2A_SESSION_MEMORY]\n${value}\nN’y réponds pas. Reprends le contexte déjà dit. Ne redemande pas ces informations. N’invente rien.`,
+      "conversation:session-memory-sent"
+    );
   }
 
   sendUserMessage(value) {
     const text = String(value || "").trim();
-    if (!this.session || !text) return false;
+    if (!text) return false;
     const prompt = `[INFOSERV2A_USER_TEXT]\n${text}\nRéponds naturellement, en français chaleureux, à ce que la personne dit. Tous les domaines sont les bienvenus. Ne ramène pas à l’informatique.`;
-    this.record("conversation:user-text-sent", { characters: text.length });
-    this.session.message(prompt);
+    if (!this.sendSilentMessage(prompt, "conversation:user-text-sent")) return false;
     this.armReplyTimer();
     this.emit("listening", "Claire vous répond…");
     return true;
@@ -273,10 +282,9 @@ export class InfoServ2ALiveAvatarProvider {
 
   sendOffTopic(value) {
     const text = String(value || "").trim();
-    if (!this.session || !text) return false;
+    if (!text) return false;
     const prompt = `[INFOSERV2A_OFF_TOPIC]\n${text}\nCe n’est pas un refus. Réponds à la personne, avec la même écoute. Ne la ramène pas à l’informatique.`;
-    this.record("conversation:off-topic-sent", { characters: text.length });
-    this.session.message(prompt);
+    if (!this.sendSilentMessage(prompt, "conversation:off-topic-sent")) return false;
     this.armReplyTimer();
     this.emit("listening", "Claire vous répond…");
     return true;
@@ -338,9 +346,17 @@ export class InfoServ2ALiveAvatarProvider {
     );
   }
 
+  isSilentEchoWindow() {
+    return this.silentSendAt > 0 && Date.now() - this.silentSendAt < SILENT_ECHO_GUARD_MS;
+  }
+
   stageTranscript(value) {
     const text = String(value || "").trim();
     if (!text) return;
+    if (isInternalSitePrompt(text) || this.isSilentEchoWindow()) {
+      this.record("conversation:internal-ignored", { characters: text.length });
+      return;
+    }
 
     const previous = this.transcriptParts.at(-1) || "";
     if (previous === text) return;
@@ -525,6 +541,10 @@ export class InfoServ2ALiveAvatarProvider {
       if (!this.stopping) this.emit("error", "Session LiveAvatar interrompue · touchez le micro pour reconnecter");
     });
     session.on(AgentEventsEnum.USER_SPEAK_STARTED, () => {
+      if (this.isSilentEchoWindow()) {
+        this.record("conversation:silent-echo-ignored", { reason: "user-speak-started" });
+        return;
+      }
       this.listening = true;
       this.userSpeaking = true;
       this.userSpeakComplete = false;
@@ -545,6 +565,10 @@ export class InfoServ2ALiveAvatarProvider {
     session.on(AgentEventsEnum.USER_TRANSCRIPTION, (event) => {
       const text = String(event?.text || "").trim();
       if (!text) return;
+      if (isInternalSitePrompt(text) || this.isSilentEchoWindow()) {
+        this.record("conversation:internal-ignored", { characters: text.length });
+        return;
+      }
       this.record("conversation:user-transcription", { characters: text.length });
       this.clearReplyTimer();
       if (this.avatarSpeaking) this.bargeIn("user-barge-in");

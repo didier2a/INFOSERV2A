@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-it6)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-it6)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-it7)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-it7)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -138,6 +138,8 @@ test("le direct exige les pistes LiveAvatar avant d’annoncer la connexion", as
   assert.match(provider, /this\.streamReady = true/);
   assert.match(headers, /wss:\/\/\*\.livekit\.cloud/);
   assert.match(headers, /https:\/\/\*\.infoserv2a\.workers\.dev/);
+  assert.match(headers, /https:\/\/unpkg\.com/);
+  assert.match(headers, /https:\/\/\*\.liveavatar\.com/);
 });
 
 test("Chrome Android reçoit le son Realtime directement et peut le déverrouiller au toucher", async () => {
@@ -155,14 +157,17 @@ test("Chrome Android reçoit le son Realtime directement et peut le déverrouill
 });
 
 test("l’accueil Realtime est prononcé une seule fois par le contexte LiveAvatar", async () => {
-  const [client, endpoint] = await Promise.all([
+  const [client, endpoint, provider] = await Promise.all([
     readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
-    readFile(path.join(ROOT, "functions/api/liveavatar-session.js"), "utf8")
+    readFile(path.join(ROOT, "functions/api/liveavatar-session.js"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8")
   ]);
   assert.match(client, /this\.showWelcome\(greeting\)/);
   assert.match(client, /const greeting = CLAIRE_WELCOME/);
   assert.doesNotMatch(client, /this\.speak\(greeting\)/);
   assert.doesNotMatch(client, /this\.speak\(CLAIRE_WELCOME\)/);
+  assert.match(client, /scheduleSilentSiteSync/);
+  assert.match(provider, /isInternalSitePrompt/);
   assert.match(endpoint, /opening_text:\s*CLAIRE_WELCOME/);
 });
 

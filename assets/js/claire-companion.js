@@ -4,6 +4,7 @@ import {
   describePageContext,
   buildSiteBriefing,
   followSpokenNavigation,
+  isInternalSitePrompt,
   mergeSpokenTranscript,
   suggestedPrompts,
   CLAIRE_WELCOME,
@@ -29,8 +30,9 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it6";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it6";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it7";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it7";
+const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 280;
 const LIVEAVATAR_CLOUD_FALLBACKS = [
@@ -236,6 +238,9 @@ export class ClaireCompanion {
     this.followTimer = 0;
     this.followInFlight = false;
     this.lastFollowKey = "";
+    this.lastContextSignature = "";
+    this.pendingSilentSync = false;
+    this.silentSyncTimer = 0;
     this.nodes = {};
     this.provider = null;
     this.providerReadyPromise = null;
@@ -595,9 +600,7 @@ export class ClaireCompanion {
       try {
         await this.provider.connect({ microphone: microphoneRequested });
         this.setEngineStatus("liveavatar-realtime", "LiveAvatar · OpenAI Realtime · marin");
-        this.provider.sendBriefing?.(buildSiteBriefing(this.knowledge));
-        this.sendSessionMemory();
-        this.pushPageContext();
+        this.scheduleSilentSiteSync();
         this.scheduleWelcomeTranscript(greeting);
         void this.keepScreenAwake();
       } catch {
@@ -689,14 +692,37 @@ export class ClaireCompanion {
   pushPageContext(snapshot = this.siteAdapter?.snapshot()) {
     const text = describePageContext(snapshot);
     if (!text) return false;
+    if (this.provider?.avatarSpeaking) return false;
+    const pathname = this.surface?.window?.location?.pathname || location.pathname;
+    const signature = `${pathname}|${snapshot?.section?.id || ""}|${snapshot?.page?.id || ""}`;
+    if (signature === this.lastContextSignature) return false;
     if (snapshot?.page?.title) {
-      rememberPage(this.surface?.window?.location?.pathname || location.pathname, snapshot.page.title);
+      rememberPage(pathname, snapshot.page.title);
     }
     const shell = isPhoneShell()
       ? "Appareil : téléphone. Réponses plus courtes."
       : "Appareil : ordinateur.";
+    this.lastContextSignature = signature;
     this.updateLiveContext();
     return this.provider?.sendContext?.(`${text}\n${shell}`) || false;
+  }
+
+  scheduleSilentSiteSync() {
+    this.pendingSilentSync = true;
+    clearTimeout(this.silentSyncTimer);
+    this.silentSyncTimer = setTimeout(() => this.flushSilentSiteSync(), SILENT_SYNC_DELAY_MS);
+  }
+
+  flushSilentSiteSync() {
+    if (!this.pendingSilentSync) return false;
+    if (this.provider?.avatarSpeaking) return false;
+    this.pendingSilentSync = false;
+    clearTimeout(this.silentSyncTimer);
+    this.silentSyncTimer = 0;
+    if (this.forceSiteBriefing) this.provider.sendBriefing?.(buildSiteBriefing(this.knowledge));
+    this.sendSessionMemory();
+    this.pushPageContext();
+    return true;
   }
 
   sendSessionMemory() {
@@ -737,9 +763,7 @@ export class ClaireCompanion {
     if (this.nodes.retry) this.nodes.retry.hidden = true;
     try {
       await this.provider.connect({ microphone: true });
-      this.provider.sendBriefing?.(buildSiteBriefing(this.knowledge));
-      this.sendSessionMemory();
-      this.pushPageContext();
+      this.scheduleSilentSiteSync();
     } catch {
       this.activateLocalFallback("LiveAvatar reste indisponible. Vérifiez les secrets Cloudflare puis réessayez.");
     }
@@ -763,6 +787,7 @@ export class ClaireCompanion {
         },
         onAvatarSpeakEnd: () => {
           this.finalizeLiveCompanionTurn();
+          this.flushSilentSiteSync();
           if (this.lastFollowKey) this.pushPageContext();
           this.updateLiveContext();
         },
@@ -824,6 +849,7 @@ export class ClaireCompanion {
 
   appendTurn(role, text, { live = false, remember = true } = {}) {
     if (!this.nodes.transcript || !text) return null;
+    if (isInternalSitePrompt(text)) return null;
     if (remember && !live) rememberTurn(role === "user" ? "user" : "companion", text);
     const article = document.createElement("article");
     article.className = `claire-turn claire-turn--${role}`;
@@ -843,7 +869,7 @@ export class ClaireCompanion {
 
   showLivePrompt() {
     if (!this.nodes.livePrompt) return;
-    if (["arrival", "loading", "manual"].includes(this.state)) {
+    if (this.state !== "guided") {
       this.nodes.livePrompt.hidden = true;
       return;
     }
@@ -928,7 +954,7 @@ export class ClaireCompanion {
 
   async submit(command, source = "text") {
     const value = String(command || "").trim();
-    if (!value) return null;
+    if (!value || isInternalSitePrompt(value)) return null;
     const classified = classifyUtterance(value, this.knowledge, { pathname: location.pathname });
     if (source === "liveavatar") {
       const signature = value.toLocaleLowerCase("fr").replace(/\s+/g, " ");
@@ -954,14 +980,12 @@ export class ClaireCompanion {
     this.updateLiveContext();
 
     if (classified.kind === "chat") {
-      this.pushPageContext();
       this.setStatus("listening", "Claire vous répond");
       if (source !== "liveavatar") this.provider?.sendUserMessage?.(value);
       return { kind: "chat", classified };
     }
 
     if (classified.kind === "offtopic") {
-      this.pushPageContext();
       this.setStatus("listening", "Claire vous répond");
       if (source !== "liveavatar") {
         if (this.provider?.sendUserMessage) this.provider.sendUserMessage(value);
@@ -1205,6 +1229,7 @@ export class ClaireCompanion {
   }
 
   handleTranscript(text, final) {
+    if (isInternalSitePrompt(text)) return;
     this.nodes.input.value = text;
     if (!final) return;
     this.pendingTranscript = "";

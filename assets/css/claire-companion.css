@@ -599,8 +599,6 @@ body.claire-conversation-open {
   backdrop-filter: blur(16px);
 }
 
-.claire-companion[data-state="shared"] .claire-live-prompt:not([hidden]),
-.claire-companion[data-state="action"] .claire-live-prompt:not([hidden]),
 .claire-companion[data-state="guided"] .claire-live-prompt:not([hidden]) {
   display: grid;
 }
@@ -609,13 +607,8 @@ body.claire-conversation-open {
   left: calc(var(--claire-stage-width) + 0.9rem);
   right: 0.9rem;
   bottom: 0.9rem;
-}
-
-.claire-companion[data-state="shared"] .claire-live-prompt,
-.claire-companion[data-state="action"] .claire-live-prompt {
-  left: max(46%, calc(var(--claire-stage-width) + 0.9rem));
-  right: 0.9rem;
-  bottom: 0.9rem;
+  max-height: min(28vh, 240px);
+  overflow: auto;
 }
 
 .claire-live-prompt__line {
@@ -763,9 +756,7 @@ body.claire-is-guided {
     padding-bottom: 7.5rem;
     scroll-padding-top: calc(var(--claire-mobile-stage) + 12px);
   }
-  .claire-companion[data-state="guided"] .claire-live-prompt,
-  .claire-companion[data-state="shared"] .claire-live-prompt,
-  .claire-companion[data-state="action"] .claire-live-prompt {
+  .claire-companion[data-state="guided"] .claire-live-prompt {
     left: 0.65rem;
     right: 0.65rem;
     bottom: max(0.55rem, env(safe-area-inset-bottom));

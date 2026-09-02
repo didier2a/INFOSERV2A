@@ -3,7 +3,7 @@
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: SAMEORIGIN
   Strict-Transport-Security: max-age=31536000; includeSubDomains
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; media-src 'self' blob:; frame-src https://www.openstreetmap.org; connect-src 'self' https://*.infoserv2a.workers.dev https://api.liveavatar.com wss://api.liveavatar.com https://*.livekit.cloud wss://*.livekit.cloud https://*.turn.livekit.cloud wss://*.turn.livekit.cloud; base-uri 'self'; form-action 'self' mailto:; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; media-src 'self' blob:; frame-src https://www.openstreetmap.org; connect-src 'self' https://unpkg.com https://*.infoserv2a.workers.dev https://api.liveavatar.com https://*.liveavatar.com wss://api.liveavatar.com wss://*.liveavatar.com https://*.livekit.cloud wss://*.livekit.cloud https://*.turn.livekit.cloud wss://*.turn.livekit.cloud; base-uri 'self'; form-action 'self' mailto:; object-src 'none'
 
 /*.webp
   Content-Type: image/webp

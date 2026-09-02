@@ -271,6 +271,12 @@ export function buildSiteBriefing(knowledge) {
 
 export const CLAIRE_WELCOME = "Bonjour. Moi c’est Claire, votre aidante Live Avatar. Je suis là, avec vous, à Porto-Vecchio, chez InfoServ2A. Prenez votre temps. Qu’est-ce qui vous amène ? Je vous écoute.";
 
+const INTERNAL_SITE_PROMPT = /\[INFOSERV2A_[A-Z0-9_]+\]/;
+
+export function isInternalSitePrompt(text = "") {
+  return INTERNAL_SITE_PROMPT.test(String(text || ""));
+}
+
 export const CLAIRE_OFF_TOPIC_SPEECH = "Oui, on peut en parler. Dites-moi ce que vous avez en tête, je vous suis.";
 
 export function buildClaireContextPrompt(knowledge) {

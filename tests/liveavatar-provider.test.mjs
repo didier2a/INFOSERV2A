@@ -231,6 +231,38 @@ test("un aparté hors site laisse Realtime répondre sans couper", async () => {
   await provider.stop();
 });
 
+test("un écho de contexte site n’est pas traité comme une parole visiteur", async () => {
+  const commands = [];
+  const barges = [];
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-echo" })
+  }).install({
+    video,
+    classifyCommand: async () => "site",
+    onCommand: async (text) => commands.push(text),
+    onBargeIn: (detail) => barges.push(detail.reason)
+  });
+
+  await provider.connect({ microphone: false });
+  const session = globalThis.__infoservFakeSession;
+  session.emit("avatar-speak-started");
+  provider.sendContext("Onglet visible : Accueil InfoServ2A. Vidéosurveillance.");
+  session.emit("user-speak-started");
+  session.emit("user-transcription", {
+    text: "[INFOSERV2A_PAGE_CONTEXT]\nOnglet visible : Accueil InfoServ2A. Vidéosurveillance."
+  });
+  session.emit("user-speak-ended");
+  await wait(600);
+  assert.deepEqual(commands, []);
+  assert.equal(session.interrupted, undefined);
+  assert.deepEqual(barges, []);
+  assert.equal(provider.avatarSpeaking, true);
+
+  await provider.stop();
+});
+
 test("la transcription de Claire est transmise pour synchroniser la page de droite", async () => {
   const spoken = [];
   const video = fakeVideo();
