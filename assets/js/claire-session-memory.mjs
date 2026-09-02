@@ -287,12 +287,12 @@ export function formatCaptionContext({ page, section, memory } = {}) {
   const bits = [];
   if (page?.title) bits.push(page.title);
   if (section?.label) bits.push(section.label);
-  const visitor = normalizeVisitor(memory?.visitor);
-  if (visitor.name) bits.push(visitor.name);
-  if (memory?.service) bits.push(memory.service);
-  if (visitor.city) bits.push(visitor.city);
-  if (shouldShowQuoteQuest(memory, page?.id) && missingQuoteFields(memory).length) {
-    bits.push(`il manque ${describeMissingQuoteFields(memory)}`);
+  if (shouldShowQuoteQuest(memory, page?.id)) {
+    const visitor = normalizeVisitor(memory?.visitor);
+    if (visitor.name) bits.push(visitor.name);
+    if (missingQuoteFields(memory).length) {
+      bits.push(`il manque ${describeMissingQuoteFields(memory)}`);
+    }
   }
   return bits.join(" · ") || "Conversation avec Claire";
 }

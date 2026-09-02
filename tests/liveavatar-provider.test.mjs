@@ -351,3 +351,27 @@ test("le prévol micro relâche les pistes pour que PC et téléphone partagent 
   assert.equal(provider.connected, true);
   await provider.stop();
 });
+
+test("SESSION_STOPPED propose de relancer sans arrêter le site", async () => {
+  const stopped = [];
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-expiry" })
+  }).install({
+    video,
+    onSessionStopped: (detail) => stopped.push(detail.reason)
+  });
+
+  await provider.connect({ microphone: true });
+  const first = globalThis.__infoservFakeSession;
+  first.emit("session-stopped");
+  assert.equal(provider.connected, false);
+  assert.deepEqual(stopped, ["session-stopped"]);
+
+  const reconnected = await provider.reconnect({ microphone: true });
+  assert.equal(reconnected, true);
+  assert.equal(provider.connected, true);
+  assert.notEqual(globalThis.__infoservFakeSession, first);
+  await provider.stop();
+});

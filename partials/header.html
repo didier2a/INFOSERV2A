@@ -84,7 +84,7 @@
       </div>
       <div class="claire-experience__header-actions">
         <span class="claire-engine-badge" data-claire-engine-status>Appuyez pour parler</span>
-        <button class="claire-text-control" type="button" data-claire-manual>Navigation manuelle</button>
+        <button class="claire-text-control" type="button" data-claire-manual>Ranger Claire</button>
       </div>
     </header>
 
@@ -106,8 +106,12 @@
           </button>
           <button class="claire-stage-control" type="button" data-claire-interrupt hidden>Interrompre</button>
           <button class="claire-stage-control" type="button" data-claire-expand aria-expanded="false">Conversation</button>
-          <button class="claire-stage-control" type="button" data-claire-manual>Mode manuel</button>
+          <button class="claire-stage-control" type="button" data-claire-manual>Ranger Claire</button>
         </div>
+        <aside class="claire-session-notice" data-claire-session-notice hidden role="status" aria-live="polite">
+          <p data-claire-session-notice-copy>La présence live se termine dans moins d’une minute.</p>
+          <button class="claire-session-notice__action" type="button" data-claire-session-continue>Continuer avec Claire</button>
+        </aside>
       </figure>
 
       <div class="claire-dialogue" aria-labelledby="clairePanelTitle" aria-describedby="clairePanelDescription">

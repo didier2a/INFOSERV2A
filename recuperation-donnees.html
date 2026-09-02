@@ -25,11 +25,11 @@
   <link rel="icon" href="assets/images/logo/favicon.png?v=2" type="image/png" sizes="192x192">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
   <link rel="manifest" href="site.webmanifest">
-  <link rel="stylesheet" href="assets/css/variables.css?v=20260901-it11">
-  <link rel="stylesheet" href="assets/css/main.css?v=20260901-it11">
-  <link rel="stylesheet" href="assets/css/components.css?v=20260901-it11">
-  <link rel="stylesheet" href="assets/css/responsive.css?v=20260901-it11">
-  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260901-it11">
+  <link rel="stylesheet" href="assets/css/variables.css?v=20260902-it13">
+  <link rel="stylesheet" href="assets/css/main.css?v=20260902-it13">
+  <link rel="stylesheet" href="assets/css/components.css?v=20260902-it13">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=20260902-it13">
+  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260902-it13">
   <script type="application/ld+json">{
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
@@ -152,7 +152,7 @@
       </div>
       <div class="claire-experience__header-actions">
         <span class="claire-engine-badge" data-claire-engine-status>Appuyez pour parler</span>
-        <button class="claire-text-control" type="button" data-claire-manual>Navigation manuelle</button>
+        <button class="claire-text-control" type="button" data-claire-manual>Ranger Claire</button>
       </div>
     </header>
 
@@ -174,8 +174,12 @@
           </button>
           <button class="claire-stage-control" type="button" data-claire-interrupt hidden>Interrompre</button>
           <button class="claire-stage-control" type="button" data-claire-expand aria-expanded="false">Conversation</button>
-          <button class="claire-stage-control" type="button" data-claire-manual>Mode manuel</button>
+          <button class="claire-stage-control" type="button" data-claire-manual>Ranger Claire</button>
         </div>
+        <aside class="claire-session-notice" data-claire-session-notice hidden role="status" aria-live="polite">
+          <p data-claire-session-notice-copy>La présence live se termine dans moins d’une minute.</p>
+          <button class="claire-session-notice__action" type="button" data-claire-session-continue>Continuer avec Claire</button>
+        </aside>
       </figure>
 
       <div class="claire-dialogue" aria-labelledby="clairePanelTitle" aria-describedby="clairePanelDescription">
@@ -363,6 +367,7 @@
 
 
 
+
 <main id="contenu" class="site-main">
   
     <section class="page-hero page-hero--split">
@@ -501,8 +506,9 @@
 
 
 
-<script src="assets/js/main.js?v=20260901-it11" defer></script>
-  <script src="assets/js/navigation.js?v=20260901-it11" defer></script>
-  <script type="module" src="assets/js/claire-companion.js?v=20260901-it11"></script>
+
+<script src="assets/js/main.js?v=20260902-it13" defer></script>
+  <script src="assets/js/navigation.js?v=20260902-it13" defer></script>
+  <script type="module" src="assets/js/claire-companion.js?v=20260902-it13"></script>
 </body>
 </html>

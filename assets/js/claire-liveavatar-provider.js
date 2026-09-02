@@ -79,13 +79,14 @@ export class InfoServ2ALiveAvatarProvider {
     this.silentSendAt = 0;
     this.pendingLiveSpeech = null;
     this.lastLocalContext = null;
+    this.sessionStopNotified = false;
     this.callbacks = {};
   }
 
-  install({ video, onTranscript, onAvatarTranscript, onAvatarSpeakStart, onAvatarSpeakEnd, onBargeIn, onStatus, onCommand, classifyCommand } = {}) {
+  install({ video, onTranscript, onAvatarTranscript, onAvatarSpeakStart, onAvatarSpeakEnd, onBargeIn, onStatus, onCommand, classifyCommand, onSessionStopped } = {}) {
     this.video = video || null;
     this.prepareVideoElement();
-    this.callbacks = { onTranscript, onAvatarTranscript, onAvatarSpeakStart, onAvatarSpeakEnd, onBargeIn, onStatus, onCommand, classifyCommand };
+    this.callbacks = { onTranscript, onAvatarTranscript, onAvatarSpeakStart, onAvatarSpeakEnd, onBargeIn, onStatus, onCommand, classifyCommand, onSessionStopped };
     this.callbacks.onStatus?.("ready", "LiveAvatar disponible sur activation");
     return this;
   }
@@ -477,12 +478,34 @@ export class InfoServ2ALiveAvatarProvider {
     }
   }
 
+  notifySessionStopped(reason = "session-stopped") {
+    if (this.stopping || this.sessionStopNotified) return false;
+    this.sessionStopNotified = true;
+    this.connected = false;
+    this.streamReady = false;
+    this.listening = false;
+    this.record("conversation:session-stopped", { reason });
+    this.callbacks.onSessionStopped?.({ reason });
+    return true;
+  }
+
+  async reconnect({ microphone = true } = {}) {
+    if (this.startPromise) {
+      try { await this.startPromise; } catch { /* On relance une session neuve ensuite. */ }
+    }
+    this.connected = false;
+    this.streamReady = false;
+    await this.stop();
+    return this.connect({ microphone });
+  }
+
   async connect({ microphone = false } = {}) {
     if (this.connected && this.streamReady) {
       if (microphone) await this.ensureMicrophone();
       return true;
     }
     if (this.startPromise) return this.startPromise;
+    if (this.session) await this.disposeSession(this.session);
 
     this.startPromise = (async () => {
       this.emit("connecting", "Connexion sécurisée à Claire…");
@@ -529,6 +552,7 @@ export class InfoServ2ALiveAvatarProvider {
           }
 
           this.connected = true;
+          this.sessionStopNotified = false;
           this.setTransportState("connected", { attempt });
           if (microphone) await this.ensureMicrophone();
           else this.emit("ready", "Claire est connectée");
@@ -607,7 +631,10 @@ export class InfoServ2ALiveAvatarProvider {
       this.streamReady = false;
       this.listening = false;
       this.setTransportState(this.stopping ? "closed" : "disconnected");
-      if (!this.stopping) this.emit("error", "Session LiveAvatar interrompue · touchez le micro pour reconnecter");
+      if (!this.stopping) {
+        const first = this.notifySessionStopped("disconnected");
+        if (first) this.emit("error", "Session LiveAvatar interrompue · touchez le micro pour reconnecter");
+      }
     });
     session.on(AgentEventsEnum.USER_SPEAK_STARTED, () => {
       if (this.isSilentEchoWindow() || this.avatarSpeaking) {
@@ -668,7 +695,10 @@ export class InfoServ2ALiveAvatarProvider {
       this.realtimeSignal = "connector-stopped";
       this.record("conversation:connector-stopped");
       this.clearReplyTimer();
-      if (!this.stopping) this.emit("error", "Le connecteur OpenAI Realtime a arrêté la session");
+      if (!this.stopping) {
+        this.notifySessionStopped("session-stopped");
+        this.emit("ready", "La présence live s’est arrêtée");
+      }
     });
     return streamReady;
   }

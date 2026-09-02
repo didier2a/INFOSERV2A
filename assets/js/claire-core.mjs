@@ -11,7 +11,7 @@ const EMAIL_PATTERN = /\b((?:envoie(?:r)?|ecris|ecrire|ouvre|ouvrir|compose(?:r)
 const DIRECT_INTENTS = [
   {
     id: "manual",
-    pattern: /\b(mode manuel|navigation manuelle|naviguer manuellement|sans claire|ferme(?:r)? claire)\b/,
+    pattern: /\b(mode manuel|navigation manuelle|naviguer manuellement|sans claire|ferme(?:r)? claire|ranger claire|continuer sans claire)\b/,
     response: {
       type: "manual",
       speech: "Je vous rends immédiatement la navigation classique. Vous pourrez me rappeler à tout moment."
@@ -388,6 +388,67 @@ export function mergeSpokenTranscript(previous, next) {
     return value.length >= prior.length ? value : prior;
   }
   return `${prior} ${value}`.replace(/\s+/g, " ").trim();
+}
+
+export function createSpeechFollowGate() {
+  let locked = false;
+  let speakGeneration = 0;
+  let lockAtGeneration = 0;
+  let navEpoch = 0;
+  let userHref = "";
+  let userFollowKey = "";
+
+  return {
+    claimUserNavigation(href, followKey = "") {
+      locked = true;
+      lockAtGeneration = speakGeneration;
+      navEpoch += 1;
+      userHref = String(href || "");
+      userFollowKey = String(followKey || "");
+      return { epoch: navEpoch, href: userHref, followKey: userFollowKey };
+    },
+    onAvatarSpeakStart() {
+      speakGeneration += 1;
+      const wasLocked = locked;
+      if (locked && speakGeneration > lockAtGeneration) locked = false;
+      return { unlocked: wasLocked && !locked, generation: speakGeneration };
+    },
+    allowsFollow() {
+      return !locked;
+    },
+    userHref() {
+      return userHref;
+    },
+    userFollowKey() {
+      return userFollowKey;
+    },
+    epoch() {
+      return navEpoch;
+    },
+    isStale(epoch) {
+      return epoch !== navEpoch;
+    }
+  };
+}
+
+export const LIVEAVATAR_MAX_SESSION_MS = 300_000;
+export const LIVEAVATAR_SESSION_WARNING_LEAD_MS = 45_000;
+
+export function liveAvatarSessionWarningDelayMs(
+  maxDurationMs = LIVEAVATAR_MAX_SESSION_MS,
+  warningLeadMs = LIVEAVATAR_SESSION_WARNING_LEAD_MS
+) {
+  return Math.max(0, Number(maxDurationMs) - Number(warningLeadMs));
+}
+
+export function liveAvatarSessionPhase(elapsedMs, {
+  maxDurationMs = LIVEAVATAR_MAX_SESSION_MS,
+  warningLeadMs = LIVEAVATAR_SESSION_WARNING_LEAD_MS
+} = {}) {
+  const elapsed = Math.max(0, Number(elapsedMs) || 0);
+  if (elapsed >= maxDurationMs) return "ended";
+  if (elapsed >= maxDurationMs - warningLeadMs) return "warning";
+  return "active";
 }
 
 export function currentPage(knowledge, pathname = "/") {

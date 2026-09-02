@@ -129,6 +129,7 @@ test("la fonction échange les références serveur contre un jeton éphémère"
     assert.equal(body.openai_realtime_config.context_id, "context-ref");
     assert.equal(body.openai_realtime_config.temperature, 0.75);
     assert.equal(body.max_session_duration, 300);
+    assert.equal(body.max_session_duration * 1000, 300_000);
   } finally {
     globalThis.fetch = originalFetch;
   }

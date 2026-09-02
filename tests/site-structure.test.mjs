@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-it11)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-it11)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260902-it13)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260902-it13)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -215,7 +215,9 @@ test("la navigation pilotée conserve Claire et ne recharge jamais le document",
   assert.match(adapter, /querySelector\("#contenu"\)\?\.replaceWith\(nextMain\)/);
   assert.match(adapter, /persistentSession:\s*true/);
   assert.match(adapter, /history\.pushState/);
-  assert.doesNotMatch(client + adapter, /location\.assign|location\.reload/);
+  assert.doesNotMatch(adapter, /location\.assign|location\.reload/);
+  assert.doesNotMatch(client, /location\.reload/);
+  assert.match(client, /if \(!ok\) location\.assign\(url\.href\)/);
   const speakingStart = provider.match(/AVATAR_SPEAK_STARTED[\s\S]*?AVATAR_TRANSCRIPTION/)?.[0] || "";
   assert.doesNotMatch(speakingStart, /stopListening/);
   assert.doesNotMatch(speakingStart, /voiceChat|\.mute\(|\.unmute\(/);
@@ -318,6 +320,9 @@ test("une transcription vocale coupe la réponse spontanée seulement si le site
   assert.match(client, /\[data-claire-interrupt\]/);
   assert.match(client, /toggleGuidedTranscript/);
   assert.match(client, /handleSiteLink/);
+  assert.match(client, /claimUserSiteNavigation/);
+  assert.match(client, /createSpeechFollowGate/);
+  assert.match(client, /speechFollowGate\.allowsFollow/);
   assert.match(client, /announce: false, silent: true/);
   assert.match(client, /isolateVoice/);
   assert.match(client, /sendBriefing/);
@@ -344,6 +349,9 @@ test("Claire se présente comme aidante Live Avatar", async () => {
   assert.match(header, /Appuyez pour parler/);
   assert.match(header, /data-claire-interrupt/);
   assert.match(header, /Interrompre/);
+  assert.match(header, /Ranger Claire/);
+  assert.match(header, /data-claire-session-notice/);
+  assert.match(header, /Continuer avec Claire/);
   assert.ok(header.lastIndexOf("InfoServClaireBoot") > header.indexOf("data-claire-engine-status"));
   assert.doesNotMatch(header, /Vérification LiveAvatar/);
   assert.doesNotMatch(header, /Connexion en attente/);
@@ -376,6 +384,40 @@ test("la parole de Claire enchaîne les pages sans coupure nette", async () => {
   assert.doesNotMatch(speakEnd, /pushPageContext|flushSilentSiteSync|sendContext|sendBriefing|sendMemory/);
   assert.doesNotMatch(liveTurn, /replaceChildren/);
   assert.doesNotMatch(client, /#contenu"\)\?\.scrollIntoView/);
+});
+
+test("E-TIME-01 : 45 s avant la fin LiveAvatar, relancer sans quitter la page", async () => {
+  const [header, css, client, provider, endpoint] = await Promise.all([
+    readFile(path.join(ROOT, "partials/header.html"), "utf8"),
+    readFile(path.join(ROOT, "assets/css/claire-companion.css"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8"),
+    readFile(path.join(ROOT, "functions/api/liveavatar-session.js"), "utf8")
+  ]);
+  assert.match(endpoint, /max_session_duration:\s*300/);
+  assert.match(client, /LIVEAVATAR_MAX_SESSION_MS/);
+  assert.match(client, /LIVEAVATAR_SESSION_WARNING_LEAD_MS/);
+  assert.match(client, /armLiveAvatarSessionWatch/);
+  assert.match(client, /sessionStartedAt/);
+  assert.match(client, /showSessionNotice\("warning"\)/);
+  assert.match(client, /La présence live se termine dans moins d’une minute/);
+  assert.match(header, /data-claire-session-notice/);
+  assert.match(header, /Continuer avec Claire/);
+  assert.match(header, /data-claire-session-continue/);
+  assert.match(css, /\.claire-session-notice \{[\s\S]*pointer-events: auto/);
+  assert.match(css, /\.claire-live-prompt \{[\s\S]*pointer-events: none/);
+  assert.match(css, /\.claire-live-prompt__quest:not\(\[hidden\]\) \{[\s\S]*pointer-events: auto/);
+  const reconnect = client.match(/async performLiveAvatarReconnect\([\s\S]*?\n  \}/)?.[0] || "";
+  assert.match(reconnect, /provider\.reconnect/);
+  assert.match(reconnect, /navigateInternal\(href, \{ announce: false, silent: true, historyMode: "replace" \}/);
+  assert.doesNotMatch(reconnect, /location\.reload|location\.assign|enterManualMode|this\.interrupt\(/);
+  assert.match(client, /onSessionStopped/);
+  assert.match(provider, /async reconnect\(/);
+  assert.match(provider, /notifySessionStopped/);
+  assert.match(provider, /onSessionStopped/);
+  const stopped = provider.match(/SESSION_STOPPED[\s\S]*?return streamReady/)?.[0] || "";
+  assert.match(stopped, /notifySessionStopped\("session-stopped"\)/);
+  assert.doesNotMatch(stopped, /enterManualMode|location\.reload/);
 });
 
 test("la sortie générée reste synchronisée avec le partial", async () => {

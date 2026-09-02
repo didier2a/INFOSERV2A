@@ -8,9 +8,14 @@ import {
   buildSiteBriefing,
   classifyUtterance,
   CLAIRE_WELCOME,
+  createSpeechFollowGate,
   currentPage,
   describePageContext,
   followSpokenNavigation,
+  liveAvatarSessionPhase,
+  liveAvatarSessionWarningDelayMs,
+  LIVEAVATAR_MAX_SESSION_MS,
+  LIVEAVATAR_SESSION_WARNING_LEAD_MS,
   mergeSpokenTranscript,
   normalizeText,
   pageHrefForSession,
@@ -214,4 +219,33 @@ test("le briefing site contient tous les onglets et le prompt généraliste", ()
   assert.match(prompt, /Jamais de phrase du type/);
   assert.equal(adjacentPage(knowledge, "home", 1).id, "videosurveillance");
   assert.equal(adjacentPage(knowledge, knowledge.pages.at(-1).id, 1).id, "home");
+});
+
+test("un clic visiteur bloque le suivi de parole jusqu’à la prochaine prise de parole", () => {
+  const gate = createSpeechFollowGate();
+  assert.equal(gate.allowsFollow(), true);
+  gate.claimUserNavigation("https://infoserv2a.test/videosurveillance.html", "videosurveillance#");
+  assert.equal(gate.allowsFollow(), false);
+  assert.equal(gate.userFollowKey(), "videosurveillance#");
+  const epoch = gate.epoch();
+  const first = gate.onAvatarSpeakStart();
+  assert.equal(first.unlocked, true);
+  assert.equal(gate.allowsFollow(), true);
+  gate.claimUserNavigation("https://infoserv2a.test/contact.html", "contact#");
+  assert.equal(gate.allowsFollow(), false);
+  assert.equal(gate.isStale(epoch), true);
+  const later = gate.onAvatarSpeakStart();
+  assert.equal(later.unlocked, true);
+  assert.equal(gate.allowsFollow(), true);
+});
+
+test("la session LiveAvatar prévient 45 secondes avant la fin des 5 minutes", () => {
+  assert.equal(LIVEAVATAR_MAX_SESSION_MS, 300_000);
+  assert.equal(LIVEAVATAR_SESSION_WARNING_LEAD_MS, 45_000);
+  assert.equal(liveAvatarSessionWarningDelayMs(), 255_000);
+  assert.equal(liveAvatarSessionPhase(0), "active");
+  assert.equal(liveAvatarSessionPhase(254_999), "active");
+  assert.equal(liveAvatarSessionPhase(255_000), "warning");
+  assert.equal(liveAvatarSessionPhase(299_000), "warning");
+  assert.equal(liveAvatarSessionPhase(300_000), "ended");
 });

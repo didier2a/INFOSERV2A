@@ -264,6 +264,46 @@
   transition: opacity 420ms var(--claire-ease), transform 420ms var(--claire-ease);
 }
 
+.claire-session-notice {
+  position: absolute;
+  left: clamp(0.85rem, 2.5vw, 1.5rem);
+  right: clamp(0.85rem, 2.5vw, 1.5rem);
+  top: 4.7rem;
+  z-index: 4;
+  display: none;
+  gap: 0.45rem;
+  padding: 0.75rem 0.85rem 0.8rem;
+  pointer-events: auto;
+  color: var(--claire-ink);
+  border: 1px solid var(--claire-line);
+  border-radius: 16px;
+  background: rgba(251, 250, 246, 0.96);
+  box-shadow: 0 12px 28px rgba(3, 18, 30, 0.2);
+  backdrop-filter: blur(16px);
+}
+
+.claire-session-notice:not([hidden]) {
+  display: grid;
+}
+
+.claire-session-notice p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.claire-session-notice__action {
+  justify-self: start;
+  min-height: 42px;
+  padding: 0.45rem 0.9rem;
+  border: 0;
+  border-radius: 999px;
+  color: #06202a;
+  background: #83e3d7;
+  cursor: pointer;
+  font-weight: 800;
+}
+
 .claire-voice-control {
   min-height: 50px;
   justify-content: center;
@@ -620,7 +660,7 @@ body.claire-conversation-open {
   display: none;
   gap: 0.35rem;
   padding: 0.7rem 0.85rem 0.75rem;
-  pointer-events: auto;
+  pointer-events: none;
   color: var(--claire-ink);
   border: 1px solid var(--claire-line);
   border-radius: 18px;
@@ -680,13 +720,14 @@ body.claire-conversation-open {
   color: var(--claire-muted);
 }
 
-.claire-live-prompt__quest {
+.claire-live-prompt__quest:not([hidden]) {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   margin: 0.35rem 0 0;
   padding: 0;
   list-style: none;
+  pointer-events: auto;
 }
 
 .claire-live-prompt__quest li {
@@ -824,6 +865,12 @@ body.claire-content-loading #contenu {
     right: 0.65rem;
     bottom: max(0.55rem, env(safe-area-inset-bottom));
   }
+  .claire-session-notice {
+    top: 3.4rem;
+    padding: 0.6rem 0.7rem 0.65rem;
+  }
+  .claire-session-notice p { font-size: 0.84rem; }
+  .claire-session-notice__action { min-height: 38px; }
   body.claire-is-guided #contenu,
   body.claire-is-guided #contenu [id] {
     scroll-margin-top: calc(var(--claire-mobile-stage) + 12px);
