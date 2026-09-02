@@ -49,6 +49,52 @@ export class BrowserInfoServ2ASurface {
     this.activePageId = currentPage(knowledge, this.window.location.pathname)?.id || null;
     this.activeSectionId = this.window.location.hash ? decodeURIComponent(this.window.location.hash.slice(1)) : null;
     this.navigationCount = 0;
+    this.pageCache = new Map();
+  }
+
+  pageUrl(page) {
+    return new URL(page.href, this.window.location.origin + "/").href;
+  }
+
+  async prefetchPage(page) {
+    const declared = this.allowedPages.get(cleanPath(page?.href, this.window.location.href));
+    if (!declared) return false;
+    const href = this.pageUrl(declared);
+    if (this.pageCache.has(href)) return true;
+    const pending = this.fetchImpl(href, {
+      method: "GET",
+      credentials: "same-origin",
+      headers: { "X-InfoServ2A-Navigation": "Claire-Runtime-V2" }
+    }).then(async (response) => {
+      if (!response.ok) throw new Error(`Page InfoServ2A HTTP ${response.status}`);
+      const html = await response.text();
+      this.pageCache.set(href, html);
+      return html;
+    }).catch(() => {
+      this.pageCache.delete(href);
+      return null;
+    });
+    this.pageCache.set(href, pending);
+    return true;
+  }
+
+  async htmlForPage(declared) {
+    const href = this.pageUrl(declared);
+    const cached = this.pageCache.get(href);
+    if (typeof cached === "string") return cached;
+    if (cached && typeof cached.then === "function") {
+      const html = await cached;
+      if (typeof html === "string") return html;
+    }
+    const response = await this.fetchImpl(href, {
+      method: "GET",
+      credentials: "same-origin",
+      headers: { "X-InfoServ2A-Navigation": "Claire-Runtime-V2" }
+    });
+    if (!response.ok) throw new Error(`Page InfoServ2A HTTP ${response.status}`);
+    const html = await response.text();
+    this.pageCache.set(href, html);
+    return html;
   }
 
   resolvePage(value) {
@@ -88,24 +134,18 @@ export class BrowserInfoServ2ASurface {
     });
   }
 
-  async openPage(page, { historyMode = "push" } = {}) {
+  async openPage(page, { historyMode = "push", scroll = true } = {}) {
     const declared = this.allowedPages.get(cleanPath(page?.href, this.window.location.href));
     if (!declared || declared.id !== page.id) throw new Error("Page refusée par l’index InfoServ2A");
 
-    const targetUrl = new URL(declared.href, this.window.location.origin + "/");
     const currentMain = this.document.querySelector("#contenu");
     if (!currentMain) throw new Error("Contenu principal InfoServ2A introuvable");
     currentMain.setAttribute("aria-busy", "true");
     this.document.body.classList.add("claire-content-loading");
 
     try {
-      const response = await this.fetchImpl(targetUrl.href, {
-        method: "GET",
-        credentials: "same-origin",
-        headers: { "X-InfoServ2A-Navigation": "Claire-Runtime-V2" }
-      });
-      if (!response.ok) throw new Error(`Page InfoServ2A HTTP ${response.status}`);
-      const nextDocument = this.parseDocument(await response.text());
+      const html = await this.htmlForPage(declared);
+      const nextDocument = this.parseDocument(html);
       const parsedMain = nextDocument.querySelector("#contenu");
       if (!parsedMain) throw new Error("La page reçue ne contient pas de zone principale");
       const nextMain = this.document.importNode(parsedMain, true);
@@ -136,8 +176,13 @@ export class BrowserInfoServ2ASurface {
       this.document.dispatchEvent(new this.window.CustomEvent("infoserv:content-changed", {
         detail: { page: pageSummary(declared), navigationCount: this.navigationCount }
       }));
-      this.document.querySelector("#contenu")?.scrollIntoView?.({ block: "start", behavior: "smooth" });
-      await this.waitForPresentation();
+      const shouldScroll = scroll && !this.document.body.classList.contains("claire-is-guided");
+      if (shouldScroll) {
+        this.document.querySelector("#contenu")?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+        await this.waitForPresentation();
+      } else if (typeof this.window.requestAnimationFrame === "function") {
+        await new Promise((resolve) => this.window.requestAnimationFrame(() => resolve()));
+      }
       return pageSummary(declared);
     } finally {
       this.document.querySelector("#contenu")?.removeAttribute("aria-busy");
@@ -290,6 +335,10 @@ export class InfoServ2ASiteAdapter {
 
   pageById(id) {
     return (this.knowledge.pages || []).find((page) => page.id === id) || null;
+  }
+
+  prefetch(page) {
+    return this.surface.prefetchPage?.(page) || false;
   }
 
   pageForHref(href) {
@@ -450,12 +499,12 @@ export class InfoServ2ASiteAdapter {
     }
   }
 
-  async navigateHref(href, { historyMode = "push" } = {}) {
+  async navigateHref(href, { historyMode = "push", scroll = true } = {}) {
     const url = new URL(href, "https://infoserv2a.pro/");
     const page = this.pageForHref(url.href);
     if (!page) throw new Error("Lien hors de l’index InfoServ2A");
     if (this.view.activePage !== page.id || historyMode === "pop") {
-      await this.surface.openPage(page, { historyMode: historyMode === "pop" ? "none" : historyMode });
+      await this.surface.openPage(page, { historyMode: historyMode === "pop" ? "none" : historyMode, scroll });
     }
     this.view.activePage = page.id;
     this.view.activeSection = null;

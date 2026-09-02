@@ -30,11 +30,12 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it7";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it7";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260901-it8";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260901-it8";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
-const SPEECH_FOLLOW_MS = 280;
+const SPEECH_FOLLOW_MS = 360;
+const PREFETCH_PAGE_IDS = ["videosurveillance", "web", "quote", "contact"];
 const LIVEAVATAR_CLOUD_FALLBACKS = [
   "https://infoserv2a.infoserv2a.workers.dev",
   "https://cursor-live-avatar-aidant-8f54-infoserv2a.infoserv2a.workers.dev"
@@ -292,6 +293,7 @@ export class ClaireCompanion {
     this.root.setAttribute("aria-busy", "false");
     this.renderSuggestions();
     this.highlightRequestedSection();
+    this.prefetchLikelyPages();
     this.exposeApi();
     globalThis.InfoServClaireBoot?.flush?.();
     return this;
@@ -749,7 +751,6 @@ export class ClaireCompanion {
     storageSet(STORAGE_MODE, "guided");
     this.setState("guided");
     this.setStatus("ready", this.provider ? "Claire reste avec vous" : "Claire · mode local");
-    document.querySelector("#contenu")?.scrollIntoView?.({ block: "start", behavior: "smooth" });
   }
 
   async retryLiveAvatar() {
@@ -939,7 +940,14 @@ export class ClaireCompanion {
       });
       return;
     }
-    this.nodes.transcript?.replaceChildren();
+    const previous = this.nodes.transcript?.querySelector(".claire-turn--companion:last-of-type");
+    if (previous && !previous.dataset.live) {
+      previous.dataset.live = "1";
+      const paragraph = previous.querySelector("p");
+      if (paragraph) paragraph.textContent = mergeSpokenTranscript(paragraph.textContent, value);
+      this.updateLiveCaption(paragraph?.textContent || value);
+      return;
+    }
     this.appendTurn("companion", value, { live: true });
     this.updateLiveCaption(value);
   }
@@ -1096,7 +1104,7 @@ export class ClaireCompanion {
     if (!this.siteAdapter) return false;
     try {
       if (!silent) this.setStatus("thinking", "Navigation contrôlée en cours…");
-      const snapshot = await this.siteAdapter.navigateHref(href, { historyMode });
+      const snapshot = await this.siteAdapter.navigateHref(href, { historyMode, scroll: !silent });
       storageSet(STORAGE_MODE, "guided");
       this.setState("guided");
       this.renderSuggestions();
@@ -1131,8 +1139,31 @@ export class ClaireCompanion {
     if (!keepLastPage) this.lastFollowKey = "";
   }
 
+  prefetchLikelyPages() {
+    PREFETCH_PAGE_IDS.forEach((id) => {
+      const page = this.knowledge.pages?.find((item) => item.id === id);
+      if (page) this.siteAdapter?.prefetch?.(page);
+    });
+  }
+
+  speechFollowContext() {
+    const snapshot = this.siteAdapter?.snapshot() || {};
+    return {
+      pathname: this.surface?.window?.location?.pathname || location.pathname,
+      pageId: snapshot.activePage || snapshot.page?.id,
+      sectionId: snapshot.activeSection || snapshot.section?.id
+    };
+  }
+
+  prefetchSpeechTarget() {
+    const target = followSpokenNavigation(this.avatarSpoken, this.knowledge, this.speechFollowContext());
+    if (target?.page) this.siteAdapter?.prefetch?.(target.page);
+    return target;
+  }
+
   queueSpeechFollow(text) {
     this.avatarSpoken = mergeSpokenTranscript(this.avatarSpoken, text);
+    this.prefetchSpeechTarget();
     clearTimeout(this.followTimer);
     this.followTimer = setTimeout(() => void this.syncSiteToSpeech(), SPEECH_FOLLOW_MS);
   }
@@ -1141,15 +1172,11 @@ export class ClaireCompanion {
     if (forcedText) this.avatarSpoken = String(forcedText);
     if (this.followInFlight || this.state === "manual" || this.runtime?.activeCommandId) return null;
     if (this.provider?.userSpeaking && !forcedText) return null;
-    const snapshot = this.siteAdapter?.snapshot() || {};
-    const target = followSpokenNavigation(this.avatarSpoken, this.knowledge, {
-      pathname: this.surface?.window?.location?.pathname || location.pathname,
-      pageId: snapshot.activePage || snapshot.page?.id,
-      sectionId: snapshot.activeSection || snapshot.section?.id
-    });
+    const target = followSpokenNavigation(this.avatarSpoken, this.knowledge, this.speechFollowContext());
     if (!target) return null;
     const key = `${target.pageId}#${target.anchorId || ""}`;
     if (key === this.lastFollowKey) return null;
+    this.siteAdapter?.prefetch?.(target.page);
     this.followInFlight = true;
     try {
       const href = `${target.page.href}${target.anchorId ? `#${target.anchorId}` : ""}`;
@@ -1160,13 +1187,6 @@ export class ClaireCompanion {
       });
       if (!next) return null;
       this.lastFollowKey = key;
-      this.showResult({
-        type: "navigate",
-        page: target.page,
-        href,
-        label: target.anchor?.label || target.page.title,
-        speech: ""
-      });
       return target;
     } finally {
       this.followInFlight = false;

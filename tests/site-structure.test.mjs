@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-it7)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-it7)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260901-it8)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260901-it8)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -344,6 +344,29 @@ test("Claire se présente comme aidante Live Avatar", async () => {
   assert.match(client, /CLAIRE_WELCOME/);
   assert.match(endpoint, /CLAIRE_WELCOME/);
   assert.match(knowledge, /Aidante Live Avatar/);
+});
+
+test("la parole de Claire enchaîne les pages sans coupure nette", async () => {
+  const [css, client, adapter] = await Promise.all([
+    readFile(path.join(ROOT, "assets/css/claire-companion.css"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-site-runtime-adapter.mjs"), "utf8")
+  ]);
+  const liveTurn = client.match(/appendLiveCompanion\([\s\S]*?finalizeLiveCompanionTurn/)?.[0] || "";
+  assert.match(css, /view-transition-name:\s*claire-page/);
+  assert.match(css, /claire-content-loading/);
+  assert.match(css, /\[data-state="arrival"\] \.claire-live-stage__controls/);
+  assert.match(css, /animation: claire-rise/);
+  assert.match(css, /animation: claire-presence/);
+  assert.match(adapter, /prefetchPage/);
+  assert.match(adapter, /htmlForPage/);
+  assert.match(adapter, /scroll = true/);
+  assert.match(client, /SPEECH_FOLLOW_MS\s*=\s*360/);
+  assert.match(client, /prefetchSpeechTarget/);
+  assert.match(client, /prefetchLikelyPages/);
+  assert.match(client, /scroll: !silent/);
+  assert.doesNotMatch(liveTurn, /replaceChildren/);
+  assert.doesNotMatch(client, /#contenu"\)\?\.scrollIntoView/);
 });
 
 test("la sortie générée reste synchronisée avec le partial", async () => {
