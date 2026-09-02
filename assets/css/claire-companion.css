@@ -858,10 +858,14 @@ body.claire-content-loading #contenu {
     padding-top: var(--claire-mobile-stage);
     padding-left: 0;
     padding-bottom: 7.5rem;
-    scroll-padding-top: calc(var(--claire-mobile-stage) + 12px);
+    scroll-padding-top: calc(var(--claire-mobile-stage) + var(--header-height) + 12px);
   }
   body.claire-is-guided .site-header {
+    position: fixed;
     top: var(--claire-mobile-stage);
+    left: 0;
+    right: 0;
+    z-index: 125;
   }
   body.claire-is-guided .nav-overlay {
     top: var(--claire-mobile-stage);
@@ -884,7 +888,7 @@ body.claire-content-loading #contenu {
   .claire-session-notice__action { min-height: 38px; }
   body.claire-is-guided #contenu,
   body.claire-is-guided #contenu [id] {
-    scroll-margin-top: calc(var(--claire-mobile-stage) + 12px);
+    scroll-margin-top: calc(var(--claire-mobile-stage) + var(--header-height) + 12px);
   }
   .claire-companion[data-state="guided"] {
     bottom: auto;
