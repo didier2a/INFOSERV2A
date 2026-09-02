@@ -83,6 +83,28 @@ test("l’encart de contexte montre la page et le questionnaire de devis", () =>
   assert.equal(quest.find((item) => item.id === "phone").value, "");
 });
 
+test("hors devis, CONTEXTE n’affiche que la page visible", () => {
+  const memory = {
+    visitor: { name: "Marie Rossi", phone: "", email: "", city: "Porto-Vecchio" },
+    service: "videosurveillance",
+    need: "Caméra 4G",
+    turns: []
+  };
+  const contact = formatCaptionContext({
+    page: { id: "contact", title: "Contact" },
+    section: { label: "intro" },
+    memory
+  });
+  assert.equal(contact, "Contact · intro");
+  assert.doesNotMatch(contact, /Marie|vidéosurveillance|videosurveillance|il manque/i);
+
+  const home = formatCaptionContext({
+    page: { id: "home", title: "Accueil InfoServ2A" },
+    memory
+  });
+  assert.equal(home, "Accueil InfoServ2A");
+});
+
 test("un devis ne part pas tant que les coordonnées manquent", () => {
   const storage = memoryStorage();
   const memory = rememberTurn("user", "Je voudrais un devis pour une caméra.", storage);

@@ -34,8 +34,8 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260902-it13";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260902-it13";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260902-it14";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260902-it14";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -432,11 +432,21 @@ export class ClaireCompanion {
     });
     document.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
+      if (document.querySelector(".nav-panel.is-open")) return;
+      if (this.root?.dataset.transcript === "open") {
+        event.preventDefault();
+        this.toggleGuidedTranscript();
+        return;
+      }
       if (this.provider?.avatarSpeaking) {
+        event.preventDefault();
         this.interrupt();
         return;
       }
-      if (["arrival", "shared", "action", "guided"].includes(this.state)) this.enterManualMode();
+      if (["arrival", "shared", "action"].includes(this.state)) {
+        event.preventDefault();
+        this.enterManualMode();
+      }
     });
   }
 

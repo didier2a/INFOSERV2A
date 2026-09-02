@@ -287,7 +287,7 @@ export function formatCaptionContext({ page, section, memory } = {}) {
   const bits = [];
   if (page?.title) bits.push(page.title);
   if (section?.label) bits.push(section.label);
-  if (shouldShowQuoteQuest(memory, page?.id)) {
+  if (page?.id === "quote") {
     const visitor = normalizeVisitor(memory?.visitor);
     if (visitor.name) bits.push(visitor.name);
     if (missingQuoteFields(memory).length) {

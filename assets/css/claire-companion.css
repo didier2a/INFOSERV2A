@@ -860,6 +860,17 @@ body.claire-content-loading #contenu {
     padding-bottom: 7.5rem;
     scroll-padding-top: calc(var(--claire-mobile-stage) + 12px);
   }
+  body.claire-is-guided .site-header {
+    top: var(--claire-mobile-stage);
+  }
+  body.claire-is-guided .nav-overlay {
+    top: var(--claire-mobile-stage);
+    z-index: 139;
+  }
+  body.claire-is-guided .nav-panel {
+    top: var(--claire-mobile-stage);
+    z-index: 140;
+  }
   .claire-companion[data-state="guided"] .claire-live-prompt {
     left: 0.65rem;
     right: 0.65rem;

@@ -57,6 +57,9 @@
     });
   });
   overlay.addEventListener("click", close);
+  panel.addEventListener("click", (event) => {
+    if (event.target?.closest?.("a[href]")) close();
+  });
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {

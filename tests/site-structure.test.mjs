@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260902-it13)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260902-it13)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260902-it14)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260902-it14)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -418,6 +418,27 @@ test("E-TIME-01 : 45 s avant la fin LiveAvatar, relancer sans quitter la page", 
   const stopped = provider.match(/SESSION_STOPPED[\s\S]*?return streamReady/)?.[0] || "";
   assert.match(stopped, /notifySessionStopped\("session-stopped"\)/);
   assert.doesNotMatch(stopped, /enterManualMode|location\.reload/);
+});
+
+test("E-MOB-01 : hamburger mobile au-dessus de Claire, Escape ne quitte pas le guidé", async () => {
+  const [css, client, navigation] = await Promise.all([
+    readFile(path.join(ROOT, "assets/css/claire-companion.css"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/navigation.js"), "utf8")
+  ]);
+  const mobile = css.split("@media (max-width: 820px)")[1].split("@media")[0];
+  assert.match(mobile, /body\.claire-is-guided \.site-header \{[\s\S]*top: var\(--claire-mobile-stage\)/);
+  assert.match(mobile, /body\.claire-is-guided \.nav-overlay \{[\s\S]*z-index: 139/);
+  assert.match(mobile, /body\.claire-is-guided \.nav-panel \{[\s\S]*z-index: 140/);
+  const escapeHandler = client.match(/document\.addEventListener\("keydown", \(event\) => \{[\s\S]*?\n    \}\);/)?.[0] || "";
+  assert.match(escapeHandler, /if \(document\.querySelector\("\.nav-panel\.is-open"\)\) return/);
+  assert.match(escapeHandler, /\["arrival", "shared", "action"\]\.includes\(this\.state\)/);
+  assert.doesNotMatch(escapeHandler, /guided/);
+  assert.match(navigation, /panel\.addEventListener\("click"/);
+  assert.ok(
+    navigation.includes('if (event.target?.closest?.("a[href]")) close()'),
+    "un clic Contact dans le panneau doit fermer le menu"
+  );
 });
 
 test("la sortie générée reste synchronisée avec le partial", async () => {
