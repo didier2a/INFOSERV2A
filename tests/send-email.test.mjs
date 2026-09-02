@@ -7,9 +7,11 @@ import {
   deliverSiteEmail,
   emailConfigured,
   normalizeEmailPayload,
+  onRequestGet,
   onRequestPost,
   resetEmailRateLimit,
-  resolveEmailProvider
+  resolveEmailProvider,
+  summarizeResendEmail
 } from "../functions/api/send-email.js";
 import { describeEmailSendOutcome } from "../assets/js/site-email.mjs";
 
@@ -207,6 +209,52 @@ test("le limiteur refuse une rafale depuis la même IP", () => {
   }
   assert.equal(allowEmailRequest("1.2.3.4", 1_010), false);
   assert.equal(allowEmailRequest("9.9.9.9", 1_010), true);
+});
+
+test("GET ?id résume le statut Resend sans le corps du message", async () => {
+  const previous = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    assert.match(String(url), /\/emails\/mail-1$/);
+    return Response.json({
+      id: "mail-1",
+      last_event: "bounced",
+      to: ["contact@infoserv2a.pro"],
+      from: "InfoServ2A <noreply@infoserv2a.pro>",
+      subject: "Contact InfoServ2A — Test",
+      created_at: "2026-09-02T22:20:00Z",
+      html: "<p>secret</p>",
+      text: "secret"
+    });
+  };
+  try {
+    const response = await onRequestGet({
+      request: new Request("https://www.infoserv2a.pro/api/send-email?id=mail-1", {
+        headers: { Origin: "https://www.infoserv2a.pro" }
+      }),
+      env: { RESEND_API_KEY: "re_test" }
+    });
+    const payload = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(payload.lastEvent, "bounced");
+    assert.deepEqual(payload.to, ["contact@infoserv2a.pro"]);
+    assert.equal(payload.html, undefined);
+    assert.equal(payload.text, undefined);
+  } finally {
+    globalThis.fetch = previous;
+  }
+});
+
+test("summarizeResendEmail n’expose pas le corps", () => {
+  const summary = summarizeResendEmail({
+    id: "mail-2",
+    last_event: "delivered",
+    to: ["contact@infoserv2a.pro"],
+    html: "<p>secret</p>",
+    text: "secret"
+  });
+  assert.equal(summary.lastEvent, "delivered");
+  assert.equal(summary.html, undefined);
+  assert.equal(summary.text, undefined);
 });
 
 test("Claire ne dit pas que c’est parti si l’API n’a pas envoyé", () => {

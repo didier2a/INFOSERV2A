@@ -201,7 +201,64 @@ export function onRequestOptions({ request }) {
   return corsPreflight(request);
 }
 
-export function onRequestGet({ env, request }) {
+export function summarizeResendEmail(payload = {}) {
+  const to = Array.isArray(payload.to)
+    ? payload.to.map((item) => compactField(item, 120)).filter(Boolean).slice(0, 3)
+    : [];
+  return {
+    id: compactField(payload.id, 80),
+    lastEvent: compactField(payload.last_event, 40),
+    to,
+    from: compactField(payload.from, 160),
+    subject: compactField(payload.subject, 160),
+    createdAt: compactField(payload.created_at, 80)
+  };
+}
+
+export async function retrieveResendEmail(env, id) {
+  const key = String(env.RESEND_API_KEY || "").trim();
+  const emailId = compactField(id, 80);
+  if (!key) return { error: "Resend non configuré", id: emailId };
+  if (!emailId) return { error: "Identifiant manquant", id: "" };
+  const response = await fetch(`https://api.resend.com/emails/${encodeURIComponent(emailId)}`, {
+    headers: { Authorization: `Bearer ${key}` }
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    return { error: compactField(payload.message || "Introuvable chez Resend", 200), id: emailId };
+  }
+  return summarizeResendEmail(payload);
+}
+
+export async function listRecentResendEmails(env, limit = 5) {
+  const key = String(env.RESEND_API_KEY || "").trim();
+  if (!key) return { error: "Resend non configuré", emails: [] };
+  const response = await fetch("https://api.resend.com/emails", {
+    headers: { Authorization: `Bearer ${key}` }
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    return { error: compactField(payload.message || "Liste Resend indisponible", 200), emails: [] };
+  }
+  const rows = Array.isArray(payload.data) ? payload.data : [];
+  return {
+    emails: rows.slice(0, Math.max(1, Math.min(Number(limit) || 5, 10))).map(summarizeResendEmail)
+  };
+}
+
+export async function onRequestGet({ env, request }) {
+  const url = new URL(request.url);
+  const emailId = compactField(url.searchParams.get("id"), 80);
+  const recent = url.searchParams.get("recent") === "1";
+  if (emailId || recent) {
+    if (!isAllowedOrigin(request)) return json({ error: "Origine non autorisée" }, 403, request);
+    if (emailId) {
+      const status = await retrieveResendEmail(env, emailId);
+      return json(status, status.error ? 502 : 200, request);
+    }
+    const listed = await listRecentResendEmails(env);
+    return json(listed, listed.error ? 502 : 200, request);
+  }
   const provider = resolveEmailProvider(env);
   return json({
     configured: provider !== "none",
