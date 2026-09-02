@@ -62,7 +62,7 @@ test("GET /api/send-email décrit le fournisseur sans secret", async () => {
   assert.deepEqual(await response.json(), {
     configured: false,
     provider: null,
-    secrets: { resend: false, from: false, testInbox: false },
+    secrets: { resend: false, from: false },
     inboxes: {
       contact: "contact@infoserv2a.pro",
       devis: "devis@infoserv2a.pro"
@@ -105,6 +105,16 @@ test("POST envoie réellement via le binding Cloudflare", async () => {
   assert.equal(payload.replyTo, "didier@example.com");
   assert.equal(sent[0].to, "contact@infoserv2a.pro");
   assert.match(sent[0].text, /Essai d’envoi réel/);
+});
+
+test("EMAIL_TEST_INBOX ne détourne plus vers Gmail", () => {
+  const mail = normalizeEmailPayload({
+    kind: "contact",
+    name: "Didier",
+    email: "didier@example.com",
+    message: "Vers contact@"
+  }, { EMAIL_TEST_INBOX: "infoserv2a@gmail.com" });
+  assert.equal(mail.inbox, "contact@infoserv2a.pro");
 });
 
 test("POST devis part vers devis@ et non vers l’adresse du visiteur", async () => {

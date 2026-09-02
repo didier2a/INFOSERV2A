@@ -79,7 +79,7 @@ export function normalizeEmailPayload(input = {}, env = {}) {
   } else if (!message) {
     missing.push("message");
   }
-  const inbox = compactField(env.EMAIL_TEST_INBOX, 120) || inboxForKind(kind, env);
+  const inbox = inboxForKind(kind, env);
   const subject = kind === "devis"
     ? `Demande de devis InfoServ2A${name ? ` — ${name}` : ""}`
     : `Contact InfoServ2A${name ? ` — ${name}` : ""}`;
@@ -112,7 +112,7 @@ function formSubmitActivated(payload) {
 }
 
 async function deliverViaResend(env, mail) {
-  const from = compactField(env.RESEND_FROM, 160) || "InfoServ2A <beth.t@example.com>";
+  const from = compactField(env.RESEND_FROM, 160) || DEFAULT_FROM;
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -206,8 +206,7 @@ export function onRequestGet({ env, request }) {
     provider: provider === "none" ? null : provider,
     secrets: {
       resend: Boolean(String(env.RESEND_API_KEY || "").trim()),
-      from: Boolean(String(env.RESEND_FROM || "").trim()),
-      testInbox: Boolean(String(env.EMAIL_TEST_INBOX || "").trim())
+      from: Boolean(String(env.RESEND_FROM || "").trim())
     },
     inboxes: {
       contact: inboxForKind("contact", env),
