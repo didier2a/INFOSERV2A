@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260903-it29)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260903-it29)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260903-it30)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260903-it30)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -38,7 +38,7 @@ test("les modules Claire sont versionnés pour éviter un cache 24 h cassé", as
     const bare = [...source.matchAll(/(?:from|import)\(?["'](\.\/[^"'?]+)["']/g)].map((match) => match[1]);
     assert.deepEqual(bare, [], `${file} importe sans ?v= : ${bare.join(", ")}`);
     if (source.includes("claire-core.mjs")) {
-      assert.match(source, /claire-core\.mjs\?v=20260903-it29/);
+      assert.match(source, /claire-core\.mjs\?v=20260903-it30/);
     }
   }
 });
@@ -427,8 +427,9 @@ test("E-TIME-01 : 45 s avant la fin LiveAvatar, relancer sans quitter la page", 
     readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8"),
     readFile(path.join(ROOT, "functions/api/liveavatar-session.js"), "utf8")
   ]);
-  assert.match(endpoint, /max_session_duration:\s*LIVEAVATAR_MAX_SESSION_SECONDS/);
-  assert.match(client, /LIVEAVATAR_MAX_SESSION_MS/);
+  assert.match(endpoint, /max_session_duration:\s*duration/);
+  assert.match(endpoint, /resolveLiveAvatarSessionRetrySeconds/);
+  assert.match(client, /grantedLiveAvatarSessionMs/);
   assert.match(client, /LIVEAVATAR_SESSION_WARNING_LEAD_MS/);
   assert.match(client, /armLiveAvatarSessionWatch/);
   assert.match(client, /sessionStartedAt/);

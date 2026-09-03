@@ -21,7 +21,11 @@ import {
   followSpokenNavigation,
   liveAvatarSessionPhase,
   liveAvatarSessionWarningDelayMs,
+  grantedLiveAvatarSessionMs,
+  parseLiveAvatarAllowedSessionSeconds,
+  resolveLiveAvatarSessionRetrySeconds,
   LIVEAVATAR_MAX_SESSION_MS,
+  LIVEAVATAR_PLAN_FALLBACK_SECONDS,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS,
   mergeSpokenTranscript,
   normalizeText,
@@ -290,4 +294,16 @@ test("la session LiveAvatar prévient 45 secondes avant la fin des 10 minutes", 
   assert.equal(liveAvatarSessionPhase(555_000), "warning");
   assert.equal(liveAvatarSessionPhase(599_000), "warning");
   assert.equal(liveAvatarSessionPhase(600_000), "ended");
+});
+
+test("si le plan LiveAvatar plafonne à 5 minutes, l’avertissement suit cette durée", () => {
+  const error = { message: "max_session_duration (600s) exceeds the maximum allowed (300s)" };
+  assert.equal(parseLiveAvatarAllowedSessionSeconds(error), 300);
+  assert.equal(resolveLiveAvatarSessionRetrySeconds(600, error, 400), 300);
+  assert.equal(resolveLiveAvatarSessionRetrySeconds(600, { error: "quota exceeded" }, 400), 0);
+  assert.equal(LIVEAVATAR_PLAN_FALLBACK_SECONDS, 300);
+  assert.equal(grantedLiveAvatarSessionMs(600), 600_000);
+  assert.equal(grantedLiveAvatarSessionMs(300), 300_000);
+  assert.equal(grantedLiveAvatarSessionMs(0), 300_000);
+  assert.equal(liveAvatarSessionWarningDelayMs(grantedLiveAvatarSessionMs(300)), 255_000);
 });

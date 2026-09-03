@@ -1,5 +1,10 @@
 import { corsHeaders, corsPreflight, isAllowedOrigin } from "./liveavatar-origin.js";
-import { buildClaireContextPrompt, CLAIRE_WELCOME, LIVEAVATAR_MAX_SESSION_SECONDS } from "../../assets/js/claire-core.mjs";
+import {
+  buildClaireContextPrompt,
+  CLAIRE_WELCOME,
+  LIVEAVATAR_MAX_SESSION_SECONDS,
+  resolveLiveAvatarSessionRetrySeconds
+} from "../../assets/js/claire-core.mjs";
 import knowledge from "../../data/site-knowledge.json" with { type: "json" };
 
 const TOKEN_URL = "https://api.liveavatar.com/v1/sessions/token";
@@ -130,14 +135,14 @@ export async function onRequestPost({ request, env }) {
       ensureClaireContext(env, key)
     ]);
     const model = String(env.LIVEAVATAR_OPENAI_MODEL || "gpt-realtime").trim();
-    const tokenResult = await providerJson(TOKEN_URL, {
+    const requestToken = (duration) => providerJson(TOKEN_URL, {
       method: "POST",
       headers: { "X-API-KEY": key, "Content-Type": "application/json" },
       body: JSON.stringify({
         mode: "LITE",
         avatar_id: avatarId(env),
         is_sandbox: false,
-        max_session_duration: LIVEAVATAR_MAX_SESSION_SECONDS,
+        max_session_duration: duration,
         video_settings: { quality: "high", encoding: "H264" },
         openai_realtime_config: {
           secret_id: secretId,
@@ -149,6 +154,18 @@ export async function onRequestPost({ request, env }) {
         }
       })
     });
+
+    let sessionDuration = LIVEAVATAR_MAX_SESSION_SECONDS;
+    let tokenResult = await requestToken(sessionDuration);
+    const retryDuration = resolveLiveAvatarSessionRetrySeconds(
+      sessionDuration,
+      tokenResult.payload,
+      tokenResult.response.status
+    );
+    if (retryDuration) {
+      sessionDuration = retryDuration;
+      tokenResult = await requestToken(sessionDuration);
+    }
     const sessionToken = tokenResult.payload?.data?.session_token;
     if (!tokenResult.response.ok || !sessionToken) {
       return json({
@@ -158,6 +175,7 @@ export async function onRequestPost({ request, env }) {
     return json({
       sessionToken: String(sessionToken),
       sessionId: String(tokenResult.payload.data.session_id || ""),
+      maxSessionDuration: sessionDuration,
       mode: "LITE",
       connector: "OPENAI_REALTIME",
       voice: "marin",

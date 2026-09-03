@@ -13,13 +13,13 @@ import {
   isUrgentSiteCommand,
   shouldExecuteSiteRuntime,
   liveAvatarSessionWarningDelayMs,
+  grantedLiveAvatarSessionMs,
   mergeSpokenTranscript,
   suggestedPrompts,
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
-  LIVEAVATAR_MAX_SESSION_MS,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260903-it29";
+} from "./claire-core.mjs?v=20260903-it30";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -34,20 +34,20 @@ import {
   rememberTurn,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260903-it29";
-import { describeEmailSendOutcome } from "./site-email.mjs?v=20260903-it29";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260903-it29";
+} from "./claire-session-memory.mjs?v=20260903-it30";
+import { describeEmailSendOutcome } from "./site-email.mjs?v=20260903-it30";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260903-it30";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260903-it29";
-import "./contact.js?v=20260903-it29";
-import "./devis.js?v=20260903-it29";
+} from "./claire-site-runtime-adapter.mjs?v=20260903-it30";
+import "./contact.js?v=20260903-it30";
+import "./devis.js?v=20260903-it30";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260903-it29";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260903-it29";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260903-it30";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260903-it30";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -839,16 +839,21 @@ export class ClaireCompanion {
     }
   }
 
+  grantedSessionMs() {
+    return grantedLiveAvatarSessionMs(this.provider?.grantedSessionSeconds);
+  }
+
   armLiveAvatarSessionWatch({ restart = false } = {}) {
     if (this.sessionWarningTimer && !restart) return;
     this.clearSessionWatch();
     this.sessionStartedAt = Date.now();
+    const maxDurationMs = this.grantedSessionMs();
     const warningDelay = liveAvatarSessionWarningDelayMs(
-      LIVEAVATAR_MAX_SESSION_MS,
+      maxDurationMs,
       LIVEAVATAR_SESSION_WARNING_LEAD_MS
     );
     this.sessionWarningTimer = setTimeout(() => this.showSessionNotice("warning"), warningDelay);
-    this.sessionEndTimer = setTimeout(() => this.handleLiveAvatarSessionStopped("duration-elapsed"), LIVEAVATAR_MAX_SESSION_MS);
+    this.sessionEndTimer = setTimeout(() => this.handleLiveAvatarSessionStopped("duration-elapsed"), maxDurationMs);
   }
 
   clearSessionWatch() {
@@ -1000,7 +1005,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260903-it29");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260903-it30");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
@@ -1600,6 +1605,7 @@ export class ClaireCompanion {
       provider: this.provider?.id || "browser-native-fallback",
       phoneShell: isPhoneShell(),
       liveAvatarConfigured: Boolean(this.liveAvatarStatus?.configured),
+      grantedSessionMs: this.provider ? this.grantedSessionMs() : null,
       voiceRecognition: this.browserVoice.supported(),
       speechSynthesis: Boolean(globalThis.speechSynthesis),
       knowledgeVersion: this.knowledge.version || "fallback",

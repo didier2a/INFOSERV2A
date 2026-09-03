@@ -445,3 +445,20 @@ test("SESSION_STOPPED propose de relancer sans arrêter le site", async () => {
   assert.notEqual(globalThis.__infoservFakeSession, first);
   await provider.stop();
 });
+
+test("le transport retient la durée de session réellement accordée", async () => {
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({
+      sessionToken: "ephemeral",
+      sessionId: "session-duration",
+      maxSessionDuration: 300
+    })
+  }).install({ video });
+
+  await provider.connect({ microphone: true });
+  assert.equal(provider.grantedSessionSeconds, 300);
+  assert.equal(provider.diagnostic().grantedSessionSeconds, 300);
+  await provider.stop();
+});

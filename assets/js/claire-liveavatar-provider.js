@@ -1,4 +1,4 @@
-import { isInternalSitePrompt, isStableUrgentCommand, isUrgentSiteCommand } from "./claire-core.mjs?v=20260903-it29";
+import { isInternalSitePrompt, isStableUrgentCommand, isUrgentSiteCommand } from "./claire-core.mjs?v=20260903-it30";
 
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;
@@ -76,6 +76,7 @@ export class InfoServ2ALiveAvatarProvider {
     this.avatarSpeaking = false;
     this.stopping = false;
     this.connectionAttempt = 0;
+    this.grantedSessionSeconds = 0;
     this.silentSendAt = 0;
     this.pendingLiveSpeech = null;
     this.lastLocalContext = null;
@@ -557,7 +558,12 @@ export class InfoServ2ALiveAvatarProvider {
           const payload = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(payload.error || `LiveAvatar HTTP ${response.status}`);
           if (!payload.sessionToken) throw new Error("Jeton de session LiveAvatar absent");
-          this.record("transport:token-ready", { attempt, sessionId: String(payload.sessionId || "") });
+          this.grantedSessionSeconds = Number(payload.maxSessionDuration) || 0;
+          this.record("transport:token-ready", {
+            attempt,
+            sessionId: String(payload.sessionId || ""),
+            maxSessionDuration: this.grantedSessionSeconds
+          });
 
           this.sdk = sdk;
           const session = new sdk.LiveAvatarSession(payload.sessionToken, { apiUrl: "https://api.liveavatar.com" });
@@ -857,6 +863,7 @@ export class InfoServ2ALiveAvatarProvider {
       audioState: this.mediaAudible ? "audible" : (this.hasLiveAudio() ? "blocked" : "missing"),
       videoMuted: Boolean(this.video?.muted),
       realtimeSignal: this.realtimeSignal,
+      grantedSessionSeconds: this.grantedSessionSeconds,
       commandInFlight: this.commandInFlight,
       userSpeakComplete: this.userSpeakComplete,
       userSpeaking: this.userSpeaking,

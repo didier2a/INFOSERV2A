@@ -477,7 +477,39 @@ export function createSpeechFollowGate() {
 
 export const LIVEAVATAR_MAX_SESSION_MS = 600_000;
 export const LIVEAVATAR_MAX_SESSION_SECONDS = 600;
+export const LIVEAVATAR_PLAN_FALLBACK_SECONDS = 300;
 export const LIVEAVATAR_SESSION_WARNING_LEAD_MS = 45_000;
+
+export function liveAvatarErrorText(payload) {
+  return [payload?.message, payload?.error, payload?.detail]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .join(" ");
+}
+
+export function parseLiveAvatarAllowedSessionSeconds(payload) {
+  const match = liveAvatarErrorText(payload).match(/maximum allowed\s*\((\d+)\s*s\)/i);
+  const allowed = Number(match?.[1] || 0);
+  return Number.isFinite(allowed) && allowed >= 60 ? Math.floor(allowed) : 0;
+}
+
+export function resolveLiveAvatarSessionRetrySeconds(requested, payload, status) {
+  if (status !== 400 && status !== 422) return 0;
+  const text = liveAvatarErrorText(payload);
+  if (!/max_session_duration|maximum allowed/i.test(text)) return 0;
+  const allowed = parseLiveAvatarAllowedSessionSeconds(payload) || LIVEAVATAR_PLAN_FALLBACK_SECONDS;
+  const want = Number(requested) || LIVEAVATAR_MAX_SESSION_SECONDS;
+  if (allowed >= 60 && allowed < want) return Math.min(allowed, LIVEAVATAR_MAX_SESSION_SECONDS);
+  return 0;
+}
+
+export function grantedLiveAvatarSessionMs(seconds) {
+  const value = Number(seconds);
+  if (Number.isFinite(value) && value >= 60 && value <= LIVEAVATAR_MAX_SESSION_SECONDS) {
+    return Math.floor(value) * 1000;
+  }
+  return LIVEAVATAR_PLAN_FALLBACK_SECONDS * 1000;
+}
 
 export function liveAvatarSessionWarningDelayMs(
   maxDurationMs = LIVEAVATAR_MAX_SESSION_MS,
