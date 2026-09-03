@@ -41,6 +41,81 @@ export function compactField(value, max) {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
+export function compactMultiline(value, max) {
+  return String(value || "")
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    .slice(0, max);
+}
+
+export function isPlaceholderMessage(value) {
+  const folded = compactField(value, 200)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/['’`]/g, " ");
+  return folded === "a preciser a l oral";
+}
+
+export function usefulMessage(value, max = 4000) {
+  const clean = compactMultiline(value, max);
+  return !clean || isPlaceholderMessage(clean) ? "" : clean;
+}
+
+export function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function htmlBreaks(value) {
+  return escapeHtml(value).split("\n").join("<br>");
+}
+
+export function buildMailBodies(kind, fields = {}) {
+  const devis = kind === "devis";
+  const intro = devis
+    ? "Nouvelle demande de devis reçue depuis le site www.infoserv2a.pro."
+    : "Nouveau message reçu depuis le site www.infoserv2a.pro.";
+  const messageLabel = devis ? "Besoin" : "Message";
+  const rows = [
+    ["Canal", devis ? "demande de devis" : "message de contact"],
+    ["Nom", fields.name],
+    ["E-mail", fields.email],
+    ["Téléphone", fields.phone],
+    ["Commune", fields.city],
+    ["Service", fields.service],
+    ["Fichiers mentionnés (non joints par le site)", fields.files]
+  ].filter(([, value]) => compactField(value, 400));
+  const message = usefulMessage(fields.message, 4000);
+  const text = [
+    intro,
+    "",
+    ...rows.map(([label, value]) => `${label} : ${value}`),
+    "",
+    `${messageLabel} :`,
+    message
+  ].join("\n").trim();
+  const htmlRows = rows.map(([label, value]) => (
+    `<tr><td style="padding:6px 16px 6px 0;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;vertical-align:top;white-space:nowrap;">${escapeHtml(label)}</td><td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:15px;vertical-align:top;">${htmlBreaks(value)}</td></tr>`
+  )).join("");
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;color:#111111;background:#ffffff;">
+  <p style="margin:0 0 16px;">${escapeHtml(intro)}</p>
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">${htmlRows}</table>
+  <p style="margin:16px 0 6px;font-weight:bold;">${escapeHtml(messageLabel)}</p>
+  <p style="margin:0;">${htmlBreaks(message)}</p>
+</body>
+</html>`;
+  return { text, html };
+}
+
 export function resolveEmailProvider(env = {}) {
   if (typeof env.EMAIL?.send === "function") return "cloudflare-email";
   if (String(env.RESEND_API_KEY || "").trim()) return "resend";
@@ -68,7 +143,9 @@ export function normalizeEmailPayload(input = {}, env = {}) {
   const phone = compactField(input.phone, 40);
   const city = compactField(input.city, 80);
   const service = compactField(input.service, 80);
-  const message = compactField(input.message || input.description || input.body, 4000);
+  const message = usefulMessage(input.message, 4000)
+    || usefulMessage(input.description, 4000)
+    || usefulMessage(input.body, 4000);
   const files = compactField(input.files, 400);
   const missing = [];
   if (!name) missing.push("name");
@@ -85,21 +162,8 @@ export function normalizeEmailPayload(input = {}, env = {}) {
   const subject = kind === "devis"
     ? `Demande de devis InfoServ2A${name ? ` — ${name}` : ""}`
     : `Contact InfoServ2A${name ? ` — ${name}` : ""}`;
-  const lines = [
-    kind === "devis"
-      ? "Nouvelle demande de devis reçue depuis le site www.infoserv2a.pro."
-      : "Nouveau message reçu depuis le site www.infoserv2a.pro.",
-    "",
-    `Canal : ${kind === "devis" ? "demande de devis" : "message de contact"}`,
-    `Nom : ${name}`,
-    `E-mail : ${email}`,
-    phone && `Téléphone : ${phone}`,
-    city && `Commune : ${city}`,
-    service && `Service : ${service}`,
-    files && `Fichiers mentionnés (non joints par le site) : ${files}`,
-    "",
-    message
-  ].filter((line, index, list) => line || list[index - 1]);
+  const fields = { name, email, phone, city, service, message, files };
+  const bodies = buildMailBodies(kind, fields);
   return {
     kind,
     honeypot: Boolean(honeypot),
@@ -107,8 +171,9 @@ export function normalizeEmailPayload(input = {}, env = {}) {
     inbox,
     replyTo: email,
     subject,
-    text: lines.join("\n").trim(),
-    fields: { name, email, phone, city, service, message, files }
+    text: bodies.text,
+    html: bodies.html,
+    fields
   };
 }
 
@@ -117,12 +182,9 @@ function formSubmitActivated(payload) {
   return !/activate|confirm your email|check your inbox to activate|pending/.test(blob);
 }
 
-function mailAsHtml(text) {
-  const escaped = String(text || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-  return `<pre style="font-family:sans-serif;font-size:15px;white-space:pre-wrap">${escaped}</pre>`;
+export function mailAsHtml(mail) {
+  if (mail && typeof mail === "object" && mail.html) return mail.html;
+  return buildMailBodies("contact", { message: String(mail || "") }).html;
 }
 
 async function deliverViaResend(env, mail) {
@@ -139,7 +201,7 @@ async function deliverViaResend(env, mail) {
       reply_to: mail.replyTo,
       subject: mail.subject,
       text: mail.text,
-      html: mailAsHtml(mail.text)
+      html: mail.html || mailAsHtml(mail)
     })
   });
   const payload = await response.json().catch(() => ({}));
@@ -158,8 +220,10 @@ async function deliverViaCloudflare(env, mail) {
     from,
     to: mail.inbox,
     reply_to: mail.replyTo,
+    replyTo: mail.replyTo,
     subject: mail.subject,
-    text: mail.text
+    text: mail.text,
+    html: mail.html || mailAsHtml(mail)
   });
   return { provider: "cloudflare-email", id: result?.messageId || "", pendingActivation: false };
 }

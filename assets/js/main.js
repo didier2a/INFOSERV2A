@@ -71,8 +71,18 @@
       box.className = "form-status is-visible form-status--" + type;
       box.textContent = message;
     },
+    blankNeed(value) {
+      const folded = String(value || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/['’`]/g, " ");
+      return !folded || folded === "a preciser a l oral";
+    },
     required(field, label) {
-      if (!field.value.trim()) {
+      if (this.blankNeed(field.value)) {
         this.setError(field, "Veuillez renseigner " + label + ".");
         return false;
       }

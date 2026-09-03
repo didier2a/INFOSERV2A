@@ -1,5 +1,5 @@
-import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260903-it31";
-import { contactExtrasFromDocument, quoteExtrasFromDocument } from "./claire-session-memory.mjs?v=20260903-it31";
+import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260903-it32";
+import { contactExtrasFromDocument, firstUsefulText, quoteExtrasFromDocument, usefulText } from "./claire-session-memory.mjs?v=20260903-it32";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -26,7 +26,7 @@ function quoteDraftFromArgs(args = {}) {
     email: String(args.email || "").slice(0, 120),
     city: String(args.city || "").slice(0, 80),
     service: String(args.service || "").slice(0, 80),
-    description: String(args.description || "").slice(0, 500)
+    description: firstUsefulText(4000, args.description)
   };
 }
 
@@ -240,7 +240,8 @@ export class BrowserInfoServ2ASurface {
 
   fillQuoteField(selector, value) {
     const field = this.document.querySelector(selector);
-    if (!field || !value) return Boolean(field);
+    const next = usefulText(value, 4000);
+    if (!field || !next) return Boolean(field);
     if (field.tagName === "SELECT") {
       const needle = String(value).toLocaleLowerCase("fr");
       const option = [...field.options].find((item) => {
@@ -270,12 +271,17 @@ export class BrowserInfoServ2ASurface {
   quoteMissingFields() {
     return ["name", "phone", "email", "city", "service", "description"].filter((key) => {
       const field = this.document.querySelector(`#devis-${key}`);
-      return !field || !String(field.value || "").trim();
+      return !usefulText(field?.value);
     });
   }
 
   async submitQuote(draft = {}) {
-    const formState = this.prefillQuote(draft);
+    const description = firstUsefulText(
+      4000,
+      this.document.querySelector("#devis-description")?.value,
+      draft.description
+    );
+    const formState = this.prefillQuote({ ...draft, description });
     const form = this.document.querySelector("#devis-form");
     const missing = this.quoteMissingFields();
     if (!form || missing.length) {
@@ -283,12 +289,12 @@ export class BrowserInfoServ2ASurface {
     }
     const payload = {
       kind: "devis",
-      name: this.document.querySelector("#devis-name")?.value || draft.name || "",
-      phone: this.document.querySelector("#devis-phone")?.value || draft.phone || "",
-      email: this.document.querySelector("#devis-email")?.value || draft.email || "",
-      city: this.document.querySelector("#devis-city")?.value || draft.city || "",
-      service: this.document.querySelector("#devis-service")?.value || draft.service || "",
-      description: this.document.querySelector("#devis-description")?.value || draft.description || "",
+      name: usefulText(this.document.querySelector("#devis-name")?.value, 80) || draft.name || "",
+      phone: usefulText(this.document.querySelector("#devis-phone")?.value, 40) || draft.phone || "",
+      email: usefulText(this.document.querySelector("#devis-email")?.value, 120) || draft.email || "",
+      city: usefulText(this.document.querySelector("#devis-city")?.value, 80) || draft.city || "",
+      service: usefulText(this.document.querySelector("#devis-service")?.value, 80) || draft.service || "",
+      description,
       website: this.document.querySelector("#devis-form [name='website']")?.value || ""
     };
     const result = await this.sendSiteEmail(payload);
@@ -427,8 +433,13 @@ export class BrowserInfoServ2ASurface {
   }
 
   async composeEmail(draft = {}) {
-    const fields = this.prefillContact(draft);
-    const missing = ["name", "email", "message"].filter((key) => !String(fields[key] || "").trim());
+    const message = firstUsefulText(4000, draft.message, draft.body);
+    const fields = this.prefillContact({
+      ...draft,
+      message
+    });
+    fields.message = firstUsefulText(4000, fields.message, message);
+    const missing = ["name", "email", "message"].filter((key) => !usefulText(fields[key]));
     if (missing.length) {
       return { sent: false, triggered: false, missing, inbox: "contact@infoserv2a.pro" };
     }

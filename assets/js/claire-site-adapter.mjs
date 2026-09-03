@@ -1,4 +1,4 @@
-import { adjacentPage, adjacentSection, catalogEntries, pageById, scorePage } from "./claire-core.mjs?v=20260903-it31";
+import { adjacentPage, adjacentSection, catalogEntries, pageById, scorePage } from "./claire-core.mjs?v=20260903-it32";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -69,7 +69,7 @@ export class InfoServ2ALabAdapter {
           email: String(args.email || "").slice(0, 120),
           city: String(args.city || "").slice(0, 80),
           service: String(args.service || "").slice(0, 80),
-          description: String(args.description || "").slice(0, 500)
+          description: String(args.description || "").slice(0, 4000)
         };
         this.view.submitted = false;
         const missing = ["name", "phone", "email", "city", "service", "description"]
@@ -93,7 +93,7 @@ export class InfoServ2ALabAdapter {
           email: String(args.email || "").slice(0, 120),
           city: String(args.city || "").slice(0, 80),
           service: String(args.service || "").slice(0, 80),
-          description: String(args.description || "").slice(0, 500)
+          description: String(args.description || "").slice(0, 4000)
         };
         const missing = ["name", "phone", "email", "city", "service", "description"]
           .filter((key) => !this.view.quoteDraft[key]);

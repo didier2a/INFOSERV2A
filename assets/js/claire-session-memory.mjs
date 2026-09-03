@@ -48,7 +48,26 @@ function folded(value = "") {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/[’']/g, " ");
+    .replace(/[’'`]/g, " ");
+}
+
+export const PLACEHOLDER_NEED = "À préciser à l’oral";
+
+export function isPlaceholderNeed(value = "") {
+  return folded(value) === "a preciser a l oral";
+}
+
+export function usefulText(value = "", max = 4000) {
+  const clean = compact(value).slice(0, max);
+  return !clean || isPlaceholderNeed(clean) ? "" : clean;
+}
+
+export function firstUsefulText(max, ...values) {
+  for (const value of values) {
+    const found = usefulText(value, max);
+    if (found) return found;
+  }
+  return "";
 }
 
 export function emptyMemory() {
@@ -123,7 +142,7 @@ export function normalizeMemory(value = {}) {
     clientId: compact(value.clientId).slice(0, 80),
     visitCount: Number(value.visitCount) || visits.length || 0,
     visitor: normalizeVisitor(value.visitor),
-    need: compact(value.need).slice(0, 280),
+    need: usefulText(value.need, 280),
     service: compact(value.service).slice(0, 80),
     lastPath: compact(value.lastPath).slice(0, 160),
     lastTitle: compact(value.lastTitle).slice(0, 120),
@@ -383,7 +402,7 @@ export function mergeFacts(memory, facts = {}) {
     )
   });
   if (compact(facts.service)) next.service = compact(facts.service).slice(0, 80);
-  if (compact(facts.need)) next.need = compact(facts.need).slice(0, 280);
+  if (usefulText(facts.need)) next.need = usefulText(facts.need, 280);
   next.summary = buildSummary(next);
   return next;
 }
@@ -422,7 +441,7 @@ export function contactDraftSignature(memory = {}, extras = {}) {
   const visitor = normalizeVisitor(memory.visitor);
   const name = compact(extras.name) || visitor.name;
   const email = compact(extras.email) || visitor.email;
-  const message = compact(extras.message) || compact(extras.description) || compact(memory.need);
+  const message = firstUsefulText(4000, extras.message, extras.description, memory.need);
   return [name, email, message].map((value) => compact(value).toLocaleLowerCase("fr")).join("|");
 }
 
@@ -466,7 +485,7 @@ export function quotePrefillFromMemory(memory = {}, extras = {}) {
     email: compact(extras.email) || visitor.email,
     city: compact(extras.city) || visitor.city,
     service: compact(extras.service) || compact(memory.service),
-    description: compact(extras.description) || compact(memory.need) || compact(extras.fallbackDescription)
+    description: firstUsefulText(4000, extras.description, memory.need, extras.fallbackDescription)
   };
 }
 
@@ -494,15 +513,9 @@ export function shouldAnnounceQuoteTruth(command = "", memory = {}, pageId = "")
   return false;
 }
 
-const PLACEHOLDER_NEED = "À préciser à l’oral";
-
 export function quoteExtrasFromDocument(doc = globalThis.document) {
   if (!doc?.querySelector) return {};
-  const read = (selector) => {
-    const value = compact(doc.querySelector(selector)?.value);
-    if (!value || value === PLACEHOLDER_NEED) return "";
-    return value;
-  };
+  const read = (selector) => usefulText(doc.querySelector(selector)?.value);
   return {
     name: read("#devis-name"),
     phone: read("#devis-phone"),
@@ -515,11 +528,7 @@ export function quoteExtrasFromDocument(doc = globalThis.document) {
 
 export function contactExtrasFromDocument(doc = globalThis.document) {
   if (!doc?.querySelector) return {};
-  const read = (selector) => {
-    const value = compact(doc.querySelector(selector)?.value);
-    if (!value || value === PLACEHOLDER_NEED) return "";
-    return value;
-  };
+  const read = (selector) => usefulText(doc.querySelector(selector)?.value);
   return {
     name: read("#contact-name"),
     phone: read("#contact-phone"),
@@ -546,7 +555,7 @@ export function canSubmitContact(memory = {}, extras = {}) {
   const visitor = normalizeVisitor(memory.visitor);
   const name = compact(extras.name) || visitor.name;
   const email = compact(extras.email) || visitor.email;
-  const message = compact(extras.message) || compact(extras.description) || compact(memory.need);
+  const message = firstUsefulText(4000, extras.message, extras.description, memory.need);
   return Boolean(name && email && message);
 }
 
@@ -619,7 +628,7 @@ export function emailDraftFromMemory(memory = {}) {
     visitor.city && `Commune : ${visitor.city}`,
     memory.service && `Service : ${memory.service}`,
     "",
-    compact(memory.need) || "Bonjour, je souhaite être recontacté(e) au sujet de ma demande."
+    usefulText(memory.need) || "Bonjour, je souhaite être recontacté(e) au sujet de ma demande."
   ].filter((line, index, list) => line || list[index - 1]);
   return {
     to: "contact@infoserv2a.pro",
@@ -628,7 +637,7 @@ export function emailDraftFromMemory(memory = {}) {
     name: visitor.name,
     email: visitor.email,
     phone: visitor.phone,
-    message: compact(memory.need) || "Bonjour, je souhaite être recontacté(e) au sujet de ma demande."
+    message: usefulText(memory.need) || "Bonjour, je souhaite être recontacté(e) au sujet de ma demande."
   };
 }
 

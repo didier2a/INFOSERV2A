@@ -423,13 +423,89 @@ test("simulation vocale : « c’est bon » sur contact remplit et envoie le mes
   const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
   const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
   const outcome = await controller.run("c’est bon", { memory, pageId: "contact" });
-  const mail = outcome.results.find((item) => item.tool === "compose_email");
-  assert.equal(mail.output.sent, true);
+  const sent = outcome.results.find((item) => item.tool === "compose_email");
+  assert.equal(sent.output.sent, true);
   assert.equal(surface.posts.length, 1);
   assert.equal(surface.posts[0].kind, "contact");
+  assert.equal(surface.posts[0].name, "Didier Aouizerate");
   assert.equal(surface.posts[0].email, "infoserv2a@gmail.com");
+  assert.match(surface.posts[0].message, /interlocuteur pour mon réseau/);
+  const { normalizeEmailPayload } = await import("../functions/api/send-email.js");
+  const mail = normalizeEmailPayload(surface.posts[0]);
+  assert.match(mail.text, /Nom : Didier Aouizerate/);
+  assert.match(mail.text, /E-mail : infoserv2a@gmail.com/);
+  assert.match(mail.text, /Message :/);
+  assert.match(mail.text, /interlocuteur pour mon réseau/);
+  assert.match(mail.html, /<table/i);
   assert.ok(surface.calls.some(([name]) => name === "prefillContact"));
   assert.match(describeEmailSendOutcome(outcome), /bien été envoyé vers contact@infoserv2a\.pro|bien été envoyée vers contact@infoserv2a\.pro/);
+});
+
+test("submitQuote recopie le besoin formalisé si le textarea a le placeholder", async () => {
+  const { BrowserInfoServ2ASurface } = await import("../assets/js/claire-site-runtime-adapter.mjs");
+  const fields = new Map();
+  const seed = {
+    "#devis-name": "Didier Aouizerate",
+    "#devis-phone": "07 45 15 60 76",
+    "#devis-email": "infoserv2a@gmail.com",
+    "#devis-city": "Porto-Vecchio",
+    "#devis-service": "videosurveillance",
+    "#devis-description": "À préciser à l’oral"
+  };
+  const documentRef = {
+    querySelector(sel) {
+      if (sel === "#devis-form") return { id: "devis-form", querySelector() { return { value: "" }; } };
+      if (sel === "#contact-form") return null;
+      if (!String(sel).startsWith("#devis-")) return null;
+      if (!fields.has(sel)) {
+        fields.set(sel, {
+          tagName: sel.includes("service") ? "SELECT" : "TEXTAREA",
+          value: seed[sel] || "",
+          options: [{ value: "videosurveillance", textContent: "Vidéosurveillance" }]
+        });
+      }
+      return fields.get(sel);
+    }
+  };
+  const posts = [];
+  const surface = new BrowserInfoServ2ASurface({
+    knowledge,
+    windowRef: {
+      location: {
+        href: "https://infoserv2a.pro/devis.html",
+        pathname: "/devis.html",
+        origin: "https://infoserv2a.pro",
+        hash: ""
+      },
+      InfoServ: {
+        async sendSiteEmail(payload) {
+          posts.push(payload);
+          return { sent: true, inbox: "contact@infoserv2a.pro", replyTo: payload.email, missing: [] };
+        }
+      }
+    },
+    documentRef,
+    fetchImpl: async () => new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } })
+  });
+  const result = await surface.submitQuote({
+    name: "Didier Aouizerate",
+    phone: "07 45 15 60 76",
+    email: "infoserv2a@gmail.com",
+    city: "Porto-Vecchio",
+    service: "videosurveillance",
+    description: "Caméra 4G hangar isolé, enregistrement 15 jours"
+  });
+  assert.equal(result.sent, true);
+  assert.equal(posts.length, 1);
+  assert.equal(posts[0].kind, "devis");
+  assert.match(posts[0].description, /hangar isolé/);
+  assert.doesNotMatch(posts[0].description, /préciser à l/);
+  assert.match(fields.get("#devis-description").value, /hangar isolé/);
+  const { normalizeEmailPayload } = await import("../functions/api/send-email.js");
+  const mail = normalizeEmailPayload(posts[0]);
+  assert.match(mail.text, /Besoin :/);
+  assert.match(mail.text, /hangar isolé/);
+  assert.match(mail.html, /<table/i);
 });
 
 test("Claire écrit dans le formulaire contact visible, pas seulement au moment de l’envoi", async () => {
@@ -498,6 +574,14 @@ test("simulation vocale : « envoie le message » sur un devis prérempli envoie
   assert.equal(first.results.find((item) => item.tool === "compose_email"), undefined);
   assert.equal(surface.posts.length, 1);
   assert.equal(surface.posts[0].kind, "devis");
+  assert.match(surface.posts[0].description, /Caméra 4G pour un hangar isolé/);
+  const { normalizeEmailPayload } = await import("../functions/api/send-email.js");
+  const mail = normalizeEmailPayload(surface.posts[0]);
+  assert.match(mail.text, /Nom : Didier Aouizerate/);
+  assert.match(mail.text, /E-mail : infoserv2a@gmail.com/);
+  assert.match(mail.text, /Besoin :/);
+  assert.match(mail.text, /hangar isolé/);
+  assert.match(mail.html, /<table/i);
   assert.match(describeEmailSendOutcome(first), /bien été envoyée/);
 
   const sentMemory = {

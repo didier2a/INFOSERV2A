@@ -9,6 +9,7 @@ import {
   formatCaptionContext,
   formatMemoryBriefing,
   hasMemoryContent,
+  isPlaceholderNeed,
   loadSessionMemory,
   quoteQuestionnaire,
   rememberTurn,
@@ -19,7 +20,8 @@ import {
   archiveCurrentVisit,
   hydrateQuoteMemoryFromForm,
   formatLiveMemoryCue,
-  canSubmitContact
+  canSubmitContact,
+  quoteExtrasFromDocument
 } from "../assets/js/claire-session-memory.mjs";
 
 function memoryStorage(seed = null) {
@@ -329,4 +331,24 @@ test("un formulaire contact rempli hors conversation alimente la mémoire", () =
   assert.equal(memory.visitor.name, "Marie Rossi");
   assert.equal(memory.visitor.email, "marie@example.com");
   assert.equal(canSubmitContact(memory), true);
+});
+
+test("le placeholder « À préciser à l’oral » n’est pas un besoin", () => {
+  assert.equal(isPlaceholderNeed("À préciser à l’oral"), true);
+  assert.equal(isPlaceholderNeed("A preciser a l'oral"), true);
+  const doc = {
+    querySelector(selector) {
+      const values = {
+        "#devis-name": "Didier Aouizerate",
+        "#devis-phone": "07 45 15 60 76",
+        "#devis-email": "infoserv2a@gmail.com",
+        "#devis-city": "Porto-Vecchio",
+        "#devis-service": "videosurveillance",
+        "#devis-description": "À préciser à l'oral"
+      };
+      return values[selector] ? { value: values[selector] } : null;
+    }
+  };
+  const extras = quoteExtrasFromDocument(doc);
+  assert.equal(extras.description, "");
 });

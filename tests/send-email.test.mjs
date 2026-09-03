@@ -4,9 +4,11 @@ import test from "node:test";
 import worker from "../src/worker.js";
 import {
   allowEmailRequest,
+  buildMailBodies,
   deliverSiteEmail,
   emailConfigured,
   DEFAULT_FROM,
+  isPlaceholderMessage,
   normalizeEmailPayload,
   onRequestGet,
   onRequestPost,
@@ -74,9 +76,76 @@ test("Resend envoie depuis contact@ avec texte et HTML", async () => {
     assert.equal(sent[0].body.to[0], "contact@infoserv2a.pro");
     assert.match(sent[0].body.subject, /devis/i);
     assert.match(sent[0].body.html, /Caméra 4G/);
+    assert.match(sent[0].body.html, /<!DOCTYPE html>/i);
+    assert.match(sent[0].body.html, /<table/i);
+    assert.match(sent[0].body.html, /Besoin/);
+    assert.match(sent[0].body.text, /Besoin :/);
+    assert.doesNotMatch(sent[0].body.html, /<pre[\s>]/i);
   } finally {
     globalThis.fetch = previous;
   }
+});
+
+test("un besoin « À préciser à l’oral » ne part pas comme devis", () => {
+  const mail = normalizeEmailPayload({
+    kind: "devis",
+    name: "Didier Aouizerate",
+    phone: "07 45 15 60 76",
+    email: "infoserv2a@gmail.com",
+    city: "Porto-Vecchio",
+    service: "videosurveillance",
+    description: "À préciser à l'oral"
+  });
+  assert.equal(isPlaceholderMessage("À préciser à l’oral"), true);
+  assert.ok(mail.missing.includes("description"));
+});
+
+test("le corps devis et contact portent tous les champs, en texte et en HTML lisible", () => {
+  const devis = normalizeEmailPayload({
+    kind: "devis",
+    name: "Didier Aouizerate",
+    phone: "07 45 15 60 76",
+    email: "infoserv2a@gmail.com",
+    city: "Porto-Vecchio",
+    service: "videosurveillance",
+    description: "Caméra 4G pour un hangar isolé.\nEnregistrement 15 jours."
+  });
+  assert.equal(devis.missing.length, 0);
+  assert.match(devis.text, /Nom : Didier Aouizerate/);
+  assert.match(devis.text, /E-mail : infoserv2a@gmail.com/);
+  assert.match(devis.text, /Téléphone : 07 45 15 60 76/);
+  assert.match(devis.text, /Besoin :/);
+  assert.match(devis.text, /hangar isolé/);
+  assert.match(devis.html, /<!DOCTYPE html>/i);
+  assert.match(devis.html, /<table/i);
+  assert.doesNotMatch(devis.html, /<pre[\s>]/i);
+  assert.match(devis.html, /hangar isolé/);
+  assert.match(devis.html, /<br>/);
+
+  const contact = normalizeEmailPayload({
+    kind: "contact",
+    name: "Didier Aouizerate",
+    email: "infoserv2a@gmail.com",
+    phone: "07 45 15 60 76",
+    message: "Je veux un interlocuteur pour mon réseau"
+  });
+  assert.equal(contact.missing.length, 0);
+  assert.match(contact.text, /Nom : Didier Aouizerate/);
+  assert.match(contact.text, /E-mail : infoserv2a@gmail.com/);
+  assert.match(contact.text, /Message :/);
+  assert.match(contact.text, /interlocuteur pour mon réseau/);
+  assert.match(contact.html, /Nom/);
+  assert.match(contact.html, /E-mail/);
+  assert.match(contact.html, /Message/);
+  assert.doesNotMatch(contact.html, /<pre[\s>]/i);
+
+  const bodies = buildMailBodies("contact", {
+    name: "Marie",
+    email: "marie@example.com",
+    message: "Bonjour"
+  });
+  assert.match(bodies.text, /Nom : Marie/);
+  assert.match(bodies.html, /Marie/);
 });
 
 test("le payload refuse un message incomplet et ignore le honeypot", () => {
@@ -141,6 +210,10 @@ test("POST envoie réellement via le binding Cloudflare", async () => {
   assert.equal(payload.replyTo, "didier@example.com");
   assert.equal(sent[0].to, "contact@infoserv2a.pro");
   assert.match(sent[0].text, /Essai d’envoi réel/);
+  assert.match(sent[0].text, /Nom : Didier/);
+  assert.match(sent[0].text, /E-mail : didier@example.com/);
+  assert.match(sent[0].text, /Message :/);
+  assert.match(sent[0].html, /Message/);
 });
 
 test("DEVIS_INBOX permet d’ouvrir devis@ plus tard", () => {
@@ -193,6 +266,10 @@ test("POST devis part vers contact@ tant que devis@ n’existe pas", async () =>
   assert.equal(payload.inbox, "contact@infoserv2a.pro");
   assert.equal(sent[0].to, "contact@infoserv2a.pro");
   assert.equal(sent[0].reply_to, "marie@example.com");
+  assert.match(sent[0].text, /Besoin :/);
+  assert.match(sent[0].text, /Caméra 4G/);
+  assert.match(sent[0].html, /<table/i);
+  assert.match(sent[0].html, /Besoin/);
 });
 
 test("un challenge Cloudflare FormSubmit est un échec, pas un envoi", async () => {
