@@ -16,12 +16,30 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260902-it22)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260902-it22)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260902-it23)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260902-it23)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
     assert.doesNotMatch(html, /claire-mini|claire-panel/);
+  }
+});
+
+test("les modules Claire sont versionnés pour éviter un cache 24 h cassé", async () => {
+  const files = [
+    "assets/js/claire-companion.js",
+    "assets/js/claire-liveavatar-provider.js",
+    "assets/js/claire-runtime-v2.mjs",
+    "assets/js/claire-site-runtime-adapter.mjs",
+    "assets/js/site-email.mjs"
+  ];
+  for (const file of files) {
+    const source = await readFile(path.join(ROOT, file), "utf8");
+    const bare = [...source.matchAll(/(?:from|import)\(?["'](\.\/[^"'?]+)["']/g)].map((match) => match[1]);
+    assert.deepEqual(bare, [], `${file} importe sans ?v= : ${bare.join(", ")}`);
+    if (source.includes("claire-core.mjs")) {
+      assert.match(source, /claire-core\.mjs\?v=20260902-it23/);
+    }
   }
 });
 

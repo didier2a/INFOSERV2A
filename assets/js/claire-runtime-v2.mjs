@@ -6,13 +6,13 @@ import {
   normalizeText,
   pageById,
   resolveCurrentPage
-} from "./claire-core.mjs";
+} from "./claire-core.mjs?v=20260902-it23";
 import {
   canSubmitQuote,
   describeQuoteChecklist,
   emailDraftFromMemory,
   quotePrefillFromMemory
-} from "./claire-session-memory.mjs";
+} from "./claire-session-memory.mjs?v=20260902-it23";
 
 export const CONTROLLER_STATES = Object.freeze({
   READY: "ready",

@@ -16,7 +16,7 @@ import {
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_MAX_SESSION_MS,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs";
+} from "./claire-core.mjs?v=20260902-it23";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -28,20 +28,20 @@ import {
   rememberTurn,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs";
-import { describeEmailSendOutcome } from "./site-email.mjs";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs";
+} from "./claire-session-memory.mjs?v=20260902-it23";
+import { describeEmailSendOutcome } from "./site-email.mjs?v=20260902-it23";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260902-it23";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs";
-import "./contact.js";
-import "./devis.js";
+} from "./claire-site-runtime-adapter.mjs?v=20260902-it23";
+import "./contact.js?v=20260902-it23";
+import "./devis.js?v=20260902-it23";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260902-it22";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260902-it22";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260902-it23";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260902-it23";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -960,7 +960,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260902-it23");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));

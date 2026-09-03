@@ -1,6 +1,6 @@
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs";
-import { followSpokenNavigation } from "./claire-core.mjs";
-import { InfoServ2ALabAdapter } from "./claire-site-adapter.mjs";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260902-it23";
+import { followSpokenNavigation } from "./claire-core.mjs?v=20260902-it23";
+import { InfoServ2ALabAdapter } from "./claire-site-adapter.mjs?v=20260902-it23";
 
 const stateLabels = {
   ready: "Prête",
