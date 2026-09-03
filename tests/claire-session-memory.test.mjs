@@ -15,6 +15,8 @@ import {
   saveSessionMemory,
   shouldAnnounceQuoteTruth,
   shouldShowQuoteQuest,
+  mergeMemories,
+  archiveCurrentVisit,
   hydrateQuoteMemoryFromForm
 } from "../assets/js/claire-session-memory.mjs";
 
@@ -75,6 +77,44 @@ test("la mémoire de session survit à une déconnexion simulée", () => {
   assert.match(briefing, /Bonifacio/);
   assert.match(briefing, /Ne redemande pas/);
   assert.equal(hasMemoryContent(afterDisconnect), true);
+});
+
+test("la mémoire survit à un rafraîchissement et à une autre session du même navigateur", () => {
+  const tab = memoryStorage();
+  const device = memoryStorage();
+  rememberTurn("user", "Je m’appelle Didier Aouizerate, j’habite Porto-Vecchio.", tab, device);
+  const afterRefresh = loadSessionMemory(memoryStorage(), device);
+  assert.equal(afterRefresh.visitor.name, "Didier Aouizerate");
+  assert.equal(afterRefresh.visitor.city, "Porto-Vecchio");
+  const archived = archiveCurrentVisit(tab, device);
+  assert.equal(archived.visits.length, 1);
+  assert.match(archived.visits[0].summary, /Didier/);
+  const later = loadSessionMemory(memoryStorage(), device);
+  assert.equal(later.visitor.name, "Didier Aouizerate");
+  assert.equal(later.visits.length, 1);
+  const briefing = formatMemoryBriefing(later);
+  assert.match(briefing, /même ordinateur|navigateur/i);
+  assert.match(briefing, /Visites précédentes/);
+  assert.match(briefing, /Ne refais pas un accueil/);
+});
+
+test("deux mémoires du même client se fusionnent sans perdre les coordonnées", () => {
+  const older = saveSessionMemory({
+    visitor: { name: "Didier", phone: "07 45 15 60 76", email: "", city: "" },
+    need: "Caméra 4G",
+    turns: [{ role: "user", text: "Je veux une caméra", at: 1 }]
+  }, memoryStorage());
+  const newer = saveSessionMemory({
+    visitor: { name: "Didier", phone: "", email: "infoserv2a@gmail.com", city: "Porto-Vecchio" },
+    service: "videosurveillance",
+    turns: [{ role: "companion", text: "Je note la caméra.", at: 2 }]
+  }, memoryStorage());
+  const merged = mergeMemories(newer, older);
+  assert.equal(merged.visitor.name, "Didier");
+  assert.equal(merged.visitor.phone, "07 45 15 60 76");
+  assert.equal(merged.visitor.email, "infoserv2a@gmail.com");
+  assert.equal(merged.visitor.city, "Porto-Vecchio");
+  assert.equal(merged.turns.length, 2);
 });
 
 test("l’encart de contexte montre la page et le questionnaire de devis", () => {

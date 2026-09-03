@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260902-it24)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260902-it24)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260902-it25)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260902-it25)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -38,7 +38,7 @@ test("les modules Claire sont versionnés pour éviter un cache 24 h cassé", as
     const bare = [...source.matchAll(/(?:from|import)\(?["'](\.\/[^"'?]+)["']/g)].map((match) => match[1]);
     assert.deepEqual(bare, [], `${file} importe sans ?v= : ${bare.join(", ")}`);
     if (source.includes("claire-core.mjs")) {
-      assert.match(source, /claire-core\.mjs\?v=20260902-it24/);
+      assert.match(source, /claire-core\.mjs\?v=20260902-it25/);
     }
   }
 });
@@ -130,7 +130,7 @@ test("Claire accueille l'utilisateur et explique son rôle chez InfoServ2A", asy
   assert.doesNotMatch(core, /Je reste uniquement dans l’informatique/);
   assert.match(client, /CLAIRE_WELCOME/);
   assert.match(endpoint, /CLAIRE_WELCOME/);
-  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.22/);
+  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.23/);
   assert.match(endpoint, /buildClaireContextPrompt/);
   assert.match(endpoint, /temperature:\s*0\.75/);
   assert.match(endpoint, /opening_text:\s*CLAIRE_WELCOME/);
@@ -331,7 +331,10 @@ test("une transcription vocale coupe la réponse spontanée seulement si le site
   assert.match(provider, /sendContext/);
   assert.match(client, /appendLiveCompanion/);
   assert.match(client, /data-site-truth|dataset.siteTruth/);
-  assert.match(client, /announceQuoteTruth/);
+  assert.match(client, /restorePersistedConversation/);
+  assert.match(client, /flushPendingLiveMemory/);
+  assert.match(client, /pendingLiveMemory/);
+  assert.match(client, /archiveCurrentVisit/);
   assert.match(client, /classifyUtterance/);
   assert.match(client, /followSpokenNavigation/);
   assert.match(client, /syncSiteToSpeech/);
@@ -402,7 +405,8 @@ test("la parole de Claire enchaîne les pages sans coupure nette", async () => {
   assert.match(client, /prefetchLikelyPages/);
   assert.match(client, /scroll: !isolateVoice/);
   assert.match(speakEnd, /finalizeLiveCompanionTurn/);
-  assert.doesNotMatch(speakEnd, /pushPageContext|flushSilentSiteSync|sendContext|sendBriefing|sendMemory/);
+  assert.match(speakEnd, /flushPendingLiveMemory/);
+  assert.doesNotMatch(speakEnd, /flushSilentSiteSync|sendContext|sendBriefing/);
   assert.doesNotMatch(liveTurn, /replaceChildren/);
   assert.doesNotMatch(client, /#contenu"\)\?\.scrollIntoView/);
 });

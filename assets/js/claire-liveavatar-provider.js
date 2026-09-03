@@ -1,4 +1,4 @@
-import { isInternalSitePrompt } from "./claire-core.mjs?v=20260902-it24";
+import { isInternalSitePrompt } from "./claire-core.mjs?v=20260902-it25";
 
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;
@@ -270,7 +270,8 @@ export class InfoServ2ALiveAvatarProvider {
     if (this.avatarSpeaking) {
       const canWait = event === "conversation:user-text-sent"
         || event === "conversation:off-topic-sent"
-        || event === "conversation:email-result-sent";
+        || event === "conversation:email-result-sent"
+        || event === "conversation:session-memory-sent";
       if (!canWait) {
         this.record("conversation:speech-dropped", { event, characters: text.length });
         return "dropped";
@@ -332,12 +333,12 @@ export class InfoServ2ALiveAvatarProvider {
     );
   }
 
-  sendMemory(value) {
-    return this.keepLocalNote(
-      "memory",
-      `[INFOSERV2A_SESSION_MEMORY]\n${value}\nN’y réponds pas. Reprends le contexte déjà dit. Ne redemande pas ces informations. N’invente rien.`,
-      "conversation:session-memory-kept"
-    );
+  sendMemory(value, { live = false } = {}) {
+    const prompt = `[INFOSERV2A_SESSION_MEMORY]\n${value}\nN’y réponds pas par un nouvel accueil. Mémorise. Reprends ce contexte. Ne redemande pas ces informations. N’invente rien.`;
+    if (!live) {
+      return this.keepLocalNote("memory", prompt, "conversation:session-memory-kept");
+    }
+    return this.speakLiveMessage(prompt, "conversation:session-memory-sent");
   }
 
   sendUserMessage(value) {

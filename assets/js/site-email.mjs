@@ -1,4 +1,4 @@
-import { QUOTE_FIELD_LABELS, joinFrenchList } from "./claire-session-memory.mjs?v=20260902-it24";
+import { QUOTE_FIELD_LABELS, joinFrenchList } from "./claire-session-memory.mjs?v=20260902-it25";
 
 export const SITE_EMAIL_PATH = "/api/send-email";
 

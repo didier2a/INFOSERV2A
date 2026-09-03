@@ -1,4 +1,5 @@
 export const SESSION_MEMORY_KEY = "infoserv2a.claire.memory";
+export const CLIENT_ID_KEY = "infoserv2a.claire.client";
 export const QUOTE_REQUIRED_FIELDS = Object.freeze([
   "name",
   "phone",
@@ -9,6 +10,7 @@ export const QUOTE_REQUIRED_FIELDS = Object.freeze([
 ]);
 
 const MAX_TURNS = 24;
+const MAX_VISITS = 8;
 const MAX_TURN_CHARS = 320;
 export const QUOTE_FIELD_LABELS = Object.freeze({
   name: "votre nom",
@@ -51,15 +53,18 @@ function folded(value = "") {
 
 export function emptyMemory() {
   return {
-    version: 1,
+    version: 2,
     startedAt: 0,
     updatedAt: 0,
+    clientId: "",
+    visitCount: 0,
     visitor: { name: "", phone: "", email: "", city: "" },
     need: "",
     service: "",
     lastPath: "",
     lastTitle: "",
     turns: [],
+    visits: [],
     summary: ""
   };
 }
@@ -85,43 +90,180 @@ export function normalizeMemory(value = {}) {
       .filter((turn) => turn.text)
       .slice(-MAX_TURNS)
     : [];
+  const visits = Array.isArray(value.visits)
+    ? value.visits
+      .map((visit) => ({
+        at: Number(visit?.at) || 0,
+        summary: compact(visit?.summary).slice(0, 240),
+        service: compact(visit?.service).slice(0, 80),
+        need: compact(visit?.need).slice(0, 160)
+      }))
+      .filter((visit) => visit.summary || visit.need)
+      .slice(-MAX_VISITS)
+    : [];
   return {
-    version: 1,
+    version: 2,
     startedAt: Number(value.startedAt) || 0,
     updatedAt: Number(value.updatedAt) || 0,
+    clientId: compact(value.clientId).slice(0, 80),
+    visitCount: Number(value.visitCount) || visits.length || 0,
     visitor: normalizeVisitor(value.visitor),
     need: compact(value.need).slice(0, 280),
     service: compact(value.service).slice(0, 80),
     lastPath: compact(value.lastPath).slice(0, 160),
     lastTitle: compact(value.lastTitle).slice(0, 120),
     turns,
+    visits,
     summary: compact(value.summary).slice(0, 400) || fallback.summary
   };
 }
 
-export function loadSessionMemory(storage = globalThis.sessionStorage) {
+function defaultSessionStore() {
+  return globalThis.sessionStorage;
+}
+
+function defaultPersistentStore() {
+  return globalThis.localStorage;
+}
+
+function readStore(storage) {
   try {
     const raw = storage?.getItem?.(SESSION_MEMORY_KEY);
-    if (!raw) return emptyMemory();
+    if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (!parsed || parsed.version !== 1) return emptyMemory();
+    if (!parsed || (parsed.version !== 1 && parsed.version !== 2)) return null;
     return normalizeMemory(parsed);
   } catch {
-    return emptyMemory();
+    return null;
   }
 }
 
-export function saveSessionMemory(memory, storage = globalThis.sessionStorage) {
+function writeStore(storage, memory) {
+  try {
+    storage?.setItem?.(SESSION_MEMORY_KEY, JSON.stringify(memory));
+  } catch {
+    /* sessionStorage ou localStorage peut être bloqué ; Claire reste utilisable. */
+  }
+}
+
+function mergeTurns(left = [], right = []) {
+  const seen = new Set();
+  const merged = [];
+  for (const turn of [...left, ...right]) {
+    const key = `${turn.at}|${turn.role}|${turn.text}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(turn);
+  }
+  return merged.sort((a, b) => (a.at || 0) - (b.at || 0)).slice(-MAX_TURNS);
+}
+
+function mergeVisits(left = [], right = []) {
+  const seen = new Set();
+  const merged = [];
+  for (const visit of [...left, ...right]) {
+    const key = `${visit.at}|${visit.summary}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(visit);
+  }
+  return merged.sort((a, b) => (a.at || 0) - (b.at || 0)).slice(-MAX_VISITS);
+}
+
+export function mergeMemories(primary = {}, secondary = {}) {
+  const first = normalizeMemory(primary);
+  const second = normalizeMemory(secondary);
+  const firstHas = hasMemoryContent(first);
+  const secondHas = hasMemoryContent(second);
+  if (!firstHas) return second;
+  if (!secondHas) return first;
+  const newer = (first.updatedAt || 0) >= (second.updatedAt || 0) ? first : second;
+  const older = newer === first ? second : first;
+  return normalizeMemory({
+    ...newer,
+    visitor: {
+      name: newer.visitor.name || older.visitor.name,
+      phone: newer.visitor.phone || older.visitor.phone,
+      email: newer.visitor.email || older.visitor.email,
+      city: newer.visitor.city || older.visitor.city
+    },
+    need: newer.need || older.need,
+    service: newer.service || older.service,
+    lastPath: newer.lastPath || older.lastPath,
+    lastTitle: newer.lastTitle || older.lastTitle,
+    clientId: newer.clientId || older.clientId,
+    visitCount: Math.max(Number(newer.visitCount) || 0, Number(older.visitCount) || 0),
+    startedAt: Math.min(newer.startedAt || now(), older.startedAt || now()),
+    turns: mergeTurns(older.turns, newer.turns),
+    visits: mergeVisits(older.visits, newer.visits)
+  });
+}
+
+export function loadClientId(persistent = defaultPersistentStore()) {
+  try {
+    const existing = compact(persistent?.getItem?.(CLIENT_ID_KEY));
+    if (existing) return existing.slice(0, 80);
+    const created = globalThis.crypto?.randomUUID?.() || `claire-${Date.now().toString(16)}`;
+    persistent?.setItem?.(CLIENT_ID_KEY, created);
+    return created;
+  } catch {
+    return "";
+  }
+}
+
+export function loadSessionMemory(storage, persistent) {
+  if (arguments.length === 0) {
+    return mergeMemories(
+      readStore(defaultSessionStore()) || emptyMemory(),
+      readStore(defaultPersistentStore()) || emptyMemory()
+    );
+  }
+  if (arguments.length === 1) return readStore(storage) || emptyMemory();
+  return mergeMemories(readStore(storage) || emptyMemory(), readStore(persistent) || emptyMemory());
+}
+
+export function saveSessionMemory(memory, storage, persistent) {
   const next = normalizeMemory(memory);
   next.updatedAt = now();
   if (!next.startedAt) next.startedAt = next.updatedAt;
+  if (!next.clientId) {
+    const idStore = arguments.length >= 3
+      ? persistent
+      : arguments.length === 2
+        ? storage
+        : defaultPersistentStore();
+    next.clientId = loadClientId(idStore);
+  }
   next.summary = buildSummary(next);
-  try {
-    storage?.setItem?.(SESSION_MEMORY_KEY, JSON.stringify(next));
-  } catch {
-    /* sessionStorage peut être bloqué ; Claire reste utilisable. */
+  if (arguments.length >= 3) {
+    writeStore(storage, next);
+    writeStore(persistent, next);
+  } else if (arguments.length === 2) {
+    writeStore(storage, next);
+  } else {
+    writeStore(defaultSessionStore(), next);
+    writeStore(defaultPersistentStore(), next);
   }
   return next;
+}
+
+export function archiveCurrentVisit(storage, persistent) {
+  const loadArgs = arguments.length === 0 ? [] : arguments.length === 1 ? [storage] : [storage, persistent];
+  const memory = loadSessionMemory(...loadArgs);
+  if (!hasMemoryContent(memory)) return memory;
+  const last = (memory.visits || []).at(-1);
+  if (last && last.summary === memory.summary && now() - last.at < 120000) return memory;
+  memory.visits = [
+    ...(memory.visits || []),
+    {
+      at: now(),
+      summary: memory.summary || buildSummary(memory),
+      service: memory.service,
+      need: memory.need
+    }
+  ].slice(-MAX_VISITS);
+  memory.visitCount = Math.max(Number(memory.visitCount) || 0, memory.visits.length);
+  return saveSessionMemory(memory, ...loadArgs);
 }
 
 export function inferService(text = "") {
@@ -230,10 +372,11 @@ export function mergeFacts(memory, facts = {}) {
   return next;
 }
 
-export function rememberTurn(role, text, storage = globalThis.sessionStorage) {
+export function rememberTurn(role, text, storage, persistent) {
+  const storeArgs = arguments.length <= 2 ? [] : arguments.length === 3 ? [storage] : [storage, persistent];
   const clean = compact(text).slice(0, MAX_TURN_CHARS);
-  if (!clean || /\[INFOSERV2A_[A-Z0-9_]+\]/.test(clean)) return loadSessionMemory(storage);
-  let memory = loadSessionMemory(storage);
+  if (!clean || /\[INFOSERV2A_[A-Z0-9_]+\]/.test(clean)) return loadSessionMemory(...storeArgs);
+  let memory = loadSessionMemory(...storeArgs);
   memory.turns.push({
     role: role === "user" ? "user" : "companion",
     text: clean,
@@ -241,14 +384,15 @@ export function rememberTurn(role, text, storage = globalThis.sessionStorage) {
   });
   if (memory.turns.length > MAX_TURNS) memory.turns = memory.turns.slice(-MAX_TURNS);
   if (role === "user") memory = mergeFacts(memory, extractFactsFromUtterance(clean));
-  return saveSessionMemory(memory, storage);
+  return saveSessionMemory(memory, ...storeArgs);
 }
 
-export function rememberPage(path, title, storage = globalThis.sessionStorage) {
-  const memory = loadSessionMemory(storage);
+export function rememberPage(path, title, storage, persistent) {
+  const storeArgs = arguments.length <= 2 ? [] : arguments.length === 3 ? [storage] : [storage, persistent];
+  const memory = loadSessionMemory(...storeArgs);
   if (path) memory.lastPath = compact(path).slice(0, 160);
   if (title) memory.lastTitle = compact(title).slice(0, 120);
-  return saveSessionMemory(memory, storage);
+  return saveSessionMemory(memory, ...storeArgs);
 }
 
 export function quotePrefillFromMemory(memory = {}, extras = {}) {
@@ -306,9 +450,11 @@ export function quoteExtrasFromDocument(doc = globalThis.document) {
   };
 }
 
-export function hydrateQuoteMemoryFromForm(storage = globalThis.sessionStorage, doc = globalThis.document) {
-  const extras = quoteExtrasFromDocument(doc);
-  const memory = loadSessionMemory(storage);
+export function hydrateQuoteMemoryFromForm(storage, doc) {
+  const documentRef = arguments.length >= 2 ? doc : globalThis.document;
+  const extras = quoteExtrasFromDocument(documentRef);
+  const storeArgs = arguments.length === 0 ? [] : [storage];
+  const memory = loadSessionMemory(...storeArgs);
   if (!QUOTE_REQUIRED_FIELDS.some((key) => compact(key === "description" ? extras.description : extras[key]))) {
     return memory;
   }
@@ -319,7 +465,7 @@ export function hydrateQuoteMemoryFromForm(storage = globalThis.sessionStorage, 
     city: extras.city,
     service: extras.service,
     need: extras.description
-  }), storage);
+  }), ...storeArgs);
 }
 
 export function describeMissingQuoteFields(memory = {}, extras = {}) {
@@ -383,6 +529,7 @@ export function hasMemoryContent(memory = {}) {
     || compact(memory.need)
     || compact(memory.service)
     || (memory.turns || []).length
+    || (memory.visits || []).length
   );
 }
 
@@ -432,7 +579,7 @@ export function formatCaptionContext({ page, section, memory } = {}) {
 export function formatMemoryBriefing(memory = {}) {
   const normalized = normalizeMemory(memory);
   if (!hasMemoryContent(normalized)) {
-    return "Aucun échange précédent dans cet onglet de navigateur.";
+    return "Aucun échange précédent sur cet ordinateur.";
   }
   const visitor = normalized.visitor;
   const facts = [
@@ -444,14 +591,20 @@ export function formatMemoryBriefing(memory = {}) {
     normalized.need && `Besoin : ${normalized.need}.`,
     normalized.lastTitle && `Dernière page : ${normalized.lastTitle}.`
   ].filter(Boolean);
+  const visits = (normalized.visits || []).slice(-4).map((visit) => {
+    const when = visit.at ? new Date(visit.at).toLocaleDateString("fr-FR") : "";
+    return `- ${when ? `${when} : ` : ""}${visit.summary || visit.need}`.trim();
+  });
   const recent = normalized.turns.slice(-8).map((turn) => (
     `${turn.role === "user" ? "Visiteur" : "Claire"} : ${turn.text}`
   ));
   return [
-    "Mémoire de session (onglet ouvert seulement, ne pas inventer ce qui manque) :",
+    "Mémoire de ce navigateur (même ordinateur, y compris après une coupure ou un rafraîchissement). Ne pas inventer ce qui manque :",
     ...facts,
+    visits.length ? "Visites précédentes :" : "",
+    ...visits,
     recent.length ? "Derniers échanges :" : "",
     ...recent,
-    "Ne redemande pas ce qui est déjà connu. Si un devis doit partir, n’invente jamais un nom, un téléphone, un e-mail ou une commune."
+    "Ne redemande pas ce qui est déjà connu. Ne refais pas un accueil complet. Reprends le fil. Si un devis doit partir, n’invente jamais un nom, un téléphone, un e-mail ou une commune."
   ].filter(Boolean).join("\n");
 }

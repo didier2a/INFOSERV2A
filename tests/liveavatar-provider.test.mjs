@@ -235,6 +235,12 @@ test("un aparté hors site laisse Realtime répondre sans couper", async () => {
   assert.equal(session.interrupted, undefined);
   assert.equal(provider.lastLocalContext?.kind, "memory");
 
+  session.emit("avatar-speak-ended");
+  provider.sendMemory("Déjà dit : nom Paul.", { live: true });
+  assert.equal(session.messages.length, before + 1);
+  assert.match(session.messages.at(-1), /INFOSERV2A_SESSION_MEMORY/);
+  assert.match(session.messages.at(-1), /Paul/);
+
   await provider.stop();
 });
 

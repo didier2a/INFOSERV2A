@@ -7,7 +7,7 @@ const SECRETS_URL = "https://api.liveavatar.com/v1/secrets";
 const CONTEXTS_URL = "https://api.liveavatar.com/v1/contexts";
 const DEFAULT_AVATAR_ID = "664ff8bb-4932-4644-91f8-b90975d6f549";
 const SECRET_NAME = "InfoServ2A OpenAI Realtime";
-const CONTEXT_NAME = "InfoServ2A Claire Aidant 1.22";
+const CONTEXT_NAME = "InfoServ2A Claire Aidant 1.23";
 
 const CLAIRE_CONTEXT = buildClaireContextPrompt(knowledge);
 
