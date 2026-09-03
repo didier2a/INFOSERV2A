@@ -19,7 +19,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260903-it30";
+} from "./claire-core.mjs?v=20260903-it31";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -32,22 +32,27 @@ import {
   shouldAnnounceQuoteTruth,
   rememberPage,
   rememberTurn,
+  rememberSuccessfulSend,
+  quoteDraftSignature,
+  contactDraftSignature,
+  isSameDraftAlreadySent,
+  alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260903-it30";
-import { describeEmailSendOutcome } from "./site-email.mjs?v=20260903-it30";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260903-it30";
+} from "./claire-session-memory.mjs?v=20260903-it31";
+import { describeEmailSendOutcome } from "./site-email.mjs?v=20260903-it31";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260903-it31";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260903-it30";
-import "./contact.js?v=20260903-it30";
-import "./devis.js?v=20260903-it30";
+} from "./claire-site-runtime-adapter.mjs?v=20260903-it31";
+import "./contact.js?v=20260903-it31";
+import "./devis.js?v=20260903-it31";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260903-it30";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260903-it30";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260903-it31";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260903-it31";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -1005,7 +1010,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260903-it30");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260903-it31");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
@@ -1167,7 +1172,7 @@ export class ClaireCompanion {
     const memory = hydrateQuoteMemoryFromForm();
     const pageId = this.siteAdapter?.view?.activePage || this.siteAdapter?.snapshot?.()?.page?.id || "";
     const sendSpeech = outcome ? describeEmailSendOutcome(outcome) : "";
-    const wantsSend = isSubmitQuoteAction(command);
+    const wantsSend = isUrgentSiteCommand(command);
     const relevant = sendSpeech
       || wantsSend
       || isQuoteAction(command)
@@ -1175,6 +1180,26 @@ export class ClaireCompanion {
     if (!relevant) return "";
     const actuallySent = Boolean(outcome?.results?.some((item) => item.output?.sent));
     const checklist = describeQuoteChecklist(memory);
+    const alreadySent = Boolean(
+      this.lastSiteSendOk || checklist.alreadySent || isSameDraftAlreadySent(memory)
+    );
+    if (!actuallySent && alreadySent) {
+      const speech = sendSpeech || outcome?.plan?.response || alreadySentSpeech(
+        memory,
+        pageId === "contact" ? "contact" : "devis"
+      );
+      const written = this.writeSiteTruth(speech, { sent: true });
+      if (written.duplicate) return "";
+      this.lastQuoteAnnounceAt = Date.now();
+      if (source === "liveavatar") {
+        this.provider?.bargeIn?.("email-send");
+        if (this.provider?.sendEmailResult) this.provider.sendEmailResult(speech);
+        else this.provider?.sendPrompt?.(speech);
+      } else {
+        this.speak(speech);
+      }
+      return speech;
+    }
     const speech = sendSpeech || checklist.speech;
     const now = Date.now();
     if (!actuallySent && speech === this.lastSiteTruthSpeech && now - this.lastQuoteAnnounceAt < 8000) {
@@ -1318,6 +1343,17 @@ export class ClaireCompanion {
         this.renderSuggestions();
       }
       const sentOk = Boolean(outcome.results?.some((item) => item.output?.sent));
+      if (sentOk) {
+        const sentResult = (outcome.results || []).find((item) => item.output?.sent);
+        const kind = sentResult?.tool === "submit_quote" ? "devis" : "contact";
+        const memory = loadSessionMemory();
+        rememberSuccessfulSend({
+          kind,
+          inbox: sentResult?.output?.inbox || "contact@infoserv2a.pro",
+          replyTo: sentResult?.output?.replyTo || "",
+          signature: kind === "devis" ? quoteDraftSignature(memory) : contactDraftSignature(memory)
+        });
+      }
       this.setStatus(
         "ready",
         sentOk

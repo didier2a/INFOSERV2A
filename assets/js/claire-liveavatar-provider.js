@@ -1,4 +1,4 @@
-import { isInternalSitePrompt, isStableUrgentCommand, isUrgentSiteCommand } from "./claire-core.mjs?v=20260903-it30";
+import { isInternalSitePrompt, isStableUrgentCommand, isUrgentSiteCommand, isClaireQuotePrompt } from "./claire-core.mjs?v=20260903-it31";
 
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;
@@ -77,6 +77,7 @@ export class InfoServ2ALiveAvatarProvider {
     this.stopping = false;
     this.connectionAttempt = 0;
     this.grantedSessionSeconds = 0;
+    this.holdListenForResult = false;
     this.silentSendAt = 0;
     this.pendingLiveSpeech = null;
     this.lastLocalContext = null;
@@ -309,13 +310,18 @@ export class InfoServ2ALiveAvatarProvider {
 
   sendEmailResult(value) {
     if (this.avatarSpeaking) this.bargeIn("email-send");
+    this.holdListenForResult = true;
     const sent = this.speakLiveMessage(
-      `[INFOSERV2A_APP_RESULT]\nInformation vérifiée par le site : ${value}\nDis cette information à voix haute maintenant, sans attendre qu’on te le demande. Ne prétends pas avoir fait une autre action. Une ou deux phrases, puis silence.`,
+      `[INFOSERV2A_APP_RESULT]\nInformation vérifiée par le site : ${value}\nDis cette information à voix haute maintenant, sans attendre qu’on te le demande. Ne prétends pas avoir fait une autre action. Une ou deux phrases, puis silence. Ne redemande pas de confirmer l’envoi.`,
       "conversation:email-result-sent"
     );
-    this.resumeListening();
-    if (sent === "sent" || sent === "queued") this.armReplyTimer();
-    return sent !== false;
+    if (sent !== "sent" && sent !== "queued") {
+      this.holdListenForResult = false;
+      this.resumeListening();
+      return false;
+    }
+    this.armReplyTimer();
+    return true;
   }
 
   sendPrompt(value) {
@@ -401,6 +407,10 @@ export class InfoServ2ALiveAvatarProvider {
     this.replyTimer = setTimeout(() => {
       if (this.realtimeSignal === "reply-started") return;
       this.realtimeSignal = "reply-timeout";
+      if (this.holdListenForResult) {
+        this.holdListenForResult = false;
+        this.resumeListening();
+      }
       this.emit("error", "Le site a répondu, mais Claire n’a pas encore pu le dire à voix haute");
     }, VERIFIED_REPLY_TIMEOUT_MS);
   }
@@ -454,7 +464,7 @@ export class InfoServ2ALiveAvatarProvider {
   stageTranscript(value) {
     const text = String(value || "").trim();
     if (!text) return;
-    if (isInternalSitePrompt(text) || this.isSilentEchoWindow()) {
+    if (isInternalSitePrompt(text) || this.isSilentEchoWindow() || this.holdListenForResult) {
       this.record("conversation:internal-ignored", { characters: text.length });
       return;
     }
@@ -674,9 +684,9 @@ export class InfoServ2ALiveAvatarProvider {
       }
     });
     session.on(AgentEventsEnum.USER_SPEAK_STARTED, () => {
-      if (this.isSilentEchoWindow() || this.avatarSpeaking) {
+      if (this.isSilentEchoWindow() || this.avatarSpeaking || this.holdListenForResult) {
         this.record("conversation:silent-echo-ignored", {
-          reason: this.avatarSpeaking ? "avatar-echo" : "user-speak-started"
+          reason: this.holdListenForResult ? "hold-listen" : (this.avatarSpeaking ? "avatar-echo" : "user-speak-started")
         });
         return;
       }
@@ -699,12 +709,15 @@ export class InfoServ2ALiveAvatarProvider {
     session.on(AgentEventsEnum.USER_TRANSCRIPTION, (event) => {
       const text = String(event?.text || "").trim();
       if (!text) return;
-      if (isInternalSitePrompt(text) || this.isSilentEchoWindow()) {
-        this.record("conversation:internal-ignored", { characters: text.length });
+      if (isInternalSitePrompt(text) || this.isSilentEchoWindow() || this.holdListenForResult) {
+        this.record("conversation:internal-ignored", {
+          characters: text.length,
+          holdListen: this.holdListenForResult
+        });
         return;
       }
       if (this.avatarSpeaking) {
-        if (!isUrgentSiteCommand(text)) {
+        if (!isUrgentSiteCommand(text) || isClaireQuotePrompt(text)) {
           this.record("conversation:internal-ignored", { characters: text.length, avatarSpeaking: true });
           return;
         }
@@ -737,6 +750,10 @@ export class InfoServ2ALiveAvatarProvider {
       this.clearReplyTimer();
       this.flushQueuedLiveSpeech();
       this.callbacks.onAvatarSpeakEnd?.();
+      if (this.holdListenForResult) {
+        this.holdListenForResult = false;
+        this.resumeListening();
+      }
       this.emit(this.listening ? "listening" : "ready", this.listening ? "Je vous écoute" : "Prête à vous guider");
     });
     session.on(AgentEventsEnum.SESSION_STOPPED, () => {

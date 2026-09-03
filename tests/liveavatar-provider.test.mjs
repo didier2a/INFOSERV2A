@@ -301,9 +301,20 @@ test("un barge-in d’envoi n’écoute plus jusqu’au résultat du site", asyn
   assert.ok((session.listenStops || 0) >= 1);
 
   provider.sendEmailResult("La demande de devis a bien été envoyée vers contact@infoserv2a.pro.");
+  assert.equal(provider.listening, false);
+  assert.equal(provider.holdListenForResult, true);
+  assert.match(session.messages.at(-1), /INFOSERV2A_APP_RESULT/);
+
+  session.emit("avatar-speak-started");
+  session.emit("user-transcription", { text: "c’est parti" });
+  session.emit("user-speak-ended");
+  await wait(600);
+  assert.equal(session.listenStarts, startsAfterConnect);
+
+  session.emit("avatar-speak-ended");
   assert.ok(session.listenStarts > startsAfterConnect);
   assert.equal(provider.listening, true);
-  assert.match(session.messages.at(-1), /INFOSERV2A_APP_RESULT/);
+  assert.equal(provider.holdListenForResult, false);
 
   await provider.stop();
 });

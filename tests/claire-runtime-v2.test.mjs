@@ -390,6 +390,48 @@ test("une confirmation orale courte envoie le devis déjà complet", () => {
   assert.ok(contact.steps.some((step) => step.tool === "compose_email"));
 });
 
+test("sur le devis, « envoie le message » transmet le devis et ne part pas en contact", () => {
+  const memory = {
+    visitor: {
+      name: "Marie Rossi",
+      phone: "07 45 15 60 76",
+      email: "marie@example.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé",
+    turns: []
+  };
+  const plan = planCommand("envoie le message", knowledge, manifest, { memory, pageId: "quote" });
+  assert.ok(plan.steps.some((step) => step.tool === "submit_quote"));
+  assert.equal(plan.steps.some((step) => step.tool === "compose_email"), false);
+  const click = planCommand("appuie sur envoyer", knowledge, manifest, { memory, pageId: "quote" });
+  assert.ok(click.steps.some((step) => step.tool === "submit_quote"));
+});
+
+test("un devis déjà envoyé n’est pas renvoyé", () => {
+  const memory = {
+    visitor: {
+      name: "Marie Rossi",
+      phone: "07 45 15 60 76",
+      email: "marie@example.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé",
+    turns: [],
+    lastSend: {
+      sent: true,
+      kind: "devis",
+      inbox: "contact@infoserv2a.pro",
+      signature: "marie rossi|07 45 15 60 76|marie@example.com|porto-vecchio|videosurveillance|caméra 4g pour un hangar isolé"
+    }
+  };
+  const plan = planCommand("envoie le message", knowledge, manifest, { memory, pageId: "quote" });
+  assert.equal(plan.steps.some((step) => step.tool === "submit_quote"), false);
+  assert.match(plan.response, /déjà été envoyée/);
+});
+
 test("l’ancre canonique existe dans la page publique", async () => {
   const html = await readFile(
     new URL("../videosurveillance.html", import.meta.url),

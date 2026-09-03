@@ -65,6 +65,7 @@ export function emptyMemory() {
     lastTitle: "",
     turns: [],
     visits: [],
+    lastSend: null,
     summary: ""
   };
 }
@@ -75,6 +76,20 @@ function normalizeVisitor(visitor = {}) {
     phone: compact(visitor.phone),
     email: compact(visitor.email),
     city: compact(visitor.city)
+  };
+}
+
+function normalizeLastSend(value = null) {
+  if (!value || value.sent !== true) return null;
+  const kind = compact(value.kind);
+  if (kind !== "devis" && kind !== "contact") return null;
+  return {
+    sent: true,
+    kind,
+    at: compact(value.at).slice(0, 40),
+    inbox: compact(value.inbox).slice(0, 80),
+    replyTo: compact(value.replyTo).slice(0, 80),
+    signature: compact(value.signature).slice(0, 420)
   };
 }
 
@@ -114,6 +129,7 @@ export function normalizeMemory(value = {}) {
     lastTitle: compact(value.lastTitle).slice(0, 120),
     turns,
     visits,
+    lastSend: normalizeLastSend(value.lastSend),
     summary: compact(value.summary).slice(0, 400) || fallback.summary
   };
 }
@@ -395,6 +411,53 @@ export function rememberPage(path, title, storage, persistent) {
   return saveSessionMemory(memory, ...storeArgs);
 }
 
+export function quoteDraftSignature(memory = {}, extras = {}) {
+  const draft = quotePrefillFromMemory(memory, extras);
+  return QUOTE_REQUIRED_FIELDS
+    .map((key) => compact(draft[key]).toLocaleLowerCase("fr"))
+    .join("|");
+}
+
+export function contactDraftSignature(memory = {}, extras = {}) {
+  const visitor = normalizeVisitor(memory.visitor);
+  const name = compact(extras.name) || visitor.name;
+  const email = compact(extras.email) || visitor.email;
+  const message = compact(extras.message) || compact(extras.description) || compact(memory.need);
+  return [name, email, message].map((value) => compact(value).toLocaleLowerCase("fr")).join("|");
+}
+
+export function rememberSuccessfulSend(detail = {}, storage, persistent) {
+  const storeArgs = arguments.length <= 1 ? [] : arguments.length === 2 ? [storage] : [storage, persistent];
+  const memory = loadSessionMemory(...storeArgs);
+  memory.lastSend = normalizeLastSend({
+    sent: true,
+    kind: detail.kind,
+    at: detail.at || new Date().toISOString(),
+    inbox: detail.inbox || "contact@infoserv2a.pro",
+    replyTo: detail.replyTo || "",
+    signature: detail.signature || ""
+  });
+  return saveSessionMemory(memory, ...storeArgs);
+}
+
+export function isSameDraftAlreadySent(memory = {}, extras = {}, kind = "devis") {
+  const last = normalizeLastSend(memory.lastSend);
+  if (!last || last.kind !== kind) return false;
+  const signature = kind === "contact"
+    ? contactDraftSignature(memory, extras)
+    : quoteDraftSignature(memory, extras);
+  return Boolean(last.signature && signature && last.signature === signature);
+}
+
+export function alreadySentSpeech(memory = {}, kind = "devis") {
+  const last = normalizeLastSend(memory.lastSend);
+  const inbox = last?.inbox || "contact@infoserv2a.pro";
+  if (kind === "contact") {
+    return `Le message a déjà été envoyé vers ${inbox}. Je n’en renvoie pas un deuxième.`;
+  }
+  return `La demande de devis a déjà été envoyée vers ${inbox}. Je n’en renvoie pas une deuxième.`;
+}
+
 export function quotePrefillFromMemory(memory = {}, extras = {}) {
   const visitor = normalizeVisitor(memory.visitor);
   return {
@@ -522,15 +585,26 @@ export function describeQuoteChecklist(memory = {}, extras = {}) {
       complete: false,
       missing,
       filled,
+      alreadySent: false,
       speech: filledSpeech
         ? `Je n’envoie pas le devis. Il manque encore ${missingSpeech}. J’ai déjà ${filledSpeech}.`
         : `Je n’envoie pas le devis. Il manque encore ${missingSpeech}.`
+    };
+  }
+  if (isSameDraftAlreadySent(memory, extras, "devis")) {
+    return {
+      complete: true,
+      missing: [],
+      filled,
+      alreadySent: true,
+      speech: alreadySentSpeech(memory, "devis")
     };
   }
   return {
     complete: true,
     missing: [],
     filled,
+    alreadySent: false,
     speech: `Le devis est complet : ${filledSpeech}. Confirmez que vous voulez transmettre la demande vers contact@infoserv2a.pro. Rien n’est parti tant que le site n’a pas confirmé l’envoi.`
   };
 }
@@ -628,7 +702,8 @@ export function formatMemoryBriefing(memory = {}) {
     visitor.city && `Commune : ${visitor.city}.`,
     normalized.service && `Service évoqué : ${normalized.service}.`,
     normalized.need && `Besoin : ${normalized.need}.`,
-    normalized.lastTitle && `Dernière page : ${normalized.lastTitle}.`
+    normalized.lastTitle && `Dernière page : ${normalized.lastTitle}.`,
+    normalized.lastSend?.sent && `Déjà envoyé : ${normalized.lastSend.kind} vers ${normalized.lastSend.inbox}. Ne redemande pas de confirmation d’envoi.`
   ].filter(Boolean);
   const visits = (normalized.visits || []).slice(-4).map((visit) => {
     const when = visit.at ? new Date(visit.at).toLocaleDateString("fr-FR") : "";
@@ -660,5 +735,8 @@ export function formatLiveMemoryCue(memory = {}) {
     normalized.service && `service ${normalized.service}`,
     normalized.need && compact(normalized.need).slice(0, 120)
   ].filter(Boolean).join(" · ");
-  return `Client déjà connu : ${facts || "échange en cours"}. ORDRE : une phrase courte (« Je reprends. »). N’énumère rien. N’accueille pas. Silence ensuite.`;
+  const sent = normalized.lastSend?.sent
+    ? ` Déjà envoyé (${normalized.lastSend.kind}) vers ${normalized.lastSend.inbox}. Ne redemande pas de confirmation.`
+    : "";
+  return `Client déjà connu : ${facts || "échange en cours"}.${sent} ORDRE : une phrase courte (« Je reprends. »). N’énumère rien. N’accueille pas. Silence ensuite.`;
 }

@@ -207,7 +207,32 @@ test("le checklist dit à l’oral ce qui manque et ne prétend pas que c’est 
   assert.match(complete.speech, /complet/);
   assert.match(complete.speech, /transmettre la demande/);
   assert.doesNotMatch(complete.speech, /envoie le devis|bien été envoyé/);
+  const sent = describeQuoteChecklist({
+    ...completeMemory(),
+    lastSend: {
+      sent: true,
+      kind: "devis",
+      inbox: "contact@infoserv2a.pro",
+      signature: "marie rossi|07 45 15 60 76|marie@example.com|porto-vecchio|videosurveillance|caméra 4g"
+    }
+  });
+  assert.equal(sent.alreadySent, true);
+  assert.match(sent.speech, /déjà été envoyée/);
+  assert.doesNotMatch(sent.speech, /Confirmez/);
 });
+
+function completeMemory() {
+  return {
+    visitor: {
+      name: "Marie Rossi",
+      phone: "07 45 15 60 76",
+      email: "marie@example.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G"
+  };
+}
 
 test("un formulaire déjà rempli complète la mémoire et permet l’envoi", () => {
   const storage = memoryStorage({

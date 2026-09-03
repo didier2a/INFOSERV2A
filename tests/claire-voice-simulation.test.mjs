@@ -474,6 +474,46 @@ test("Claire écrit dans le formulaire contact visible, pas seulement au moment 
   assert.equal(fields.get("#contact-message").value, "Demande pour le réseau du cabinet");
 });
 
+test("simulation vocale : « envoie le message » sur un devis prérempli envoie le devis, une seule fois", async () => {
+  const { canSubmitQuote, quoteDraftSignature } = await import("../assets/js/claire-session-memory.mjs");
+  const { describeEmailSendOutcome } = await import("../assets/js/site-email.mjs");
+  const { planCommand } = await import("../assets/js/claire-runtime-v2.mjs");
+  const memory = {
+    visitor: {
+      name: "Didier Aouizerate",
+      phone: "07 45 15 60 76",
+      email: "infoserv2a@gmail.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé",
+    turns: []
+  };
+  assert.equal(canSubmitQuote(memory), true);
+  const surface = new ActuatorSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const first = await controller.run("envoie le message", { memory, pageId: "quote" });
+  assert.equal(first.results.find((item) => item.tool === "submit_quote")?.output?.sent, true);
+  assert.equal(first.results.find((item) => item.tool === "compose_email"), undefined);
+  assert.equal(surface.posts.length, 1);
+  assert.equal(surface.posts[0].kind, "devis");
+  assert.match(describeEmailSendOutcome(first), /bien été envoyée/);
+
+  const sentMemory = {
+    ...memory,
+    lastSend: {
+      sent: true,
+      kind: "devis",
+      inbox: "contact@infoserv2a.pro",
+      signature: quoteDraftSignature(memory)
+    }
+  };
+  const second = planCommand("c’est bon", knowledge, manifest, { memory: sentMemory, pageId: "quote" });
+  assert.equal(second.steps.some((step) => step.tool === "submit_quote"), false);
+  assert.match(second.response, /déjà été envoyée/);
+});
+
 test("simulation vocale : l’onglet suivant parcourt le catalogue", async () => {
   const surface = new MockPersistentSurface();
   const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });

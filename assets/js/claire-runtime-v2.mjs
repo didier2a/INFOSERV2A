@@ -6,15 +6,18 @@ import {
   normalizeText,
   pageById,
   resolveCurrentPage,
-  isOralSendConfirm
-} from "./claire-core.mjs?v=20260903-it30";
+  isOralSendConfirm,
+  isClaireQuotePrompt
+} from "./claire-core.mjs?v=20260903-it31";
 import {
   canSubmitQuote,
   canSubmitContact,
   describeQuoteChecklist,
   emailDraftFromMemory,
-  quotePrefillFromMemory
-} from "./claire-session-memory.mjs?v=20260903-it30";
+  quotePrefillFromMemory,
+  isSameDraftAlreadySent,
+  alreadySentSpeech
+} from "./claire-session-memory.mjs?v=20260903-it31";
 
 export const CONTROLLER_STATES = Object.freeze({
   READY: "ready",
@@ -70,24 +73,53 @@ function finishPlan({ command, route, steps, expected, mode, response }) {
   };
 }
 
+function quoteSendClassification(speech = "Je transmets la demande de devis vers InfoServ2A.") {
+  return {
+    kind: "site",
+    route: { type: "action", action: "submit_quote", speech }
+  };
+}
+
+function contactSendClassification(speech = "Je transmets votre message vers InfoServ2A.") {
+  return {
+    kind: "site",
+    route: { type: "action", action: "email", speech }
+  };
+}
+
+function resolveSendClassification(command, classified, context = {}) {
+  if (isClaireQuotePrompt(command)) return classified;
+  const pageId = context.pageId || "";
+  const memory = context.memory || {};
+  const routeAction = classified.route?.action || "";
+  const wantsSend = routeAction === "email"
+    || routeAction === "submit_quote"
+    || isOralSendConfirm(command);
+  if (!wantsSend) return classified;
+
+  if (pageId === "contact" && canSubmitContact(memory)) {
+    return contactSendClassification();
+  }
+  if (pageId === "quote" && (canSubmitQuote(memory) || routeAction === "email" || isOralSendConfirm(command))) {
+    return quoteSendClassification();
+  }
+  if (pageId !== "contact" && canSubmitQuote(memory)) {
+    return quoteSendClassification();
+  }
+  if (classified.kind === "chat" && isOralSendConfirm(command) && canSubmitContact(memory)) {
+    return contactSendClassification();
+  }
+  return classified;
+}
+
 export function planCommand(input, knowledge, manifest, context = {}) {
   const command = String(input || "").trim();
   const routingCommand = command.replace(/[.!?…,:;]+$/u, "").trim();
-  let classified = classifyUtterance(routingCommand, knowledge, context);
-  if (classified.kind === "chat" && isOralSendConfirm(command)) {
-    const pageId = context.pageId || "";
-    if (pageId === "contact" && canSubmitContact(context.memory)) {
-      classified = {
-        kind: "site",
-        route: { type: "action", action: "email", speech: "Je transmets votre message vers InfoServ2A." }
-      };
-    } else if (canSubmitQuote(context.memory)) {
-      classified = {
-        kind: "site",
-        route: { type: "action", action: "submit_quote", speech: "Je transmets la demande de devis vers InfoServ2A." }
-      };
-    }
-  }
+  const classified = resolveSendClassification(
+    command,
+    classifyUtterance(routingCommand, knowledge, context),
+    context
+  );
   const route = classified.route || {};
   const steps = [];
   const current = resolveCurrentPage(knowledge, context);
@@ -213,6 +245,16 @@ export function planCommand(input, knowledge, manifest, context = {}) {
 
   if (route.type === "action" && route.action === "submit_quote") {
     const draft = quotePrefillFromMemory(context.memory);
+    if (isSameDraftAlreadySent(context.memory, {}, "devis")) {
+      return finishPlan({
+        command,
+        route,
+        steps,
+        expected: { pageId: "quote", anchorId: null },
+        mode: "controlled",
+        response: alreadySentSpeech(context.memory, "devis")
+      });
+    }
     if (canSubmitQuote(context.memory)) {
       steps.push(actionStep("submit_quote", draft, "Envoyer réellement la demande de devis vers InfoServ2A."));
     } else {
@@ -226,6 +268,16 @@ export function planCommand(input, knowledge, manifest, context = {}) {
       href: route.href || "tel:+33745156076"
     }, "Lancer l’appel vers InfoServ2A."));
   } else if (route.type === "action" && route.action === "email") {
+    if (isSameDraftAlreadySent(context.memory, {}, "contact")) {
+      return finishPlan({
+        command,
+        route,
+        steps,
+        expected: { pageId: "contact", anchorId: null },
+        mode: "controlled",
+        response: alreadySentSpeech(context.memory, "contact")
+      });
+    }
     steps.push(actionStep("compose_email", emailDraftFromMemory(context.memory), "Envoyer réellement le message vers contact@infoserv2a.pro."));
   } else if (route.page) {
     steps.push(actionStep("search_site", { query: command }, "Identifier la page et la section les plus pertinentes."));

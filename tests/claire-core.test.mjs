@@ -10,6 +10,7 @@ import {
   classifyUtterance,
   isClaireQuotePrompt,
   isOralSendConfirm,
+  isFormSendIntent,
   isSubmitQuoteAction,
   isUrgentSiteCommand,
   isStableUrgentCommand,
@@ -127,6 +128,17 @@ test("une confirmation orale courte envoie si le formulaire est complet", () => 
   assert.equal(isStableUrgentCommand("c’est bon"), true);
   assert.equal(isStableUrgentCommand("envoie"), false);
   assert.equal(isStableUrgentCommand("envoie le devis"), true);
+  assert.equal(isFormSendIntent("appuie sur envoyer"), true);
+  assert.equal(isFormSendIntent("envoie le message"), true);
+  assert.equal(isOralSendConfirm("appuie sur la touche envoyer"), true);
+  assert.equal(isUrgentSiteCommand("envoie le message"), true);
+});
+
+test("la phrase de Claire qui redemande une confirmation n’est pas une commande d’envoi", () => {
+  const loop = "Dès que tu te concentres, il suffit de me confirmer qu’on envoie la demande, je le ferai.";
+  assert.equal(isClaireQuotePrompt(loop), true);
+  assert.equal(isOralSendConfirm(loop), false);
+  assert.equal(isSubmitQuoteAction(loop), false);
 });
 
 test("la phrase de Claire sur le devis ne relance pas l’envoi", () => {
