@@ -197,6 +197,132 @@ test("simulation vocale : la parole de Claire ouvre l’onglet lu à droite", as
   );
 });
 
+class ActuatorSurface {
+  constructor() {
+    this.activePage = "home";
+    this.activeSection = null;
+    this.calls = [];
+    this.posts = [];
+  }
+
+  async openPage(page) {
+    this.calls.push(["openPage", page.id]);
+    this.activePage = page.id;
+    return page;
+  }
+
+  async scrollTo(anchorId) {
+    this.calls.push(["scrollTo", anchorId]);
+    this.activeSection = anchorId;
+    return { id: anchorId };
+  }
+
+  prefillQuote(draft) {
+    this.calls.push(["prefillQuote", draft]);
+    this.draft = { ...draft };
+    const missing = ["name", "phone", "email", "city", "service", "description"]
+      .filter((key) => !String(draft[key] || "").trim());
+    return { submitted: false, sent: false, missing };
+  }
+
+  quoteMissingFields() {
+    return ["name", "phone", "email", "city", "service", "description"]
+      .filter((key) => !String(this.draft?.[key] || "").trim());
+  }
+
+  async submitQuote(draft) {
+    this.calls.push(["submitQuote", draft]);
+    this.draft = { ...draft };
+    const missing = this.quoteMissingFields();
+    if (missing.length) {
+      return { submitted: false, sent: false, missing };
+    }
+    const result = await this.sendSiteEmail({ kind: "devis", ...draft });
+    return { submitted: Boolean(result.sent), sent: Boolean(result.sent), missing: [], ...result };
+  }
+
+  async sendSiteEmail(payload) {
+    this.posts.push(payload);
+    this.calls.push(["sendSiteEmail", payload]);
+    return { sent: true, inbox: "contact@infoserv2a.pro", replyTo: payload.email || "" };
+  }
+
+  snapshot() {
+    return { activePage: this.activePage, activeSection: this.activeSection };
+  }
+}
+
+test("simulation vocale : un devis incomplet n’actionne pas l’envoi", async () => {
+  const { rememberTurn, describeQuoteChecklist, canSubmitQuote } = await import("../assets/js/claire-session-memory.mjs");
+  const { classifyUtterance } = await import("../assets/js/claire-core.mjs");
+  const { describeEmailSendOutcome } = await import("../assets/js/site-email.mjs");
+
+  const storage = {
+    data: new Map(),
+    getItem(key) { return this.data.get(key) || null; },
+    setItem(key, value) { this.data.set(key, value); },
+    removeItem(key) { this.data.delete(key); }
+  };
+  globalThis.sessionStorage = storage;
+
+  const dictation = [
+    "Je m’appelle Didier Aouizerate",
+    "J’habite Porto-Vecchio",
+    "Je veux une caméra 4G pour un hangar"
+  ];
+  let memory;
+  for (const heard of dictation) {
+    const kind = classifyUtterance(heard, knowledge).kind;
+    assert.ok(kind === "chat" || kind === "site", `${heard} → ${kind}`);
+    memory = rememberTurn("user", heard, storage);
+  }
+  assert.equal(canSubmitQuote(memory), false);
+  const checklist = describeQuoteChecklist(memory);
+  assert.match(checklist.speech, /n’envoie pas/);
+  assert.match(checklist.speech, /e-mail|téléphone/);
+
+  const surface = new ActuatorSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const outcome = await controller.run("Envoie le devis", { memory });
+  const prefill = outcome.results.find((item) => item.tool === "prefill_quote");
+  const submit = outcome.results.find((item) => item.tool === "submit_quote");
+  assert.ok(prefill);
+  assert.equal(submit, undefined);
+  assert.equal(prefill.output.sent, false);
+  assert.ok(prefill.output.missing.includes("email"));
+  assert.equal(surface.posts.length, 0);
+  assert.match(describeEmailSendOutcome(outcome), /n’ai pas envoyé/);
+  assert.doesNotMatch(describeEmailSendOutcome(outcome), /bien été envoyé/);
+});
+
+test("simulation vocale : devis complet + « envoie le devis » actionne vraiment l’API", async () => {
+  const { canSubmitQuote } = await import("../assets/js/claire-session-memory.mjs");
+  const { describeEmailSendOutcome } = await import("../assets/js/site-email.mjs");
+  const memory = {
+    visitor: {
+      name: "Didier Aouizerate",
+      phone: "07 45 15 60 76",
+      email: "infoserv2a@gmail.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé",
+    turns: []
+  };
+  assert.equal(canSubmitQuote(memory), true);
+  const surface = new ActuatorSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const outcome = await controller.run("Envoie le devis", { memory });
+  const submit = outcome.results.find((item) => item.tool === "submit_quote");
+  assert.equal(submit.output.sent, true);
+  assert.equal(surface.posts.length, 1);
+  assert.equal(surface.posts[0].kind, "devis");
+  assert.equal(surface.posts[0].email, "infoserv2a@gmail.com");
+  assert.match(describeEmailSendOutcome(outcome), /bien été envoyée vers contact@infoserv2a\.pro/);
+});
+
 test("simulation vocale : l’onglet suivant parcourt le catalogue", async () => {
   const surface = new MockPersistentSurface();
   const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });

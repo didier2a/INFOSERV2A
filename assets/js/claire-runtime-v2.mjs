@@ -196,11 +196,14 @@ export function planCommand(input, knowledge, manifest, context = {}) {
   }
 
   if (route.type === "action" && route.action === "submit_quote") {
-    const draft = quotePrefillFromMemory(context.memory, { fallbackDescription: command });
-    if (canSubmitQuote(context.memory, { fallbackDescription: command })) {
+    const draft = quotePrefillFromMemory(context.memory);
+    if (canSubmitQuote(context.memory)) {
       steps.push(actionStep("submit_quote", draft, "Envoyer réellement la demande de devis vers InfoServ2A."));
     } else {
-      steps.push(actionStep("prefill_quote", draft, "Préparer le devis et demander à l’oral ce qui manque."));
+      steps.push(actionStep("prefill_quote", {
+        ...draft,
+        description: draft.description || "À préciser à l’oral"
+      }, "Préparer le devis et demander à l’oral ce qui manque."));
     }
   } else if (route.type === "action" && route.action === "call") {
     steps.push(actionStep("start_call", {
@@ -238,7 +241,7 @@ export function planCommand(input, knowledge, manifest, context = {}) {
 
   let response = route.anchor?.response || route.speech;
   if (route.action === "submit_quote" || route.page?.id === "quote") {
-    const checklist = describeQuoteChecklist(context.memory, { fallbackDescription: command });
+    const checklist = describeQuoteChecklist(context.memory);
     if (!checklist.complete || route.action !== "submit_quote") {
       response = checklist.speech;
     } else {

@@ -295,10 +295,12 @@ export class InfoServ2ALiveAvatarProvider {
   }
 
   sendEmailResult(value) {
-    return this.speakLiveMessage(
-      `[INFOSERV2A_APP_RESULT]\nInformation vérifiée par le site : ${value}\nRéponds en français naturel, brièvement, sans ajouter de fait ni prétendre avoir réalisé une autre action.`,
+    const sent = this.speakLiveMessage(
+      `[INFOSERV2A_APP_RESULT]\nInformation vérifiée par le site : ${value}\nDis cette information à voix haute maintenant, sans attendre qu’on te le demande. Ne prétends pas avoir fait une autre action.`,
       "conversation:email-result-sent"
-    ) !== false;
+    );
+    if (sent === "sent" || sent === "queued") this.armReplyTimer();
+    return sent !== false;
   }
 
   sendPrompt(value) {

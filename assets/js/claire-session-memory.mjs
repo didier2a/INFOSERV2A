@@ -139,11 +139,27 @@ export function inferService(text = "") {
   return "";
 }
 
+function isCommandUtterance(text = "") {
+  const query = folded(text);
+  return /\b(envoie le devis|envoie un mail|envoie un e-mail|c est (parti|envoye|valide|tout|bon|pret)|bien (ete )?envoye)\b/.test(query)
+    && query.length < 56;
+}
+
+function isContactOnlyUtterance(text, facts = {}) {
+  const hasContact = Boolean(facts.email || facts.phone || facts.name || facts.city);
+  if (!hasContact) return false;
+  const query = folded(text);
+  const hasNeedLanguage = Boolean(facts.service)
+    || /\b(besoin|probleme|camera|installer|depanner|devis pour|je voudrais|je veux)\b/.test(query);
+  return !hasNeedLanguage && query.length < 96;
+}
+
 function isThinUtterance(text = "") {
   const query = folded(text);
   if (!query) return true;
   if (query.length < 12) return true;
-  return /^(bonjour|bonsoir|merci|oui|non|ok|okay|d accord|appelle|appeler|appelez|envoie le devis|envoie un mail|envoie un e-mail)\b/.test(query)
+  if (isCommandUtterance(text)) return true;
+  return /^(bonjour|bonsoir|merci|oui|non|ok|okay|d accord|appelle|appeler|appelez)\b/.test(query)
     && query.length < 28;
 }
 
@@ -192,7 +208,9 @@ export function extractFactsFromUtterance(text = "") {
 
   const service = inferService(raw);
   if (service) facts.service = service;
-  if (!isThinUtterance(raw)) facts.need = raw.slice(0, 280);
+  if (!isThinUtterance(raw) && !isContactOnlyUtterance(raw, facts)) {
+    facts.need = raw.slice(0, 280);
+  }
   return facts;
 }
 
@@ -252,6 +270,18 @@ export function missingQuoteFields(memory = {}, extras = {}) {
 
 export function canSubmitQuote(memory = {}, extras = {}) {
   return missingQuoteFields(memory, extras).length === 0;
+}
+
+export function hasQuoteProgress(memory = {}) {
+  const draft = quotePrefillFromMemory(memory);
+  return QUOTE_REQUIRED_FIELDS.some((key) => compact(draft[key]));
+}
+
+export function shouldAnnounceQuoteTruth(command = "", memory = {}, pageId = "") {
+  const facts = extractFactsFromUtterance(command);
+  if (facts.email || facts.phone || facts.name || facts.city || facts.service) return true;
+  if (pageId === "quote") return true;
+  return hasQuoteProgress(memory);
 }
 
 export function describeMissingQuoteFields(memory = {}, extras = {}) {

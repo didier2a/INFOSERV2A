@@ -5,7 +5,10 @@ import {
   describePageContext,
   buildSiteBriefing,
   followSpokenNavigation,
+  claimsUnverifiedEmailSend,
   isInternalSitePrompt,
+  isQuoteAction,
+  isSubmitQuoteAction,
   liveAvatarSessionWarningDelayMs,
   mergeSpokenTranscript,
   suggestedPrompts,
@@ -15,10 +18,12 @@ import {
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
 } from "./claire-core.mjs";
 import {
+  describeQuoteChecklist,
   formatCaptionContext,
   formatMemoryBriefing,
   hasMemoryContent,
   loadSessionMemory,
+  shouldAnnounceQuoteTruth,
   rememberPage,
   rememberTurn,
   quoteQuestionnaire,
@@ -35,8 +40,8 @@ import "./devis.js";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260902-it20";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260902-it20";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260902-it22";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260902-it22";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -264,6 +269,8 @@ export class ClaireCompanion {
     this.surface = null;
     this.siteAdapter = null;
     this.runtime = null;
+    this.lastSiteSendOk = false;
+    this.lastSiteTruthSpeech = "";
     this.browserVoice = new BrowserVoiceProvider({
       onTranscript: (text, final) => this.handleTranscript(text, final),
       onStatus: (value, label) => this.setStatus(value, label)
@@ -979,13 +986,14 @@ export class ClaireCompanion {
     });
   }
 
-  appendTurn(role, text, { live = false, remember = true } = {}) {
+  appendTurn(role, text, { live = false, remember = true, truth = false } = {}) {
     if (!this.nodes.transcript || !text) return null;
     if (isInternalSitePrompt(text)) return null;
     if (remember && !live) rememberTurn(role === "user" ? "user" : "companion", text);
     const article = document.createElement("article");
     article.className = `claire-turn claire-turn--${role}`;
     if (live) article.dataset.live = "1";
+    if (truth) article.dataset.siteTruth = "1";
     const label = document.createElement("span");
     label.textContent = role === "user" ? "Vous" : "Claire";
     const paragraph = document.createElement("p");
@@ -1060,7 +1068,7 @@ export class ClaireCompanion {
     if (!value) return;
     this.welcomeShown = true;
     clearTimeout(this.welcomeFallbackTimer);
-    const last = this.nodes.transcript?.querySelector('.claire-turn--companion[data-live="1"]');
+    const last = this.nodes.transcript?.querySelector('.claire-turn--companion[data-live="1"]:not([data-site-truth="1"])');
     if (last) {
       const paragraph = last.querySelector("p");
       if (paragraph) paragraph.textContent = mergeSpokenTranscript(paragraph.textContent, value);
@@ -1069,18 +1077,72 @@ export class ClaireCompanion {
         const scroller = this.nodes.conversationScroll;
         if (scroller) scroller.scrollTop = scroller.scrollHeight;
       });
+      this.correctInventedSend(paragraph?.textContent || value);
       return;
     }
     const previous = this.nodes.transcript?.querySelector(".claire-turn--companion:last-of-type");
-    if (previous && !previous.dataset.live) {
+    if (previous && !previous.dataset.live && previous.dataset.siteTruth !== "1") {
       previous.dataset.live = "1";
       const paragraph = previous.querySelector("p");
       if (paragraph) paragraph.textContent = mergeSpokenTranscript(paragraph.textContent, value);
       this.updateLiveCaption(paragraph?.textContent || value);
+      this.correctInventedSend(paragraph?.textContent || value);
       return;
     }
     this.appendTurn("companion", value, { live: true });
     this.updateLiveCaption(value);
+    this.correctInventedSend(value);
+  }
+
+  writeSiteTruth(text, { sent = false } = {}) {
+    const speech = String(text || "").trim();
+    if (!speech) return { speech: "", duplicate: false };
+    const duplicate = this.lastSiteTruthSpeech === speech && Boolean(this.lastSiteSendOk) === Boolean(sent);
+    this.lastSiteSendOk = sent;
+    this.lastSiteTruthSpeech = speech;
+    if (duplicate) return { speech, duplicate: true };
+    const article = this.appendTurn("companion", speech, { truth: true });
+    if (article) {
+      article.dataset.siteTruth = "1";
+      article.dataset.sent = sent ? "1" : "0";
+    }
+    this.setStatus(sent ? "ready" : "error", speech);
+    return { speech, duplicate: false };
+  }
+
+  announceQuoteTruth(command, source, { outcome } = {}) {
+    const memory = loadSessionMemory();
+    const pageId = this.siteAdapter?.view?.activePage || this.siteAdapter?.snapshot?.()?.page?.id || "";
+    const sendSpeech = outcome ? describeEmailSendOutcome(outcome) : "";
+    const wantsSend = isSubmitQuoteAction(command);
+    const relevant = sendSpeech
+      || wantsSend
+      || isQuoteAction(command)
+      || shouldAnnounceQuoteTruth(command, memory, pageId);
+    if (!relevant) return "";
+    const actuallySent = Boolean(outcome?.results?.some((item) => item.output?.sent));
+    const checklist = describeQuoteChecklist(memory);
+    const speech = sendSpeech || checklist.speech;
+    const written = this.writeSiteTruth(speech, { sent: actuallySent });
+    const mustSpeak = actuallySent || wantsSend || !written.duplicate;
+    if (!mustSpeak) return speech;
+    if (source === "liveavatar") {
+      this.provider?.bargeIn?.("email-send");
+      if (this.provider?.sendEmailResult) this.provider.sendEmailResult(speech);
+      else this.provider?.sendPrompt?.(speech);
+    } else {
+      this.speak(speech);
+    }
+    return speech;
+  }
+
+  correctInventedSend(spoken) {
+    if (this.lastSiteSendOk) return;
+    if (!claimsUnverifiedEmailSend(spoken)) return;
+    const speech = describeQuoteChecklist(loadSessionMemory()).speech;
+    this.writeSiteTruth(speech, { sent: false });
+    this.provider?.bargeIn?.("email-send");
+    this.provider?.sendEmailResult?.(speech);
   }
 
   finalizeLiveCompanionTurn() {
@@ -1121,6 +1183,7 @@ export class ClaireCompanion {
     if (classified.kind === "chat") {
       this.setStatus("listening", "Claire vous répond");
       if (source !== "liveavatar") this.provider?.sendUserMessage?.(value);
+      await this.announceQuoteTruth(value, source);
       return { kind: "chat", classified };
     }
 
@@ -1130,6 +1193,7 @@ export class ClaireCompanion {
         if (this.provider?.sendOffTopic) this.provider.sendOffTopic(value);
         else this.appendTurn("companion", CLAIRE_OFF_TOPIC_SPEECH);
       }
+      await this.announceQuoteTruth(value, source);
       return { kind: "chat", classified };
     }
 
@@ -1190,18 +1254,15 @@ export class ClaireCompanion {
         this.renderSuggestions();
       }
       this.setStatus("ready", "Page affichée · Claire vous l’explique");
+      const quoteSpeech = await this.announceQuoteTruth(value, source, { outcome });
       if (source === "liveavatar") {
-        if (describeEmailSendOutcome(outcome)) {
-          this.appendTurn("companion", response);
-          this.setStatus(outcome.results?.some((item) => item.output?.sent) ? "ready" : "error", response);
-          if (this.provider?.sendEmailResult) this.provider.sendEmailResult(response);
-          else this.provider?.sendPrompt?.(response);
-        }
         this.pushPageContext();
         return outcome;
       }
-      if (source !== "liveavatar") this.appendTurn("companion", response);
-      this.speak(response);
+      if (!quoteSpeech) {
+        this.appendTurn("companion", response);
+        this.speak(response);
+      }
       this.pushPageContext();
       return outcome;
     } catch (error) {

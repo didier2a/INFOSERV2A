@@ -13,6 +13,7 @@ import {
   quoteQuestionnaire,
   rememberTurn,
   saveSessionMemory,
+  shouldAnnounceQuoteTruth,
   shouldShowQuoteQuest
 } from "../assets/js/claire-session-memory.mjs";
 
@@ -114,6 +115,25 @@ test("hors devis, CONTEXTE n’affiche que la page visible", () => {
     memory
   });
   assert.equal(home, "Accueil InfoServ2A");
+});
+
+test("un e-mail ou « envoie le devis » n’écrase pas le besoin déjà dit", () => {
+  const storage = memoryStorage();
+  rememberTurn("user", "Je veux une caméra 4G pour un hangar isolé à Porto-Vecchio.", storage);
+  const afterEmail = rememberTurn("user", "Mon e-mail est didier@example.com", storage);
+  assert.match(afterEmail.need, /caméra 4G/);
+  assert.equal(afterEmail.visitor.email, "didier@example.com");
+  const afterSend = rememberTurn("user", "Envoie le devis", storage);
+  assert.match(afterSend.need, /caméra 4G/);
+  assert.equal(canSubmitQuote(afterSend), false);
+});
+
+test("une conversation de devis doit afficher la vérité même en chat", () => {
+  assert.equal(shouldAnnounceQuoteTruth("Je m’appelle Didier", {}, ""), true);
+  assert.equal(shouldAnnounceQuoteTruth("Bonjour", {}, ""), false);
+  assert.equal(shouldAnnounceQuoteTruth("ok", {
+    visitor: { name: "Didier", phone: "", email: "", city: "" }
+  }, ""), true);
 });
 
 test("le checklist dit à l’oral ce qui manque et ne prétend pas que c’est parti", () => {

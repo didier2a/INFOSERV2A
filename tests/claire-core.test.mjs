@@ -6,6 +6,7 @@ import {
   adjacentPage,
   buildClaireContextPrompt,
   buildSiteBriefing,
+  claimsUnverifiedEmailSend,
   classifyUtterance,
   CLAIRE_WELCOME,
   createSpeechFollowGate,
@@ -88,6 +89,11 @@ test("ne déclenche pas automatiquement un appel", () => {
 test("un téléphone en panne reste une conversation, pas un appel", () => {
   assert.equal(classifyUtterance("Mon téléphone ne marche plus", knowledge).kind, "chat");
   assert.notEqual(routeCommand("Mon téléphone ne marche plus", knowledge).action, "call");
+});
+
+test("une phrase de Claire qui invente l’envoi est détectée", () => {
+  assert.equal(claimsUnverifiedEmailSend("C’est validé, c’est envoyé."), true);
+  assert.equal(claimsUnverifiedEmailSend("Je n’ai pas envoyé. Il manque votre e-mail."), false);
 });
 
 test("envoie le devis, un appel ou un mail sont des actions orales", () => {

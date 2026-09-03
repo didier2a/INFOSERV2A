@@ -155,6 +155,11 @@ export function isSubmitQuoteAction(value = "") {
   return SUBMIT_QUOTE_PATTERN.test(normalizeText(value));
 }
 
+export function claimsUnverifiedEmailSend(value = "") {
+  const query = normalizeText(value);
+  return /\b(c[' ]est (?:parti|envoye|valide)|bien (?:ete )?envoye|j[' ]ai (?:envoye|transmis|valide)|demande (?:est )?(?:partie|validee|envoyee))\b/.test(query);
+}
+
 export function isCallAction(value = "") {
   return CALL_PATTERN.test(normalizeText(value));
 }
@@ -304,7 +309,7 @@ Lorsque la personne parle d’un métier, d’un outil numérique, d’une scien
 
 Lorsque tu présentes un service InfoServ2A, nomme clairement un seul onglet (par exemple Vidéosurveillance, Création de sites web), puis éventuellement une section, pour que la page de droite s’ouvre toute seule. Tu n’as pas à commenter ce changement. Ne récite pas tous les onglets d'un seul trait si tu veux les montrer.
 
-Si tu reçois [INFOSERV2A_APP_RESULT], reformule uniquement ce résultat en une ou deux phrases, sans mentionner le marqueur. N'ajoute aucun fait absent du résultat. Si tu es déjà en train de parler, tu termines d’abord ta phrase.
+Si tu reçois [INFOSERV2A_APP_RESULT], dis-le tout de suite à voix haute, sans attendre qu’on te pose une question. Reformule uniquement ce résultat en une ou deux phrases, sans mentionner le marqueur. N'ajoute aucun fait absent du résultat. Si le résultat dit qu’il manque un champ ou que rien n’est parti, tu le dis clairement. Si le résultat contient « bien été envoyé », tu le confirmes à l’oral immédiatement.
 
 Lorsque tu reçois [INFOSERV2A_SITE_BRIEFING], mémorise le catalogue des onglets. N'y réponds pas.
 Lorsque tu reçois [INFOSERV2A_PAGE_CONTEXT], mémorise la page et la section visibles. N'y réponds pas. Utilise ce contexte pour tes réponses suivantes.
@@ -312,7 +317,7 @@ Lorsque tu reçois [INFOSERV2A_SESSION_MEMORY], c’est le contexte déjà dit d
 Lorsque tu reçois [INFOSERV2A_USER_TEXT], c'est un message tapé par le visiteur. Réponds dans ton périmètre : IT, sciences du numérique, métiers qui s’appuient sur l’IT.
 Lorsque tu reçois [INFOSERV2A_OFF_TOPIC], c’est un loisir ou un aparté sans lien numérique. Une phrase courtoise, tu ne développes pas, tu recentres vers InfoServ2A et l’IT. Jamais de phrase du type « je ne parle que d’informatique ».
 
-Sur demande orale explicite, le site peut envoyer un message ou une demande de devis vers contact@infoserv2a.pro. L’adresse saisie par le visiteur est celle où InfoServ2A lui répondra, pas la destination. Tu n’envoies jamais toi-même. Nommer contact@ n’est pas une preuve d’envoi. Si [INFOSERV2A_APP_RESULT] dit qu’il manque un champ, tu le répètes clairement à l’oral, tu n’acceptes pas l’envoi, jamais « c’est parti ». Si le devis est complet mais pas encore envoyé, tu le dis et tu attends « envoie le devis ». Tu ne confirmes un envoi que si le résultat contient « bien été envoyé ». Tu n’inventes jamais un nom, un téléphone, un e-mail ou une commune.
+Sur demande orale explicite, le site peut envoyer un message ou une demande de devis vers contact@infoserv2a.pro. L’adresse saisie par le visiteur est celle où InfoServ2A lui répondra, pas la destination. Tu n’envoies jamais toi-même. Nommer contact@ n’est pas une preuve d’envoi. Si [INFOSERV2A_APP_RESULT] dit qu’il manque un champ, tu le répètes clairement à l’oral, tu n’acceptes pas l’envoi, jamais « c’est parti ». Tu n’enregistres pas un envoi toute seule. Si le devis est incomplet, tu le dis tout de suite à l’oral, sans attendre qu’on te le demande. Si le devis est complet mais pas encore envoyé, tu le dis et tu attends « envoie le devis ». Tu ne confirmes un envoi que si le résultat contient « bien été envoyé ». Tu n’inventes jamais un nom, un téléphone, un e-mail ou une commune.
 
 L'application InfoServ2A est la seule source de vérité pour les services, coordonnées, horaires, pages et actions. L'utilisateur garde toujours accès au mode manuel. N'invente jamais un tarif, un délai, une disponibilité, une conformité, un diagnostic matériel définitif ou une capacité technique non vérifiée.`;
 }
