@@ -5,14 +5,16 @@ import {
   catalogSpeech,
   normalizeText,
   pageById,
-  resolveCurrentPage
-} from "./claire-core.mjs?v=20260902-it25";
+  resolveCurrentPage,
+  isOralSendConfirm
+} from "./claire-core.mjs?v=20260902-it26";
 import {
   canSubmitQuote,
+  canSubmitContact,
   describeQuoteChecklist,
   emailDraftFromMemory,
   quotePrefillFromMemory
-} from "./claire-session-memory.mjs?v=20260902-it25";
+} from "./claire-session-memory.mjs?v=20260902-it26";
 
 export const CONTROLLER_STATES = Object.freeze({
   READY: "ready",
@@ -71,7 +73,21 @@ function finishPlan({ command, route, steps, expected, mode, response }) {
 export function planCommand(input, knowledge, manifest, context = {}) {
   const command = String(input || "").trim();
   const routingCommand = command.replace(/[.!?…,:;]+$/u, "").trim();
-  const classified = classifyUtterance(routingCommand, knowledge, context);
+  let classified = classifyUtterance(routingCommand, knowledge, context);
+  if (classified.kind === "chat" && isOralSendConfirm(command)) {
+    const pageId = context.pageId || "";
+    if (pageId === "contact" && canSubmitContact(context.memory)) {
+      classified = {
+        kind: "site",
+        route: { type: "action", action: "email", speech: "Je transmets votre message vers InfoServ2A." }
+      };
+    } else if (canSubmitQuote(context.memory)) {
+      classified = {
+        kind: "site",
+        route: { type: "action", action: "submit_quote", speech: "Je transmets la demande de devis vers InfoServ2A." }
+      };
+    }
+  }
   const route = classified.route || {};
   const steps = [];
   const current = resolveCurrentPage(knowledge, context);

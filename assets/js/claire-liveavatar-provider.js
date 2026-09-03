@@ -1,4 +1,4 @@
-import { isInternalSitePrompt } from "./claire-core.mjs?v=20260902-it25";
+import { isInternalSitePrompt, isUrgentSiteCommand } from "./claire-core.mjs?v=20260902-it26";
 
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;
@@ -276,6 +276,11 @@ export class InfoServ2ALiveAvatarProvider {
         this.record("conversation:speech-dropped", { event, characters: text.length });
         return "dropped";
       }
+      if (event !== "conversation:email-result-sent"
+        && this.pendingLiveSpeech?.event === "conversation:email-result-sent") {
+        this.record("conversation:speech-dropped", { event, characters: text.length, reason: "email-priority" });
+        return "dropped";
+      }
       this.pendingLiveSpeech = { text, event };
       this.record("conversation:speech-queued", { event, characters: text.length });
       return "queued";
@@ -296,8 +301,9 @@ export class InfoServ2ALiveAvatarProvider {
   }
 
   sendEmailResult(value) {
+    if (this.avatarSpeaking) this.bargeIn("email-send");
     const sent = this.speakLiveMessage(
-      `[INFOSERV2A_APP_RESULT]\nInformation vérifiée par le site : ${value}\nDis cette information à voix haute maintenant, sans attendre qu’on te le demande. Ne prétends pas avoir fait une autre action.`,
+      `[INFOSERV2A_APP_RESULT]\nInformation vérifiée par le site : ${value}\nDis cette information à voix haute maintenant, sans attendre qu’on te le demande. Ne prétends pas avoir fait une autre action. Une ou deux phrases, puis silence.`,
       "conversation:email-result-sent"
     );
     if (sent === "sent" || sent === "queued") this.armReplyTimer();
@@ -334,7 +340,7 @@ export class InfoServ2ALiveAvatarProvider {
   }
 
   sendMemory(value, { live = false } = {}) {
-    const prompt = `[INFOSERV2A_SESSION_MEMORY]\n${value}\nN’y réponds pas par un nouvel accueil. Mémorise. Reprends ce contexte. Ne redemande pas ces informations. N’invente rien.`;
+    const prompt = `[INFOSERV2A_SESSION_MEMORY]\n${value}\nN’y réponds pas par un accueil ni par un inventaire. Une phrase courte (« Je reprends. »), puis silence. N’invente rien.`;
     if (!live) {
       return this.keepLocalNote("memory", prompt, "conversation:session-memory-kept");
     }
@@ -674,9 +680,16 @@ export class InfoServ2ALiveAvatarProvider {
     session.on(AgentEventsEnum.USER_TRANSCRIPTION, (event) => {
       const text = String(event?.text || "").trim();
       if (!text) return;
-      if (isInternalSitePrompt(text) || this.isSilentEchoWindow() || this.avatarSpeaking) {
-        this.record("conversation:internal-ignored", { characters: text.length, avatarSpeaking: this.avatarSpeaking });
+      if (isInternalSitePrompt(text) || this.isSilentEchoWindow()) {
+        this.record("conversation:internal-ignored", { characters: text.length });
         return;
+      }
+      if (this.avatarSpeaking) {
+        if (!isUrgentSiteCommand(text)) {
+          this.record("conversation:internal-ignored", { characters: text.length, avatarSpeaking: true });
+          return;
+        }
+        this.bargeIn("email-send");
       }
       this.record("conversation:user-transcription", { characters: text.length });
       this.clearReplyTimer();

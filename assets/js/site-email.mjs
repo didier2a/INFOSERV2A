@@ -1,28 +1,57 @@
-import { QUOTE_FIELD_LABELS, joinFrenchList } from "./claire-session-memory.mjs?v=20260902-it25";
+import { QUOTE_FIELD_LABELS, joinFrenchList } from "./claire-session-memory.mjs?v=20260902-it26";
 
 export const SITE_EMAIL_PATH = "/api/send-email";
+export const EMAIL_SEND_TIMEOUT_MS = 12000;
+
+function emptyEmailResult(error = "") {
+  return {
+    ok: false,
+    status: 0,
+    sent: false,
+    pendingActivation: false,
+    configured: true,
+    inbox: "",
+    replyTo: "",
+    missing: [],
+    error,
+    message: "",
+    provider: ""
+  };
+}
 
 export async function postSiteEmail(payload, fetchImpl = globalThis.fetch) {
-  const response = await fetchImpl(SITE_EMAIL_PATH, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "same-origin",
-    body: JSON.stringify(payload || {})
-  });
-  const data = await response.json().catch(() => ({}));
-  return {
-    ok: response.ok,
-    status: response.status,
-    sent: Boolean(data.sent),
-    pendingActivation: Boolean(data.pendingActivation),
-    configured: data.configured !== false,
-    inbox: data.inbox || "",
-    replyTo: data.replyTo || "",
-    missing: Array.isArray(data.missing) ? data.missing : [],
-    error: data.error || "",
-    message: data.message || "",
-    provider: data.provider || ""
-  };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), EMAIL_SEND_TIMEOUT_MS);
+  try {
+    const response = await fetchImpl(SITE_EMAIL_PATH, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      signal: controller.signal,
+      body: JSON.stringify(payload || {})
+    });
+    const data = await response.json().catch(() => ({}));
+    return {
+      ok: response.ok,
+      status: response.status,
+      sent: Boolean(data.sent),
+      pendingActivation: Boolean(data.pendingActivation),
+      configured: data.configured !== false,
+      inbox: data.inbox || "",
+      replyTo: data.replyTo || "",
+      missing: Array.isArray(data.missing) ? data.missing : [],
+      error: data.error || "",
+      message: data.message || "",
+      provider: data.provider || ""
+    };
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      return emptyEmailResult("L’envoi a pris trop de temps. Réessayez.");
+    }
+    return emptyEmailResult(error?.message || "L’envoi n’a pas pu aboutir");
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function missingFieldSpeech(keys = []) {

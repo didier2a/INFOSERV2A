@@ -1,4 +1,5 @@
-import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260902-it25";
+import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260902-it26";
+import { contactExtrasFromDocument, quoteExtrasFromDocument } from "./claire-session-memory.mjs?v=20260902-it26";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -316,29 +317,60 @@ export class BrowserInfoServ2ASurface {
     }
   }
 
+  snapshotQuoteFields() {
+    return quoteExtrasFromDocument(this.document);
+  }
+
+  snapshotContactFields() {
+    return contactExtrasFromDocument(this.document);
+  }
+
   async sendSiteEmail(payload) {
     if (typeof this.window.InfoServ?.sendSiteEmail === "function") {
       return this.window.InfoServ.sendSiteEmail(payload);
     }
-    const response = await this.fetchImpl("/api/send-email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify(payload || {})
-    });
-    const data = await response.json().catch(() => ({}));
-    return {
-      ok: response.ok,
-      status: response.status,
-      sent: Boolean(data.sent),
-      pendingActivation: Boolean(data.pendingActivation),
-      configured: data.configured !== false,
-      inbox: data.inbox || "",
-      replyTo: data.replyTo || "",
-      missing: Array.isArray(data.missing) ? data.missing : [],
-      error: data.error || "",
-      message: data.message || ""
-    };
+    const controller = new AbortController();
+    const timer = this.window.setTimeout?.(() => controller.abort(), 12000);
+    try {
+      const response = await this.fetchImpl("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        signal: controller.signal,
+        body: JSON.stringify(payload || {})
+      });
+      const data = await response.json().catch(() => ({}));
+      return {
+        ok: response.ok,
+        status: response.status,
+        sent: Boolean(data.sent),
+        pendingActivation: Boolean(data.pendingActivation),
+        configured: data.configured !== false,
+        inbox: data.inbox || "",
+        replyTo: data.replyTo || "",
+        missing: Array.isArray(data.missing) ? data.missing : [],
+        error: data.error || "",
+        message: data.message || ""
+      };
+    } catch (error) {
+      const timeout = error?.name === "AbortError";
+      return {
+        ok: false,
+        status: 0,
+        sent: false,
+        pendingActivation: false,
+        configured: true,
+        inbox: "contact@infoserv2a.pro",
+        replyTo: "",
+        missing: [],
+        error: timeout
+          ? "L’envoi a pris trop de temps. Réessayez."
+          : (error?.message || "L’envoi n’a pas pu aboutir"),
+        message: ""
+      };
+    } finally {
+      if (timer) this.window.clearTimeout?.(timer);
+    }
   }
 
   showFormStatus(selector, result, fallbackInbox) {
@@ -474,10 +506,11 @@ export class InfoServ2ASiteAdapter {
       case "prefill_quote": {
         const page = this.pageById("quote");
         if (!page) throw new Error("Page devis absente de l’index");
+        const filled = this.surface.snapshotQuoteFields?.() || {};
         if (this.view.activePage !== page.id) await this.surface.openPage(page);
         this.view.activePage = page.id;
         this.view.activeSection = null;
-        this.view.quoteDraft = quoteDraftFromArgs(args);
+        this.view.quoteDraft = quoteDraftFromArgs({ ...filled, ...args });
         const form = this.surface.prefillQuote(this.view.quoteDraft);
         this.view.submitted = false;
         const missing = this.surface.quoteMissingFields
@@ -497,10 +530,11 @@ export class InfoServ2ASiteAdapter {
       case "submit_quote": {
         const page = this.pageById("quote");
         if (!page) throw new Error("Page devis absente de l’index");
+        const filled = this.surface.snapshotQuoteFields?.() || {};
         if (this.view.activePage !== page.id) await this.surface.openPage(page);
         this.view.activePage = page.id;
         this.view.activeSection = null;
-        this.view.quoteDraft = quoteDraftFromArgs(args);
+        this.view.quoteDraft = quoteDraftFromArgs({ ...filled, ...args });
         const form = this.surface.submitQuote
           ? await this.surface.submitQuote(this.view.quoteDraft)
           : this.surface.prefillQuote(this.view.quoteDraft);
@@ -540,6 +574,7 @@ export class InfoServ2ASiteAdapter {
       case "compose_email": {
         const page = this.pageById("contact");
         if (!page) throw new Error("Page contact absente de l’index");
+        const filled = this.surface.snapshotContactFields?.() || {};
         if (this.view.activePage !== page.id) await this.surface.openPage(page);
         this.view.activePage = page.id;
         this.view.activeSection = null;
@@ -547,21 +582,21 @@ export class InfoServ2ASiteAdapter {
         const draft = {
           to: String(args.to || "contact@infoserv2a.pro"),
           subject: String(args.subject || "Contact InfoServ2A"),
-          body: String(args.body || "")
+          body: String(args.body || filled.message || "")
         };
         const launched = this.surface.composeEmail
           ? await this.surface.composeEmail({
             ...draft,
-            name: args.name,
-            email: args.email,
-            phone: args.phone,
+            name: args.name || filled.name,
+            email: args.email || filled.email,
+            phone: args.phone || filled.phone,
             message: args.message || draft.body
           })
           : await this.surface.sendSiteEmail?.({
             kind: "contact",
-            name: args.name,
-            email: args.email,
-            phone: args.phone,
+            name: args.name || filled.name,
+            email: args.email || filled.email,
+            phone: args.phone || filled.phone,
             message: args.message || draft.body
           }) || { sent: false, configured: false };
         return {

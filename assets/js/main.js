@@ -80,10 +80,13 @@
       return true;
     },
     sendSiteEmail(payload) {
+      const controller = new AbortController();
+      const timer = setTimeout(function () { controller.abort(); }, 12000);
       return fetch("/api/send-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
+        signal: controller.signal,
         body: JSON.stringify(payload || {})
       }).then(async (response) => {
         const data = await response.json().catch(() => ({}));
@@ -99,7 +102,21 @@
           error: data.error || "",
           message: data.message || ""
         };
-      });
+      }).catch((error) => {
+        const timeout = error && error.name === "AbortError";
+        return {
+          ok: false,
+          status: 0,
+          sent: false,
+          pendingActivation: false,
+          configured: true,
+          inbox: "",
+          replyTo: "",
+          missing: [],
+          error: timeout ? "L’envoi a pris trop de temps. Réessayez." : "L’envoi n’a pas pu aboutir",
+          message: ""
+        };
+      }).finally(() => clearTimeout(timer));
     }
   };
 })();

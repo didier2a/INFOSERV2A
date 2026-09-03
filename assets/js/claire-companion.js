@@ -17,11 +17,12 @@ import {
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_MAX_SESSION_MS,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260902-it25";
+} from "./claire-core.mjs?v=20260902-it26";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
   formatMemoryBriefing,
+  formatLiveMemoryCue,
   hasMemoryContent,
   loadSessionMemory,
   archiveCurrentVisit,
@@ -32,20 +33,20 @@ import {
   rememberTurn,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260902-it25";
-import { describeEmailSendOutcome } from "./site-email.mjs?v=20260902-it25";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260902-it25";
+} from "./claire-session-memory.mjs?v=20260902-it26";
+import { describeEmailSendOutcome } from "./site-email.mjs?v=20260902-it26";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260902-it26";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260902-it25";
-import "./contact.js?v=20260902-it25";
-import "./devis.js?v=20260902-it25";
+} from "./claire-site-runtime-adapter.mjs?v=20260902-it26";
+import "./contact.js?v=20260902-it26";
+import "./devis.js?v=20260902-it26";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260902-it25";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260902-it25";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260902-it26";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260902-it26";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -775,7 +776,8 @@ export class ClaireCompanion {
   sendSessionMemory({ live = false } = {}) {
     const memory = loadSessionMemory();
     if (!hasMemoryContent(memory)) return false;
-    const briefing = formatMemoryBriefing(memory);
+    const briefing = live ? formatLiveMemoryCue(memory) : formatMemoryBriefing(memory);
+    if (!briefing) return false;
     return this.provider?.sendMemory?.(briefing, { live }) || this.provider?.sendContext?.(briefing) || false;
   }
 
@@ -996,7 +998,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260902-it25");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260902-it26");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
@@ -1272,6 +1274,9 @@ export class ClaireCompanion {
       || classified.route?.page?.id === "quote";
     if (source === "liveavatar" && emailAction) {
       this.provider?.bargeIn?.("email-send");
+    }
+    if (classified.route?.action === "email" || classified.route?.action === "submit_quote") {
+      this.setStatus("thinking", "Envoi en cours…");
     }
 
     try {

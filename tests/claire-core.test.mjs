@@ -9,7 +9,9 @@ import {
   claimsUnverifiedEmailSend,
   classifyUtterance,
   isClaireQuotePrompt,
+  isOralSendConfirm,
   isSubmitQuoteAction,
+  isUrgentSiteCommand,
   CLAIRE_WELCOME,
   createSpeechFollowGate,
   currentPage,
@@ -103,6 +105,14 @@ test("envoie le devis, un appel ou un mail sont des actions orales", () => {
   assert.equal(routeCommand("Appelle InfoServ2A", knowledge).action, "call");
   assert.equal(routeCommand("Envoie un mail", knowledge).action, "email");
   assert.equal(classifyUtterance("Je voudrais un devis gratuit", knowledge).kind, "site");
+});
+
+test("une confirmation orale courte envoie si le formulaire est complet", () => {
+  assert.equal(isOralSendConfirm("c’est bon"), true);
+  assert.equal(isOralSendConfirm("confirme"), true);
+  assert.equal(isUrgentSiteCommand("envoie le devis"), true);
+  assert.equal(isOralSendConfirm("bonjour Claire"), false);
+  assert.equal(isUrgentSiteCommand("bonjour comment ça va"), false);
 });
 
 test("la phrase de Claire sur le devis ne relance pas l’envoi", () => {
@@ -229,7 +239,7 @@ test("le briefing site contient tous les onglets et le rôle consultante IT", ()
   assert.doesNotMatch(prompt, /sans ramener systématiquement à l’informatique/);
   assert.doesNotMatch(prompt, /tous les domaines : métiers, sciences, arts/);
   assert.match(prompt, /INFOSERV2A_SITE_BRIEFING/);
-  assert.match(prompt, /INFOSERV2A_SESSION_MEMORY/);
+  assert.match(prompt, /Une phrase courte au plus/);
   assert.match(prompt, /INFOSERV2A_OFF_TOPIC/);
   assert.match(prompt, /être interrompue/);
   assert.match(CLAIRE_WELCOME, /Moi c’est Claire, votre aidante Live Avatar/);

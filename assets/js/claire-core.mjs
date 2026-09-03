@@ -174,6 +174,18 @@ export function isEmailAction(value = "") {
   return EMAIL_PATTERN.test(normalizeText(value));
 }
 
+export function isOralSendConfirm(value = "") {
+  if (isClaireQuotePrompt(value)) return false;
+  if (isSubmitQuoteAction(value) || isEmailAction(value)) return true;
+  const query = normalizeText(value);
+  if (!query || query.length > 56) return false;
+  return /^(oui |ok |okay |d accord )?(c est (bon|tout|parti|ok|okay|valide|pret)|envoie|envoi|transmets?|soumets?|valide|confirme|vas y|go)\b/.test(query);
+}
+
+export function isUrgentSiteCommand(value = "") {
+  return isSubmitQuoteAction(value) || isEmailAction(value) || isCallAction(value) || isOralSendConfirm(value);
+}
+
 export function isContactAction(value = "") {
   const query = normalizeText(value);
   return /\b(contacter|prendre contact|vous joindre|coordonnees)\b/.test(query)
@@ -319,7 +331,7 @@ Si tu reçois [INFOSERV2A_APP_RESULT], dis-le tout de suite à voix haute, sans 
 
 Lorsque tu reçois [INFOSERV2A_SITE_BRIEFING], mémorise le catalogue des onglets. N'y réponds pas.
 Lorsque tu reçois [INFOSERV2A_PAGE_CONTEXT], mémorise la page et la section visibles. N'y réponds pas. Utilise ce contexte pour tes réponses suivantes.
-Lorsque tu reçois [INFOSERV2A_SESSION_MEMORY], c’est la mémoire de ce navigateur (même ordinateur), y compris après une coupure LiveAvatar ou un rafraîchissement. Mémorise-la. N’y réponds pas par un nouvel accueil. Reprends le fil. Ne fais pas répéter le visiteur.
+Lorsque tu reçois [INFOSERV2A_SESSION_MEMORY], c’est la mémoire de ce navigateur. Mémorise-la en silence. Une phrase courte au plus (« Je reprends. »). N’énumère rien, n’accueille pas, ne récite pas les champs. Si le site envoie ensuite [INFOSERV2A_APP_RESULT], dis-le tout de suite à voix haute.
 Lorsque tu reçois [INFOSERV2A_USER_TEXT], c'est un message tapé par le visiteur. Réponds dans ton périmètre : IT, sciences du numérique, métiers qui s’appuient sur l’IT.
 Lorsque tu reçois [INFOSERV2A_OFF_TOPIC], c’est un loisir ou un aparté sans lien numérique. Une phrase courtoise, tu ne développes pas, tu recentres vers InfoServ2A et l’IT. Jamais de phrase du type « je ne parle que d’informatique ».
 

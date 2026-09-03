@@ -17,7 +17,9 @@ import {
   shouldShowQuoteQuest,
   mergeMemories,
   archiveCurrentVisit,
-  hydrateQuoteMemoryFromForm
+  hydrateQuoteMemoryFromForm,
+  formatLiveMemoryCue,
+  canSubmitContact
 } from "../assets/js/claire-session-memory.mjs";
 
 function memoryStorage(seed = null) {
@@ -265,4 +267,41 @@ test("un marqueur interne LiveAvatar n’alimente pas la mémoire ni le question
   assert.equal(shouldShowQuoteQuest({ need: "caméra 4G" }, "home"), false);
   assert.equal(shouldShowQuoteQuest({ visitor: { name: "Marie" } }, "home"), true);
   assert.equal(shouldShowQuoteQuest({ visitor: { name: "Marie" } }, "quote"), true);
+});
+
+test("la mémoire live reste courte pour ne pas bloquer l’envoi", () => {
+  const memory = saveSessionMemory({
+    visitor: { name: "Didier Aouizerate", phone: "07 45 15 60 76", email: "didier@example.com", city: "Porto-Vecchio" },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé",
+    turns: Array.from({ length: 8 }, (_, index) => ({
+      role: index % 2 ? "companion" : "user",
+      text: `Tour ${index} avec beaucoup de détails inutiles à réciter à voix haute pendant trois minutes.`,
+      at: index + 1
+    }))
+  }, memoryStorage());
+  const cue = formatLiveMemoryCue(memory);
+  assert.match(cue, /Didier Aouizerate/);
+  assert.match(cue, /Je reprends/);
+  assert.doesNotMatch(cue, /Tour 7/);
+  assert.ok(cue.length < 420);
+});
+
+test("un formulaire contact rempli hors conversation alimente la mémoire", () => {
+  const storage = memoryStorage();
+  const doc = {
+    querySelector(selector) {
+      const values = {
+        "#contact-name": "Marie Rossi",
+        "#contact-email": "marie@example.com",
+        "#contact-phone": "07 45 15 60 76",
+        "#contact-message": "Je veux un site vitrine."
+      };
+      return values[selector] ? { value: values[selector] } : null;
+    }
+  };
+  const memory = hydrateQuoteMemoryFromForm(storage, doc);
+  assert.equal(memory.visitor.name, "Marie Rossi");
+  assert.equal(memory.visitor.email, "marie@example.com");
+  assert.equal(canSubmitContact(memory), true);
 });

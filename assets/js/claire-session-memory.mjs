@@ -450,12 +450,51 @@ export function quoteExtrasFromDocument(doc = globalThis.document) {
   };
 }
 
+export function contactExtrasFromDocument(doc = globalThis.document) {
+  if (!doc?.querySelector) return {};
+  const read = (selector) => {
+    const value = compact(doc.querySelector(selector)?.value);
+    if (!value || value === PLACEHOLDER_NEED) return "";
+    return value;
+  };
+  return {
+    name: read("#contact-name"),
+    phone: read("#contact-phone"),
+    email: read("#contact-email"),
+    message: read("#contact-message")
+  };
+}
+
+export function formExtrasFromDocument(doc = globalThis.document) {
+  const quote = quoteExtrasFromDocument(doc);
+  const contact = contactExtrasFromDocument(doc);
+  return {
+    name: quote.name || contact.name,
+    phone: quote.phone || contact.phone,
+    email: quote.email || contact.email,
+    city: quote.city,
+    service: quote.service,
+    description: quote.description || contact.message,
+    message: contact.message || quote.description
+  };
+}
+
+export function canSubmitContact(memory = {}, extras = {}) {
+  const visitor = normalizeVisitor(memory.visitor);
+  const name = compact(extras.name) || visitor.name;
+  const email = compact(extras.email) || visitor.email;
+  const message = compact(extras.message) || compact(extras.description) || compact(memory.need);
+  return Boolean(name && email && message);
+}
+
 export function hydrateQuoteMemoryFromForm(storage, doc) {
   const documentRef = arguments.length >= 2 ? doc : globalThis.document;
-  const extras = quoteExtrasFromDocument(documentRef);
+  const extras = formExtrasFromDocument(documentRef);
   const storeArgs = arguments.length === 0 ? [] : [storage];
   const memory = loadSessionMemory(...storeArgs);
-  if (!QUOTE_REQUIRED_FIELDS.some((key) => compact(key === "description" ? extras.description : extras[key]))) {
+  if (!QUOTE_REQUIRED_FIELDS.some((key) => compact(key === "description" ? extras.description : extras[key]))
+    && !canSubmitContact(memory, extras)
+    && !compact(extras.name || extras.email || extras.message)) {
     return memory;
   }
   return saveSessionMemory(mergeFacts(memory, {
@@ -464,7 +503,7 @@ export function hydrateQuoteMemoryFromForm(storage, doc) {
     email: extras.email,
     city: extras.city,
     service: extras.service,
-    need: extras.description
+    need: extras.description || extras.message
   }), ...storeArgs);
 }
 
@@ -607,4 +646,19 @@ export function formatMemoryBriefing(memory = {}) {
     ...recent,
     "Ne redemande pas ce qui est déjà connu. Ne refais pas un accueil complet. Reprends le fil. Si un devis doit partir, n’invente jamais un nom, un téléphone, un e-mail ou une commune."
   ].filter(Boolean).join("\n");
+}
+
+export function formatLiveMemoryCue(memory = {}) {
+  const normalized = normalizeMemory(memory);
+  if (!hasMemoryContent(normalized)) return "";
+  const visitor = normalized.visitor;
+  const facts = [
+    visitor.name && `Nom ${visitor.name}`,
+    visitor.city,
+    visitor.phone && `tél. ${visitor.phone}`,
+    visitor.email,
+    normalized.service && `service ${normalized.service}`,
+    normalized.need && compact(normalized.need).slice(0, 120)
+  ].filter(Boolean).join(" · ");
+  return `Client déjà connu : ${facts || "échange en cours"}. ORDRE : une phrase courte (« Je reprends. »). N’énumère rien. N’accueille pas. Silence ensuite.`;
 }

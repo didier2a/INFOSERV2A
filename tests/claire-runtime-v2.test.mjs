@@ -365,6 +365,31 @@ test("envoie le devis ne part que si le contexte a les coordonnées", async () =
   assert.equal(outcome.verification.pageId, "quote");
 });
 
+test("une confirmation orale courte envoie le devis déjà complet", () => {
+  const memory = {
+    visitor: {
+      name: "Marie Rossi",
+      phone: "07 45 15 60 76",
+      email: "marie@example.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé",
+    turns: []
+  };
+  const plan = planCommand("c’est bon", knowledge, manifest, { memory, pageId: "quote" });
+  assert.ok(plan.steps.some((step) => step.tool === "submit_quote"));
+  const contact = planCommand("confirme", knowledge, manifest, {
+    memory: {
+      visitor: { name: "Didier", phone: "", email: "didier@example.com", city: "" },
+      need: "Site vitrine",
+      turns: []
+    },
+    pageId: "contact"
+  });
+  assert.ok(contact.steps.some((step) => step.tool === "compose_email"));
+});
+
 test("l’ancre canonique existe dans la page publique", async () => {
   const html = await readFile(
     new URL("../videosurveillance.html", import.meta.url),

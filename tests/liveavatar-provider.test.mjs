@@ -244,6 +244,41 @@ test("un aparté hors site laisse Realtime répondre sans couper", async () => {
   await provider.stop();
 });
 
+test("un envoi oral coupe la parole et part sans attendre la fin de la récitation", async () => {
+  const commands = [];
+  const barges = [];
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-send-now" })
+  }).install({
+    video,
+    classifyCommand: async () => "site",
+    onCommand: async (text) => commands.push(text),
+    onBargeIn: (detail) => barges.push(detail.reason)
+  });
+
+  await provider.connect({ microphone: false });
+  const session = globalThis.__infoservFakeSession;
+  session.emit("avatar-speak-started");
+  provider.sendMemory("Nom Didier. Ne récite pas tout le dossier.", { live: true });
+  assert.equal(session.messages.length, 0);
+  session.emit("user-transcription", { text: "envoie le devis" });
+  assert.equal(session.interrupted, true);
+  assert.ok(barges.includes("email-send"));
+  session.emit("user-speak-ended");
+  await wait(600);
+  assert.deepEqual(commands, ["envoie le devis"]);
+
+  session.emit("avatar-speak-started");
+  provider.sendEmailResult("La demande de devis a bien été envoyée vers contact@infoserv2a.pro.");
+  assert.ok(barges.includes("email-send"));
+  assert.match(session.messages.at(-1), /INFOSERV2A_APP_RESULT/);
+  assert.match(session.messages.at(-1), /bien été envoyée/);
+
+  await provider.stop();
+});
+
 test("un écho de contexte site n’est pas traité comme une parole visiteur", async () => {
   const commands = [];
   const barges = [];
