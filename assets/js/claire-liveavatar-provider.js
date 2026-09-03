@@ -1,4 +1,4 @@
-import { isInternalSitePrompt } from "./claire-core.mjs?v=20260902-it23";
+import { isInternalSitePrompt } from "./claire-core.mjs?v=20260902-it24";
 
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;

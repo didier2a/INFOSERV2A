@@ -14,7 +14,8 @@ import {
   rememberTurn,
   saveSessionMemory,
   shouldAnnounceQuoteTruth,
-  shouldShowQuoteQuest
+  shouldShowQuoteQuest,
+  hydrateQuoteMemoryFromForm
 } from "../assets/js/claire-session-memory.mjs";
 
 function memoryStorage(seed = null) {
@@ -133,7 +134,10 @@ test("une conversation de devis doit afficher la vérité même en chat", () => 
   assert.equal(shouldAnnounceQuoteTruth("Bonjour", {}, ""), false);
   assert.equal(shouldAnnounceQuoteTruth("ok", {
     visitor: { name: "Didier", phone: "", email: "", city: "" }
-  }, ""), true);
+  }, ""), false);
+  assert.equal(shouldAnnounceQuoteTruth("c’est tout", {
+    visitor: { name: "Didier", phone: "", email: "", city: "" }
+  }, "quote"), true);
 });
 
 test("le checklist dit à l’oral ce qui manque et ne prétend pas que c’est parti", () => {
@@ -159,8 +163,34 @@ test("le checklist dit à l’oral ce qui manque et ne prétend pas que c’est 
   });
   assert.equal(complete.complete, true);
   assert.match(complete.speech, /complet/);
-  assert.match(complete.speech, /envoie le devis/);
-  assert.doesNotMatch(complete.speech, /bien été envoyé/);
+  assert.match(complete.speech, /transmettre la demande/);
+  assert.doesNotMatch(complete.speech, /envoie le devis|bien été envoyé/);
+});
+
+test("un formulaire déjà rempli complète la mémoire et permet l’envoi", () => {
+  const storage = memoryStorage({
+    version: 1,
+    visitor: { name: "Didier", phone: "", email: "", city: "" },
+    need: "",
+    service: "",
+    turns: []
+  });
+  const doc = {
+    querySelector(selector) {
+      const values = {
+        "#devis-name": "Didier Aouizerate",
+        "#devis-phone": "07 45 15 60 76",
+        "#devis-email": "infoserv2a@gmail.com",
+        "#devis-city": "Porto-Vecchio",
+        "#devis-service": "videosurveillance",
+        "#devis-description": "Caméra 4G pour un hangar"
+      };
+      return values[selector] ? { value: values[selector] } : null;
+    }
+  };
+  const memory = hydrateQuoteMemoryFromForm(storage, doc);
+  assert.equal(canSubmitQuote(memory), true);
+  assert.equal(memory.visitor.email, "infoserv2a@gmail.com");
 });
 
 test("un devis ne part pas tant que les coordonnées manquent", () => {

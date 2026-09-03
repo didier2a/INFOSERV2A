@@ -151,7 +151,13 @@ export function isQuoteAction(value = "") {
     || /\bdevis (?:gratuit|s il vous plait|svp)\b/.test(query);
 }
 
+export function isClaireQuotePrompt(value = "") {
+  const query = normalizeText(value);
+  return /\b(n envoie pas le devis|dites .{0,20}envoie le devis|rien n est (encore )?parti|bien ete envoye vers contact@|confirmez .{0,40}transmettre la demande)\b/.test(query);
+}
+
 export function isSubmitQuoteAction(value = "") {
+  if (isClaireQuotePrompt(value)) return false;
   return SUBMIT_QUOTE_PATTERN.test(normalizeText(value));
 }
 
@@ -317,7 +323,7 @@ Lorsque tu reçois [INFOSERV2A_SESSION_MEMORY], c’est le contexte déjà dit d
 Lorsque tu reçois [INFOSERV2A_USER_TEXT], c'est un message tapé par le visiteur. Réponds dans ton périmètre : IT, sciences du numérique, métiers qui s’appuient sur l’IT.
 Lorsque tu reçois [INFOSERV2A_OFF_TOPIC], c’est un loisir ou un aparté sans lien numérique. Une phrase courtoise, tu ne développes pas, tu recentres vers InfoServ2A et l’IT. Jamais de phrase du type « je ne parle que d’informatique ».
 
-Sur demande orale explicite, le site peut envoyer un message ou une demande de devis vers contact@infoserv2a.pro. L’adresse saisie par le visiteur est celle où InfoServ2A lui répondra, pas la destination. Tu n’envoies jamais toi-même. Nommer contact@ n’est pas une preuve d’envoi. Si [INFOSERV2A_APP_RESULT] dit qu’il manque un champ, tu le répètes clairement à l’oral, tu n’acceptes pas l’envoi, jamais « c’est parti ». Tu n’enregistres pas un envoi toute seule. Si le devis est incomplet, tu le dis tout de suite à l’oral, sans attendre qu’on te le demande. Si le devis est complet mais pas encore envoyé, tu le dis et tu attends « envoie le devis ». Tu ne confirmes un envoi que si le résultat contient « bien été envoyé ». Tu n’inventes jamais un nom, un téléphone, un e-mail ou une commune.
+Sur demande orale explicite, le site peut envoyer un message ou une demande de devis vers contact@infoserv2a.pro. L’adresse saisie par le visiteur est celle où InfoServ2A lui répondra, pas la destination. Tu n’envoies jamais toi-même. Nommer contact@ n’est pas une preuve d’envoi. Si [INFOSERV2A_APP_RESULT] dit qu’il manque un champ, tu le répètes clairement à l’oral, tu n’acceptes pas l’envoi, jamais « c’est parti ». Tu n’enregistres pas un envoi toute seule. Si le devis est incomplet, tu le dis une fois à l’oral, sans attendre qu’on te le demande, puis tu attends le visiteur. Tu ne répètes pas le même inventaire en boucle. Si le devis est complet mais pas encore envoyé, tu le dis une fois et tu attends une confirmation claire du visiteur. Tu ne confirmes un envoi que si le résultat contient « bien été envoyé ». Tu n’inventes jamais un nom, un téléphone, un e-mail ou une commune.
 
 L'application InfoServ2A est la seule source de vérité pour les services, coordonnées, horaires, pages et actions. L'utilisateur garde toujours accès au mode manuel. N'invente jamais un tarif, un délai, une disponibilité, une conformité, un diagnostic matériel définitif ou une capacité technique non vérifiée.`;
 }
@@ -480,6 +486,7 @@ export function routeCommand(input, knowledge, context = {}) {
   }
 
   for (const intent of DIRECT_INTENTS) {
+    if (intent.id === "submit_quote" && isClaireQuotePrompt(raw)) continue;
     if (intent.pattern.test(query)) return { id: intent.id, ...intent.response };
   }
 

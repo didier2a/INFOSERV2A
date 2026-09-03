@@ -6,6 +6,7 @@ import {
   buildSiteBriefing,
   followSpokenNavigation,
   claimsUnverifiedEmailSend,
+  isClaireQuotePrompt,
   isInternalSitePrompt,
   isQuoteAction,
   isSubmitQuoteAction,
@@ -16,32 +17,33 @@ import {
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_MAX_SESSION_MS,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260902-it23";
+} from "./claire-core.mjs?v=20260902-it24";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
   formatMemoryBriefing,
   hasMemoryContent,
   loadSessionMemory,
+  hydrateQuoteMemoryFromForm,
   shouldAnnounceQuoteTruth,
   rememberPage,
   rememberTurn,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260902-it23";
-import { describeEmailSendOutcome } from "./site-email.mjs?v=20260902-it23";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260902-it23";
+} from "./claire-session-memory.mjs?v=20260902-it24";
+import { describeEmailSendOutcome } from "./site-email.mjs?v=20260902-it24";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260902-it24";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260902-it23";
-import "./contact.js?v=20260902-it23";
-import "./devis.js?v=20260902-it23";
+} from "./claire-site-runtime-adapter.mjs?v=20260902-it24";
+import "./contact.js?v=20260902-it24";
+import "./devis.js?v=20260902-it24";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260902-it23";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260902-it23";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260902-it24";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260902-it24";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -271,6 +273,7 @@ export class ClaireCompanion {
     this.runtime = null;
     this.lastSiteSendOk = false;
     this.lastSiteTruthSpeech = "";
+    this.lastQuoteAnnounceAt = 0;
     this.browserVoice = new BrowserVoiceProvider({
       onTranscript: (text, final) => this.handleTranscript(text, final),
       onStatus: (value, label) => this.setStatus(value, label)
@@ -960,7 +963,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260902-it23");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260902-it24");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
@@ -1111,7 +1114,8 @@ export class ClaireCompanion {
   }
 
   announceQuoteTruth(command, source, { outcome } = {}) {
-    const memory = loadSessionMemory();
+    if (isClaireQuotePrompt(command)) return "";
+    const memory = hydrateQuoteMemoryFromForm();
     const pageId = this.siteAdapter?.view?.activePage || this.siteAdapter?.snapshot?.()?.page?.id || "";
     const sendSpeech = outcome ? describeEmailSendOutcome(outcome) : "";
     const wantsSend = isSubmitQuoteAction(command);
@@ -1123,9 +1127,14 @@ export class ClaireCompanion {
     const actuallySent = Boolean(outcome?.results?.some((item) => item.output?.sent));
     const checklist = describeQuoteChecklist(memory);
     const speech = sendSpeech || checklist.speech;
+    const now = Date.now();
+    if (!actuallySent && speech === this.lastSiteTruthSpeech && now - this.lastQuoteAnnounceAt < 8000) {
+      return "";
+    }
     const written = this.writeSiteTruth(speech, { sent: actuallySent });
-    const mustSpeak = actuallySent || wantsSend || !written.duplicate;
+    const mustSpeak = actuallySent || (wantsSend && !written.duplicate) || !written.duplicate;
     if (!mustSpeak) return speech;
+    this.lastQuoteAnnounceAt = now;
     if (source === "liveavatar") {
       this.provider?.bargeIn?.("email-send");
       if (this.provider?.sendEmailResult) this.provider.sendEmailResult(speech);
@@ -1139,6 +1148,7 @@ export class ClaireCompanion {
   correctInventedSend(spoken) {
     if (this.lastSiteSendOk) return;
     if (!claimsUnverifiedEmailSend(spoken)) return;
+    if (Date.now() - this.lastQuoteAnnounceAt < 8000) return;
     const speech = describeQuoteChecklist(loadSessionMemory()).speech;
     this.writeSiteTruth(speech, { sent: false });
     this.provider?.bargeIn?.("email-send");
@@ -1155,7 +1165,8 @@ export class ClaireCompanion {
 
   async submit(command, source = "text") {
     const value = String(command || "").trim();
-    if (!value || isInternalSitePrompt(value)) return null;
+    if (!value || isInternalSitePrompt(value) || isClaireQuotePrompt(value)) return null;
+    hydrateQuoteMemoryFromForm();
     const classified = classifyUtterance(value, this.knowledge, { pathname: location.pathname });
     if (source === "liveavatar") {
       const signature = value.toLocaleLowerCase("fr").replace(/\s+/g, " ");
@@ -1235,7 +1246,7 @@ export class ClaireCompanion {
         pathname: this.surface?.window?.location?.pathname || location.pathname,
         pageId: this.siteAdapter?.view?.activePage,
         sectionId: this.siteAdapter?.view?.activeSection,
-        memory: loadSessionMemory()
+        memory: hydrateQuoteMemoryFromForm()
       });
       globalThis.dispatchEvent(new CustomEvent("infoserv:claire-command", {
         detail: { command: value, source, outcome }

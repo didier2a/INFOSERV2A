@@ -323,6 +323,35 @@ test("simulation vocale : devis complet + « envoie le devis » actionne vraimen
   assert.match(describeEmailSendOutcome(outcome), /bien été envoyée vers contact@infoserv2a\.pro/);
 });
 
+test("simulation vocale : un devis prérempli sur le formulaire part à l’envoi", async () => {
+  const { canSubmitQuote } = await import("../assets/js/claire-session-memory.mjs");
+  const thinMemory = {
+    visitor: { name: "Didier Aouizerate", phone: "", email: "", city: "Porto-Vecchio" },
+    service: "videosurveillance",
+    need: "Caméra 4G",
+    turns: []
+  };
+  assert.equal(canSubmitQuote(thinMemory), false);
+  const hydrated = {
+    ...thinMemory,
+    visitor: {
+      name: "Didier Aouizerate",
+      phone: "07 45 15 60 76",
+      email: "infoserv2a@gmail.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé"
+  };
+  assert.equal(canSubmitQuote(hydrated), true);
+  const surface = new ActuatorSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const outcome = await controller.run("Envoie le devis", { memory: hydrated });
+  assert.equal(outcome.results.find((item) => item.tool === "submit_quote")?.output?.sent, true);
+  assert.equal(surface.posts.length, 1);
+});
+
 test("simulation vocale : l’onglet suivant parcourt le catalogue", async () => {
   const surface = new MockPersistentSurface();
   const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });

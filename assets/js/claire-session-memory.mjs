@@ -280,8 +280,46 @@ export function hasQuoteProgress(memory = {}) {
 export function shouldAnnounceQuoteTruth(command = "", memory = {}, pageId = "") {
   const facts = extractFactsFromUtterance(command);
   if (facts.email || facts.phone || facts.name || facts.city || facts.service) return true;
-  if (pageId === "quote") return true;
-  return hasQuoteProgress(memory);
+  const query = folded(command);
+  if (/\b(c est (tout|bon|pret|complet)|voila|tu as tout|j ai tout (dit|donne))\b/.test(query)) {
+    return hasQuoteProgress(memory) || pageId === "quote";
+  }
+  return false;
+}
+
+const PLACEHOLDER_NEED = "À préciser à l’oral";
+
+export function quoteExtrasFromDocument(doc = globalThis.document) {
+  if (!doc?.querySelector) return {};
+  const read = (selector) => {
+    const value = compact(doc.querySelector(selector)?.value);
+    if (!value || value === PLACEHOLDER_NEED) return "";
+    return value;
+  };
+  return {
+    name: read("#devis-name"),
+    phone: read("#devis-phone"),
+    email: read("#devis-email"),
+    city: read("#devis-city"),
+    service: read("#devis-service"),
+    description: read("#devis-description")
+  };
+}
+
+export function hydrateQuoteMemoryFromForm(storage = globalThis.sessionStorage, doc = globalThis.document) {
+  const extras = quoteExtrasFromDocument(doc);
+  const memory = loadSessionMemory(storage);
+  if (!QUOTE_REQUIRED_FIELDS.some((key) => compact(key === "description" ? extras.description : extras[key]))) {
+    return memory;
+  }
+  return saveSessionMemory(mergeFacts(memory, {
+    name: extras.name,
+    phone: extras.phone,
+    email: extras.email,
+    city: extras.city,
+    service: extras.service,
+    need: extras.description
+  }), storage);
 }
 
 export function describeMissingQuoteFields(memory = {}, extras = {}) {
@@ -308,7 +346,7 @@ export function describeQuoteChecklist(memory = {}, extras = {}) {
     complete: true,
     missing: [],
     filled,
-    speech: `Le devis est complet : ${filledSpeech}. Dites « envoie le devis » pour que je le transmette vers contact@infoserv2a.pro. Rien n’est parti tant que le site n’a pas confirmé l’envoi.`
+    speech: `Le devis est complet : ${filledSpeech}. Confirmez que vous voulez transmettre la demande vers contact@infoserv2a.pro. Rien n’est parti tant que le site n’a pas confirmé l’envoi.`
   };
 }
 

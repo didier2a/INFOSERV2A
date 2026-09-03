@@ -1,4 +1,4 @@
-import { QUOTE_FIELD_LABELS, joinFrenchList } from "./claire-session-memory.mjs?v=20260902-it23";
+import { QUOTE_FIELD_LABELS, joinFrenchList } from "./claire-session-memory.mjs?v=20260902-it24";
 
 export const SITE_EMAIL_PATH = "/api/send-email";
 
@@ -42,7 +42,7 @@ export function describeEmailSendOutcome(outcome) {
     return `Je n’ai pas envoyé. Il manque encore ${missingFieldSpeech(missing)}.`;
   }
   if (result.tool === "prefill_quote") {
-    return `Le devis est complet. Dites « envoie le devis » pour le transmettre vers ${inbox}. Rien n’est encore parti.`;
+    return `Le devis est complet. Confirmez que vous voulez transmettre la demande vers ${inbox}. Rien n’est encore parti.`;
   }
   if (output.sent) {
     return result.tool === "submit_quote"

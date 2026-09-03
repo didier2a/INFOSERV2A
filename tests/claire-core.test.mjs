@@ -8,6 +8,8 @@ import {
   buildSiteBriefing,
   claimsUnverifiedEmailSend,
   classifyUtterance,
+  isClaireQuotePrompt,
+  isSubmitQuoteAction,
   CLAIRE_WELCOME,
   createSpeechFollowGate,
   currentPage,
@@ -101,6 +103,14 @@ test("envoie le devis, un appel ou un mail sont des actions orales", () => {
   assert.equal(routeCommand("Appelle InfoServ2A", knowledge).action, "call");
   assert.equal(routeCommand("Envoie un mail", knowledge).action, "email");
   assert.equal(classifyUtterance("Je voudrais un devis gratuit", knowledge).kind, "site");
+});
+
+test("la phrase de Claire sur le devis ne relance pas l’envoi", () => {
+  const speech = "Le devis est complet : votre nom. Dites « envoie le devis » pour que je le transmette vers contact@infoserv2a.pro. Rien n’est parti tant que le site n’a pas confirmé l’envoi.";
+  assert.equal(isClaireQuotePrompt(speech), true);
+  assert.equal(isSubmitQuoteAction(speech), false);
+  assert.notEqual(routeCommand(speech, knowledge).action, "submit_quote");
+  assert.equal(classifyUtterance(speech, knowledge).kind, "chat");
 });
 
 test("restitue immédiatement la navigation manuelle", () => {
