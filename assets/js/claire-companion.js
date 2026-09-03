@@ -19,7 +19,7 @@ import {
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_MAX_SESSION_MS,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260903-it27";
+} from "./claire-core.mjs?v=20260903-it28";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -29,26 +29,25 @@ import {
   loadSessionMemory,
   archiveCurrentVisit,
   hydrateQuoteMemoryFromForm,
-  quotePrefillFromMemory,
   shouldAnnounceQuoteTruth,
   rememberPage,
   rememberTurn,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260903-it27";
-import { describeEmailSendOutcome } from "./site-email.mjs?v=20260903-it27";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260903-it27";
+} from "./claire-session-memory.mjs?v=20260903-it28";
+import { describeEmailSendOutcome } from "./site-email.mjs?v=20260903-it28";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260903-it28";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260903-it27";
-import "./contact.js?v=20260903-it27";
-import "./devis.js?v=20260903-it27";
+} from "./claire-site-runtime-adapter.mjs?v=20260903-it28";
+import "./contact.js?v=20260903-it28";
+import "./devis.js?v=20260903-it28";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260903-it27";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260903-it27";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260903-it28";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260903-it28";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -799,10 +798,7 @@ export class ClaireCompanion {
     for (const turn of memory.turns || []) {
       this.appendTurn(turn.role === "user" ? "user" : "companion", turn.text, { remember: false });
     }
-    const pageId = this.siteAdapter?.view?.activePage || this.siteAdapter?.snapshot?.()?.page?.id || "";
-    if (pageId === "quote") {
-      this.siteAdapter?.surface?.prefillQuote?.(quotePrefillFromMemory(memory));
-    }
+    this.syncVisibleForms(memory);
     this.updateLiveContext();
     return true;
   }
@@ -1004,7 +1000,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260903-it27");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260903-it28");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
@@ -1033,7 +1029,10 @@ export class ClaireCompanion {
   appendTurn(role, text, { live = false, remember = true, truth = false } = {}) {
     if (!this.nodes.transcript || !text) return null;
     if (isInternalSitePrompt(text)) return null;
-    if (remember && !live) rememberTurn(role === "user" ? "user" : "companion", text);
+    if (remember && !live) {
+      rememberTurn(role === "user" ? "user" : "companion", text);
+      if (role === "user") this.syncVisibleForms();
+    }
     const article = document.createElement("article");
     article.className = `claire-turn claire-turn--${role}`;
     if (live) article.dataset.live = "1";
@@ -1066,6 +1065,10 @@ export class ClaireCompanion {
     if (this.nodes.caption) this.nodes.caption.textContent = value;
     if (value) this.showLivePrompt();
     else this.updateLiveContext();
+  }
+
+  syncVisibleForms(memory = loadSessionMemory()) {
+    return this.siteAdapter?.surface?.syncVisibleForms?.(memory) || { quote: false, contact: false };
   }
 
   updateLiveContext() {
@@ -1370,6 +1373,7 @@ export class ClaireCompanion {
       href,
       speech: outcome.plan.response
     });
+    this.syncVisibleForms();
   }
 
   async navigateInternal(href, { historyMode = "push", announce = true, silent = false } = {}) {
@@ -1381,6 +1385,7 @@ export class ClaireCompanion {
       storageSet(STORAGE_MODE, "guided");
       this.setState("guided");
       this.renderSuggestions();
+      this.syncVisibleForms();
       if (isolateVoice) {
         this.pushPageContext(snapshot);
         this.setStatus(

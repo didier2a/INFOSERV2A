@@ -247,6 +247,28 @@ class ActuatorSurface {
     return { sent: true, inbox: "contact@infoserv2a.pro", replyTo: payload.email || "" };
   }
 
+  snapshotContactFields() {
+    return { ...(this.contact || {}) };
+  }
+
+  prefillContact(draft) {
+    this.calls.push(["prefillContact", draft]);
+    this.contact = { ...draft };
+    return this.contact;
+  }
+
+  async composeEmail(draft) {
+    this.calls.push(["composeEmail", draft]);
+    this.prefillContact(draft);
+    return this.sendSiteEmail({
+      kind: "contact",
+      name: draft.name,
+      email: draft.email,
+      phone: draft.phone,
+      message: draft.message || draft.body
+    });
+  }
+
   snapshot() {
     return { activePage: this.activePage, activeSection: this.activeSection };
   }
@@ -380,6 +402,76 @@ test("simulation vocale : un devis prérempli sur le formulaire part à l’envo
   const outcome = await controller.run("Envoie le devis", { memory: hydrated });
   assert.equal(outcome.results.find((item) => item.tool === "submit_quote")?.output?.sent, true);
   assert.equal(surface.posts.length, 1);
+});
+
+test("simulation vocale : « c’est bon » sur contact remplit et envoie le message", async () => {
+  const { canSubmitContact } = await import("../assets/js/claire-session-memory.mjs");
+  const { describeEmailSendOutcome } = await import("../assets/js/site-email.mjs");
+  const memory = {
+    visitor: {
+      name: "Didier Aouizerate",
+      phone: "07 45 15 60 76",
+      email: "infoserv2a@gmail.com",
+      city: "Porto-Vecchio"
+    },
+    service: "",
+    need: "Je veux un interlocuteur pour mon réseau",
+    turns: []
+  };
+  assert.equal(canSubmitContact(memory), true);
+  const surface = new ActuatorSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const outcome = await controller.run("c’est bon", { memory, pageId: "contact" });
+  const mail = outcome.results.find((item) => item.tool === "compose_email");
+  assert.equal(mail.output.sent, true);
+  assert.equal(surface.posts.length, 1);
+  assert.equal(surface.posts[0].kind, "contact");
+  assert.equal(surface.posts[0].email, "infoserv2a@gmail.com");
+  assert.ok(surface.calls.some(([name]) => name === "prefillContact"));
+  assert.match(describeEmailSendOutcome(outcome), /bien été envoyé vers contact@infoserv2a\.pro|bien été envoyée vers contact@infoserv2a\.pro/);
+});
+
+test("Claire écrit dans le formulaire contact visible, pas seulement au moment de l’envoi", async () => {
+  const { BrowserInfoServ2ASurface } = await import("../assets/js/claire-site-runtime-adapter.mjs");
+  const fields = new Map();
+  const documentRef = {
+    querySelector(sel) {
+      if (sel === "#contact-form") return { id: "contact-form" };
+      if (sel === "#devis-form") return null;
+      if (!String(sel).startsWith("#contact-")) return null;
+      if (!fields.has(sel)) fields.set(sel, { tagName: "INPUT", value: "", options: [] });
+      return fields.get(sel);
+    }
+  };
+  const surface = new BrowserInfoServ2ASurface({
+    knowledge,
+    windowRef: {
+      location: {
+        href: "https://infoserv2a.pro/contact.html",
+        pathname: "/contact.html",
+        origin: "https://infoserv2a.pro",
+        hash: ""
+      }
+    },
+    documentRef,
+    fetchImpl: async () => new Response("", { status: 200 })
+  });
+  const synced = surface.syncVisibleForms({
+    visitor: {
+      name: "Didier Aouizerate",
+      phone: "07 45 15 60 76",
+      email: "infoserv2a@gmail.com",
+      city: "Porto-Vecchio"
+    },
+    need: "Demande pour le réseau du cabinet"
+  });
+  assert.equal(synced.contact, true);
+  assert.equal(synced.quote, false);
+  assert.equal(fields.get("#contact-name").value, "Didier Aouizerate");
+  assert.equal(fields.get("#contact-email").value, "infoserv2a@gmail.com");
+  assert.equal(fields.get("#contact-phone").value, "07 45 15 60 76");
+  assert.equal(fields.get("#contact-message").value, "Demande pour le réseau du cabinet");
 });
 
 test("simulation vocale : l’onglet suivant parcourt le catalogue", async () => {

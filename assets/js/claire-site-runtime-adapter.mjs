@@ -1,5 +1,5 @@
-import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260903-it27";
-import { contactExtrasFromDocument, quoteExtrasFromDocument } from "./claire-session-memory.mjs?v=20260903-it27";
+import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260903-it28";
+import { contactExtrasFromDocument, quoteExtrasFromDocument } from "./claire-session-memory.mjs?v=20260903-it28";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -399,6 +399,31 @@ export class BrowserInfoServ2ASurface {
       phone: this.document.querySelector("#contact-phone")?.value || "",
       message: this.document.querySelector("#contact-message")?.value || ""
     };
+  }
+
+  syncVisibleForms(memory = {}) {
+    const quoteForm = this.document.querySelector("#devis-form");
+    const contactForm = this.document.querySelector("#contact-form");
+    const visitor = memory.visitor || {};
+    const quote = quoteForm
+      ? this.prefillQuote({
+        name: visitor.name,
+        phone: visitor.phone,
+        email: visitor.email,
+        city: visitor.city,
+        service: memory.service,
+        description: memory.need
+      })
+      : null;
+    const contact = contactForm
+      ? this.prefillContact({
+        name: visitor.name,
+        email: visitor.email,
+        phone: visitor.phone,
+        message: memory.need
+      })
+      : null;
+    return { quote: Boolean(quoteForm), contact: Boolean(contactForm), quoteDraft: quote, contactDraft: contact };
   }
 
   async composeEmail(draft = {}) {
