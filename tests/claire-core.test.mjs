@@ -281,13 +281,13 @@ test("un clic visiteur bloque le suivi de parole jusqu’à la prochaine prise d
   assert.equal(gate.allowsFollow(), true);
 });
 
-test("la session LiveAvatar prévient 45 secondes avant la fin des 5 minutes", () => {
-  assert.equal(LIVEAVATAR_MAX_SESSION_MS, 300_000);
+test("la session LiveAvatar prévient 45 secondes avant la fin des 10 minutes", () => {
+  assert.equal(LIVEAVATAR_MAX_SESSION_MS, 600_000);
   assert.equal(LIVEAVATAR_SESSION_WARNING_LEAD_MS, 45_000);
-  assert.equal(liveAvatarSessionWarningDelayMs(), 255_000);
+  assert.equal(liveAvatarSessionWarningDelayMs(), 555_000);
   assert.equal(liveAvatarSessionPhase(0), "active");
-  assert.equal(liveAvatarSessionPhase(254_999), "active");
-  assert.equal(liveAvatarSessionPhase(255_000), "warning");
-  assert.equal(liveAvatarSessionPhase(299_000), "warning");
-  assert.equal(liveAvatarSessionPhase(300_000), "ended");
+  assert.equal(liveAvatarSessionPhase(554_999), "active");
+  assert.equal(liveAvatarSessionPhase(555_000), "warning");
+  assert.equal(liveAvatarSessionPhase(599_000), "warning");
+  assert.equal(liveAvatarSessionPhase(600_000), "ended");
 });

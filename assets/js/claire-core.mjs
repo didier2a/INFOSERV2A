@@ -475,7 +475,8 @@ export function createSpeechFollowGate() {
   };
 }
 
-export const LIVEAVATAR_MAX_SESSION_MS = 300_000;
+export const LIVEAVATAR_MAX_SESSION_MS = 600_000;
+export const LIVEAVATAR_MAX_SESSION_SECONDS = 600;
 export const LIVEAVATAR_SESSION_WARNING_LEAD_MS = 45_000;
 
 export function liveAvatarSessionWarningDelayMs(

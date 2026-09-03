@@ -67,7 +67,7 @@ La politique CSP du dépôt autorise uniquement la version épinglée du SDK, l�
 Les fonctions serveur sont dans `functions/api/` et le point d’entrée Cloudflare Worker dans `src/worker.js` les expose sous `/api/` tout en servant les fichiers statiques via le binding `ASSETS` :
 
 - `liveavatar-status.js` active automatiquement l’adaptateur seulement si les bindings requis existent ;
-- `liveavatar-session.js` accepte uniquement une requête de même origine, crée ou réutilise le contexte Claire et renvoie un jeton de session de cinq minutes ;
+- `liveavatar-session.js` accepte uniquement une requête de même origine, crée ou réutilise le contexte Claire et renvoie un jeton de session de dix minutes ;
 - `send-email.js` envoie réellement contact **et devis** vers `contact@infoserv2a.pro` tant que `devis@` n’existe pas (`DEVIS_INBOX` pour basculer plus tard). Secret `RESEND_API_KEY` et domaine Resend vérifié. Claire ne dit « c’est parti » que si cette route confirme l’envoi ;
 - en cas d’absence ou d’échec LiveAvatar, l’interface indique explicitement que la voix native du navigateur est un mode local de secours.
 

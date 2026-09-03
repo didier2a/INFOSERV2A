@@ -1,5 +1,5 @@
 import { corsHeaders, corsPreflight, isAllowedOrigin } from "./liveavatar-origin.js";
-import { buildClaireContextPrompt, CLAIRE_WELCOME } from "../../assets/js/claire-core.mjs";
+import { buildClaireContextPrompt, CLAIRE_WELCOME, LIVEAVATAR_MAX_SESSION_SECONDS } from "../../assets/js/claire-core.mjs";
 import knowledge from "../../data/site-knowledge.json" with { type: "json" };
 
 const TOKEN_URL = "https://api.liveavatar.com/v1/sessions/token";
@@ -137,7 +137,7 @@ export async function onRequestPost({ request, env }) {
         mode: "LITE",
         avatar_id: avatarId(env),
         is_sandbox: false,
-        max_session_duration: 300,
+        max_session_duration: LIVEAVATAR_MAX_SESSION_SECONDS,
         video_settings: { quality: "high", encoding: "H264" },
         openai_realtime_config: {
           secret_id: secretId,

@@ -7,14 +7,14 @@ import {
   pageById,
   resolveCurrentPage,
   isOralSendConfirm
-} from "./claire-core.mjs?v=20260903-it28";
+} from "./claire-core.mjs?v=20260903-it29";
 import {
   canSubmitQuote,
   canSubmitContact,
   describeQuoteChecklist,
   emailDraftFromMemory,
   quotePrefillFromMemory
-} from "./claire-session-memory.mjs?v=20260903-it28";
+} from "./claire-session-memory.mjs?v=20260903-it29";
 
 export const CONTROLLER_STATES = Object.freeze({
   READY: "ready",
