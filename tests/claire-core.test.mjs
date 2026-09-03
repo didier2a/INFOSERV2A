@@ -12,6 +12,8 @@ import {
   isOralSendConfirm,
   isSubmitQuoteAction,
   isUrgentSiteCommand,
+  isStableUrgentCommand,
+  shouldExecuteSiteRuntime,
   CLAIRE_WELCOME,
   createSpeechFollowGate,
   currentPage,
@@ -113,6 +115,14 @@ test("une confirmation orale courte envoie si le formulaire est complet", () => 
   assert.equal(isUrgentSiteCommand("envoie le devis"), true);
   assert.equal(isOralSendConfirm("bonjour Claire"), false);
   assert.equal(isUrgentSiteCommand("bonjour comment ça va"), false);
+  const classified = classifyUtterance("c’est bon", knowledge);
+  assert.equal(classified.kind, "chat");
+  assert.equal(shouldExecuteSiteRuntime(classified, "c’est bon"), true);
+  assert.equal(shouldExecuteSiteRuntime(classified, "confirme"), true);
+  assert.equal(shouldExecuteSiteRuntime(classified, "bonjour comment ça va"), false);
+  assert.equal(isStableUrgentCommand("c’est bon"), true);
+  assert.equal(isStableUrgentCommand("envoie"), false);
+  assert.equal(isStableUrgentCommand("envoie le devis"), true);
 });
 
 test("la phrase de Claire sur le devis ne relance pas l’envoi", () => {
@@ -242,6 +252,8 @@ test("le briefing site contient tous les onglets et le rôle consultante IT", ()
   assert.match(prompt, /Une phrase courte au plus/);
   assert.match(prompt, /INFOSERV2A_OFF_TOPIC/);
   assert.match(prompt, /être interrompue/);
+  assert.match(prompt, /reste silencieuse/);
+  assert.match(prompt, /Ne dis pas que tu attends le site/);
   assert.match(CLAIRE_WELCOME, /Moi c’est Claire, votre aidante Live Avatar/);
   assert.match(CLAIRE_WELCOME, /Je vous écoute/);
   assert.doesNotMatch(CLAIRE_WELCOME, /uniquement dans l’informatique/);

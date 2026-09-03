@@ -1,4 +1,4 @@
-import { QUOTE_FIELD_LABELS, joinFrenchList } from "./claire-session-memory.mjs?v=20260902-it26";
+import { QUOTE_FIELD_LABELS, joinFrenchList } from "./claire-session-memory.mjs?v=20260903-it27";
 
 export const SITE_EMAIL_PATH = "/api/send-email";
 export const EMAIL_SEND_TIMEOUT_MS = 12000;

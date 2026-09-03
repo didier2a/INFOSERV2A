@@ -54,8 +54,8 @@ export class LiveAvatarSession {
       };
     }, 40);
   }
-  startListening() {}
-  stopListening() {}
+  startListening() { this.listenStarts = (this.listenStarts || 0) + 1; }
+  stopListening() { this.listenStops = (this.listenStops || 0) + 1; }
   message(value) { this.messages.push(value); }
   interrupt() { this.interrupted = true; }
   async stop() {}
@@ -275,6 +275,35 @@ test("un envoi oral coupe la parole et part sans attendre la fin de la récitati
   assert.ok(barges.includes("email-send"));
   assert.match(session.messages.at(-1), /INFOSERV2A_APP_RESULT/);
   assert.match(session.messages.at(-1), /bien été envoyée/);
+
+  await provider.stop();
+});
+
+test("un barge-in d’envoi n’écoute plus jusqu’au résultat du site", async () => {
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-quiet-send" })
+  }).install({
+    video,
+    classifyCommand: async () => "chat",
+    onCommand: async () => {}
+  });
+
+  await provider.connect({ microphone: true });
+  const session = globalThis.__infoservFakeSession;
+  const startsAfterConnect = session.listenStarts || 0;
+  session.emit("avatar-speak-started");
+  provider.bargeIn("email-send");
+  assert.equal(session.interrupted, true);
+  assert.equal(provider.listening, false);
+  assert.equal(session.listenStarts || 0, startsAfterConnect);
+  assert.ok((session.listenStops || 0) >= 1);
+
+  provider.sendEmailResult("La demande de devis a bien été envoyée vers contact@infoserv2a.pro.");
+  assert.ok(session.listenStarts > startsAfterConnect);
+  assert.equal(provider.listening, true);
+  assert.match(session.messages.at(-1), /INFOSERV2A_APP_RESULT/);
 
   await provider.stop();
 });

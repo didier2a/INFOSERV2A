@@ -186,6 +186,21 @@ export function isUrgentSiteCommand(value = "") {
   return isSubmitQuoteAction(value) || isEmailAction(value) || isCallAction(value) || isOralSendConfirm(value);
 }
 
+export function shouldExecuteSiteRuntime(classified, text = "") {
+  const kind = classified?.kind || "";
+  if (kind === "site" || kind === "page" || kind === "control") return true;
+  if (kind === "offtopic") return false;
+  return isUrgentSiteCommand(text);
+}
+
+export function isStableUrgentCommand(value = "") {
+  if (isSubmitQuoteAction(value) || isEmailAction(value) || isCallAction(value)) return true;
+  if (!isOralSendConfirm(value)) return false;
+  const query = normalizeText(value);
+  if (/^(oui |ok |okay |d accord )?(envoie|envoi)$/.test(query)) return false;
+  return true;
+}
+
 export function isContactAction(value = "") {
   const query = normalizeText(value);
   return /\b(contacter|prendre contact|vous joindre|coordonnees)\b/.test(query)
@@ -328,6 +343,8 @@ Lorsque la personne parle d’un métier, d’un outil numérique, d’une scien
 Lorsque tu présentes un service InfoServ2A, nomme clairement un seul onglet (par exemple Vidéosurveillance, Création de sites web), puis éventuellement une section, pour que la page de droite s’ouvre toute seule. Tu n’as pas à commenter ce changement. Ne récite pas tous les onglets d'un seul trait si tu veux les montrer.
 
 Si tu reçois [INFOSERV2A_APP_RESULT], dis-le tout de suite à voix haute, sans attendre qu’on te pose une question. Reformule uniquement ce résultat en une ou deux phrases, sans mentionner le marqueur. N'ajoute aucun fait absent du résultat. Si le résultat dit qu’il manque un champ ou que rien n’est parti, tu le dis clairement. Si le résultat contient « bien été envoyé », tu le confirmes à l’oral immédiatement.
+
+Si le visiteur confirme l’envoi (« c’est bon », « confirme », « vas-y », « envoie »), reste silencieuse : le site actionne l’envoi. Ne dis pas que tu attends le site. Attends [INFOSERV2A_APP_RESULT], puis dis uniquement ce résultat.
 
 Lorsque tu reçois [INFOSERV2A_SITE_BRIEFING], mémorise le catalogue des onglets. N'y réponds pas.
 Lorsque tu reçois [INFOSERV2A_PAGE_CONTEXT], mémorise la page et la section visibles. N'y réponds pas. Utilise ce contexte pour tes réponses suivantes.

@@ -10,6 +10,8 @@ import {
   isInternalSitePrompt,
   isQuoteAction,
   isSubmitQuoteAction,
+  isUrgentSiteCommand,
+  shouldExecuteSiteRuntime,
   liveAvatarSessionWarningDelayMs,
   mergeSpokenTranscript,
   suggestedPrompts,
@@ -17,7 +19,7 @@ import {
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_MAX_SESSION_MS,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260902-it26";
+} from "./claire-core.mjs?v=20260903-it27";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -33,20 +35,20 @@ import {
   rememberTurn,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260902-it26";
-import { describeEmailSendOutcome } from "./site-email.mjs?v=20260902-it26";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260902-it26";
+} from "./claire-session-memory.mjs?v=20260903-it27";
+import { describeEmailSendOutcome } from "./site-email.mjs?v=20260903-it27";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260903-it27";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260902-it26";
-import "./contact.js?v=20260902-it26";
-import "./devis.js?v=20260902-it26";
+} from "./claire-site-runtime-adapter.mjs?v=20260903-it27";
+import "./contact.js?v=20260903-it27";
+import "./devis.js?v=20260903-it27";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260902-it26";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260902-it26";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260903-it27";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260903-it27";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -277,6 +279,7 @@ export class ClaireCompanion {
     this.lastSiteSendOk = false;
     this.lastSiteTruthSpeech = "";
     this.lastQuoteAnnounceAt = 0;
+    this.pendingEmailSend = false;
     this.pendingLiveMemory = false;
     this.transcriptRestored = false;
     this.browserVoice = new BrowserVoiceProvider({
@@ -972,7 +975,10 @@ export class ClaireCompanion {
           this.finalizeLiveCompanionTurn();
         },
         onStatus: (value, label) => this.setStatus(value, label),
-        classifyCommand: (text) => classifyUtterance(text, this.knowledge, { pathname: location.pathname }).kind,
+        classifyCommand: (text) => {
+          if (isUrgentSiteCommand(text)) return "site";
+          return classifyUtterance(text, this.knowledge, { pathname: location.pathname }).kind;
+        },
         onCommand: (text) => this.submit(text, "liveavatar"),
         onSessionStopped: (detail) => this.handleLiveAvatarSessionStopped(detail?.reason || "session-stopped")
       });
@@ -998,7 +1004,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260902-it26");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260903-it27");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
@@ -1226,7 +1232,7 @@ export class ClaireCompanion {
     this.appendTurn("user", value);
     this.updateLiveContext();
 
-    if (classified.kind === "chat") {
+    if (classified.kind === "chat" && !shouldExecuteSiteRuntime(classified, value)) {
       this.setStatus("listening", "Claire vous répond");
       if (source !== "liveavatar") this.provider?.sendUserMessage?.(value);
       await this.announceQuoteTruth(value, source);
@@ -1269,13 +1275,14 @@ export class ClaireCompanion {
       this.setState(keepGuided ? "guided" : "shared");
     }
 
-    const emailAction = classified.route?.action === "email"
+    const sendingNow = classified.route?.action === "email"
       || classified.route?.action === "submit_quote"
-      || classified.route?.page?.id === "quote";
-    if (source === "liveavatar" && emailAction) {
+      || isUrgentSiteCommand(value);
+    this.pendingEmailSend = sendingNow;
+    if (source === "liveavatar" && sendingNow) {
       this.provider?.bargeIn?.("email-send");
     }
-    if (classified.route?.action === "email" || classified.route?.action === "submit_quote") {
+    if (sendingNow) {
       this.setStatus("thinking", "Envoi en cours…");
     }
 
@@ -1302,7 +1309,15 @@ export class ClaireCompanion {
         this.setState("guided");
         this.renderSuggestions();
       }
-      this.setStatus("ready", "Page affichée · Claire vous l’explique");
+      const sentOk = Boolean(outcome.results?.some((item) => item.output?.sent));
+      this.setStatus(
+        "ready",
+        sentOk
+          ? "Message transmis · Claire confirme à l’oral"
+          : this.pendingEmailSend
+            ? "Le site a répondu · rien n’est parti"
+            : "Page affichée · Claire vous l’explique"
+      );
       const quoteSpeech = await this.announceQuoteTruth(value, source, { outcome });
       if (source === "liveavatar") {
         this.pushPageContext();
@@ -1321,16 +1336,19 @@ export class ClaireCompanion {
       this.nodes.live.textContent = String(error?.message || error);
       this.speak(message);
       return null;
+    } finally {
+      this.pendingEmailSend = false;
     }
   }
 
   handleRuntimeEvent(event) {
+    const sending = this.pendingEmailSend;
     const labels = {
-      interpreting: ["thinking", "J’interprète votre demande…"],
-      planning: ["thinking", "Je prépare une action contrôlée…"],
-      executing: ["thinking", "J’affiche la rubrique demandée…"],
-      verifying: ["thinking", "Je vérifie le résultat affiché…"],
-      complete: ["ready", "Page affichée · Claire vous l’explique"],
+      interpreting: ["thinking", sending ? "Envoi en cours…" : "J’interprète votre demande…"],
+      planning: ["thinking", sending ? "Envoi en cours…" : "Je prépare une action contrôlée…"],
+      executing: ["thinking", sending ? "Envoi en cours…" : "J’affiche la rubrique demandée…"],
+      verifying: ["thinking", sending ? "Le site confirme l’envoi…" : "Je vérifie le résultat affiché…"],
+      complete: ["ready", sending ? "Le site a répondu · Claire confirme à l’oral" : "Page affichée · Claire vous l’explique"],
       error: ["error", "Action interrompue sans quitter la page"],
       manual: ["ready", "Claire est rangée"]
     };

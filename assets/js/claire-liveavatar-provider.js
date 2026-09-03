@@ -1,4 +1,4 @@
-import { isInternalSitePrompt, isUrgentSiteCommand } from "./claire-core.mjs?v=20260902-it26";
+import { isInternalSitePrompt, isStableUrgentCommand, isUrgentSiteCommand } from "./claire-core.mjs?v=20260903-it27";
 
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;
@@ -300,12 +300,19 @@ export class InfoServ2ALiveAvatarProvider {
     return this.speakLiveMessage(prompt, event) !== false;
   }
 
+  resumeListening(label = "Je vous écoute") {
+    try { this.session?.startListening(); } catch { /* Le SDK peut déjà écouter. */ }
+    this.listening = true;
+    this.emit("listening", label);
+  }
+
   sendEmailResult(value) {
     if (this.avatarSpeaking) this.bargeIn("email-send");
     const sent = this.speakLiveMessage(
       `[INFOSERV2A_APP_RESULT]\nInformation vérifiée par le site : ${value}\nDis cette information à voix haute maintenant, sans attendre qu’on te le demande. Ne prétends pas avoir fait une autre action. Une ou deux phrases, puis silence.`,
       "conversation:email-result-sent"
     );
+    this.resumeListening();
     if (sent === "sent" || sent === "queued") this.armReplyTimer();
     return sent !== false;
   }
@@ -401,18 +408,23 @@ export class InfoServ2ALiveAvatarProvider {
     return this.bargeIn(reason);
   }
 
-  bargeIn(reason = "user-barge-in") {
+  bargeIn(reason = "user-barge-in", options = {}) {
     const wasSpeaking = this.avatarSpeaking;
-    this.record("conversation:barge-in", { reason, avatarSpeaking: wasSpeaking });
+    const resumeListen = options.resumeListen ?? reason !== "email-send";
+    this.record("conversation:barge-in", { reason, avatarSpeaking: wasSpeaking, resumeListen });
     try { this.session?.interrupt(); } catch { /* Aucune réponse Realtime à couper. */ }
     this.clearReplyTimer();
     this.pendingSpeech = [];
     this.pendingLiveSpeech = null;
     this.avatarSpeaking = false;
-    try { this.session?.startListening(); } catch { /* Le SDK peut déjà écouter. */ }
-    this.listening = true;
     this.callbacks.onBargeIn?.({ reason, wasSpeaking });
-    this.emit("listening", "Je vous écoute");
+    if (resumeListen) {
+      this.resumeListening();
+    } else {
+      try { this.session?.stopListening(); } catch { /* Le SDK peut déjà être en pause. */ }
+      this.listening = false;
+      this.emit("thinking", "Envoi en cours…");
+    }
     return true;
   }
 
@@ -482,6 +494,7 @@ export class InfoServ2ALiveAvatarProvider {
       if (typeof this.callbacks.classifyCommand === "function") {
         kind = (await this.callbacks.classifyCommand(text)) || "chat";
       }
+      if (isUrgentSiteCommand(text)) kind = "site";
       if (kind === "chat" || kind === "offtopic") {
         this.realtimeSignal = kind === "offtopic" ? "off-topic" : "natural-reply";
         this.emit("listening", "Claire vous répond…");
@@ -694,6 +707,10 @@ export class InfoServ2ALiveAvatarProvider {
       this.record("conversation:user-transcription", { characters: text.length });
       this.clearReplyTimer();
       this.stageTranscript(text);
+      if (isStableUrgentCommand(text)) {
+        this.userSpeakComplete = true;
+        void this.flushTranscript({ allowIncomplete: true });
+      }
     });
     session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
       this.avatarSpeaking = true;
