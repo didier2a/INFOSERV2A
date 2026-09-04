@@ -9,7 +9,7 @@
   --claire-muted: #5b6975;
   --claire-shadow: 0 28px 90px rgba(3, 18, 30, 0.28);
   --claire-stage-width: clamp(360px, 38vw, 540px);
-  --claire-mobile-stage: clamp(280px, calc(var(--claire-vvh, 100dvh) * 0.48), 480px);
+  --claire-mobile-stage: clamp(176px, calc(var(--claire-vvh, 100dvh) * 0.34), 220px);
   --claire-vvh: 100dvh;
   --claire-vv-offset: 0px;
   --claire-ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -595,8 +595,22 @@ body.claire-conversation-open {
 }
 .claire-companion[data-state="guided"] .claire-experience__layout { display: block; height: 100svh; }
 .claire-companion[data-state="guided"] .claire-live-stage { width: 100%; height: 100%; }
+.claire-companion[data-state="guided"] .claire-live-stage__controls {
+  bottom: 4.15rem;
+}
 .claire-companion[data-state="guided"] .claire-dialogue {
-  display: none;
+  display: grid;
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: 0.45rem;
+  top: auto;
+  z-index: 6;
+  height: auto;
+  max-height: none;
+  padding: 0;
+  overflow: visible;
+  pointer-events: auto;
 }
 .claire-companion[data-state="guided"][data-transcript="open"] .claire-dialogue {
   position: fixed;
@@ -644,19 +658,19 @@ body.claire-conversation-open {
   border-radius: 16px;
 }
 .claire-companion[data-state="guided"] .claire-command input {
-  min-height: 42px;
+  min-height: 44px;
   padding: 0.4rem 0.8rem;
 }
 .claire-companion[data-state="guided"] .claire-icon-button--send {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
 }
 .claire-companion[data-state="guided"] .claire-conversation__header h2 { font-size: 1rem; }
 .claire-companion[data-state="guided"] .claire-conversation__footer span { display: none; }
 
 .claire-live-prompt {
   position: fixed;
-  z-index: 130;
+  z-index: 110;
   display: none;
   gap: 0.35rem;
   padding: 0.7rem 0.85rem 0.75rem;
@@ -727,7 +741,7 @@ body.claire-conversation-open {
   margin: 0.35rem 0 0;
   padding: 0;
   list-style: none;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .claire-live-prompt__quest li {
@@ -815,7 +829,7 @@ body.claire-content-loading #contenu {
   .claire-engine-badge { display: none; }
   .claire-experience__layout {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(var(--claire-mobile-stage), 52dvh) minmax(0, 1fr);
+    grid-template-rows: var(--claire-mobile-stage) minmax(0, 1fr);
     height: var(--claire-vvh, 100dvh);
   }
   .claire-live-stage { min-height: var(--claire-mobile-stage); }
@@ -847,17 +861,33 @@ body.claire-content-loading #contenu {
   }
 
   body.claire-keyboard-open .claire-experience__layout {
-    grid-template-rows: minmax(132px, 28dvh) minmax(0, 1fr);
+    grid-template-rows: 132px minmax(0, 1fr);
   }
   body.claire-keyboard-open .claire-live-stage__caption,
-  body.claire-keyboard-open .claire-experience__header {
+  body.claire-keyboard-open .claire-experience__header,
+  body.claire-keyboard-open .claire-live-prompt {
     display: none;
+  }
+  body.claire-keyboard-open.claire-is-guided {
+    padding-top: 132px;
+  }
+  body.claire-keyboard-open .claire-companion[data-state="guided"],
+  body.claire-keyboard-open .claire-companion[data-state="guided"] .claire-experience,
+  body.claire-keyboard-open .claire-companion[data-state="guided"] .claire-experience__layout,
+  body.claire-keyboard-open .claire-companion[data-state="guided"] .claire-live-stage {
+    height: 132px;
+    min-height: 0;
+  }
+  body.claire-keyboard-open.claire-is-guided .site-header,
+  body.claire-keyboard-open.claire-is-guided .nav-overlay,
+  body.claire-keyboard-open.claire-is-guided .nav-panel {
+    top: 132px;
   }
 
   body.claire-is-guided {
     padding-top: var(--claire-mobile-stage);
     padding-left: 0;
-    padding-bottom: 7.5rem;
+    padding-bottom: 0;
     scroll-padding-top: calc(var(--claire-mobile-stage) + var(--header-height) + 12px);
   }
   body.claire-is-guided .site-header {
@@ -865,20 +895,26 @@ body.claire-content-loading #contenu {
     top: var(--claire-mobile-stage);
     left: 0;
     right: 0;
-    z-index: 125;
+    z-index: 145;
   }
   body.claire-is-guided .nav-overlay {
     top: var(--claire-mobile-stage);
-    z-index: 139;
+    z-index: 149;
   }
   body.claire-is-guided .nav-panel {
     top: var(--claire-mobile-stage);
-    z-index: 140;
+    z-index: 150;
   }
   .claire-companion[data-state="guided"] .claire-live-prompt {
-    left: 0.65rem;
-    right: 0.65rem;
-    bottom: max(0.55rem, env(safe-area-inset-bottom));
+    position: absolute;
+    left: 0.5rem;
+    right: 0.5rem;
+    top: auto;
+    bottom: 3.9rem;
+    max-height: 3.4rem;
+    padding: 0.3rem 0.45rem;
+    overflow: hidden;
+    z-index: 3;
   }
   .claire-session-notice {
     top: 3.4rem;
@@ -902,8 +938,34 @@ body.claire-content-loading #contenu {
   }
   .claire-companion[data-state="guided"] .claire-experience__layout,
   .claire-companion[data-state="guided"] .claire-live-stage { height: var(--claire-mobile-stage); min-height: 0; }
+  .claire-companion[data-state="guided"] .claire-experience__header {
+    min-height: 0;
+    padding: 0.35rem 0.65rem 0;
+  }
+  .claire-companion[data-state="guided"] .claire-live-stage__controls {
+    bottom: 3.7rem;
+    left: 0.5rem;
+    right: 0.5rem;
+  }
+  .claire-companion[data-state="guided"] .claire-voice-control {
+    width: auto;
+    min-height: 40px;
+    flex: 1;
+    padding: 0.4rem 0.7rem;
+  }
   .claire-companion[data-state="guided"] .claire-dialogue {
-    display: none;
+    display: grid;
+    position: absolute;
+    left: 0.45rem;
+    right: 0.45rem;
+    bottom: 0.35rem;
+    top: auto;
+    z-index: 6;
+    height: auto;
+    max-height: none;
+    padding: 0;
+    overflow: visible;
+    pointer-events: auto;
   }
   .claire-companion[data-state="guided"][data-transcript="open"] .claire-dialogue {
     position: fixed;
@@ -926,6 +988,9 @@ body.claire-content-loading #contenu {
   .claire-companion[data-state="guided"] .claire-suggestions,
   .claire-companion[data-state="guided"] .claire-conversation__footer,
   .claire-companion[data-state="guided"] .claire-conversation__footer span { display: none; }
+  .claire-companion[data-state="guided"] .claire-command input {
+    min-height: 44px;
+  }
   .claire-companion[data-state="guided"][data-transcript="open"] .claire-conversation__scroll {
     display: block;
   }
@@ -946,10 +1011,11 @@ body.claire-content-loading #contenu {
   .claire-status-line small { max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .claire-live-stage__controls { left: .75rem; right: .75rem; }
   .claire-voice-control { width: 100%; }
+  .claire-companion[data-state="guided"] .claire-voice-control { width: auto; flex: 1; }
   .claire-conversation__footer { justify-content: flex-start; flex-wrap: wrap; }
 }
 
-@media (max-height: 560px) and (orientation: landscape) {
+@media (max-height: 560px) and (orientation: landscape) and (min-width: 821px) {
   .claire-experience__layout { grid-template-columns: 44% 56%; grid-template-rows: 1fr; }
   .claire-dialogue { padding: 4.2rem 1rem .75rem; }
   .claire-live-stage { min-height: 100svh; }
@@ -972,6 +1038,32 @@ body.claire-content-loading #contenu {
     bottom: 0.5rem;
     max-height: min(40vh, 240px);
   }
+}
+
+body.claire-phone-shell.claire-is-guided {
+  padding-left: 0;
+  padding-top: var(--claire-mobile-stage);
+  padding-bottom: 0;
+}
+body.claire-phone-shell .claire-companion[data-state="guided"] {
+  right: auto;
+  bottom: auto;
+  width: 100%;
+  height: var(--claire-mobile-stage);
+}
+body.claire-phone-shell .claire-companion[data-state="guided"] .claire-experience,
+body.claire-phone-shell .claire-companion[data-state="guided"] .claire-experience__layout,
+body.claire-phone-shell .claire-companion[data-state="guided"] .claire-live-stage {
+  width: 100%;
+  height: var(--claire-mobile-stage);
+  min-height: 0;
+}
+body.nav-just-closed .claire-experience,
+body.nav-just-closed .claire-live-prompt,
+body.nav-just-closed [data-claire-mic],
+body.nav-just-closed [data-claire-expand],
+body.nav-just-closed [data-claire-start] {
+  pointer-events: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

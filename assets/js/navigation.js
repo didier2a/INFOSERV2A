@@ -43,12 +43,18 @@
     if (first) first.focus();
   };
 
+  let closeGuardTimer = 0;
   const close = () => {
     panel.classList.remove("is-open");
     overlay.classList.remove("is-open");
     document.body.classList.remove("nav-open");
+    document.body.classList.add("nav-just-closed");
     toggle.forEach((btn) => btn.setAttribute("aria-expanded", "false"));
     if (menuButton) menuButton.focus();
+    globalThis.clearTimeout(closeGuardTimer);
+    closeGuardTimer = globalThis.setTimeout(() => {
+      document.body.classList.remove("nav-just-closed");
+    }, 400);
   };
 
   toggle.forEach((btn) => {

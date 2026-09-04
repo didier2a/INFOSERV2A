@@ -19,7 +19,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260904-it34";
+} from "./claire-core.mjs?v=20260904-it35";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -40,20 +40,20 @@ import {
   alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260904-it34";
-import { describeEmailSendOutcome } from "./site-email.mjs?v=20260904-it34";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260904-it34";
+} from "./claire-session-memory.mjs?v=20260904-it35";
+import { describeEmailSendOutcome } from "./site-email.mjs?v=20260904-it35";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260904-it35";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260904-it34";
-import "./contact.js?v=20260904-it34";
-import "./devis.js?v=20260904-it34";
+} from "./claire-site-runtime-adapter.mjs?v=20260904-it35";
+import "./contact.js?v=20260904-it35";
+import "./devis.js?v=20260904-it35";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260904-it34";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260904-it34";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260904-it35";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260904-it35";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -138,6 +138,24 @@ function isPhoneShell() {
   } catch {
     return false;
   }
+}
+
+function isTypingControl(node) {
+  if (!(node instanceof Element)) return false;
+  if (node.closest?.(".claire-companion")) {
+    return Boolean(node.closest?.("[data-claire-form]") || node.matches?.("#claireCommand, textarea, input"));
+  }
+  const contenu = document.getElementById("contenu");
+  if (!contenu?.contains(node)) return false;
+  return node.matches?.(
+    "input:not([type=hidden]):not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), textarea, select, [contenteditable='true']"
+  );
+}
+
+function isSiteContentTarget(node) {
+  if (!(node instanceof Element)) return false;
+  if (node.closest?.(".claire-companion, .nav-panel, .nav-overlay, .site-header")) return false;
+  return Boolean(document.getElementById("contenu")?.contains(node));
 }
 
 function liveAvatarStatusUrls() {
@@ -439,6 +457,11 @@ export class ClaireCompanion {
       void this.submit(value, "text");
     });
     this.bindResponsiveShell();
+    document.addEventListener("focusin", (event) => this.handleSiteFieldFocus(event));
+    document.addEventListener("focusout", () => {
+      globalThis.setTimeout(() => this.syncViewportShell(), 0);
+    });
+    document.addEventListener("pointerdown", (event) => this.handleSiteFieldPointer(event), true);
     this.nodes.mic?.addEventListener("click", () => void this.toggleMicrophone());
     this.nodes.stage?.addEventListener("click", (event) => {
       if (event.target?.closest?.("button, a, input")) return;
@@ -507,10 +530,25 @@ export class ClaireCompanion {
     document.documentElement.style.setProperty("--claire-vv-offset", `${Math.round(viewport?.offsetTop || 0)}px`);
     const phone = isPhoneShell();
     document.body.classList.toggle("claire-phone-shell", phone);
-    document.body.classList.toggle(
-      "claire-keyboard-open",
-      Boolean(phone && this.nodes.input && document.activeElement === this.nodes.input)
-    );
+    const typing = isTypingControl(document.activeElement);
+    document.body.classList.toggle("claire-keyboard-open", Boolean(phone && typing));
+    if (typing && isSiteContentTarget(document.activeElement)) this.closeGuidedTranscript();
+  }
+
+  handleSiteFieldFocus(event) {
+    const node = event.target;
+    if (isSiteContentTarget(node) && isTypingControl(node)) this.closeGuidedTranscript();
+    this.syncViewportShell();
+  }
+
+  handleSiteFieldPointer(event) {
+    const node = event.target;
+    if (!(node instanceof Element)) return;
+    if (node.closest?.(".nav-panel, .nav-toggle, .nav-overlay")) return;
+    if (!isSiteContentTarget(node)) return;
+    if (isTypingControl(node) || node.closest?.("label, .form-field, input, textarea, select")) {
+      this.closeGuidedTranscript();
+    }
   }
 
   focusComposer() {
@@ -727,10 +765,21 @@ export class ClaireCompanion {
   toggleGuidedTranscript() {
     const open = this.root.dataset.transcript === "open";
     this.root.dataset.transcript = open ? "closed" : "open";
-    this.root.querySelectorAll("[data-claire-expand]").forEach((button) => {
-      button.setAttribute("aria-expanded", open ? "false" : "true");
+    this.syncExpandButtons();
+  }
+
+  closeGuidedTranscript() {
+    if (this.root?.dataset.transcript !== "open") return;
+    this.root.dataset.transcript = "closed";
+    this.syncExpandButtons();
+  }
+
+  syncExpandButtons() {
+    const open = this.root?.dataset.transcript === "open";
+    this.root?.querySelectorAll("[data-claire-expand]").forEach((button) => {
+      button.setAttribute("aria-expanded", open ? "true" : "false");
       if (["Conversation", "Réduire"].includes(button.textContent.trim())) {
-        button.textContent = open ? "Conversation" : "Réduire";
+        button.textContent = open ? "Réduire" : "Conversation";
       }
     });
   }
@@ -1018,7 +1067,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260904-it34");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260904-it35");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
@@ -1577,11 +1626,14 @@ export class ClaireCompanion {
     if (event.defaultPrevented || this.state === "manual" || event.button > 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const link = event.target?.closest?.("a[href]");
     if (!link || link.target === "_blank" || link.hasAttribute("download")) return;
+    if (link.closest?.(".claire-companion")) return;
     let url;
     try { url = new URL(link.href, location.href); } catch { return; }
     if (url.origin !== location.origin || !this.siteAdapter?.pageForHref(url.href)) return;
     event.preventDefault();
+    this.closeGuidedTranscript();
     this.claimUserSiteNavigation(url);
+    if (this.state !== "guided" && this.state !== "manual") this.setState("guided");
     void this.navigateInternal(url.href, { announce: false, silent: true }).then((ok) => {
       if (!ok) location.assign(url.href);
     });
