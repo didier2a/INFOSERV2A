@@ -8,18 +8,22 @@ import {
   extractFactsFromUtterance,
   formatCaptionContext,
   formatMemoryBriefing,
+  formatLiveMemoryCue,
   hasMemoryContent,
   isPlaceholderNeed,
   loadSessionMemory,
   quoteQuestionnaire,
+  quoteDraftSignature,
   rememberTurn,
+  rememberSuccessfulSend,
+  beginNewQuoteAfterSend,
+  isSameDraftAlreadySent,
   saveSessionMemory,
   shouldAnnounceQuoteTruth,
   shouldShowQuoteQuest,
   mergeMemories,
   archiveCurrentVisit,
   hydrateQuoteMemoryFromForm,
-  formatLiveMemoryCue,
   canSubmitContact,
   quoteExtrasFromDocument
 } from "../assets/js/claire-session-memory.mjs";
@@ -351,4 +355,89 @@ test("le placeholder « À préciser à l’oral » n’est pas un besoin", () =
   };
   const extras = quoteExtrasFromDocument(doc);
   assert.equal(extras.description, "");
+});
+
+test("après un envoi, un nouveau besoin oral n’est plus le devis déjà envoyé", () => {
+  const storage = memoryStorage();
+  const persistent = memoryStorage();
+  let memory = saveSessionMemory({
+    visitor: {
+      name: "Didier",
+      phone: "06 12 34 56 78",
+      email: "didier@exemple.fr",
+      city: "Lyon"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour le commerce",
+    turns: [{ role: "user", text: "J’ai besoin d’une caméra 4G pour le commerce.", at: 1 }]
+  }, storage, persistent);
+  const signature = quoteDraftSignature(memory);
+  memory = rememberSuccessfulSend({
+    kind: "devis",
+    inbox: "contact@infoserv2a.pro",
+    signature
+  }, storage, persistent);
+
+  assert.equal(isSameDraftAlreadySent(memory), true);
+  assert.match(formatMemoryBriefing(memory), /clos/i);
+
+  memory = beginNewQuoteAfterSend(storage, persistent);
+
+  assert.equal(memory.need, "");
+  assert.equal(memory.service, "");
+  assert.equal(memory.turns.length, 0);
+  assert.equal(memory.visitor.name, "Didier");
+  assert.equal(memory.visitor.email, "didier@exemple.fr");
+  assert.equal(memory.lastSend.kind, "devis");
+  assert.ok(memory.quoteEpoch >= 1);
+  assert.equal(isSameDraftAlreadySent(memory), false);
+  assert.match(formatLiveMemoryCue(memory), /nouveau devis/i);
+  assert.match(formatMemoryBriefing(memory), /Devis en cours : aucun/);
+  assert.doesNotMatch(formatMemoryBriefing(memory), /Besoin en cours :/);
+  assert.ok((memory.visits || []).some((visit) => /caméra|camera/i.test(`${visit.summary} ${visit.need}`)));
+
+  const staleForm = hydrateQuoteMemoryFromForm(storage, {
+    querySelector(selector) {
+      const values = {
+        "#devis-name": "Didier",
+        "#devis-phone": "06 12 34 56 78",
+        "#devis-email": "didier@exemple.fr",
+        "#devis-city": "Lyon",
+        "#devis-service": "videosurveillance",
+        "#devis-description": "Caméra 4G pour le commerce"
+      };
+      return values[selector] ? { value: values[selector] } : null;
+    }
+  });
+  assert.equal(staleForm.need, "", "le formulaire resté rempli ne doit pas réinjecter l’ancien devis");
+
+  memory = rememberTurn("user", "Je veux un site internet pour mon commerce.", storage, persistent);
+  assert.match(memory.need, /site internet/i);
+  assert.equal(memory.service, "creation-site-web");
+  assert.equal(isSameDraftAlreadySent(memory), false);
+  assert.equal(canSubmitQuote(memory), true);
+  assert.equal(describeQuoteChecklist(memory).alreadySent, false);
+});
+
+test("une époque de devis plus récente n’est pas écrasée par l’ancien besoin stocké", () => {
+  const merged = mergeMemories({
+    updatedAt: 10,
+    quoteEpoch: 1,
+    visitor: { name: "Didier", phone: "06 12 34 56 78", email: "didier@exemple.fr", city: "Lyon" },
+    need: "",
+    service: "",
+    turns: []
+  }, {
+    updatedAt: 20,
+    quoteEpoch: 0,
+    visitor: { name: "Didier", phone: "06 12 34 56 78", email: "didier@exemple.fr", city: "Lyon" },
+    need: "Caméra 4G pour le commerce",
+    service: "videosurveillance",
+    turns: [{ role: "user", text: "Caméra 4G", at: 1 }]
+  });
+  assert.equal(merged.need, "");
+  assert.equal(merged.service, "");
+  assert.equal(merged.quoteEpoch, 1);
+  assert.equal(merged.turns.length, 0);
+  assert.equal(merged.visitor.name, "Didier");
 });

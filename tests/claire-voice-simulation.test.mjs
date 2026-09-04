@@ -501,6 +501,11 @@ test("submitQuote recopie le besoin formalisé si le textarea a le placeholder",
   assert.match(posts[0].description, /hangar isolé/);
   assert.doesNotMatch(posts[0].description, /préciser à l/);
   assert.match(fields.get("#devis-description").value, /hangar isolé/);
+  const cleared = surface.resetQuoteNeed();
+  assert.equal(cleared.description, "");
+  assert.equal(cleared.service, "");
+  assert.equal(fields.get("#devis-description").value, "");
+  assert.equal(fields.get("#devis-service").value, "");
   const { normalizeEmailPayload } = await import("../functions/api/send-email.js");
   const mail = normalizeEmailPayload(posts[0]);
   assert.match(mail.text, /Besoin :/);
@@ -596,6 +601,23 @@ test("simulation vocale : « envoie le message » sur un devis prérempli envoie
   const second = planCommand("c’est bon", knowledge, manifest, { memory: sentMemory, pageId: "quote" });
   assert.equal(second.steps.some((step) => step.tool === "submit_quote"), false);
   assert.match(second.response, /déjà été envoyée/);
+
+  const { beginNewQuoteAfterSend, rememberTurn, saveSessionMemory, isSameDraftAlreadySent } = await import("../assets/js/claire-session-memory.mjs");
+  const storage = {
+    data: new Map(),
+    getItem(key) { return this.data.has(key) ? this.data.get(key) : null; },
+    setItem(key, value) { this.data.set(key, value); },
+    removeItem(key) { this.data.delete(key); }
+  };
+  saveSessionMemory(sentMemory, storage);
+  const reset = beginNewQuoteAfterSend(storage);
+  assert.equal(reset.need, "");
+  assert.equal(isSameDraftAlreadySent(reset), false);
+  const next = rememberTurn("user", "Je veux un site internet pour mon commerce.", storage);
+  assert.match(next.need, /site internet/i);
+  assert.equal(isSameDraftAlreadySent(next), false);
+  const third = planCommand("envoie le devis", knowledge, manifest, { memory: next, pageId: "quote" });
+  assert.ok(third.steps.some((step) => step.tool === "submit_quote"));
 });
 
 test("simulation vocale : l’onglet suivant parcourt le catalogue", async () => {

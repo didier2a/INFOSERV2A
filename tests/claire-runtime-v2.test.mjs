@@ -432,6 +432,37 @@ test("un devis déjà envoyé n’est pas renvoyé", () => {
   assert.match(plan.response, /déjà été envoyée/);
 });
 
+test("après un envoi, un nouveau besoin oral n’est plus bloqué comme déjà envoyé", () => {
+  const sent = {
+    visitor: {
+      name: "Didier",
+      phone: "06 12 34 56 78",
+      email: "didier@exemple.fr",
+      city: "Lyon"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour le commerce",
+    turns: [],
+    lastSend: {
+      sent: true,
+      kind: "devis",
+      inbox: "contact@infoserv2a.pro",
+      signature: "didier|06 12 34 56 78|didier@exemple.fr|lyon|videosurveillance|caméra 4g pour le commerce"
+    }
+  };
+  const stillSame = planCommand("envoie le devis", knowledge, manifest, { memory: sent, pageId: "quote" });
+  assert.equal(stillSame.steps.some((step) => step.tool === "submit_quote"), false);
+
+  const nextNeed = {
+    ...sent,
+    need: "Site internet pour mon commerce",
+    service: "creation-site-web",
+    quoteEpoch: 1
+  };
+  const newQuote = planCommand("envoie le devis", knowledge, manifest, { memory: nextNeed, pageId: "quote" });
+  assert.ok(newQuote.steps.some((step) => step.tool === "submit_quote"));
+});
+
 test("l’ancre canonique existe dans la page publique", async () => {
   const html = await readFile(
     new URL("../videosurveillance.html", import.meta.url),

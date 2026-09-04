@@ -19,7 +19,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260903-it32";
+} from "./claire-core.mjs?v=20260904-it33";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -33,26 +33,27 @@ import {
   rememberPage,
   rememberTurn,
   rememberSuccessfulSend,
+  beginNewQuoteAfterSend,
   quoteDraftSignature,
   contactDraftSignature,
   isSameDraftAlreadySent,
   alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260903-it32";
-import { describeEmailSendOutcome } from "./site-email.mjs?v=20260903-it32";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260903-it32";
+} from "./claire-session-memory.mjs?v=20260904-it33";
+import { describeEmailSendOutcome } from "./site-email.mjs?v=20260904-it33";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260904-it33";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260903-it32";
-import "./contact.js?v=20260903-it32";
-import "./devis.js?v=20260903-it32";
+} from "./claire-site-runtime-adapter.mjs?v=20260904-it33";
+import "./contact.js?v=20260904-it33";
+import "./devis.js?v=20260904-it33";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260903-it32";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260903-it32";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260904-it33";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260904-it33";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -281,6 +282,7 @@ export class ClaireCompanion {
     this.siteAdapter = null;
     this.runtime = null;
     this.lastSiteSendOk = false;
+    this.lastSiteSendAt = 0;
     this.lastSiteTruthSpeech = "";
     this.lastQuoteAnnounceAt = 0;
     this.pendingEmailSend = false;
@@ -1010,7 +1012,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260903-it32");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260904-it33");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
@@ -1156,6 +1158,7 @@ export class ClaireCompanion {
     if (!speech) return { speech: "", duplicate: false };
     const duplicate = this.lastSiteTruthSpeech === speech && Boolean(this.lastSiteSendOk) === Boolean(sent);
     this.lastSiteSendOk = sent;
+    if (sent) this.lastSiteSendAt = Date.now();
     this.lastSiteTruthSpeech = speech;
     if (duplicate) return { speech, duplicate: true };
     const article = this.appendTurn("companion", speech, { truth: true });
@@ -1180,9 +1183,7 @@ export class ClaireCompanion {
     if (!relevant) return "";
     const actuallySent = Boolean(outcome?.results?.some((item) => item.output?.sent));
     const checklist = describeQuoteChecklist(memory);
-    const alreadySent = Boolean(
-      this.lastSiteSendOk || checklist.alreadySent || isSameDraftAlreadySent(memory)
-    );
+    const alreadySent = Boolean(checklist.alreadySent || isSameDraftAlreadySent(memory));
     if (!actuallySent && alreadySent) {
       const speech = sendSpeech || outcome?.plan?.response || alreadySentSpeech(
         memory,
@@ -1353,6 +1354,11 @@ export class ClaireCompanion {
           replyTo: sentResult?.output?.replyTo || "",
           signature: kind === "devis" ? quoteDraftSignature(memory) : contactDraftSignature(memory)
         });
+        beginNewQuoteAfterSend();
+        this.siteAdapter?.surface?.resetQuoteNeed?.();
+        this.syncVisibleForms();
+        this.lastSiteSendAt = Date.now();
+        this.sendSessionMemory({ live: true });
       }
       this.setStatus(
         "ready",

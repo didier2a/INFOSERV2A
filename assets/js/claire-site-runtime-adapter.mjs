@@ -1,5 +1,5 @@
-import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260903-it32";
-import { contactExtrasFromDocument, firstUsefulText, quoteExtrasFromDocument, usefulText } from "./claire-session-memory.mjs?v=20260903-it32";
+import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260904-it33";
+import { contactExtrasFromDocument, firstUsefulText, quoteExtrasFromDocument, usefulText } from "./claire-session-memory.mjs?v=20260904-it33";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -238,11 +238,16 @@ export class BrowserInfoServ2ASurface {
     });
   }
 
-  fillQuoteField(selector, value) {
+  fillQuoteField(selector, value, { allowEmpty = false } = {}) {
     const field = this.document.querySelector(selector);
+    if (!field) return false;
     const next = usefulText(value, 4000);
-    if (!field || !next) return Boolean(field);
+    if (!next && !allowEmpty) return true;
     if (field.tagName === "SELECT") {
+      if (!next) {
+        field.value = "";
+        return true;
+      }
       const needle = String(value).toLocaleLowerCase("fr");
       const option = [...field.options].find((item) => {
         const optionValue = item.value.toLocaleLowerCase("fr");
@@ -251,9 +256,20 @@ export class BrowserInfoServ2ASurface {
       });
       if (option) field.value = option.value;
     } else {
-      field.value = value;
+      field.value = next;
     }
     return true;
+  }
+
+  resetQuoteNeed() {
+    this.fillQuoteField("#devis-description", "", { allowEmpty: true });
+    this.fillQuoteField("#devis-service", "", { allowEmpty: true });
+    this.fillQuoteField("#contact-message", "", { allowEmpty: true });
+    return {
+      description: this.document.querySelector("#devis-description")?.value || "",
+      service: this.document.querySelector("#devis-service")?.value || "",
+      message: this.document.querySelector("#contact-message")?.value || ""
+    };
   }
 
   prefillQuote(draft = {}) {

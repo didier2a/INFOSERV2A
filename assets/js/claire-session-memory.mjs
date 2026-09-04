@@ -85,6 +85,7 @@ export function emptyMemory() {
     turns: [],
     visits: [],
     lastSend: null,
+    quoteEpoch: 0,
     summary: ""
   };
 }
@@ -149,6 +150,7 @@ export function normalizeMemory(value = {}) {
     turns,
     visits,
     lastSend: normalizeLastSend(value.lastSend),
+    quoteEpoch: Math.max(0, Number(value.quoteEpoch) || 0),
     summary: compact(value.summary).slice(0, 400) || fallback.summary
   };
 }
@@ -214,22 +216,27 @@ export function mergeMemories(primary = {}, secondary = {}) {
   if (!secondHas) return first;
   const newer = (first.updatedAt || 0) >= (second.updatedAt || 0) ? first : second;
   const older = newer === first ? second : first;
+  const newerEpoch = Number(newer.quoteEpoch) || 0;
+  const olderEpoch = Number(older.quoteEpoch) || 0;
+  const needFrom = newerEpoch > olderEpoch ? newer : olderEpoch > newerEpoch ? older : newer;
   return normalizeMemory({
     ...newer,
+    quoteEpoch: Math.max(newerEpoch, olderEpoch),
     visitor: {
       name: newer.visitor.name || older.visitor.name,
       phone: newer.visitor.phone || older.visitor.phone,
       email: newer.visitor.email || older.visitor.email,
       city: newer.visitor.city || older.visitor.city
     },
-    need: newer.need || older.need,
-    service: newer.service || older.service,
+    need: needFrom === newer ? (newer.need || (newerEpoch === olderEpoch ? older.need : "")) : older.need,
+    service: needFrom === newer ? (newer.service || (newerEpoch === olderEpoch ? older.service : "")) : older.service,
+    lastSend: newer.lastSend || older.lastSend,
     lastPath: newer.lastPath || older.lastPath,
     lastTitle: newer.lastTitle || older.lastTitle,
     clientId: newer.clientId || older.clientId,
     visitCount: Math.max(Number(newer.visitCount) || 0, Number(older.visitCount) || 0),
     startedAt: Math.min(newer.startedAt || now(), older.startedAt || now()),
-    turns: mergeTurns(older.turns, newer.turns),
+    turns: newerEpoch === olderEpoch ? mergeTurns(older.turns, newer.turns) : (needFrom.turns || []),
     visits: mergeVisits(older.visits, newer.visits)
   });
 }
@@ -459,6 +466,17 @@ export function rememberSuccessfulSend(detail = {}, storage, persistent) {
   return saveSessionMemory(memory, ...storeArgs);
 }
 
+export function beginNewQuoteAfterSend(storage, persistent) {
+  const storeArgs = arguments.length === 0 ? [] : arguments.length === 1 ? [storage] : [storage, persistent];
+  archiveCurrentVisit(...storeArgs);
+  const memory = loadSessionMemory(...storeArgs);
+  memory.need = "";
+  memory.service = "";
+  memory.turns = [];
+  memory.quoteEpoch = (Number(memory.quoteEpoch) || 0) + 1;
+  return saveSessionMemory(memory, ...storeArgs);
+}
+
 export function isSameDraftAlreadySent(memory = {}, extras = {}, kind = "devis") {
   const last = normalizeLastSend(memory.lastSend);
   if (!last || last.kind !== kind) return false;
@@ -564,6 +582,9 @@ export function hydrateQuoteMemoryFromForm(storage, doc) {
   const extras = formExtrasFromDocument(documentRef);
   const storeArgs = arguments.length === 0 ? [] : [storage];
   const memory = loadSessionMemory(...storeArgs);
+  if (isSameDraftAlreadySent(memory, extras, "devis") || isSameDraftAlreadySent(memory, extras, "contact")) {
+    return memory;
+  }
   if (!QUOTE_REQUIRED_FIELDS.some((key) => compact(key === "description" ? extras.description : extras[key]))
     && !canSubmitContact(memory, extras)
     && !compact(extras.name || extras.email || extras.message)) {
@@ -710,9 +731,10 @@ export function formatMemoryBriefing(memory = {}) {
     visitor.email && `E-mail : ${visitor.email}.`,
     visitor.city && `Commune : ${visitor.city}.`,
     normalized.service && `Service évoqué : ${normalized.service}.`,
-    normalized.need && `Besoin : ${normalized.need}.`,
+    normalized.need && `Besoin en cours : ${normalized.need}.`,
+    !normalized.need && normalized.lastSend?.sent && "Devis en cours : aucun. N’en ressors pas un ancien.",
     normalized.lastTitle && `Dernière page : ${normalized.lastTitle}.`,
-    normalized.lastSend?.sent && `Déjà envoyé : ${normalized.lastSend.kind} vers ${normalized.lastSend.inbox}. Ne redemande pas de confirmation d’envoi.`
+    normalized.lastSend?.sent && `Dernier envoi : ${normalized.lastSend.kind} vers ${normalized.lastSend.inbox}. C’est clos. Un nouveau besoin à l’oral = un nouveau devis : tu ne ressorts pas l’ancien, tu ne redemandes pas de confirmer cet envoi-là.`
   ].filter(Boolean);
   const visits = (normalized.visits || []).slice(-4).map((visit) => {
     const when = visit.at ? new Date(visit.at).toLocaleDateString("fr-FR") : "";
@@ -745,7 +767,7 @@ export function formatLiveMemoryCue(memory = {}) {
     normalized.need && compact(normalized.need).slice(0, 120)
   ].filter(Boolean).join(" · ");
   const sent = normalized.lastSend?.sent
-    ? ` Déjà envoyé (${normalized.lastSend.kind}) vers ${normalized.lastSend.inbox}. Ne redemande pas de confirmation.`
+    ? ` Dernier envoi (${normalized.lastSend.kind}) clos. Un nouveau besoin = un nouveau devis.`
     : "";
   return `Client déjà connu : ${facts || "échange en cours"}.${sent} ORDRE : une phrase courte (« Je reprends. »). N’énumère rien. N’accueille pas. Silence ensuite.`;
 }
