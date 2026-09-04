@@ -1,4 +1,4 @@
-import { isInternalSitePrompt, isStableUrgentCommand, isUrgentSiteCommand, isClaireQuotePrompt } from "./claire-core.mjs?v=20260904-it33";
+import { isInternalSitePrompt, isStableUrgentCommand, isUrgentSiteCommand, isClaireQuotePrompt } from "./claire-core.mjs?v=20260904-it34";
 
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;

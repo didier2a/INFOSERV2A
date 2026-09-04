@@ -133,6 +133,19 @@
       }
       if (!result.sent) throw new Error(result.error || "network");
       api.showStatus(form, "ok", "Votre demande de devis a bien été transmise vers " + (result.inbox || "contact@infoserv2a.pro") + ". Les fichiers listés ne sont pas joints : envoyez-les en réponse si besoin.");
+      document.dispatchEvent(new CustomEvent("infoserv:email-sent", {
+        detail: {
+          kind: "devis",
+          inbox: result.inbox,
+          replyTo: result.replyTo,
+          name: fields.name.value,
+          phone: fields.phone.value,
+          email: fields.email.value,
+          city: fields.city.value,
+          service: fields.service.value,
+          description: fields.description.value
+        }
+      }));
       form.reset();
     }).catch(() => {
       api.showStatus(form, "error", "L'envoi n'a pas pu aboutir. Vous pouvez nous écrire à contact@infoserv2a.pro.");

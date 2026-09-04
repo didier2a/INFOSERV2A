@@ -19,7 +19,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260904-it33";
+} from "./claire-core.mjs?v=20260904-it34";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -40,20 +40,20 @@ import {
   alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260904-it33";
-import { describeEmailSendOutcome } from "./site-email.mjs?v=20260904-it33";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260904-it33";
+} from "./claire-session-memory.mjs?v=20260904-it34";
+import { describeEmailSendOutcome } from "./site-email.mjs?v=20260904-it34";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260904-it34";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260904-it33";
-import "./contact.js?v=20260904-it33";
-import "./devis.js?v=20260904-it33";
+} from "./claire-site-runtime-adapter.mjs?v=20260904-it34";
+import "./contact.js?v=20260904-it34";
+import "./devis.js?v=20260904-it34";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260904-it33";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260904-it33";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260904-it34";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260904-it34";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -283,6 +283,7 @@ export class ClaireCompanion {
     this.runtime = null;
     this.lastSiteSendOk = false;
     this.lastSiteSendAt = 0;
+    this.closingQuoteAfterSend = false;
     this.lastSiteTruthSpeech = "";
     this.lastQuoteAnnounceAt = 0;
     this.pendingEmailSend = false;
@@ -455,6 +456,11 @@ export class ClaireCompanion {
     });
     globalThis.addEventListener("infoserv:claire-telemetry", (event) => {
       this.showRealtimeTelemetry(event.detail);
+    });
+    globalThis.addEventListener("infoserv:email-sent", (event) => {
+      const detail = event.detail || {};
+      const kind = detail.kind === "contact" ? "contact" : "devis";
+      this.closeQuoteAfterSuccessfulSend(kind, detail);
     });
     document.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
@@ -1012,7 +1018,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260904-it33");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260904-it34");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
@@ -1151,6 +1157,40 @@ export class ClaireCompanion {
     this.appendTurn("companion", value, { live: true });
     this.updateLiveCaption(value);
     this.correctInventedSend(value);
+  }
+
+  closeQuoteAfterSuccessfulSend(kind, detail = {}) {
+    if (this.closingQuoteAfterSend) return;
+    this.closingQuoteAfterSend = true;
+    try {
+      const memory = loadSessionMemory();
+      const extras = {
+        name: detail.name,
+        phone: detail.phone,
+        email: detail.email,
+        city: detail.city,
+        service: detail.service,
+        description: detail.description,
+        message: detail.message
+      };
+      const signature = detail.signature
+        || (kind === "contact" ? contactDraftSignature(memory, extras) : quoteDraftSignature(memory, extras));
+      if (signature) {
+        rememberSuccessfulSend({
+          kind,
+          inbox: detail.inbox || "contact@infoserv2a.pro",
+          replyTo: detail.replyTo || "",
+          signature
+        });
+      }
+      beginNewQuoteAfterSend();
+      this.siteAdapter?.surface?.resetQuoteNeed?.();
+      this.lastSiteSendAt = Date.now();
+      this.sendSessionMemory({ live: true });
+      queueMicrotask(() => this.syncVisibleForms());
+    } finally {
+      this.closingQuoteAfterSend = false;
+    }
   }
 
   writeSiteTruth(text, { sent = false } = {}) {
@@ -1347,18 +1387,10 @@ export class ClaireCompanion {
       if (sentOk) {
         const sentResult = (outcome.results || []).find((item) => item.output?.sent);
         const kind = sentResult?.tool === "submit_quote" ? "devis" : "contact";
-        const memory = loadSessionMemory();
-        rememberSuccessfulSend({
-          kind,
+        this.closeQuoteAfterSuccessfulSend(kind, {
           inbox: sentResult?.output?.inbox || "contact@infoserv2a.pro",
-          replyTo: sentResult?.output?.replyTo || "",
-          signature: kind === "devis" ? quoteDraftSignature(memory) : contactDraftSignature(memory)
+          replyTo: sentResult?.output?.replyTo || ""
         });
-        beginNewQuoteAfterSend();
-        this.siteAdapter?.surface?.resetQuoteNeed?.();
-        this.syncVisibleForms();
-        this.lastSiteSendAt = Date.now();
-        this.sendSessionMemory({ live: true });
       }
       this.setStatus(
         "ready",

@@ -49,6 +49,17 @@
         }
         if (!result.sent) throw new Error(result.error || "network");
         api.showStatus(form, "ok", "Votre message a bien été transmis vers " + (result.inbox || "contact@infoserv2a.pro") + ".");
+        document.dispatchEvent(new CustomEvent("infoserv:email-sent", {
+          detail: {
+            kind: "contact",
+            inbox: result.inbox,
+            replyTo: result.replyTo,
+            name: name.value,
+            email: email.value,
+            phone: phone.value,
+            message: message.value
+          }
+        }));
         form.reset();
       }).catch(() => {
         api.showStatus(form, "error", "L'envoi n'a pas pu aboutir. Vous pouvez nous écrire à contact@infoserv2a.pro.");
