@@ -557,7 +557,9 @@ test("Claire écrit dans le formulaire contact visible, pas seulement au moment 
   assert.equal(fields.get("#contact-name").value, "Didier Aouizerate");
   assert.equal(fields.get("#contact-email").value, "infoserv2a@gmail.com");
   assert.equal(fields.get("#contact-phone").value, "07 45 15 60 76");
-  assert.match(fields.get("#contact-message").value, /Demande pour le réseau du cabinet/);
+  assert.match(fields.get("#contact-message").value, /demande pour le réseau du cabinet/i);
+  assert.match(fields.get("#contact-message").value, /Synthèse de l’échange/);
+  assert.doesNotMatch(fields.get("#contact-message").value, /Vous\s*:|Claire\s*:/);
 });
 
 test("simulation vocale : « envoie le message » sur un devis prérempli envoie le devis, une seule fois", async () => {
@@ -584,7 +586,9 @@ test("simulation vocale : « envoie le message » sur un devis prérempli envoie
   assert.equal(first.results.find((item) => item.tool === "compose_email"), undefined);
   assert.equal(surface.posts.length, 1);
   assert.equal(surface.posts[0].kind, "devis");
-  assert.match(surface.posts[0].description, /Caméra 4G pour un hangar isolé/);
+  assert.match(surface.posts[0].description, /caméra 4G pour un hangar isolé/i);
+  assert.match(surface.posts[0].description, /Le visiteur a indiqué qu’il souhaite/);
+  assert.doesNotMatch(surface.posts[0].description, /• /);
   const { normalizeEmailPayload } = await import("../functions/api/send-email.js");
   const mail = normalizeEmailPayload(surface.posts[0]);
   assert.match(mail.text, /Nom : Didier Aouizerate/);

@@ -336,6 +336,12 @@ export function inferService(text = "") {
   return "";
 }
 
+function hasNeedLanguage(text = "", facts = {}) {
+  const query = folded(text);
+  return Boolean(facts.service)
+    || /\b(besoin|probleme|camera|cameras|installer|depanner|devis pour|je voudrais|je veux|j aimerais|site web|site internet|reseau|wifi|sauvegarde|maintenance|panne|ne demarre|ordinateur|\bpc\b|nas|serveur|enregistrement|hangar|cabinet|boutique|commerce)\b/.test(query);
+}
+
 function isCommandUtterance(text = "") {
   const query = folded(text);
   return /\b(envoie le devis|envoie un mail|envoie un e-mail|c est (parti|envoye|valide|tout|bon|pret)|bien (ete )?envoye)\b/.test(query)
@@ -345,10 +351,20 @@ function isCommandUtterance(text = "") {
 function isContactOnlyUtterance(text, facts = {}) {
   const hasContact = Boolean(facts.email || facts.phone || facts.name || facts.city);
   if (!hasContact) return false;
+  return !hasNeedLanguage(text, facts) && folded(text).length < 96;
+}
+
+function isGreetingOnly(text = "", facts = {}) {
   const query = folded(text);
-  const hasNeedLanguage = Boolean(facts.service)
-    || /\b(besoin|probleme|camera|installer|depanner|devis pour|je voudrais|je veux)\b/.test(query);
-  return !hasNeedLanguage && query.length < 96;
+  if (!/^(bonjour|bonsoir|salut|hey|coucou|hello)\b/.test(query)) return false;
+  return !hasNeedLanguage(query, facts);
+}
+
+function isSmallTalk(text = "", facts = {}) {
+  const query = folded(text);
+  if (hasNeedLanguage(query, facts)) return false;
+  return /^(comment (ca|tu|vous)|ca va|qui es[- ]tu|tu vas bien|vous allez bien)\b/.test(query)
+    || (/^(merci|de rien|a bientot|bonne journee)\b/.test(query) && query.length < 40);
 }
 
 function isThinUtterance(text = "") {
@@ -356,12 +372,19 @@ function isThinUtterance(text = "") {
   if (!query) return true;
   if (query.length < 12) return true;
   if (isCommandUtterance(text)) return true;
+  if (isGreetingOnly(text) || isSmallTalk(text)) return true;
   return /^(bonjour|bonsoir|merci|oui|non|ok|okay|d accord|appelle|appeler|appelez)\b/.test(query)
     && query.length < 28;
 }
 
 export function isNeedUtterance(text = "") {
   return Boolean(extractFactsFromUtterance(text).need);
+}
+
+export function isClaireSynthesis(value = "") {
+  const query = folded(value);
+  return query.startsWith("synthese de l echange")
+    || query.startsWith("le visiteur a indique");
 }
 
 function serviceLabel(service = "") {
@@ -386,50 +409,165 @@ function dedupeNeedSnippets(items = []) {
   return kept;
 }
 
+const ORAL_LEAD = /^(bonjour|bonsoir|salut|hey|coucou|hello|merci|oui|ouais|ok|okay|d accord|daccord|ben|bah|alors|et puis|et|euh|voila|voilà|donc)\b[\s,;:.!?-]*/i;
+const SPEAK_LEAD = /^(je (?:voudrais|veux|aimerais|souhaite|desirerais)|j['’]aimerais|on (?:voudrait|aimerait|souhaite)|il (?:me )?faudrait|il me faut|j['’]ai besoin d(?:e |['’])?|nous (?:voulons|souhaitons|avons besoin d(?:e |['’])?))\s+/i;
+
+function stripDialogueTranscript(text = "") {
+  const lines = String(text || "").split(/\n+/);
+  const kept = [];
+  let dialogue = false;
+  for (const line of lines) {
+    const match = line.match(/^\s*(visiteur|vous|claire|assistant|companion)\s*[:\-–]\s*(.*)$/i);
+    if (match) {
+      dialogue = true;
+      if (!/^(claire|assistant|companion)$/i.test(match[1])) kept.push(match[2]);
+      continue;
+    }
+    if (!dialogue) kept.push(line);
+  }
+  return kept.join(" ");
+}
+
+function stripContactClauses(text = "") {
+  return text
+    .replace(/\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b/g, " ")
+    .replace(/(?:\+33|0033|0)\s*[1-9](?:[\s.-]?\d{2}){4}/g, " ")
+    .replace(/\b(?:je m['’]appelle|mon nom est|moi c['’]est)\s+[A-Za-zÀ-ÿ'’-]+(?:\s+[A-Za-zÀ-ÿ'’-]+){0,2}/gi, " ")
+    .replace(/\b(?:mon (?:e-?mail|mail|courriel|numero|telephone)|adresse)(?:\s+(?:c['’]est|est))?\s+\S+/gi, " ")
+    .replace(/\b(?:j['’]habite|je vis|je suis de)(?:\s+(?:à|a|au|aux|en))?\s+[A-Za-zÀ-ÿ'’-]+(?:[- ][A-Za-zÀ-ÿ'’-]+){0,2}/gi, " ");
+}
+
+function stripCommands(text = "") {
+  return text.replace(/\b(?:envoie(?:r)?(?:\s+le|\s+un|\s+l[ea])?\s+(?:devis|message|mail|e-mail)|c['’]est bon|c['’]est parti)\b.*$/gi, " ");
+}
+
+function toWrittenClause(text = "") {
+  let value = stripDialogueTranscript(text);
+  value = stripContactClauses(value);
+  value = stripCommands(value);
+  value = compact(value);
+  if (isClaireSynthesis(value)) {
+    value = value.replace(/^(synthèse de l[’']échange\s*:?\s*)/i, "");
+    value = value.replace(/^le visiteur a indiqué qu[’']il souhaite\s*/i, "");
+    value = value.replace(/\n*service évoqué\s*:[^\n]+/gi, "");
+  }
+  let guard = 0;
+  while (guard < 6 && ORAL_LEAD.test(value)) {
+    value = compact(value.replace(ORAL_LEAD, ""));
+    guard += 1;
+  }
+  value = compact(value.replace(SPEAK_LEAD, ""));
+  value = value.replace(/[.!?…]+$/g, "");
+  return compact(value);
+}
+
+function isUselessClause(text = "") {
+  const query = folded(text);
+  if (query.length < 6) return true;
+  if (isGreetingOnly(text) || isSmallTalk(text) || isCommandUtterance(text)) return true;
+  if (!hasNeedLanguage(query) && query.length < 48 && /^(claire|comment |tu vas|vous allez|ca va)\b/.test(query)) {
+    return true;
+  }
+  return false;
+}
+
+export function looksLikeConversationDump(text = "", memory = {}) {
+  const raw = compact(text);
+  if (!raw) return false;
+  const query = folded(raw);
+  if (/\b(visiteur|vous|claire|assistant)\s*:/.test(query)) return true;
+  if (/\bderniers echanges\b/.test(query)) return true;
+  const companionHit = (memory.turns || [])
+    .filter((turn) => turn.role !== "user")
+    .some((turn) => {
+      const slice = folded(turn.text).slice(0, 36);
+      return slice.length >= 24 && query.includes(slice);
+    });
+  if (companionHit) return true;
+  const userNeedTurns = (memory.turns || [])
+    .filter((turn) => turn.role === "user" && isNeedUtterance(turn.text));
+  const distinctHits = userNeedTurns.filter((turn) => {
+    const slice = folded(turn.text).slice(0, 28);
+    return slice.length >= 16 && query.includes(slice);
+  });
+  if (distinctHits.length >= 2 && /[•\n]/.test(raw)) return true;
+  return distinctHits.length >= 3;
+}
+
 function collectNeedSnippets(memory = {}) {
   const snippets = [];
   for (const turn of memory.turns || []) {
     if (turn.role !== "user") continue;
     const text = compact(turn.text);
-    if (!isNeedUtterance(text)) continue;
+    if (!isNeedUtterance(text) || isGreetingOnly(text) || isSmallTalk(text)) continue;
     snippets.push(text.slice(0, MAX_TURN_CHARS));
   }
   const need = usefulText(memory.need, 4000);
-  if (need && !snippets.some((item) => folded(item).includes(folded(need)) || folded(need).includes(folded(item)))) {
+  if (
+    need
+    && !isClaireSynthesis(need)
+    && !looksLikeConversationDump(need, memory)
+    && !snippets.some((item) => folded(item).includes(folded(need)) || folded(need).includes(folded(item)))
+  ) {
     snippets.push(need);
   }
   return dedupeNeedSnippets(snippets);
 }
 
-function isUserAuthoredBody(authored, synthesis, need) {
+function uncapitalizeFr(value = "") {
+  if (!value) return "";
+  return value.charAt(0).toLocaleLowerCase("fr") + value.slice(1);
+}
+
+function ensureReadableClause(value = "") {
+  const text = uncapitalizeFr(value);
+  if (/^(un|une|le|la|les|des|du|de |d'|l'|mon|ma|mes|ton|ta|tes|son|sa|ses|ce|cet|cette|ces|au |aux )\b/i.test(text)) {
+    return text;
+  }
+  const query = folded(text);
+  if (/^site\b/.test(query)) return `un ${text}`;
+  if (/^camera\b/.test(query)) return `une ${text}`;
+  if (/^enregistrement\b/.test(query)) return `un ${text}`;
+  return text;
+}
+
+function joinWrittenClauses(clauses = []) {
+  if (!clauses.length) return "";
+  if (clauses.length === 1) return ensureReadableClause(clauses[0]);
+  const head = clauses.slice(0, -1).map(ensureReadableClause).join(", ");
+  return `${head}, et ${ensureReadableClause(clauses.at(-1))}`;
+}
+
+function isHandwrittenBody(authored, memory = {}) {
   const text = usefulText(authored, 4000);
   if (!text) return false;
-  const a = folded(text);
-  if (a.startsWith("synthese de l echange")) return false;
-  if (need && a === folded(need)) return false;
-  if (synthesis && folded(synthesis).includes(a) && text.length + 12 < synthesis.length) return false;
-  if (!synthesis) return true;
-  return a !== folded(synthesis);
+  if (isClaireSynthesis(text) || looksLikeConversationDump(text, memory)) return false;
+  if (memory.need && folded(text) === folded(memory.need)) return false;
+  return true;
 }
 
 export function formatClaireSynthesis(snippets = [], service = "") {
-  const parts = dedupeNeedSnippets(snippets);
-  if (!parts.length) return "";
-  const body = parts.length === 1
-    ? `${SYNTHESIS_LEAD} ${parts[0]}`
-    : `${SYNTHESIS_LEAD}\n${parts.map((item) => `• ${item}`).join("\n")}`;
+  const clauses = dedupeNeedSnippets(
+    snippets.map((item) => toWrittenClause(item)).filter((item) => item && !isUselessClause(item))
+  );
+  if (!clauses.length) return "";
+  const paragraph = `Le visiteur a indiqué qu’il souhaite ${joinWrittenClauses(clauses)}.`;
   const label = serviceLabel(service);
+  const body = `${SYNTHESIS_LEAD}\n\n${paragraph}`;
   const withService = label ? `${body}\n\nService évoqué : ${label}.` : body;
   return withService.replace(/\n{3,}/g, "\n\n").trim().slice(0, 4000);
 }
 
 export function synthesizeMailBody(memory = {}, extras = {}) {
   const authored = firstUsefulText(4000, extras.description, extras.message);
-  const fromTurns = formatClaireSynthesis(collectNeedSnippets(memory), memory.service);
+  const service = compact(memory.service) || compact(extras.service);
+  const written = formatClaireSynthesis(collectNeedSnippets(memory), service);
   const fallback = usefulText(extras.fallbackDescription, 4000);
-  if (isUserAuthoredBody(authored, fromTurns, memory.need)) return authored;
-  if (fromTurns) return fromTurns;
-  return authored || fallback || "";
+  if (written) return written;
+  if (isHandwrittenBody(authored, memory)) return authored;
+  if (authored && !looksLikeConversationDump(authored, memory) && !isClaireSynthesis(authored)) return authored;
+  if (fallback && !looksLikeConversationDump(fallback, memory) && !isClaireSynthesis(fallback)) return fallback;
+  return "";
 }
 
 export function joinFrenchList(items = []) {
@@ -477,7 +615,12 @@ export function extractFactsFromUtterance(text = "") {
 
   const service = inferService(raw);
   if (service) facts.service = service;
-  if (!isThinUtterance(raw) && !isContactOnlyUtterance(raw, facts)) {
+  if (
+    !isThinUtterance(raw)
+    && !isContactOnlyUtterance(raw, facts)
+    && !isGreetingOnly(raw, facts)
+    && !isSmallTalk(raw, facts)
+  ) {
     facts.need = raw.slice(0, 280);
   }
   return facts;
@@ -522,6 +665,14 @@ export function rememberPage(path, title, storage, persistent) {
   return saveSessionMemory(memory, ...storeArgs);
 }
 
+function rawNeedForSignature(memory = {}, extras = {}) {
+  const authored = firstUsefulText(4000, extras.description, extras.message);
+  if (authored && !isClaireSynthesis(authored) && !looksLikeConversationDump(authored, memory)) {
+    return authored;
+  }
+  return usefulText(memory.need, 4000);
+}
+
 export function quoteDraftSignature(memory = {}, extras = {}) {
   const visitor = normalizeVisitor(memory.visitor);
   const fields = {
@@ -530,7 +681,7 @@ export function quoteDraftSignature(memory = {}, extras = {}) {
     email: compact(extras.email) || visitor.email,
     city: compact(extras.city) || visitor.city,
     service: compact(extras.service) || compact(memory.service),
-    description: firstUsefulText(4000, extras.description, memory.need)
+    description: rawNeedForSignature(memory, extras)
   };
   return QUOTE_REQUIRED_FIELDS
     .map((key) => compact(fields[key]).toLocaleLowerCase("fr"))
@@ -541,7 +692,7 @@ export function contactDraftSignature(memory = {}, extras = {}) {
   const visitor = normalizeVisitor(memory.visitor);
   const name = compact(extras.name) || visitor.name;
   const email = compact(extras.email) || visitor.email;
-  const message = firstUsefulText(4000, extras.message, extras.description, memory.need);
+  const message = rawNeedForSignature(memory, extras);
   return [name, email, message].map((value) => compact(value).toLocaleLowerCase("fr")).join("|");
 }
 
@@ -666,7 +817,11 @@ export function canSubmitContact(memory = {}, extras = {}) {
   const visitor = normalizeVisitor(memory.visitor);
   const name = compact(extras.name) || visitor.name;
   const email = compact(extras.email) || visitor.email;
-  const message = firstUsefulText(4000, extras.message, extras.description, synthesizeMailBody(memory), memory.need);
+  const authored = looksLikeConversationDump(extras.message || extras.description, memory)
+    || isClaireSynthesis(extras.message || extras.description)
+    ? ""
+    : firstUsefulText(4000, extras.message, extras.description);
+  const message = firstUsefulText(4000, synthesizeMailBody(memory, extras), authored, memory.need);
   return Boolean(name && email && message);
 }
 
@@ -683,14 +838,18 @@ export function hydrateQuoteMemoryFromForm(storage, doc) {
     && !compact(extras.name || extras.email || extras.message)) {
     return memory;
   }
-  return saveSessionMemory(mergeFacts(memory, {
+  const rawNeed = firstUsefulText(4000, extras.description, extras.message);
+  const facts = {
     name: extras.name,
     phone: extras.phone,
     email: extras.email,
     city: extras.city,
-    service: extras.service,
-    need: extras.description || extras.message
-  }), ...storeArgs);
+    service: extras.service
+  };
+  if (rawNeed && !isClaireSynthesis(rawNeed) && !looksLikeConversationDump(rawNeed, memory)) {
+    facts.need = rawNeed;
+  }
+  return saveSessionMemory(mergeFacts(memory, facts), ...storeArgs);
 }
 
 export function describeMissingQuoteFields(memory = {}, extras = {}) {

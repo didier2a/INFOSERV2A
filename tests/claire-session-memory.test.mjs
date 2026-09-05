@@ -28,7 +28,9 @@ import {
   quoteExtrasFromDocument,
   synthesizeMailBody,
   emailDraftFromMemory,
-  SYNTHESIS_LEAD
+  SYNTHESIS_LEAD,
+  isClaireSynthesis,
+  looksLikeConversationDump
 } from "../assets/js/claire-session-memory.mjs";
 
 function memoryStorage(seed = null) {
@@ -451,19 +453,63 @@ test("Claire rédige le corps du mail comme une synthèse de l’échange", () =
   rememberTurn("user", "Bonjour", storage);
   rememberTurn("user", "Je veux une caméra 4G pour un hangar isolé à Porto-Vecchio.", storage);
   rememberTurn("user", "Mon e-mail est didier@example.com", storage);
-  const memory = rememberTurn("user", "Et un enregistrement de quinze jours.", storage);
+  rememberTurn("user", "Et un enregistrement de quinze jours.", storage);
   rememberTurn("user", "Envoie le devis", storage);
   const body = synthesizeMailBody(loadSessionMemory(storage));
   assert.match(body, new RegExp(SYNTHESIS_LEAD.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.match(body, /hangar isolé/);
   assert.match(body, /quinze jours/);
+  assert.match(body, /Le visiteur a indiqué qu’il souhaite/);
   assert.doesNotMatch(body, /Envoie le devis/);
+  assert.doesNotMatch(body, /• /);
   assert.match(body, /vidéosurveillance|videosurveillance/i);
 
   const draft = emailDraftFromMemory(loadSessionMemory(storage));
   assert.equal(draft.to, "didier@example.com");
   assert.match(draft.message, /hangar isolé/);
   assert.doesNotMatch(draft.to, /contact@/);
+});
+
+test("le corps du mail n’imprime jamais la conversation avec Claire", () => {
+  const storage = memoryStorage();
+  rememberTurn("user", "Bonjour Claire, comment tu vas ?", storage);
+  rememberTurn("companion", "Bonjour. Je vous écoute pour votre besoin informatique.", storage);
+  rememberTurn("user", "Je veux une caméra 4G pour un hangar isolé à Porto-Vecchio.", storage);
+  rememberTurn("companion", "Très bien, je note une vidéosurveillance 4G. Souhaitez-vous aussi une durée d’enregistrement ?", storage);
+  rememberTurn("user", "Oui et un enregistrement de quinze jours.", storage);
+  rememberTurn("companion", "D’accord. Il me faut aussi votre e-mail pour transmettre le devis.", storage);
+  rememberTurn("user", "Mon e-mail est didier@example.com", storage);
+  const memory = rememberTurn("user", "Envoie le devis", storage);
+  const body = synthesizeMailBody(memory, {
+    description: [
+      "Vous : Bonjour Claire, comment tu vas ?",
+      "Claire : Bonjour. Je vous écoute pour votre besoin informatique.",
+      "Vous : Je veux une caméra 4G pour un hangar isolé à Porto-Vecchio.",
+      "Claire : Très bien, je note une vidéosurveillance 4G."
+    ].join("\n")
+  });
+  assert.match(body, /Synthèse de l’échange/);
+  assert.match(body, /Le visiteur a indiqué qu’il souhaite/);
+  assert.match(body, /hangar isolé/);
+  assert.match(body, /quinze jours/);
+  assert.doesNotMatch(body, /Bonjour Claire/);
+  assert.doesNotMatch(body, /comment tu vas/);
+  assert.doesNotMatch(body, /Je vous écoute/);
+  assert.doesNotMatch(body, /Très bien, je note/);
+  assert.doesNotMatch(body, /Vous\s*:/);
+  assert.doesNotMatch(body, /Claire\s*:/);
+  assert.doesNotMatch(body, /• /);
+  assert.doesNotMatch(body, /Je veux une caméra/);
+  assert.equal(looksLikeConversationDump("Vous : bonjour\nClaire : je vous écoute", memory), true);
+  assert.equal(isClaireSynthesis(body), true);
+
+  const hydrated = hydrateQuoteMemoryFromForm(storage, {
+    querySelector(selector) {
+      return selector === "#devis-description" ? { value: body } : null;
+    }
+  });
+  assert.doesNotMatch(hydrated.need || "", /Synthèse de l’échange/);
+  assert.doesNotMatch(hydrated.need || "", /Bonjour Claire/);
 });
 
 test("un besoin déjà noté devient le corps du devis même sans tours supplémentaires", () => {
@@ -473,6 +519,8 @@ test("un besoin déjà noté devient le corps du devis même sans tours supplém
     need: "Site vitrine pour mon commerce",
     turns: []
   });
-  assert.match(body, /Site vitrine pour mon commerce/);
+  assert.match(body, /site vitrine pour mon commerce/i);
+  assert.match(body, /Le visiteur a indiqué qu’il souhaite/);
   assert.match(body, /Synthèse de l’échange/);
+  assert.doesNotMatch(body, /• /);
 });

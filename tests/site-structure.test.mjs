@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260905-it37)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260905-it37)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260905-it38)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260905-it38)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -38,7 +38,7 @@ test("les modules Claire sont versionnés pour éviter un cache 24 h cassé", as
     const bare = [...source.matchAll(/(?:from|import)\(?["'](\.\/[^"'?]+)["']/g)].map((match) => match[1]);
     assert.deepEqual(bare, [], `${file} importe sans ?v= : ${bare.join(", ")}`);
     if (source.includes("claire-core.mjs")) {
-      assert.match(source, /claire-core\.mjs\?v=20260905-it37/);
+      assert.match(source, /claire-core\.mjs\?v=20260905-it38/);
     }
   }
 });
@@ -130,7 +130,7 @@ test("Claire accueille l'utilisateur et explique son rôle chez InfoServ2A", asy
   assert.doesNotMatch(core, /Je reste uniquement dans l’informatique/);
   assert.match(client, /CLAIRE_WELCOME/);
   assert.match(endpoint, /CLAIRE_WELCOME/);
-  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.28/);
+  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.29/);
   assert.match(endpoint, /buildClaireContextPrompt/);
   assert.match(endpoint, /temperature:\s*0\.75/);
   assert.match(endpoint, /opening_text:\s*CLAIRE_WELCOME/);
