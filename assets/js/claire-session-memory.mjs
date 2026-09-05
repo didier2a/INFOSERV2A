@@ -11,7 +11,9 @@ export const QUOTE_REQUIRED_FIELDS = Object.freeze([
 
 const MAX_TURNS = 24;
 const MAX_VISITS = 8;
-const MAX_TURN_CHARS = 320;
+const MAX_TURN_CHARS = 800;
+export const SYNTHESIS_LEAD = "Synthèse de l’échange :";
+export const BUSINESS_REPLY_TO = "contact@infoserv2a.pro";
 export const QUOTE_FIELD_LABELS = Object.freeze({
   name: "votre nom",
   phone: "votre téléphone",
@@ -20,6 +22,17 @@ export const QUOTE_FIELD_LABELS = Object.freeze({
   service: "le type de service",
   description: "la description du besoin",
   message: "le message"
+});
+
+const SERVICE_LABELS = Object.freeze({
+  "videosurveillance": "vidéosurveillance",
+  "creation-site-web": "création de site web",
+  "maintenance-distance": "maintenance à distance",
+  "configuration-domicile": "configuration à domicile",
+  "cybersecurite-ia": "cybersécurité et IA",
+  "audit-nis2": "audit NIS 2",
+  "recuperation-donnees": "récupération de données",
+  "autre": "autre demande"
 });
 
 const KNOWN_CITIES = Object.freeze([
@@ -347,6 +360,78 @@ function isThinUtterance(text = "") {
     && query.length < 28;
 }
 
+export function isNeedUtterance(text = "") {
+  return Boolean(extractFactsFromUtterance(text).need);
+}
+
+function serviceLabel(service = "") {
+  const key = compact(service);
+  return SERVICE_LABELS[key] || key;
+}
+
+function dedupeNeedSnippets(items = []) {
+  const cleaned = items.map((item) => compact(item)).filter(Boolean);
+  const kept = [];
+  for (const item of cleaned) {
+    const fold = folded(item);
+    if (kept.some((existing) => folded(existing).includes(fold) && folded(existing).length > fold.length)) {
+      continue;
+    }
+    for (let index = kept.length - 1; index >= 0; index -= 1) {
+      const other = folded(kept[index]);
+      if (fold.includes(other) && fold.length > other.length) kept.splice(index, 1);
+    }
+    if (!kept.some((existing) => folded(existing) === fold)) kept.push(item);
+  }
+  return kept;
+}
+
+function collectNeedSnippets(memory = {}) {
+  const snippets = [];
+  for (const turn of memory.turns || []) {
+    if (turn.role !== "user") continue;
+    const text = compact(turn.text);
+    if (!isNeedUtterance(text)) continue;
+    snippets.push(text.slice(0, MAX_TURN_CHARS));
+  }
+  const need = usefulText(memory.need, 4000);
+  if (need && !snippets.some((item) => folded(item).includes(folded(need)) || folded(need).includes(folded(item)))) {
+    snippets.push(need);
+  }
+  return dedupeNeedSnippets(snippets);
+}
+
+function isUserAuthoredBody(authored, synthesis, need) {
+  const text = usefulText(authored, 4000);
+  if (!text) return false;
+  const a = folded(text);
+  if (a.startsWith("synthese de l echange")) return false;
+  if (need && a === folded(need)) return false;
+  if (synthesis && folded(synthesis).includes(a) && text.length + 12 < synthesis.length) return false;
+  if (!synthesis) return true;
+  return a !== folded(synthesis);
+}
+
+export function formatClaireSynthesis(snippets = [], service = "") {
+  const parts = dedupeNeedSnippets(snippets);
+  if (!parts.length) return "";
+  const body = parts.length === 1
+    ? `${SYNTHESIS_LEAD} ${parts[0]}`
+    : `${SYNTHESIS_LEAD}\n${parts.map((item) => `• ${item}`).join("\n")}`;
+  const label = serviceLabel(service);
+  const withService = label ? `${body}\n\nService évoqué : ${label}.` : body;
+  return withService.replace(/\n{3,}/g, "\n\n").trim().slice(0, 4000);
+}
+
+export function synthesizeMailBody(memory = {}, extras = {}) {
+  const authored = firstUsefulText(4000, extras.description, extras.message);
+  const fromTurns = formatClaireSynthesis(collectNeedSnippets(memory), memory.service);
+  const fallback = usefulText(extras.fallbackDescription, 4000);
+  if (isUserAuthoredBody(authored, fromTurns, memory.need)) return authored;
+  if (fromTurns) return fromTurns;
+  return authored || fallback || "";
+}
+
 export function joinFrenchList(items = []) {
   const labels = items.map((item) => compact(item)).filter(Boolean);
   if (!labels.length) return "";
@@ -438,9 +523,17 @@ export function rememberPage(path, title, storage, persistent) {
 }
 
 export function quoteDraftSignature(memory = {}, extras = {}) {
-  const draft = quotePrefillFromMemory(memory, extras);
+  const visitor = normalizeVisitor(memory.visitor);
+  const fields = {
+    name: compact(extras.name) || visitor.name,
+    phone: compact(extras.phone) || visitor.phone,
+    email: compact(extras.email) || visitor.email,
+    city: compact(extras.city) || visitor.city,
+    service: compact(extras.service) || compact(memory.service),
+    description: firstUsefulText(4000, extras.description, memory.need)
+  };
   return QUOTE_REQUIRED_FIELDS
-    .map((key) => compact(draft[key]).toLocaleLowerCase("fr"))
+    .map((key) => compact(fields[key]).toLocaleLowerCase("fr"))
     .join("|");
 }
 
@@ -459,7 +552,7 @@ export function rememberSuccessfulSend(detail = {}, storage, persistent) {
     sent: true,
     kind: detail.kind,
     at: detail.at || new Date().toISOString(),
-    inbox: detail.inbox || "contact@infoserv2a.pro",
+    inbox: detail.inbox || compact(detail.email).slice(0, 80),
     replyTo: detail.replyTo || "",
     signature: detail.signature || ""
   });
@@ -488,7 +581,7 @@ export function isSameDraftAlreadySent(memory = {}, extras = {}, kind = "devis")
 
 export function alreadySentSpeech(memory = {}, kind = "devis") {
   const last = normalizeLastSend(memory.lastSend);
-  const inbox = last?.inbox || "contact@infoserv2a.pro";
+  const inbox = last?.inbox || "votre e-mail";
   if (kind === "contact") {
     return `Le message a déjà été envoyé vers ${inbox}. Je n’en renvoie pas un deuxième.`;
   }
@@ -503,7 +596,7 @@ export function quotePrefillFromMemory(memory = {}, extras = {}) {
     email: compact(extras.email) || visitor.email,
     city: compact(extras.city) || visitor.city,
     service: compact(extras.service) || compact(memory.service),
-    description: firstUsefulText(4000, extras.description, memory.need, extras.fallbackDescription)
+    description: synthesizeMailBody(memory, extras)
   };
 }
 
@@ -573,7 +666,7 @@ export function canSubmitContact(memory = {}, extras = {}) {
   const visitor = normalizeVisitor(memory.visitor);
   const name = compact(extras.name) || visitor.name;
   const email = compact(extras.email) || visitor.email;
-  const message = firstUsefulText(4000, extras.message, extras.description, memory.need);
+  const message = firstUsefulText(4000, extras.message, extras.description, synthesizeMailBody(memory), memory.need);
   return Boolean(name && email && message);
 }
 
@@ -635,30 +728,23 @@ export function describeQuoteChecklist(memory = {}, extras = {}) {
     missing: [],
     filled,
     alreadySent: false,
-    speech: `Le devis est complet : ${filledSpeech}. Confirmez que vous voulez transmettre la demande vers contact@infoserv2a.pro. Rien n’est parti tant que le site n’a pas confirmé l’envoi.`
+    speech: `Le devis est complet : ${filledSpeech}. Confirmez que vous voulez transmettre la demande vers ${draft.email || "l’e-mail indiqué dans le formulaire"}. Rien n’est parti tant que le site n’a pas confirmé l’envoi.`
   };
 }
 
 export function emailDraftFromMemory(memory = {}) {
   const visitor = normalizeVisitor(memory.visitor);
   const who = visitor.name ? ` de ${visitor.name}` : "";
-  const lines = [
-    visitor.name && `Nom : ${visitor.name}`,
-    visitor.phone && `Téléphone : ${visitor.phone}`,
-    visitor.email && `E-mail : ${visitor.email}`,
-    visitor.city && `Commune : ${visitor.city}`,
-    memory.service && `Service : ${memory.service}`,
-    "",
-    usefulText(memory.need) || "Bonjour, je souhaite être recontacté(e) au sujet de ma demande."
-  ].filter((line, index, list) => line || list[index - 1]);
+  const message = synthesizeMailBody(memory);
   return {
-    to: "contact@infoserv2a.pro",
+    to: visitor.email,
+    replyTo: BUSINESS_REPLY_TO,
     subject: `Contact InfoServ2A${who}`,
-    body: lines.join("\n").trim(),
+    body: message,
     name: visitor.name,
     email: visitor.email,
     phone: visitor.phone,
-    message: usefulText(memory.need) || "Bonjour, je souhaite être recontacté(e) au sujet de ma demande."
+    message
   };
 }
 

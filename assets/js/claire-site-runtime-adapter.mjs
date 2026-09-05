@@ -1,5 +1,5 @@
-import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260904-it36";
-import { contactExtrasFromDocument, firstUsefulText, quoteExtrasFromDocument, usefulText } from "./claire-session-memory.mjs?v=20260904-it36";
+import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260905-it37";
+import { contactExtrasFromDocument, firstUsefulText, loadSessionMemory, quoteExtrasFromDocument, synthesizeMailBody, usefulText } from "./claire-session-memory.mjs?v=20260905-it37";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -257,6 +257,7 @@ export class BrowserInfoServ2ASurface {
       if (option) field.value = option.value;
     } else {
       field.value = next;
+      field.scrollTop = 0;
     }
     return true;
   }
@@ -292,11 +293,11 @@ export class BrowserInfoServ2ASurface {
   }
 
   async submitQuote(draft = {}) {
-    const description = firstUsefulText(
-      4000,
-      this.document.querySelector("#devis-description")?.value,
-      draft.description
-    );
+    const description = synthesizeMailBody(loadSessionMemory(), {
+      ...draft,
+      description: usefulText(this.document.querySelector("#devis-description")?.value) || draft.description,
+      fallbackDescription: draft.description
+    });
     const formState = this.prefillQuote({ ...draft, description });
     const form = this.document.querySelector("#devis-form");
     const missing = this.quoteMissingFields();
@@ -314,7 +315,7 @@ export class BrowserInfoServ2ASurface {
       website: this.document.querySelector("#devis-form [name='website']")?.value || ""
     };
     const result = await this.sendSiteEmail(payload);
-    this.showFormStatus("#devis-form", result, "contact@infoserv2a.pro");
+    this.showFormStatus("#devis-form", result, payload.email);
     return {
       ...formState,
       submitted: Boolean(result.sent),
@@ -382,7 +383,7 @@ export class BrowserInfoServ2ASurface {
         sent: false,
         pendingActivation: false,
         configured: true,
-        inbox: "contact@infoserv2a.pro",
+        inbox: payload?.email || "",
         replyTo: "",
         missing: [],
         error: timeout
@@ -434,7 +435,7 @@ export class BrowserInfoServ2ASurface {
         email: visitor.email,
         city: visitor.city,
         service: memory.service,
-        description: memory.need
+        description: synthesizeMailBody(memory, { description: memory.need, service: memory.service })
       })
       : null;
     const contact = contactForm
@@ -442,14 +443,18 @@ export class BrowserInfoServ2ASurface {
         name: visitor.name,
         email: visitor.email,
         phone: visitor.phone,
-        message: memory.need
+        message: synthesizeMailBody(memory, { message: memory.need })
       })
       : null;
     return { quote: Boolean(quoteForm), contact: Boolean(contactForm), quoteDraft: quote, contactDraft: contact };
   }
 
   async composeEmail(draft = {}) {
-    const message = firstUsefulText(4000, draft.message, draft.body);
+    const message = synthesizeMailBody(loadSessionMemory(), {
+      ...draft,
+      message: usefulText(this.document.querySelector("#contact-message")?.value) || draft.message || draft.body,
+      fallbackDescription: firstUsefulText(4000, draft.message, draft.body)
+    });
     const fields = this.prefillContact({
       ...draft,
       message
@@ -457,7 +462,7 @@ export class BrowserInfoServ2ASurface {
     fields.message = firstUsefulText(4000, fields.message, message);
     const missing = ["name", "email", "message"].filter((key) => !usefulText(fields[key]));
     if (missing.length) {
-      return { sent: false, triggered: false, missing, inbox: "contact@infoserv2a.pro" };
+      return { sent: false, triggered: false, missing, inbox: fields.email || "" };
     }
     const result = await this.sendSiteEmail({
       kind: "contact",
@@ -467,7 +472,7 @@ export class BrowserInfoServ2ASurface {
       message: fields.message,
       website: this.document.querySelector("#contact-form [name='website']")?.value || ""
     });
-    this.showFormStatus("#contact-form", result, "contact@infoserv2a.pro");
+    this.showFormStatus("#contact-form", result, fields.email);
     return {
       ...result,
       draft,
@@ -575,7 +580,7 @@ export class InfoServ2ASiteAdapter {
           submitted: false,
           sent: false,
           missing,
-          inbox: "contact@infoserv2a.pro",
+          inbox: this.view.quoteDraft.email || args.email || "",
           persistentSession: true
         };
       }
@@ -599,7 +604,7 @@ export class InfoServ2ASiteAdapter {
           sent: Boolean(form.sent),
           pendingActivation: Boolean(form.pendingActivation),
           configured: form.configured,
-          inbox: form.inbox || "contact@infoserv2a.pro",
+          inbox: form.inbox || this.view.quoteDraft.email || "",
           replyTo: form.replyTo || this.view.quoteDraft.email,
           missing: form.missing || [],
           error: form.error || "",
@@ -632,7 +637,7 @@ export class InfoServ2ASiteAdapter {
         this.view.activeSection = null;
         this.view.contactChannel = "email";
         const draft = {
-          to: String(args.to || "contact@infoserv2a.pro"),
+          to: String(args.to || args.email || filled.email || ""),
           subject: String(args.subject || "Contact InfoServ2A"),
           body: String(args.body || filled.message || "")
         };

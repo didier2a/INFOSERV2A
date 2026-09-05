@@ -1,7 +1,7 @@
 import { corsHeaders, corsPreflight, isAllowedOrigin } from "./liveavatar-origin.js";
 
 export const CONTACT_INBOX = "contact@infoserv2a.pro";
-export const DEVIS_INBOX = CONTACT_INBOX;
+export const BUSINESS_REPLY_TO = CONTACT_INBOX;
 export const DEFAULT_FROM = "InfoServ2A <site@infoserv2a.pro>";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -79,8 +79,8 @@ function htmlBreaks(value) {
 export function buildMailBodies(kind, fields = {}) {
   const devis = kind === "devis";
   const intro = devis
-    ? "Nouvelle demande de devis reçue depuis le site www.infoserv2a.pro."
-    : "Nouveau message reçu depuis le site www.infoserv2a.pro.";
+    ? "Voici la synthèse de votre demande de devis, rédigée par Claire à partir de votre échange sur www.infoserv2a.pro."
+    : "Voici la synthèse de votre message, rédigée par Claire à partir de votre échange sur www.infoserv2a.pro.";
   const messageLabel = devis ? "Besoin" : "Message";
   const rows = [
     ["Canal", devis ? "demande de devis" : "message de contact"],
@@ -98,7 +98,9 @@ export function buildMailBodies(kind, fields = {}) {
     ...rows.map(([label, value]) => `${label} : ${value}`),
     "",
     `${messageLabel} :`,
-    message
+    message,
+    "",
+    `Pour joindre InfoServ2A : ${BUSINESS_REPLY_TO} — 07 45 15 60 76.`
   ].join("\n").trim();
   const htmlRows = rows.map(([label, value]) => (
     `<tr><td style="padding:6px 16px 6px 0;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;vertical-align:top;white-space:nowrap;">${escapeHtml(label)}</td><td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:15px;vertical-align:top;">${htmlBreaks(value)}</td></tr>`
@@ -111,6 +113,7 @@ export function buildMailBodies(kind, fields = {}) {
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">${htmlRows}</table>
   <p style="margin:16px 0 6px;font-weight:bold;">${escapeHtml(messageLabel)}</p>
   <p style="margin:0;">${htmlBreaks(message)}</p>
+  <p style="margin:18px 0 0;font-size:14px;color:#444444;">Pour joindre InfoServ2A : ${escapeHtml(BUSINESS_REPLY_TO)} — 07 45 15 60 76.</p>
 </body>
 </html>`;
   return { text, html };
@@ -128,11 +131,13 @@ export function emailConfigured(env = {}) {
   return resolveEmailProvider(env) !== "none";
 }
 
-export function inboxForKind(kind, env = {}) {
-  if (kind === "devis") {
-    return compactField(env.DEVIS_INBOX, 120) || compactField(env.CONTACT_INBOX, 120) || CONTACT_INBOX;
-  }
-  return compactField(env.CONTACT_INBOX, 120) || CONTACT_INBOX;
+export function destinationInbox(email) {
+  const value = compactField(email, 120);
+  return EMAIL_RE.test(value) ? value : "";
+}
+
+export function inboxForKind() {
+  return "visitor-email";
 }
 
 export function normalizeEmailPayload(input = {}, env = {}) {
@@ -158,10 +163,11 @@ export function normalizeEmailPayload(input = {}, env = {}) {
   } else if (!message) {
     missing.push("message");
   }
-  const inbox = inboxForKind(kind, env);
+  const inbox = destinationInbox(email);
+  const replyTo = compactField(env.CONTACT_REPLY_TO, 120) || BUSINESS_REPLY_TO;
   const subject = kind === "devis"
-    ? `Demande de devis InfoServ2A${name ? ` — ${name}` : ""}`
-    : `Contact InfoServ2A${name ? ` — ${name}` : ""}`;
+    ? `Votre demande de devis InfoServ2A${name ? ` — ${name}` : ""}`
+    : `Votre message InfoServ2A${name ? ` — ${name}` : ""}`;
   const fields = { name, email, phone, city, service, message, files };
   const bodies = buildMailBodies(kind, fields);
   return {
@@ -169,7 +175,7 @@ export function normalizeEmailPayload(input = {}, env = {}) {
     honeypot: Boolean(honeypot),
     missing,
     inbox,
-    replyTo: email,
+    replyTo,
     subject,
     text: bodies.text,
     html: bodies.html,
@@ -345,9 +351,11 @@ export async function onRequestGet({ env, request }) {
       from: Boolean(String(env.RESEND_FROM || "").trim())
     },
     inboxes: {
-      contact: inboxForKind("contact", env),
-      devis: inboxForKind("devis", env)
-    }
+      contact: "visitor-email",
+      devis: "visitor-email"
+    },
+    destination: "visitor-email",
+    replyTo: compactField(env.CONTACT_REPLY_TO, 120) || BUSINESS_REPLY_TO
   }, 200, request);
 }
 

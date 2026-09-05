@@ -1,4 +1,4 @@
-import { adjacentPage, adjacentSection, catalogEntries, pageById, scorePage } from "./claire-core.mjs?v=20260904-it36";
+import { adjacentPage, adjacentSection, catalogEntries, pageById, scorePage } from "./claire-core.mjs?v=20260905-it37";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -103,7 +103,7 @@ export class InfoServ2ALabAdapter {
           draft: clone(this.view.quoteDraft),
           submitted: this.view.submitted,
           sent: this.view.submitted,
-          inbox: "contact@infoserv2a.pro",
+          inbox: this.view.quoteDraft.email,
           replyTo: this.view.quoteDraft.email,
           missing
         };
@@ -130,7 +130,7 @@ export class InfoServ2ALabAdapter {
         this.view.contactChannel = "email";
         this.view.lastLaunch = {
           type: "email",
-          to: String(args.to || "contact@infoserv2a.pro"),
+          to: String(args.to || args.email || ""),
           subject: String(args.subject || "Contact InfoServ2A"),
           body: String(args.body || "")
         };

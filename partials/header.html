@@ -98,6 +98,12 @@
           <span class="claire-status-line"><i class="claire-status-dot" aria-hidden="true"></i><strong>Claire</strong><small data-claire-status>En attente de votre accord</small></span>
           <span class="claire-voice-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
         </figcaption>
+        <div class="claire-send-wait" data-claire-send-wait hidden>
+          <div class="claire-send-wait__track" role="progressbar" aria-label="Envoi en cours" aria-valuemin="0" aria-valuemax="100">
+            <span class="claire-send-wait__bar"></span>
+          </div>
+          <p class="claire-send-wait__label">Envoi vers votre e-mail…</p>
+        </div>
 
         <div class="claire-live-stage__controls">
           <button class="claire-voice-control" type="button" data-claire-mic aria-label="Parler à Claire" aria-pressed="false">

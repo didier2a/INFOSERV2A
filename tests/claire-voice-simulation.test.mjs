@@ -50,7 +50,7 @@ class MockPersistentSurface {
 
   async sendSiteEmail(payload) {
     this.calls.push(["sendSiteEmail", payload]);
-    return { sent: true, inbox: "contact@infoserv2a.pro", replyTo: payload.email || "" };
+    return { sent: true, inbox: payload.email || "", replyTo: "contact@infoserv2a.pro" };
   }
 
   async composeEmail(draft) {
@@ -244,7 +244,7 @@ class ActuatorSurface {
   async sendSiteEmail(payload) {
     this.posts.push(payload);
     this.calls.push(["sendSiteEmail", payload]);
-    return { sent: true, inbox: "contact@infoserv2a.pro", replyTo: payload.email || "" };
+    return { sent: true, inbox: payload.email || "", replyTo: "contact@infoserv2a.pro" };
   }
 
   snapshotContactFields() {
@@ -342,7 +342,7 @@ test("simulation vocale : devis complet + « envoie le devis » actionne vraimen
   assert.equal(surface.posts.length, 1);
   assert.equal(surface.posts[0].kind, "devis");
   assert.equal(surface.posts[0].email, "infoserv2a@gmail.com");
-  assert.match(describeEmailSendOutcome(outcome), /bien été envoyée vers contact@infoserv2a\.pro/);
+  assert.match(describeEmailSendOutcome(outcome), /bien été envoyée vers infoserv2a@gmail\.com/);
 });
 
 test("simulation vocale : « c’est bon » avec dossier complet actionne vraiment l’API", async () => {
@@ -372,7 +372,7 @@ test("simulation vocale : « c’est bon » avec dossier complet actionne vraime
   assert.equal(submit.output.sent, true);
   assert.equal(surface.posts.length, 1);
   assert.equal(surface.posts[0].kind, "devis");
-  assert.match(describeEmailSendOutcome(outcome), /bien été envoyée vers contact@infoserv2a\.pro/);
+  assert.match(describeEmailSendOutcome(outcome), /bien été envoyée vers infoserv2a@gmail\.com/);
 });
 
 test("simulation vocale : un devis prérempli sur le formulaire part à l’envoi", async () => {
@@ -438,10 +438,15 @@ test("simulation vocale : « c’est bon » sur contact remplit et envoie le mes
   assert.match(mail.text, /interlocuteur pour mon réseau/);
   assert.match(mail.html, /<table/i);
   assert.ok(surface.calls.some(([name]) => name === "prefillContact"));
-  assert.match(describeEmailSendOutcome(outcome), /bien été envoyé vers contact@infoserv2a\.pro|bien été envoyée vers contact@infoserv2a\.pro/);
+  assert.match(describeEmailSendOutcome(outcome), /bien été envoyé vers infoserv2a@gmail\.com|bien été envoyée vers infoserv2a@gmail\.com/);
 });
 
 test("submitQuote recopie le besoin formalisé si le textarea a le placeholder", async () => {
+  globalThis.sessionStorage = {
+    getItem() { return null; },
+    setItem() {},
+    removeItem() {}
+  };
   const { BrowserInfoServ2ASurface } = await import("../assets/js/claire-site-runtime-adapter.mjs");
   const fields = new Map();
   const seed = {
@@ -480,7 +485,7 @@ test("submitQuote recopie le besoin formalisé si le textarea a le placeholder",
       InfoServ: {
         async sendSiteEmail(payload) {
           posts.push(payload);
-          return { sent: true, inbox: "contact@infoserv2a.pro", replyTo: payload.email, missing: [] };
+          return { sent: true, inbox: payload.email, replyTo: "contact@infoserv2a.pro", missing: [] };
         }
       }
     },
@@ -552,7 +557,7 @@ test("Claire écrit dans le formulaire contact visible, pas seulement au moment 
   assert.equal(fields.get("#contact-name").value, "Didier Aouizerate");
   assert.equal(fields.get("#contact-email").value, "infoserv2a@gmail.com");
   assert.equal(fields.get("#contact-phone").value, "07 45 15 60 76");
-  assert.equal(fields.get("#contact-message").value, "Demande pour le réseau du cabinet");
+  assert.match(fields.get("#contact-message").value, /Demande pour le réseau du cabinet/);
 });
 
 test("simulation vocale : « envoie le message » sur un devis prérempli envoie le devis, une seule fois", async () => {

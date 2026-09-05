@@ -19,7 +19,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260904-it36";
+} from "./claire-core.mjs?v=20260905-it37";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -40,20 +40,20 @@ import {
   alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260904-it36";
-import { describeEmailSendOutcome } from "./site-email.mjs?v=20260904-it36";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260904-it36";
+} from "./claire-session-memory.mjs?v=20260905-it37";
+import { describeEmailSendOutcome } from "./site-email.mjs?v=20260905-it37";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260905-it37";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260904-it36";
-import "./contact.js?v=20260904-it36";
-import "./devis.js?v=20260904-it36";
+} from "./claire-site-runtime-adapter.mjs?v=20260905-it37";
+import "./contact.js?v=20260905-it37";
+import "./devis.js?v=20260905-it37";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260904-it36";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260904-it36";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260905-it37";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260905-it37";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -427,7 +427,8 @@ export class ClaireCompanion {
       video: find(".claire-avatar__video"),
       sessionNotice: find("[data-claire-session-notice]"),
       sessionNoticeCopy: find("[data-claire-session-notice-copy]"),
-      sessionContinue: find("[data-claire-session-continue]")
+      sessionContinue: find("[data-claire-session-continue]"),
+      sendWait: find("[data-claire-send-wait]")
     };
   }
 
@@ -479,6 +480,19 @@ export class ClaireCompanion {
     });
     globalThis.addEventListener("infoserv:claire-telemetry", (event) => {
       this.showRealtimeTelemetry(event.detail);
+    });
+    globalThis.addEventListener("infoserv:email-sending", (event) => {
+      const sending = event.detail?.sending === true;
+      this.root?.classList.toggle("is-email-sending", sending);
+      if (this.root) this.root.dataset.emailSending = sending ? "1" : "0";
+      const wait = this.nodes.sendWait;
+      if (wait) wait.hidden = !sending;
+      if (sending) {
+        const inbox = event.detail?.inbox || "votre e-mail";
+        const label = wait?.querySelector(".claire-send-wait__label");
+        if (label) label.textContent = `Envoi vers ${inbox}…`;
+        this.setStatus("thinking", `Envoi vers ${inbox}…`);
+      }
     });
     globalThis.addEventListener("infoserv:email-sent", (event) => {
       const detail = event.detail || {};
@@ -1067,7 +1081,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260904-it36");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260905-it37");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
@@ -1227,7 +1241,7 @@ export class ClaireCompanion {
       if (signature) {
         rememberSuccessfulSend({
           kind,
-          inbox: detail.inbox || "contact@infoserv2a.pro",
+          inbox: detail.inbox || "",
           replyTo: detail.replyTo || "",
           signature
         });
@@ -1437,7 +1451,7 @@ export class ClaireCompanion {
         const sentResult = (outcome.results || []).find((item) => item.output?.sent);
         const kind = sentResult?.tool === "submit_quote" ? "devis" : "contact";
         this.closeQuoteAfterSuccessfulSend(kind, {
-          inbox: sentResult?.output?.inbox || "contact@infoserv2a.pro",
+          inbox: sentResult?.output?.inbox || "",
           replyTo: sentResult?.output?.replyTo || ""
         });
       }

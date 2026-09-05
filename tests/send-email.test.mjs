@@ -54,7 +54,7 @@ test("l’expéditeur par défaut n’est plus noreply ni la boîte contact@", (
   assert.doesNotMatch(DEFAULT_FROM, /contact@/);
 });
 
-test("Resend envoie depuis contact@ avec texte et HTML", async () => {
+test("Resend envoie vers l’e-mail du client, depuis site@, avec texte et HTML", async () => {
   const previous = globalThis.fetch;
   const sent = [];
   globalThis.fetch = async (url, options) => {
@@ -73,7 +73,9 @@ test("Resend envoie depuis contact@ avec texte et HTML", async () => {
     }));
     assert.equal(delivery.provider, "resend");
     assert.equal(sent[0].body.from, "InfoServ2A <site@infoserv2a.pro>");
-    assert.equal(sent[0].body.to[0], "contact@infoserv2a.pro");
+    assert.equal(sent[0].body.to[0], "marie@example.com");
+    assert.equal(sent[0].body.reply_to, "contact@infoserv2a.pro");
+    assert.doesNotMatch(sent[0].body.to[0], /contact@/);
     assert.match(sent[0].body.subject, /devis/i);
     assert.match(sent[0].body.html, /Caméra 4G/);
     assert.match(sent[0].body.html, /<!DOCTYPE html>/i);
@@ -169,9 +171,11 @@ test("GET /api/send-email décrit le fournisseur sans secret", async () => {
     provider: null,
     secrets: { resend: false, from: false },
     inboxes: {
-      contact: "contact@infoserv2a.pro",
-      devis: "contact@infoserv2a.pro"
-    }
+      contact: "visitor-email",
+      devis: "visitor-email"
+    },
+    destination: "visitor-email",
+    replyTo: "contact@infoserv2a.pro"
   });
 });
 
@@ -206,9 +210,9 @@ test("POST envoie réellement via le binding Cloudflare", async () => {
   const payload = await response.json();
   assert.equal(response.status, 200);
   assert.equal(payload.sent, true);
-  assert.equal(payload.inbox, "contact@infoserv2a.pro");
-  assert.equal(payload.replyTo, "didier@example.com");
-  assert.equal(sent[0].to, "contact@infoserv2a.pro");
+  assert.equal(payload.inbox, "didier@example.com");
+  assert.equal(payload.replyTo, "contact@infoserv2a.pro");
+  assert.equal(sent[0].to, "didier@example.com");
   assert.match(sent[0].text, /Essai d’envoi réel/);
   assert.match(sent[0].text, /Nom : Didier/);
   assert.match(sent[0].text, /E-mail : didier@example.com/);
@@ -216,7 +220,7 @@ test("POST envoie réellement via le binding Cloudflare", async () => {
   assert.match(sent[0].html, /Message/);
 });
 
-test("DEVIS_INBOX permet d’ouvrir devis@ plus tard", () => {
+test("DEVIS_INBOX ne détourne plus l’envoi : le destinataire reste l’e-mail du client", () => {
   const mail = normalizeEmailPayload({
     kind: "devis",
     name: "Marie Rossi",
@@ -226,7 +230,8 @@ test("DEVIS_INBOX permet d’ouvrir devis@ plus tard", () => {
     service: "videosurveillance",
     description: "Caméra 4G"
   }, { DEVIS_INBOX: "devis@infoserv2a.pro" });
-  assert.equal(mail.inbox, "devis@infoserv2a.pro");
+  assert.equal(mail.inbox, "marie@example.com");
+  assert.equal(mail.replyTo, "contact@infoserv2a.pro");
 });
 
 test("EMAIL_TEST_INBOX ne détourne plus vers Gmail", () => {
@@ -236,10 +241,10 @@ test("EMAIL_TEST_INBOX ne détourne plus vers Gmail", () => {
     email: "didier@example.com",
     message: "Vers contact@"
   }, { EMAIL_TEST_INBOX: "infoserv2a@gmail.com" });
-  assert.equal(mail.inbox, "contact@infoserv2a.pro");
+  assert.equal(mail.inbox, "didier@example.com");
 });
 
-test("POST devis part vers contact@ tant que devis@ n’existe pas", async () => {
+test("POST devis et contact partent vers l’e-mail du client, pas vers contact@", async () => {
   resetEmailRateLimit();
   const sent = [];
   const response = await onRequestPost({
@@ -250,7 +255,8 @@ test("POST devis part vers contact@ tant que devis@ n’existe pas", async () =>
       email: "marie@example.com",
       city: "Porto-Vecchio",
       service: "videosurveillance",
-      description: "Caméra 4G"
+      description: "Caméra 4G",
+      to: "contact@infoserv2a.pro"
     }),
     env: {
       EMAIL: {
@@ -263,9 +269,9 @@ test("POST devis part vers contact@ tant que devis@ n’existe pas", async () =>
   });
   const payload = await response.json();
   assert.equal(payload.sent, true);
-  assert.equal(payload.inbox, "contact@infoserv2a.pro");
-  assert.equal(sent[0].to, "contact@infoserv2a.pro");
-  assert.equal(sent[0].reply_to, "marie@example.com");
+  assert.equal(payload.inbox, "marie@example.com");
+  assert.equal(sent[0].to, "marie@example.com");
+  assert.equal(sent[0].reply_to, "contact@infoserv2a.pro");
   assert.match(sent[0].text, /Besoin :/);
   assert.match(sent[0].text, /Caméra 4G/);
   assert.match(sent[0].html, /<table/i);
@@ -374,10 +380,10 @@ test("Claire ne dit pas que c’est parti si l’API n’a pas envoyé", () => {
   });
   assert.match(failed, /pas encore branché|pas pu envoyer/);
   const ok = describeEmailSendOutcome({
-    results: [{ tool: "compose_email", output: { sent: true, inbox: "contact@infoserv2a.pro", replyTo: "didier@example.com" } }]
+    results: [{ tool: "compose_email", output: { sent: true, inbox: "didier@example.com", replyTo: "contact@infoserv2a.pro" } }]
   });
-  assert.match(ok, /bien été envoyé vers contact@infoserv2a\.pro/);
-  assert.match(ok, /didier@example.com/);
+  assert.match(ok, /bien été envoyé vers didier@example\.com/);
+  assert.match(ok, /contact@infoserv2a\.pro/);
   const incomplete = describeEmailSendOutcome({
     results: [{ tool: "submit_quote", output: { sent: true, missing: ["email", "phone"], inbox: "contact@infoserv2a.pro" } }]
   });

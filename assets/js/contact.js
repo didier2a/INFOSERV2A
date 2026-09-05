@@ -44,11 +44,11 @@
 
       send.then((result) => {
         if (result.pendingActivation) {
-          api.showStatus(form, "ok", result.message || "Un e-mail d’activation arrive dans " + (result.inbox || "contact@infoserv2a.pro") + ". Confirmez-le, puis renvoyez le message.");
+          api.showStatus(form, "ok", result.message || "Un e-mail d’activation arrive dans " + (result.inbox || email.value) + ". Confirmez-le, puis renvoyez le message.");
           return;
         }
         if (!result.sent) throw new Error(result.error || "network");
-        api.showStatus(form, "ok", "Votre message a bien été transmis vers " + (result.inbox || "contact@infoserv2a.pro") + ".");
+        api.showStatus(form, "ok", "Votre message a bien été transmis vers " + (result.inbox || email.value) + ".");
         document.dispatchEvent(new CustomEvent("infoserv:email-sent", {
           detail: {
             kind: "contact",
@@ -62,7 +62,7 @@
         }));
         form.reset();
       }).catch(() => {
-        api.showStatus(form, "error", "L'envoi n'a pas pu aboutir. Vous pouvez nous écrire à contact@infoserv2a.pro.");
+        api.showStatus(form, "error", "L'envoi n'a pas pu aboutir. Vérifiez l’e-mail indiqué, puis réessayez.");
       });
     });
   }

@@ -1,4 +1,4 @@
-import { QUOTE_FIELD_LABELS, joinFrenchList } from "./claire-session-memory.mjs?v=20260904-it36";
+import { QUOTE_FIELD_LABELS, joinFrenchList } from "./claire-session-memory.mjs?v=20260905-it37";
 
 export const SITE_EMAIL_PATH = "/api/send-email";
 export const EMAIL_SEND_TIMEOUT_MS = 12000;
@@ -64,7 +64,7 @@ export function describeEmailSendOutcome(outcome) {
   ));
   if (!result) return "";
   const output = result.output || {};
-  const inbox = output.inbox || "contact@infoserv2a.pro";
+  const inbox = output.inbox || output.email || "votre e-mail";
   const reply = output.replyTo ? ` La réponse arrivera sur ${output.replyTo}.` : "";
   const missing = Array.isArray(output.missing) ? output.missing : [];
   if (missing.length) {
@@ -86,5 +86,5 @@ export function describeEmailSendOutcome(outcome) {
   }
   return output.error
     ? `Je n’ai pas pu envoyer l’e-mail. ${output.error}`
-    : "Je n’ai pas pu envoyer l’e-mail. Réessayez dans un instant, ou écrivez à contact@infoserv2a.pro.";
+    : "Je n’ai pas pu envoyer l’e-mail. Réessayez dans un instant.";
 }

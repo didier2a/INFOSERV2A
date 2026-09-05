@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260904-it36)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260904-it36)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260905-it37)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260905-it37)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -38,7 +38,7 @@ test("les modules Claire sont versionnés pour éviter un cache 24 h cassé", as
     const bare = [...source.matchAll(/(?:from|import)\(?["'](\.\/[^"'?]+)["']/g)].map((match) => match[1]);
     assert.deepEqual(bare, [], `${file} importe sans ?v= : ${bare.join(", ")}`);
     if (source.includes("claire-core.mjs")) {
-      assert.match(source, /claire-core\.mjs\?v=20260904-it36/);
+      assert.match(source, /claire-core\.mjs\?v=20260905-it37/);
     }
   }
 });
@@ -130,7 +130,7 @@ test("Claire accueille l'utilisateur et explique son rôle chez InfoServ2A", asy
   assert.doesNotMatch(core, /Je reste uniquement dans l’informatique/);
   assert.match(client, /CLAIRE_WELCOME/);
   assert.match(endpoint, /CLAIRE_WELCOME/);
-  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.27/);
+  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.28/);
   assert.match(endpoint, /buildClaireContextPrompt/);
   assert.match(endpoint, /temperature:\s*0\.75/);
   assert.match(endpoint, /opening_text:\s*CLAIRE_WELCOME/);
@@ -323,9 +323,12 @@ test("Claire reste en deux colonnes sur ordinateur et s’empile seulement sous 
 });
 
 test("une transcription vocale coupe la réponse spontanée seulement si le site doit agir", async () => {
-  const [client, provider] = await Promise.all([
+  const [client, provider, main, css, header] = await Promise.all([
     readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
-    readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8")
+    readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/main.js"), "utf8"),
+    readFile(path.join(ROOT, "assets/css/components.css"), "utf8"),
+    readFile(path.join(ROOT, "partials/header.html"), "utf8")
   ]);
   assert.match(provider, /bargeIn\("manual-interrupt"\)/);
   assert.doesNotMatch(provider, /if \(this\.avatarSpeaking\) this\.bargeIn\("user-barge-in"\)/);
@@ -366,6 +369,11 @@ test("une transcription vocale coupe la réponse spontanée seulement si le site
   assert.match(client, /resetQuoteNeed/);
   assert.match(client, /closeQuoteAfterSuccessfulSend/);
   assert.match(client, /infoserv:email-sent/);
+  assert.match(client, /infoserv:email-sending/);
+  assert.match(client, /data-claire-send-wait/);
+  assert.match(main, /playSendChime/);
+  assert.match(css, /form-sending__bar/);
+  assert.match(header, /data-claire-send-wait/);
   assert.match(provider, /sendBriefing/);
   assert.match(provider, /sendMemory/);
   assert.match(provider, /INFOSERV2A_SITE_BRIEFING/);
@@ -526,4 +534,23 @@ test("la sortie générée reste synchronisée avec le partial", async () => {
   assert.ok(start >= 0 && end > start);
   const generatedHeader = index.slice(start, end).trim();
   assert.equal(generatedHeader, partial.trim());
+});
+
+test("E-MAIL-01 : contact et devis partent vers l’e-mail du client, avec attente visible", async () => {
+  const [contact, devis, workerSource, main] = await Promise.all([
+    readFile(path.join(ROOT, "contact.html"), "utf8"),
+    readFile(path.join(ROOT, "devis.html"), "utf8"),
+    readFile(path.join(ROOT, "functions/api/send-email.js"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/main.js"), "utf8")
+  ]);
+  assert.match(contact, /l’e-mail que vous avez indiqué/);
+  assert.match(devis, /l’e-mail que vous avez indiqué/);
+  assert.match(contact, /form-sending/);
+  assert.match(devis, /form-sending/);
+  assert.doesNotMatch(contact, /Le message part réellement vers contact@/);
+  assert.doesNotMatch(devis, /La demande part réellement vers contact@/);
+  assert.match(workerSource, /destinationInbox/);
+  assert.match(workerSource, /BUSINESS_REPLY_TO/);
+  assert.match(main, /playSendChime/);
+  assert.match(main, /setEmailSending/);
 });

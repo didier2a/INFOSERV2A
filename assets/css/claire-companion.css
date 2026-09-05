@@ -222,6 +222,49 @@
   box-shadow: 0 0 0 4px rgba(110, 216, 177, 0.19);
 }
 
+.claire-send-wait {
+  position: absolute;
+  left: 0.7rem;
+  right: 0.7rem;
+  bottom: 0.7rem;
+  z-index: 8;
+  display: none;
+  gap: 0.4rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 14px;
+  color: #fff;
+  background: rgba(3, 20, 31, 0.78);
+  backdrop-filter: blur(12px);
+}
+.claire-companion.is-email-sending .claire-send-wait,
+.claire-companion[data-email-sending="1"] .claire-send-wait {
+  display: grid;
+}
+.claire-send-wait__track {
+  position: relative;
+  overflow: hidden;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+}
+.claire-send-wait__bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 38%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6ed8b1, #65d7ca);
+  animation: claire-send-slide 1.1s ease-in-out infinite;
+}
+.claire-send-wait__label {
+  margin: 0;
+  font-size: 0.78rem;
+}
+@keyframes claire-send-slide {
+  0% { left: -38%; }
+  100% { left: 100%; }
+}
+
 .claire-voice-wave { height: 28px; gap: 4px; }
 .claire-voice-wave i { width: 4px; height: 8px; opacity: 0.62; }
 .claire-voice-wave i:nth-child(2),

@@ -8,7 +8,7 @@ import {
   resolveCurrentPage,
   isOralSendConfirm,
   isClaireQuotePrompt
-} from "./claire-core.mjs?v=20260904-it36";
+} from "./claire-core.mjs?v=20260905-it37";
 import {
   canSubmitQuote,
   canSubmitContact,
@@ -17,7 +17,7 @@ import {
   quotePrefillFromMemory,
   isSameDraftAlreadySent,
   alreadySentSpeech
-} from "./claire-session-memory.mjs?v=20260904-it36";
+} from "./claire-session-memory.mjs?v=20260905-it37";
 
 export const CONTROLLER_STATES = Object.freeze({
   READY: "ready",
@@ -278,7 +278,7 @@ export function planCommand(input, knowledge, manifest, context = {}) {
         response: alreadySentSpeech(context.memory, "contact")
       });
     }
-    steps.push(actionStep("compose_email", emailDraftFromMemory(context.memory), "Envoyer réellement le message vers contact@infoserv2a.pro."));
+    steps.push(actionStep("compose_email", emailDraftFromMemory(context.memory), "Envoyer réellement le message vers l’e-mail saisi par le visiteur."));
   } else if (route.page) {
     steps.push(actionStep("search_site", { query: command }, "Identifier la page et la section les plus pertinentes."));
     if (route.page.id === "contact") {

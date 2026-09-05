@@ -142,7 +142,7 @@ test("la phrase de Claire qui redemande une confirmation n’est pas une command
 });
 
 test("la phrase de Claire sur le devis ne relance pas l’envoi", () => {
-  const speech = "Le devis est complet : votre nom. Dites « envoie le devis » pour que je le transmette vers contact@infoserv2a.pro. Rien n’est parti tant que le site n’a pas confirmé l’envoi.";
+  const speech = "Le devis est complet : votre nom. Dites « envoie le devis » pour que je le transmette vers marie@example.com. Rien n’est parti tant que le site n’a pas confirmé l’envoi.";
   assert.equal(isClaireQuotePrompt(speech), true);
   assert.equal(isSubmitQuoteAction(speech), false);
   assert.notEqual(routeCommand(speech, knowledge).action, "submit_quote");
@@ -266,7 +266,8 @@ test("le briefing site contient tous les onglets et le rôle consultante IT", ()
   assert.doesNotMatch(prompt, /tous les domaines : métiers, sciences, arts/);
   assert.match(prompt, /INFOSERV2A_SITE_BRIEFING/);
   assert.match(prompt, /Une phrase courte au plus/);
-  assert.match(prompt, /INFOSERV2A_OFF_TOPIC/);
+  assert.match(prompt, /champ e-mail du visiteur/);
+  assert.match(prompt, /synthèse fidèle/);
   assert.match(prompt, /être interrompue/);
   assert.match(prompt, /reste silencieuse/);
   assert.match(prompt, /Ne dis pas que tu attends le site/);

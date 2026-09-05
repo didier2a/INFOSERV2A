@@ -25,7 +25,10 @@ import {
   archiveCurrentVisit,
   hydrateQuoteMemoryFromForm,
   canSubmitContact,
-  quoteExtrasFromDocument
+  quoteExtrasFromDocument,
+  synthesizeMailBody,
+  emailDraftFromMemory,
+  SYNTHESIS_LEAD
 } from "../assets/js/claire-session-memory.mjs";
 
 function memoryStorage(seed = null) {
@@ -213,13 +216,14 @@ test("le checklist dit à l’oral ce qui manque et ne prétend pas que c’est 
   assert.match(complete.speech, /complet/);
   assert.match(complete.speech, /transmettre la demande/);
   assert.doesNotMatch(complete.speech, /envoie le devis|bien été envoyé/);
+  const sentMemory = completeMemory();
   const sent = describeQuoteChecklist({
-    ...completeMemory(),
+    ...sentMemory,
     lastSend: {
       sent: true,
       kind: "devis",
-      inbox: "contact@infoserv2a.pro",
-      signature: "marie rossi|07 45 15 60 76|marie@example.com|porto-vecchio|videosurveillance|caméra 4g"
+      inbox: "marie@example.com",
+      signature: quoteDraftSignature(sentMemory)
     }
   });
   assert.equal(sent.alreadySent, true);
@@ -440,4 +444,35 @@ test("une époque de devis plus récente n’est pas écrasée par l’ancien be
   assert.equal(merged.quoteEpoch, 1);
   assert.equal(merged.turns.length, 0);
   assert.equal(merged.visitor.name, "Didier");
+});
+
+test("Claire rédige le corps du mail comme une synthèse de l’échange", () => {
+  const storage = memoryStorage();
+  rememberTurn("user", "Bonjour", storage);
+  rememberTurn("user", "Je veux une caméra 4G pour un hangar isolé à Porto-Vecchio.", storage);
+  rememberTurn("user", "Mon e-mail est didier@example.com", storage);
+  const memory = rememberTurn("user", "Et un enregistrement de quinze jours.", storage);
+  rememberTurn("user", "Envoie le devis", storage);
+  const body = synthesizeMailBody(loadSessionMemory(storage));
+  assert.match(body, new RegExp(SYNTHESIS_LEAD.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(body, /hangar isolé/);
+  assert.match(body, /quinze jours/);
+  assert.doesNotMatch(body, /Envoie le devis/);
+  assert.match(body, /vidéosurveillance|videosurveillance/i);
+
+  const draft = emailDraftFromMemory(loadSessionMemory(storage));
+  assert.equal(draft.to, "didier@example.com");
+  assert.match(draft.message, /hangar isolé/);
+  assert.doesNotMatch(draft.to, /contact@/);
+});
+
+test("un besoin déjà noté devient le corps du devis même sans tours supplémentaires", () => {
+  const body = synthesizeMailBody({
+    visitor: { name: "Marie", phone: "", email: "marie@example.com", city: "" },
+    service: "creation-site-web",
+    need: "Site vitrine pour mon commerce",
+    turns: []
+  });
+  assert.match(body, /Site vitrine pour mon commerce/);
+  assert.match(body, /Synthèse de l’échange/);
 });

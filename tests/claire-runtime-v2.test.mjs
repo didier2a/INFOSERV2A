@@ -8,6 +8,7 @@ import {
 } from "../assets/js/claire-runtime-v2.mjs";
 import { InfoServ2ALabAdapter } from "../assets/js/claire-site-adapter.mjs";
 import { InfoServ2ASiteAdapter } from "../assets/js/claire-site-runtime-adapter.mjs";
+import { quoteDraftSignature } from "../assets/js/claire-session-memory.mjs";
 
 const knowledge = JSON.parse(
   await readFile(new URL("../data/site-knowledge.json", import.meta.url), "utf8")
@@ -88,8 +89,8 @@ class MockPersistentSurface {
     this.calls.push(["sendSiteEmail", payload]);
     return {
       sent: true,
-      inbox: "contact@infoserv2a.pro",
-      replyTo: payload.email || "",
+      inbox: payload.email || "",
+      replyTo: "contact@infoserv2a.pro",
       provider: "test"
     };
   }
@@ -332,7 +333,7 @@ test("un mail oral envoie réellement vers InfoServ2A", async () => {
   assert.equal(outcome.verification.pageId, "contact");
   const mail = outcome.results.find((item) => item.tool === "compose_email");
   assert.equal(mail.output.sent, true);
-  assert.equal(mail.output.inbox, "contact@infoserv2a.pro");
+  assert.equal(mail.output.inbox, "didier@example.com");
   assert.ok(surface.calls.some(([name]) => name === "sendSiteEmail"));
   assert.ok(!surface.calls.some(([, href]) => String(href || "").startsWith("mailto:")));
 });
@@ -410,7 +411,7 @@ test("sur le devis, « envoie le message » transmet le devis et ne part pas en 
 });
 
 test("un devis déjà envoyé n’est pas renvoyé", () => {
-  const memory = {
+  const base = {
     visitor: {
       name: "Marie Rossi",
       phone: "07 45 15 60 76",
@@ -419,12 +420,15 @@ test("un devis déjà envoyé n’est pas renvoyé", () => {
     },
     service: "videosurveillance",
     need: "Caméra 4G pour un hangar isolé",
-    turns: [],
+    turns: []
+  };
+  const memory = {
+    ...base,
     lastSend: {
       sent: true,
       kind: "devis",
-      inbox: "contact@infoserv2a.pro",
-      signature: "marie rossi|07 45 15 60 76|marie@example.com|porto-vecchio|videosurveillance|caméra 4g pour un hangar isolé"
+      inbox: "marie@example.com",
+      signature: quoteDraftSignature(base)
     }
   };
   const plan = planCommand("envoie le message", knowledge, manifest, { memory, pageId: "quote" });
@@ -433,7 +437,7 @@ test("un devis déjà envoyé n’est pas renvoyé", () => {
 });
 
 test("après un envoi, un nouveau besoin oral n’est plus bloqué comme déjà envoyé", () => {
-  const sent = {
+  const base = {
     visitor: {
       name: "Didier",
       phone: "06 12 34 56 78",
@@ -442,12 +446,15 @@ test("après un envoi, un nouveau besoin oral n’est plus bloqué comme déjà 
     },
     service: "videosurveillance",
     need: "Caméra 4G pour le commerce",
-    turns: [],
+    turns: []
+  };
+  const sent = {
+    ...base,
     lastSend: {
       sent: true,
       kind: "devis",
-      inbox: "contact@infoserv2a.pro",
-      signature: "didier|06 12 34 56 78|didier@exemple.fr|lyon|videosurveillance|caméra 4g pour le commerce"
+      inbox: "didier@exemple.fr",
+      signature: quoteDraftSignature(base)
     }
   };
   const stillSame = planCommand("envoie le devis", knowledge, manifest, { memory: sent, pageId: "quote" });
