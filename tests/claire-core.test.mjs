@@ -267,7 +267,7 @@ test("le briefing site contient tous les onglets et le rôle consultante IT", ()
   assert.match(prompt, /INFOSERV2A_SITE_BRIEFING/);
   assert.match(prompt, /Une phrase courte au plus/);
   assert.match(prompt, /champ e-mail du visiteur/);
-  assert.match(prompt, /synthèse fidèle/);
+  assert.match(prompt, /jamais le dialogue ni les répliques/);
   assert.match(prompt, /être interrompue/);
   assert.match(prompt, /reste silencieuse/);
   assert.match(prompt, /Ne dis pas que tu attends le site/);

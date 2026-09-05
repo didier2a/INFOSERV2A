@@ -48,7 +48,8 @@ test("audit : Claire est une consultante IT ouverte, pas une IA de salon", () =>
   assert.match(providerSource, /let kind = "chat"/);
   assert.match(providerSource, /sendOffTopic/);
   assert.match(providerSource, /INFOSERV2A_OFF_TOPIC/);
-  assert.match(sessionSource, /InfoServ2A Claire Aidant 1\.28/);
+  assert.match(sessionSource, /InfoServ2A Claire Aidant 1\.29/);
+  assert.match(prompt, /jamais le dialogue ni les répliques/);
   assert.match(prompt, /jamais « c’est parti »/);
   assert.match(prompt, /sans attendre qu’on te pose une question/);
   assert.match(providerSource, /sans attendre qu’on te le demande/);
