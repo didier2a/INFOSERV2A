@@ -5,37 +5,55 @@ import {
   describePageContext,
   buildSiteBriefing,
   followSpokenNavigation,
+  claimsUnverifiedEmailSend,
+  isClaireQuotePrompt,
   isInternalSitePrompt,
+  isQuoteAction,
+  isSubmitQuoteAction,
+  isUrgentSiteCommand,
+  shouldExecuteSiteRuntime,
   liveAvatarSessionWarningDelayMs,
+  grantedLiveAvatarSessionMs,
   mergeSpokenTranscript,
   suggestedPrompts,
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
-  LIVEAVATAR_MAX_SESSION_MS,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs";
+} from "./claire-core.mjs?v=20260905-it37";
 import {
+  describeQuoteChecklist,
   formatCaptionContext,
   formatMemoryBriefing,
+  formatLiveMemoryCue,
   hasMemoryContent,
   loadSessionMemory,
+  archiveCurrentVisit,
+  hydrateQuoteMemoryFromForm,
+  shouldAnnounceQuoteTruth,
   rememberPage,
   rememberTurn,
+  rememberSuccessfulSend,
+  beginNewQuoteAfterSend,
+  quoteDraftSignature,
+  contactDraftSignature,
+  isSameDraftAlreadySent,
+  alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs";
+} from "./claire-session-memory.mjs?v=20260905-it37";
+import { describeEmailSendOutcome } from "./site-email.mjs?v=20260905-it37";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260905-it37";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs";
-import "./contact.js";
-import "./devis.js";
+} from "./claire-site-runtime-adapter.mjs?v=20260905-it37";
+import "./contact.js?v=20260905-it37";
+import "./devis.js?v=20260905-it37";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260902-it16";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260902-it16";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260905-it37";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260905-it37";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -120,6 +138,24 @@ function isPhoneShell() {
   } catch {
     return false;
   }
+}
+
+function isTypingControl(node) {
+  if (!(node instanceof Element)) return false;
+  if (node.closest?.(".claire-companion")) {
+    return Boolean(node.closest?.("[data-claire-form]") || node.matches?.("#claireCommand, textarea, input"));
+  }
+  const contenu = document.getElementById("contenu");
+  if (!contenu?.contains(node)) return false;
+  return node.matches?.(
+    "input:not([type=hidden]):not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), textarea, select, [contenteditable='true']"
+  );
+}
+
+function isSiteContentTarget(node) {
+  if (!(node instanceof Element)) return false;
+  if (node.closest?.(".claire-companion, .nav-panel, .nav-overlay, .site-header")) return false;
+  return Boolean(document.getElementById("contenu")?.contains(node));
 }
 
 function liveAvatarStatusUrls() {
@@ -263,6 +299,14 @@ export class ClaireCompanion {
     this.surface = null;
     this.siteAdapter = null;
     this.runtime = null;
+    this.lastSiteSendOk = false;
+    this.lastSiteSendAt = 0;
+    this.closingQuoteAfterSend = false;
+    this.lastSiteTruthSpeech = "";
+    this.lastQuoteAnnounceAt = 0;
+    this.pendingEmailSend = false;
+    this.pendingLiveMemory = false;
+    this.transcriptRestored = false;
     this.browserVoice = new BrowserVoiceProvider({
       onTranscript: (text, final) => this.handleTranscript(text, final),
       onStatus: (value, label) => this.setStatus(value, label)
@@ -304,6 +348,7 @@ export class ClaireCompanion {
     this.renderSuggestions();
     this.highlightRequestedSection();
     this.prefetchLikelyPages();
+    this.restorePersistedConversation();
     this.exposeApi();
     globalThis.InfoServClaireBoot?.flush?.();
     return this;
@@ -382,7 +427,8 @@ export class ClaireCompanion {
       video: find(".claire-avatar__video"),
       sessionNotice: find("[data-claire-session-notice]"),
       sessionNoticeCopy: find("[data-claire-session-notice-copy]"),
-      sessionContinue: find("[data-claire-session-continue]")
+      sessionContinue: find("[data-claire-session-continue]"),
+      sendWait: find("[data-claire-send-wait]")
     };
   }
 
@@ -412,6 +458,11 @@ export class ClaireCompanion {
       void this.submit(value, "text");
     });
     this.bindResponsiveShell();
+    document.addEventListener("focusin", (event) => this.handleSiteFieldFocus(event));
+    document.addEventListener("focusout", () => {
+      globalThis.setTimeout(() => this.syncViewportShell(), 0);
+    });
+    document.addEventListener("pointerdown", (event) => this.handleSiteFieldPointer(event), true);
     this.nodes.mic?.addEventListener("click", () => void this.toggleMicrophone());
     this.nodes.stage?.addEventListener("click", (event) => {
       if (event.target?.closest?.("button, a, input")) return;
@@ -429,6 +480,24 @@ export class ClaireCompanion {
     });
     globalThis.addEventListener("infoserv:claire-telemetry", (event) => {
       this.showRealtimeTelemetry(event.detail);
+    });
+    globalThis.addEventListener("infoserv:email-sending", (event) => {
+      const sending = event.detail?.sending === true;
+      this.root?.classList.toggle("is-email-sending", sending);
+      if (this.root) this.root.dataset.emailSending = sending ? "1" : "0";
+      const wait = this.nodes.sendWait;
+      if (wait) wait.hidden = !sending;
+      if (sending) {
+        const inbox = event.detail?.inbox || "votre e-mail";
+        const label = wait?.querySelector(".claire-send-wait__label");
+        if (label) label.textContent = `Envoi vers ${inbox}…`;
+        this.setStatus("thinking", `Envoi vers ${inbox}…`);
+      }
+    });
+    globalThis.addEventListener("infoserv:email-sent", (event) => {
+      const detail = event.detail || {};
+      const kind = detail.kind === "contact" ? "contact" : "devis";
+      this.closeQuoteAfterSuccessfulSend(kind, detail);
     });
     document.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
@@ -475,10 +544,25 @@ export class ClaireCompanion {
     document.documentElement.style.setProperty("--claire-vv-offset", `${Math.round(viewport?.offsetTop || 0)}px`);
     const phone = isPhoneShell();
     document.body.classList.toggle("claire-phone-shell", phone);
-    document.body.classList.toggle(
-      "claire-keyboard-open",
-      Boolean(phone && this.nodes.input && document.activeElement === this.nodes.input)
-    );
+    const typing = isTypingControl(document.activeElement);
+    document.body.classList.toggle("claire-keyboard-open", Boolean(phone && typing));
+    if (typing && isSiteContentTarget(document.activeElement)) this.closeGuidedTranscript();
+  }
+
+  handleSiteFieldFocus(event) {
+    const node = event.target;
+    if (isSiteContentTarget(node) && isTypingControl(node)) this.closeGuidedTranscript();
+    this.syncViewportShell();
+  }
+
+  handleSiteFieldPointer(event) {
+    const node = event.target;
+    if (!(node instanceof Element)) return;
+    if (node.closest?.(".nav-panel, .nav-toggle, .nav-overlay")) return;
+    if (!isSiteContentTarget(node)) return;
+    if (isTypingControl(node) || node.closest?.("label, .form-field, input, textarea, select")) {
+      this.closeGuidedTranscript();
+    }
   }
 
   focusComposer() {
@@ -628,6 +712,7 @@ export class ClaireCompanion {
         await this.provider.connect({ microphone: microphoneRequested });
         this.setEngineStatus("liveavatar-realtime", "LiveAvatar · OpenAI Realtime · marin");
         if (!wasConnected) this.armLiveAvatarSessionWatch({ restart: true });
+        this.pendingLiveMemory = hasMemoryContent(loadSessionMemory());
         this.scheduleSilentSiteSync();
         this.scheduleWelcomeTranscript(greeting);
         void this.keepScreenAwake();
@@ -694,10 +779,21 @@ export class ClaireCompanion {
   toggleGuidedTranscript() {
     const open = this.root.dataset.transcript === "open";
     this.root.dataset.transcript = open ? "closed" : "open";
-    this.root.querySelectorAll("[data-claire-expand]").forEach((button) => {
-      button.setAttribute("aria-expanded", open ? "false" : "true");
+    this.syncExpandButtons();
+  }
+
+  closeGuidedTranscript() {
+    if (this.root?.dataset.transcript !== "open") return;
+    this.root.dataset.transcript = "closed";
+    this.syncExpandButtons();
+  }
+
+  syncExpandButtons() {
+    const open = this.root?.dataset.transcript === "open";
+    this.root?.querySelectorAll("[data-claire-expand]").forEach((button) => {
+      button.setAttribute("aria-expanded", open ? "true" : "false");
       if (["Conversation", "Réduire"].includes(button.textContent.trim())) {
-        button.textContent = open ? "Conversation" : "Réduire";
+        button.textContent = open ? "Réduire" : "Conversation";
       }
     });
   }
@@ -749,19 +845,43 @@ export class ClaireCompanion {
     clearTimeout(this.silentSyncTimer);
     this.silentSyncTimer = 0;
     if (this.forceSiteBriefing) this.provider.sendBriefing?.(buildSiteBriefing(this.knowledge));
-    this.sendSessionMemory();
+    this.sendSessionMemory({ live: false });
     this.pushPageContext();
+    this.flushPendingLiveMemory();
     return true;
   }
 
-  sendSessionMemory() {
+  sendSessionMemory({ live = false } = {}) {
     const memory = loadSessionMemory();
     if (!hasMemoryContent(memory)) return false;
-    const briefing = formatMemoryBriefing(memory);
-    return this.provider?.sendMemory?.(briefing) || this.provider?.sendContext?.(briefing) || false;
+    const briefing = live ? formatLiveMemoryCue(memory) : formatMemoryBriefing(memory);
+    if (!briefing) return false;
+    return this.provider?.sendMemory?.(briefing, { live }) || this.provider?.sendContext?.(briefing) || false;
+  }
+
+  flushPendingLiveMemory() {
+    if (!this.pendingLiveMemory) return false;
+    this.pendingLiveMemory = false;
+    return this.sendSessionMemory({ live: true });
+  }
+
+  restorePersistedConversation() {
+    if (this.transcriptRestored) return false;
+    const memory = loadSessionMemory();
+    if (!hasMemoryContent(memory)) return false;
+    this.transcriptRestored = true;
+    this.welcomeShown = true;
+    for (const turn of memory.turns || []) {
+      this.appendTurn(turn.role === "user" ? "user" : "companion", turn.text, { remember: false });
+    }
+    this.syncVisibleForms(memory);
+    this.updateLiveContext();
+    return true;
   }
 
   verifiedSpeechFor(outcome) {
+    const sendSpeech = describeEmailSendOutcome(outcome);
+    if (sendSpeech) return sendSpeech;
     const snapshot = this.siteAdapter?.snapshot() || {};
     const page = snapshot.page;
     const section = snapshot.section;
@@ -795,16 +915,21 @@ export class ClaireCompanion {
     }
   }
 
+  grantedSessionMs() {
+    return grantedLiveAvatarSessionMs(this.provider?.grantedSessionSeconds);
+  }
+
   armLiveAvatarSessionWatch({ restart = false } = {}) {
     if (this.sessionWarningTimer && !restart) return;
     this.clearSessionWatch();
     this.sessionStartedAt = Date.now();
+    const maxDurationMs = this.grantedSessionMs();
     const warningDelay = liveAvatarSessionWarningDelayMs(
-      LIVEAVATAR_MAX_SESSION_MS,
+      maxDurationMs,
       LIVEAVATAR_SESSION_WARNING_LEAD_MS
     );
     this.sessionWarningTimer = setTimeout(() => this.showSessionNotice("warning"), warningDelay);
-    this.sessionEndTimer = setTimeout(() => this.handleLiveAvatarSessionStopped("duration-elapsed"), LIVEAVATAR_MAX_SESSION_MS);
+    this.sessionEndTimer = setTimeout(() => this.handleLiveAvatarSessionStopped("duration-elapsed"), maxDurationMs);
   }
 
   clearSessionWatch() {
@@ -839,6 +964,7 @@ export class ClaireCompanion {
 
   handleLiveAvatarSessionStopped(reason = "session-stopped") {
     if (this.sessionReconnectLock) return;
+    archiveCurrentVisit();
     this.clearSessionWatch();
     this.showSessionNotice("ended");
     if (this.nodes.live) {
@@ -881,6 +1007,7 @@ export class ClaireCompanion {
       }
       this.setEngineStatus("liveavatar-realtime", "LiveAvatar · OpenAI Realtime · marin");
       this.armLiveAvatarSessionWatch({ restart: true });
+      this.pendingLiveMemory = hasMemoryContent(loadSessionMemory());
       this.scheduleSilentSiteSync();
       if (keepGuided && this.state !== "manual") {
         storageSet(STORAGE_MODE, this.state === "shared" ? "shared" : "guided");
@@ -918,13 +1045,17 @@ export class ClaireCompanion {
         onAvatarSpeakEnd: () => {
           this.finalizeLiveCompanionTurn();
           this.updateLiveContext();
+          this.flushPendingLiveMemory();
         },
         onBargeIn: () => {
           this.clearSpeechFollow({ keepLastPage: false });
           this.finalizeLiveCompanionTurn();
         },
         onStatus: (value, label) => this.setStatus(value, label),
-        classifyCommand: (text) => classifyUtterance(text, this.knowledge, { pathname: location.pathname }).kind,
+        classifyCommand: (text) => {
+          if (isUrgentSiteCommand(text)) return "site";
+          return classifyUtterance(text, this.knowledge, { pathname: location.pathname }).kind;
+        },
         onCommand: (text) => this.submit(text, "liveavatar"),
         onSessionStopped: (detail) => this.handleLiveAvatarSessionStopped(detail?.reason || "session-stopped")
       });
@@ -950,7 +1081,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260905-it37");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
@@ -976,13 +1107,17 @@ export class ClaireCompanion {
     });
   }
 
-  appendTurn(role, text, { live = false, remember = true } = {}) {
+  appendTurn(role, text, { live = false, remember = true, truth = false } = {}) {
     if (!this.nodes.transcript || !text) return null;
     if (isInternalSitePrompt(text)) return null;
-    if (remember && !live) rememberTurn(role === "user" ? "user" : "companion", text);
+    if (remember && !live) {
+      rememberTurn(role === "user" ? "user" : "companion", text);
+      if (role === "user") this.syncVisibleForms();
+    }
     const article = document.createElement("article");
     article.className = `claire-turn claire-turn--${role}`;
     if (live) article.dataset.live = "1";
+    if (truth) article.dataset.siteTruth = "1";
     const label = document.createElement("span");
     label.textContent = role === "user" ? "Vous" : "Claire";
     const paragraph = document.createElement("p");
@@ -1011,6 +1146,10 @@ export class ClaireCompanion {
     if (this.nodes.caption) this.nodes.caption.textContent = value;
     if (value) this.showLivePrompt();
     else this.updateLiveContext();
+  }
+
+  syncVisibleForms(memory = loadSessionMemory()) {
+    return this.siteAdapter?.surface?.syncVisibleForms?.(memory) || { quote: false, contact: false };
   }
 
   updateLiveContext() {
@@ -1057,7 +1196,7 @@ export class ClaireCompanion {
     if (!value) return;
     this.welcomeShown = true;
     clearTimeout(this.welcomeFallbackTimer);
-    const last = this.nodes.transcript?.querySelector('.claire-turn--companion[data-live="1"]');
+    const last = this.nodes.transcript?.querySelector('.claire-turn--companion[data-live="1"]:not([data-site-truth="1"])');
     if (last) {
       const paragraph = last.querySelector("p");
       if (paragraph) paragraph.textContent = mergeSpokenTranscript(paragraph.textContent, value);
@@ -1066,18 +1205,132 @@ export class ClaireCompanion {
         const scroller = this.nodes.conversationScroll;
         if (scroller) scroller.scrollTop = scroller.scrollHeight;
       });
+      this.correctInventedSend(paragraph?.textContent || value);
       return;
     }
     const previous = this.nodes.transcript?.querySelector(".claire-turn--companion:last-of-type");
-    if (previous && !previous.dataset.live) {
+    if (previous && !previous.dataset.live && previous.dataset.siteTruth !== "1") {
       previous.dataset.live = "1";
       const paragraph = previous.querySelector("p");
       if (paragraph) paragraph.textContent = mergeSpokenTranscript(paragraph.textContent, value);
       this.updateLiveCaption(paragraph?.textContent || value);
+      this.correctInventedSend(paragraph?.textContent || value);
       return;
     }
     this.appendTurn("companion", value, { live: true });
     this.updateLiveCaption(value);
+    this.correctInventedSend(value);
+  }
+
+  closeQuoteAfterSuccessfulSend(kind, detail = {}) {
+    if (this.closingQuoteAfterSend) return;
+    this.closingQuoteAfterSend = true;
+    try {
+      const memory = loadSessionMemory();
+      const extras = {
+        name: detail.name,
+        phone: detail.phone,
+        email: detail.email,
+        city: detail.city,
+        service: detail.service,
+        description: detail.description,
+        message: detail.message
+      };
+      const signature = detail.signature
+        || (kind === "contact" ? contactDraftSignature(memory, extras) : quoteDraftSignature(memory, extras));
+      if (signature) {
+        rememberSuccessfulSend({
+          kind,
+          inbox: detail.inbox || "",
+          replyTo: detail.replyTo || "",
+          signature
+        });
+      }
+      beginNewQuoteAfterSend();
+      this.siteAdapter?.surface?.resetQuoteNeed?.();
+      this.lastSiteSendAt = Date.now();
+      this.sendSessionMemory({ live: true });
+      queueMicrotask(() => this.syncVisibleForms());
+    } finally {
+      this.closingQuoteAfterSend = false;
+    }
+  }
+
+  writeSiteTruth(text, { sent = false } = {}) {
+    const speech = String(text || "").trim();
+    if (!speech) return { speech: "", duplicate: false };
+    const duplicate = this.lastSiteTruthSpeech === speech && Boolean(this.lastSiteSendOk) === Boolean(sent);
+    this.lastSiteSendOk = sent;
+    if (sent) this.lastSiteSendAt = Date.now();
+    this.lastSiteTruthSpeech = speech;
+    if (duplicate) return { speech, duplicate: true };
+    const article = this.appendTurn("companion", speech, { truth: true });
+    if (article) {
+      article.dataset.siteTruth = "1";
+      article.dataset.sent = sent ? "1" : "0";
+    }
+    this.setStatus(sent ? "ready" : "error", speech);
+    return { speech, duplicate: false };
+  }
+
+  announceQuoteTruth(command, source, { outcome } = {}) {
+    if (isClaireQuotePrompt(command)) return "";
+    const memory = hydrateQuoteMemoryFromForm();
+    const pageId = this.siteAdapter?.view?.activePage || this.siteAdapter?.snapshot?.()?.page?.id || "";
+    const sendSpeech = outcome ? describeEmailSendOutcome(outcome) : "";
+    const wantsSend = isUrgentSiteCommand(command);
+    const relevant = sendSpeech
+      || wantsSend
+      || isQuoteAction(command)
+      || shouldAnnounceQuoteTruth(command, memory, pageId);
+    if (!relevant) return "";
+    const actuallySent = Boolean(outcome?.results?.some((item) => item.output?.sent));
+    const checklist = describeQuoteChecklist(memory);
+    const alreadySent = Boolean(checklist.alreadySent || isSameDraftAlreadySent(memory));
+    if (!actuallySent && alreadySent) {
+      const speech = sendSpeech || outcome?.plan?.response || alreadySentSpeech(
+        memory,
+        pageId === "contact" ? "contact" : "devis"
+      );
+      const written = this.writeSiteTruth(speech, { sent: true });
+      if (written.duplicate) return "";
+      this.lastQuoteAnnounceAt = Date.now();
+      if (source === "liveavatar") {
+        this.provider?.bargeIn?.("email-send");
+        if (this.provider?.sendEmailResult) this.provider.sendEmailResult(speech);
+        else this.provider?.sendPrompt?.(speech);
+      } else {
+        this.speak(speech);
+      }
+      return speech;
+    }
+    const speech = sendSpeech || checklist.speech;
+    const now = Date.now();
+    if (!actuallySent && speech === this.lastSiteTruthSpeech && now - this.lastQuoteAnnounceAt < 8000) {
+      return "";
+    }
+    const written = this.writeSiteTruth(speech, { sent: actuallySent });
+    const mustSpeak = actuallySent || (wantsSend && !written.duplicate) || !written.duplicate;
+    if (!mustSpeak) return speech;
+    this.lastQuoteAnnounceAt = now;
+    if (source === "liveavatar") {
+      this.provider?.bargeIn?.("email-send");
+      if (this.provider?.sendEmailResult) this.provider.sendEmailResult(speech);
+      else this.provider?.sendPrompt?.(speech);
+    } else {
+      this.speak(speech);
+    }
+    return speech;
+  }
+
+  correctInventedSend(spoken) {
+    if (this.lastSiteSendOk) return;
+    if (!claimsUnverifiedEmailSend(spoken)) return;
+    if (Date.now() - this.lastQuoteAnnounceAt < 8000) return;
+    const speech = describeQuoteChecklist(loadSessionMemory()).speech;
+    this.writeSiteTruth(speech, { sent: false });
+    this.provider?.bargeIn?.("email-send");
+    this.provider?.sendEmailResult?.(speech);
   }
 
   finalizeLiveCompanionTurn() {
@@ -1090,7 +1343,8 @@ export class ClaireCompanion {
 
   async submit(command, source = "text") {
     const value = String(command || "").trim();
-    if (!value || isInternalSitePrompt(value)) return null;
+    if (!value || isInternalSitePrompt(value) || isClaireQuotePrompt(value)) return null;
+    hydrateQuoteMemoryFromForm();
     const classified = classifyUtterance(value, this.knowledge, { pathname: location.pathname });
     if (source === "liveavatar") {
       const signature = value.toLocaleLowerCase("fr").replace(/\s+/g, " ");
@@ -1115,9 +1369,10 @@ export class ClaireCompanion {
     this.appendTurn("user", value);
     this.updateLiveContext();
 
-    if (classified.kind === "chat") {
+    if (classified.kind === "chat" && !shouldExecuteSiteRuntime(classified, value)) {
       this.setStatus("listening", "Claire vous répond");
       if (source !== "liveavatar") this.provider?.sendUserMessage?.(value);
+      await this.announceQuoteTruth(value, source);
       return { kind: "chat", classified };
     }
 
@@ -1127,6 +1382,7 @@ export class ClaireCompanion {
         if (this.provider?.sendOffTopic) this.provider.sendOffTopic(value);
         else this.appendTurn("companion", CLAIRE_OFF_TOPIC_SPEECH);
       }
+      await this.announceQuoteTruth(value, source);
       return { kind: "chat", classified };
     }
 
@@ -1156,12 +1412,23 @@ export class ClaireCompanion {
       this.setState(keepGuided ? "guided" : "shared");
     }
 
+    const sendingNow = classified.route?.action === "email"
+      || classified.route?.action === "submit_quote"
+      || isUrgentSiteCommand(value);
+    this.pendingEmailSend = sendingNow;
+    if (source === "liveavatar" && sendingNow) {
+      this.provider?.bargeIn?.("email-send");
+    }
+    if (sendingNow) {
+      this.setStatus("thinking", "Envoi en cours…");
+    }
+
     try {
       const outcome = await this.runtime.run(value, {
         pathname: this.surface?.window?.location?.pathname || location.pathname,
         pageId: this.siteAdapter?.view?.activePage,
         sectionId: this.siteAdapter?.view?.activeSection,
-        memory: loadSessionMemory()
+        memory: hydrateQuoteMemoryFromForm()
       });
       globalThis.dispatchEvent(new CustomEvent("infoserv:claire-command", {
         detail: { command: value, source, outcome }
@@ -1179,13 +1446,32 @@ export class ClaireCompanion {
         this.setState("guided");
         this.renderSuggestions();
       }
-      this.setStatus("ready", "Page affichée · Claire vous l’explique");
+      const sentOk = Boolean(outcome.results?.some((item) => item.output?.sent));
+      if (sentOk) {
+        const sentResult = (outcome.results || []).find((item) => item.output?.sent);
+        const kind = sentResult?.tool === "submit_quote" ? "devis" : "contact";
+        this.closeQuoteAfterSuccessfulSend(kind, {
+          inbox: sentResult?.output?.inbox || "",
+          replyTo: sentResult?.output?.replyTo || ""
+        });
+      }
+      this.setStatus(
+        "ready",
+        sentOk
+          ? "Message transmis · Claire confirme à l’oral"
+          : this.pendingEmailSend
+            ? "Le site a répondu · rien n’est parti"
+            : "Page affichée · Claire vous l’explique"
+      );
+      const quoteSpeech = await this.announceQuoteTruth(value, source, { outcome });
       if (source === "liveavatar") {
         this.pushPageContext();
         return outcome;
       }
-      if (source !== "liveavatar") this.appendTurn("companion", response);
-      this.speak(response);
+      if (!quoteSpeech) {
+        this.appendTurn("companion", response);
+        this.speak(response);
+      }
       this.pushPageContext();
       return outcome;
     } catch (error) {
@@ -1195,16 +1481,19 @@ export class ClaireCompanion {
       this.nodes.live.textContent = String(error?.message || error);
       this.speak(message);
       return null;
+    } finally {
+      this.pendingEmailSend = false;
     }
   }
 
   handleRuntimeEvent(event) {
+    const sending = this.pendingEmailSend;
     const labels = {
-      interpreting: ["thinking", "J’interprète votre demande…"],
-      planning: ["thinking", "Je prépare une action contrôlée…"],
-      executing: ["thinking", "J’affiche la rubrique demandée…"],
-      verifying: ["thinking", "Je vérifie le résultat affiché…"],
-      complete: ["ready", "Page affichée · Claire vous l’explique"],
+      interpreting: ["thinking", sending ? "Envoi en cours…" : "J’interprète votre demande…"],
+      planning: ["thinking", sending ? "Envoi en cours…" : "Je prépare une action contrôlée…"],
+      executing: ["thinking", sending ? "Envoi en cours…" : "J’affiche la rubrique demandée…"],
+      verifying: ["thinking", sending ? "Le site confirme l’envoi…" : "Je vérifie le résultat affiché…"],
+      complete: ["ready", sending ? "Le site a répondu · Claire confirme à l’oral" : "Page affichée · Claire vous l’explique"],
       error: ["error", "Action interrompue sans quitter la page"],
       manual: ["ready", "Claire est rangée"]
     };
@@ -1226,6 +1515,7 @@ export class ClaireCompanion {
       href,
       speech: outcome.plan.response
     });
+    this.syncVisibleForms();
   }
 
   async navigateInternal(href, { historyMode = "push", announce = true, silent = false } = {}) {
@@ -1237,6 +1527,7 @@ export class ClaireCompanion {
       storageSet(STORAGE_MODE, "guided");
       this.setState("guided");
       this.renderSuggestions();
+      this.syncVisibleForms();
       if (isolateVoice) {
         this.pushPageContext(snapshot);
         this.setStatus(
@@ -1349,11 +1640,14 @@ export class ClaireCompanion {
     if (event.defaultPrevented || this.state === "manual" || event.button > 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const link = event.target?.closest?.("a[href]");
     if (!link || link.target === "_blank" || link.hasAttribute("download")) return;
+    if (link.closest?.(".claire-companion")) return;
     let url;
     try { url = new URL(link.href, location.href); } catch { return; }
     if (url.origin !== location.origin || !this.siteAdapter?.pageForHref(url.href)) return;
     event.preventDefault();
+    this.closeGuidedTranscript();
     this.claimUserSiteNavigation(url);
+    if (this.state !== "guided" && this.state !== "manual") this.setState("guided");
     void this.navigateInternal(url.href, { announce: false, silent: true }).then((ok) => {
       if (!ok) location.assign(url.href);
     });
@@ -1451,11 +1745,21 @@ export class ClaireCompanion {
       provider: this.provider?.id || "browser-native-fallback",
       phoneShell: isPhoneShell(),
       liveAvatarConfigured: Boolean(this.liveAvatarStatus?.configured),
+      grantedSessionMs: this.provider ? this.grantedSessionMs() : null,
       voiceRecognition: this.browserVoice.supported(),
       speechSynthesis: Boolean(globalThis.speechSynthesis),
       knowledgeVersion: this.knowledge.version || "fallback",
       runtimeState: this.runtime?.state || null,
       persistentNavigation: Boolean(this.siteAdapter),
+      memory: (() => {
+        const memory = loadSessionMemory();
+        return {
+          clientId: memory.clientId || "",
+          visitCount: memory.visitCount || 0,
+          turns: (memory.turns || []).length,
+          hasContent: hasMemoryContent(memory)
+        };
+      })(),
       page: currentPage(this.knowledge, location.pathname)?.id || this.siteAdapter?.snapshot().activePage || null,
       realtime: this.provider?.diagnostic?.() || null
     };

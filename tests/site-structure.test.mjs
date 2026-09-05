@@ -16,12 +16,30 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260902-it16)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260902-it16)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260905-it37)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260905-it37)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
     assert.doesNotMatch(html, /claire-mini|claire-panel/);
+  }
+});
+
+test("les modules Claire sont versionnés pour éviter un cache 24 h cassé", async () => {
+  const files = [
+    "assets/js/claire-companion.js",
+    "assets/js/claire-liveavatar-provider.js",
+    "assets/js/claire-runtime-v2.mjs",
+    "assets/js/claire-site-runtime-adapter.mjs",
+    "assets/js/site-email.mjs"
+  ];
+  for (const file of files) {
+    const source = await readFile(path.join(ROOT, file), "utf8");
+    const bare = [...source.matchAll(/(?:from|import)\(?["'](\.\/[^"'?]+)["']/g)].map((match) => match[1]);
+    assert.deepEqual(bare, [], `${file} importe sans ?v= : ${bare.join(", ")}`);
+    if (source.includes("claire-core.mjs")) {
+      assert.match(source, /claire-core\.mjs\?v=20260905-it37/);
+    }
   }
 });
 
@@ -112,7 +130,7 @@ test("Claire accueille l'utilisateur et explique son rôle chez InfoServ2A", asy
   assert.doesNotMatch(core, /Je reste uniquement dans l’informatique/);
   assert.match(client, /CLAIRE_WELCOME/);
   assert.match(endpoint, /CLAIRE_WELCOME/);
-  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.15/);
+  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.28/);
   assert.match(endpoint, /buildClaireContextPrompt/);
   assert.match(endpoint, /temperature:\s*0\.75/);
   assert.match(endpoint, /opening_text:\s*CLAIRE_WELCOME/);
@@ -258,20 +276,23 @@ test("la parole de Claire s’écrit dans un encart visible, hors de son visage"
   assert.match(client, /updateLiveCaption/);
   assert.match(client, /renderQuoteQuest/);
   assert.match(desktop, /\[data-state="guided"\] \.claire-live-prompt \{[\s\S]*left: calc\(var\(--claire-stage-width\) \+ 0\.9rem\)/);
-  assert.match(desktop, /\[data-state="guided"\] \.claire-dialogue \{\s*display: none;/);
+  assert.match(desktop, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*display: grid/);
+  assert.match(desktop, /\[data-state="guided"\] \.claire-command input \{[\s\S]*min-height: 44px/);
 });
 
-test("la conversation guidée reste un dock en bas, sans recouvrir Claire", async () => {
+test("la conversation guidée garde le champ d’écriture dans le rail", async () => {
   const css = await readFile(path.join(ROOT, "assets/css/claire-companion.css"), "utf8");
   const desktop = css.split("@media (max-width: 820px)")[0];
   const mobile = css.split("@media (max-width: 820px)")[1].split("@media")[0];
-  assert.match(desktop, /\[data-state="guided"\] \.claire-dialogue \{\s*display: none;/);
+  assert.match(desktop, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*display: grid/);
   assert.match(desktop, /\[data-transcript="open"\] \.claire-dialogue \{[\s\S]*position: fixed/);
   assert.match(desktop, /left: calc\(var\(--claire-stage-width\) \+ 0\.75rem\)/);
   assert.doesNotMatch(desktop, /max-height: min\(38vh, 340px\)/);
-  assert.match(mobile, /\[data-state="guided"\] \.claire-dialogue \{\s*display: none;/);
+  assert.match(mobile, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*display: grid/);
   assert.match(mobile, /\[data-transcript="open"\] \.claire-dialogue \{[\s\S]*position: fixed/);
   assert.doesNotMatch(mobile, /max-height: min\(32vh, 210px\)/);
+  assert.match(css, /--claire-mobile-stage: clamp\(176px/);
+  assert.match(css, /min-width: 821px/);
   assert.match(mobile, /scroll-padding-top/);
   assert.match(mobile, /scroll-margin-top/);
   assert.match(mobile, /--claire-vvh/);
@@ -302,9 +323,12 @@ test("Claire reste en deux colonnes sur ordinateur et s’empile seulement sous 
 });
 
 test("une transcription vocale coupe la réponse spontanée seulement si le site doit agir", async () => {
-  const [client, provider] = await Promise.all([
+  const [client, provider, main, css, header] = await Promise.all([
     readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
-    readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8")
+    readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/main.js"), "utf8"),
+    readFile(path.join(ROOT, "assets/css/components.css"), "utf8"),
+    readFile(path.join(ROOT, "partials/header.html"), "utf8")
   ]);
   assert.match(provider, /bargeIn\("manual-interrupt"\)/);
   assert.doesNotMatch(provider, /if \(this\.avatarSpeaking\) this\.bargeIn\("user-barge-in"\)/);
@@ -312,6 +336,19 @@ test("une transcription vocale coupe la réponse spontanée seulement si le site
   assert.match(provider, /natural-reply/);
   assert.match(provider, /sendContext/);
   assert.match(client, /appendLiveCompanion/);
+  assert.match(client, /data-site-truth|dataset.siteTruth/);
+  assert.match(client, /restorePersistedConversation/);
+  assert.match(client, /flushPendingLiveMemory/);
+  assert.match(client, /pendingLiveMemory/);
+  assert.match(client, /formatLiveMemoryCue/);
+  assert.match(client, /Envoi en cours/);
+  assert.match(client, /shouldExecuteSiteRuntime/);
+  assert.match(client, /syncVisibleForms/);
+  assert.match(client, /isUrgentSiteCommand/);
+  assert.match(provider, /isUrgentSiteCommand/);
+  assert.match(provider, /isStableUrgentCommand/);
+  assert.match(provider, /resumeListen/);
+  assert.match(provider, /stopListening/);
   assert.match(client, /classifyUtterance/);
   assert.match(client, /followSpokenNavigation/);
   assert.match(client, /syncSiteToSpeech/);
@@ -328,6 +365,15 @@ test("une transcription vocale coupe la réponse spontanée seulement si le site
   assert.match(client, /isolateVoice/);
   assert.match(client, /sendBriefing/);
   assert.match(client, /sendSessionMemory/);
+  assert.match(client, /beginNewQuoteAfterSend/);
+  assert.match(client, /resetQuoteNeed/);
+  assert.match(client, /closeQuoteAfterSuccessfulSend/);
+  assert.match(client, /infoserv:email-sent/);
+  assert.match(client, /infoserv:email-sending/);
+  assert.match(client, /data-claire-send-wait/);
+  assert.match(main, /playSendChime/);
+  assert.match(css, /form-sending__bar/);
+  assert.match(header, /data-claire-send-wait/);
   assert.match(provider, /sendBriefing/);
   assert.match(provider, /sendMemory/);
   assert.match(provider, /INFOSERV2A_SITE_BRIEFING/);
@@ -382,7 +428,8 @@ test("la parole de Claire enchaîne les pages sans coupure nette", async () => {
   assert.match(client, /prefetchLikelyPages/);
   assert.match(client, /scroll: !isolateVoice/);
   assert.match(speakEnd, /finalizeLiveCompanionTurn/);
-  assert.doesNotMatch(speakEnd, /pushPageContext|flushSilentSiteSync|sendContext|sendBriefing|sendMemory/);
+  assert.match(speakEnd, /flushPendingLiveMemory/);
+  assert.doesNotMatch(speakEnd, /flushSilentSiteSync|sendContext|sendBriefing/);
   assert.doesNotMatch(liveTurn, /replaceChildren/);
   assert.doesNotMatch(client, /#contenu"\)\?\.scrollIntoView/);
 });
@@ -395,8 +442,9 @@ test("E-TIME-01 : 45 s avant la fin LiveAvatar, relancer sans quitter la page", 
     readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8"),
     readFile(path.join(ROOT, "functions/api/liveavatar-session.js"), "utf8")
   ]);
-  assert.match(endpoint, /max_session_duration:\s*300/);
-  assert.match(client, /LIVEAVATAR_MAX_SESSION_MS/);
+  assert.match(endpoint, /max_session_duration:\s*duration/);
+  assert.match(endpoint, /resolveLiveAvatarSessionRetrySeconds/);
+  assert.match(client, /grantedLiveAvatarSessionMs/);
   assert.match(client, /LIVEAVATAR_SESSION_WARNING_LEAD_MS/);
   assert.match(client, /armLiveAvatarSessionWatch/);
   assert.match(client, /sessionStartedAt/);
@@ -407,7 +455,7 @@ test("E-TIME-01 : 45 s avant la fin LiveAvatar, relancer sans quitter la page", 
   assert.match(header, /data-claire-session-continue/);
   assert.match(css, /\.claire-session-notice \{[\s\S]*pointer-events: auto/);
   assert.match(css, /\.claire-live-prompt \{[\s\S]*pointer-events: none/);
-  assert.match(css, /\.claire-live-prompt__quest:not\(\[hidden\]\) \{[\s\S]*pointer-events: auto/);
+  assert.match(css, /\.claire-live-prompt__quest:not\(\[hidden\]\) \{[\s\S]*pointer-events: none/);
   const reconnect = client.match(/async performLiveAvatarReconnect\([\s\S]*?\n  \}/)?.[0] || "";
   assert.match(reconnect, /provider\.reconnect/);
   assert.match(reconnect, /navigateInternal\(href, \{ announce: false, silent: true, historyMode: "replace" \}/);
@@ -428,9 +476,9 @@ test("E-MOB-01 : hamburger mobile au-dessus de Claire, Escape ne quitte pas le g
     readFile(path.join(ROOT, "assets/js/navigation.js"), "utf8")
   ]);
   const mobile = css.split("@media (max-width: 820px)")[1].split("@media")[0];
-  assert.match(mobile, /body\.claire-is-guided \.site-header \{[\s\S]*position: fixed[\s\S]*top: var\(--claire-mobile-stage\)[\s\S]*z-index: 125/);
-  assert.match(mobile, /body\.claire-is-guided \.nav-overlay \{[\s\S]*z-index: 139/);
-  assert.match(mobile, /body\.claire-is-guided \.nav-panel \{[\s\S]*z-index: 140/);
+  assert.match(mobile, /body\.claire-is-guided \.site-header \{[\s\S]*position: fixed[\s\S]*top: var\(--claire-mobile-chrome\)[\s\S]*z-index: 145/);
+  assert.match(mobile, /body\.claire-is-guided \.nav-overlay \{[\s\S]*z-index: 149/);
+  assert.match(mobile, /body\.claire-is-guided \.nav-panel \{[\s\S]*z-index: 150/);
   const escapeHandler = client.match(/document\.addEventListener\("keydown", \(event\) => \{[\s\S]*?\n    \}\);/)?.[0] || "";
   assert.match(escapeHandler, /if \(document\.querySelector\("\.nav-panel\.is-open"\)\) return/);
   assert.match(escapeHandler, /\["arrival", "shared", "action"\]\.includes\(this\.state\)/);
@@ -440,6 +488,42 @@ test("E-MOB-01 : hamburger mobile au-dessus de Claire, Escape ne quitte pas le g
     navigation.includes('if (event.target?.closest?.("a[href]")) close()'),
     "un clic Contact dans le panneau doit fermer le menu"
   );
+  assert.match(navigation, /nav-just-closed/);
+  assert.match(css, /body\.nav-just-closed/);
+  assert.match(client, /function isTypingControl\(/);
+  assert.match(client, /function isSiteContentTarget\(/);
+  assert.match(client, /closeGuidedTranscript/);
+  assert.match(client, /handleSiteFieldPointer/);
+  assert.match(client, /handleSiteFieldFocus/);
+  assert.match(client, /isTypingControl\(document\.activeElement\)/);
+  assert.doesNotMatch(client.match(/handleSiteLink\(event\) \{[\s\S]*?\n  \}/)?.[0] || "", /openConversation/);
+});
+
+test("E-MOB-FORM-01 : le doigt sur le devis ne déplie pas Claire", async () => {
+  const [css, client, header] = await Promise.all([
+    readFile(path.join(ROOT, "assets/css/claire-companion.css"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
+    readFile(path.join(ROOT, "partials/header.html"), "utf8")
+  ]);
+  assert.match(css, /--claire-mobile-stage: clamp\(176px, calc\(var\(--claire-vvh, 100dvh\) \* 0\.34\), 220px\)/);
+  assert.match(css, /--claire-composer-band: 3\.4rem/);
+  assert.match(css, /--claire-mobile-chrome: calc\(var\(--claire-mobile-stage\) \+ var\(--claire-composer-band\)\)/);
+  assert.match(css, /body\.claire-keyboard-open\.claire-is-guided \{[\s\S]*padding-top: calc\(5rem \+ var\(--claire-composer-band\)\)/);
+  assert.match(css, /body\.claire-phone-shell\.claire-is-guided/);
+  assert.match(client, /closeGuidedTranscript\(\)/);
+  assert.match(client, /isSiteContentTarget\(node\) && isTypingControl\(node\)/);
+  assert.match(header, /placeholder="Écrire à Claire"/);
+  assert.match(css, /\[data-state="guided"\] \.claire-command input \{[\s\S]*min-height: 44px/);
+});
+
+test("E-MOB-FACE-01 : les champs n’écrasent pas le visage de Claire", async () => {
+  const css = await readFile(path.join(ROOT, "assets/css/claire-companion.css"), "utf8");
+  const mobile = css.split("@media (max-width: 820px)")[1].split("@media")[0];
+  assert.match(mobile, /grid-template-rows: minmax\(0, 1fr\) var\(--claire-composer-band\)/);
+  assert.match(mobile, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*position: relative/);
+  assert.match(mobile, /\[data-state="guided"\] \.claire-live-prompt:not\(\[hidden\]\) \{\s*display: none/);
+  assert.match(mobile, /\[data-state="guided"\] \.claire-live-stage__caption \{\s*display: none/);
+  assert.match(mobile, /padding-top: var\(--claire-mobile-chrome\)/);
 });
 
 test("la sortie générée reste synchronisée avec le partial", async () => {
@@ -450,4 +534,23 @@ test("la sortie générée reste synchronisée avec le partial", async () => {
   assert.ok(start >= 0 && end > start);
   const generatedHeader = index.slice(start, end).trim();
   assert.equal(generatedHeader, partial.trim());
+});
+
+test("E-MAIL-01 : contact et devis partent vers l’e-mail du client, avec attente visible", async () => {
+  const [contact, devis, workerSource, main] = await Promise.all([
+    readFile(path.join(ROOT, "contact.html"), "utf8"),
+    readFile(path.join(ROOT, "devis.html"), "utf8"),
+    readFile(path.join(ROOT, "functions/api/send-email.js"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/main.js"), "utf8")
+  ]);
+  assert.match(contact, /l’e-mail que vous avez indiqué/);
+  assert.match(devis, /l’e-mail que vous avez indiqué/);
+  assert.match(contact, /form-sending/);
+  assert.match(devis, /form-sending/);
+  assert.doesNotMatch(contact, /Le message part réellement vers contact@/);
+  assert.doesNotMatch(devis, /La demande part réellement vers contact@/);
+  assert.match(workerSource, /destinationInbox/);
+  assert.match(workerSource, /BUSINESS_REPLY_TO/);
+  assert.match(main, /playSendChime/);
+  assert.match(main, /setEmailSending/);
 });

@@ -112,42 +112,44 @@
       return;
     }
 
-    if (api.isLocal) {
-      api.showStatus(
-        form,
-        "ok",
-        "Mode local : votre demande a été validée. Aucun e-mail n'est envoyé depuis cet ordinateur."
-      );
+    const send = api.sendSiteEmail
+      ? api.sendSiteEmail({
+          kind: "devis",
+          name: fields.name.value,
+          phone: fields.phone.value,
+          email: fields.email.value,
+          city: fields.city.value,
+          service: fields.service.value,
+          description: fields.description.value,
+          files: files.map((file) => file.name).join(", "),
+          website: form.querySelector("[name='website']")?.value || ""
+        })
+      : Promise.reject(new Error("send"));
+
+    send.then((result) => {
+      if (result.pendingActivation) {
+        api.showStatus(form, "ok", result.message || "Un e-mail d’activation arrive dans " + (result.inbox || fields.email.value) + ". Confirmez-le, puis renvoyez la demande.");
+        return;
+      }
+      if (!result.sent) throw new Error(result.error || "network");
+      api.showStatus(form, "ok", "Votre demande de devis a bien été transmise vers " + (result.inbox || fields.email.value) + ". Les fichiers listés ne sont pas joints : envoyez-les ensuite en réponse si besoin.");
+      document.dispatchEvent(new CustomEvent("infoserv:email-sent", {
+        detail: {
+          kind: "devis",
+          inbox: result.inbox,
+          replyTo: result.replyTo,
+          name: fields.name.value,
+          phone: fields.phone.value,
+          email: fields.email.value,
+          city: fields.city.value,
+          service: fields.service.value,
+          description: fields.description.value
+        }
+      }));
       form.reset();
-      return;
-    }
-
-    if (!form.dataset.endpoint) {
-      const mail = form.dataset.mail || "devis@infoserv2a.pro";
-      const subject = encodeURIComponent("Demande de devis InfoServ2A");
-      const body = encodeURIComponent(
-        "Nom : " + fields.name.value +
-        "\nTéléphone : " + fields.phone.value +
-        "\nE-mail : " + fields.email.value +
-        "\nCommune : " + fields.city.value +
-        "\nService : " + fields.service.value +
-        "\n\n" + fields.description.value +
-        "\n\nFichiers à joindre manuellement : " + (files.map((file) => file.name).join(", ") || "aucun")
-      );
-      window.location.href = "mailto:" + mail + "?subject=" + subject + "&body=" + body;
-      api.showStatus(form, "ok", "Votre logiciel de messagerie va s'ouvrir. Joignez-y les fichiers indiqués, puis envoyez le message à " + mail + ".");
-      return;
-    }
-
-    fetch(form.dataset.endpoint, { method: "POST", body: new FormData(form) })
-      .then((response) => {
-        if (!response.ok) throw new Error("network");
-        api.showStatus(form, "ok", "Votre demande de devis a bien été transmise.");
-        form.reset();
-      })
-      .catch(() => {
-        api.showStatus(form, "error", "L'envoi n'a pas pu aboutir. Vous pouvez nous écrire à devis@infoserv2a.pro.");
-      });
+    }).catch(() => {
+      api.showStatus(form, "error", "L'envoi n'a pas pu aboutir. Vérifiez l’e-mail indiqué, puis réessayez.");
+    });
   });
   }
 

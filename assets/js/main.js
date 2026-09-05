@@ -71,13 +71,132 @@
       box.className = "form-status is-visible form-status--" + type;
       box.textContent = message;
     },
+    formForPayload(payload) {
+      if (payload && payload.kind === "devis") return document.querySelector("#devis-form");
+      if (payload && payload.kind === "contact") return document.querySelector("#contact-form");
+      return document.querySelector("#devis-form") || document.querySelector("#contact-form");
+    },
+    playSendChime(kind) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      try {
+        if (!this._chimeCtx) this._chimeCtx = new AudioCtx();
+        const ctx = this._chimeCtx;
+        if (ctx.state === "suspended") ctx.resume();
+        const now = ctx.currentTime;
+        const notes = kind === "ok"
+          ? [784, 1046.5]
+          : kind === "error"
+            ? [392, 311]
+            : [659.25, 830.61, 987.77];
+        notes.forEach((freq, index) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.value = freq;
+          const start = now + index * 0.12;
+          gain.gain.setValueAtTime(0.0001, start);
+          gain.gain.exponentialRampToValueAtTime(0.07, start + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.28);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(start);
+          osc.stop(start + 0.3);
+        });
+      } catch {
+        /* Le carillon est un signal d’attente, jamais bloquant. */
+      }
+    },
+    setEmailSending(payload, sending, result) {
+      const form = this.formForPayload(payload);
+      const inbox = (result && result.inbox)
+        || (payload && payload.email)
+        || "votre e-mail";
+      document.documentElement.classList.toggle("is-email-sending", sending);
+      document.dispatchEvent(new CustomEvent("infoserv:email-sending", {
+        detail: { sending: Boolean(sending), kind: payload && payload.kind, inbox }
+      }));
+      if (!form) return;
+      let wait = form.querySelector("[data-email-wait], .form-sending");
+      if (!wait) {
+        wait = document.createElement("div");
+        wait.className = "form-sending";
+        wait.setAttribute("data-email-wait", "");
+        wait.innerHTML = '<div class="form-sending__track" role="progressbar" aria-label="Envoi en cours" aria-valuemin="0" aria-valuemax="100"><span class="form-sending__bar"></span></div><p class="form-sending__label"></p>';
+        const status = form.querySelector(".form-status");
+        form.insertBefore(wait, status);
+      }
+      const label = wait.querySelector(".form-sending__label");
+      if (label) label.textContent = sending ? ("Envoi vers " + inbox + "…") : "";
+      wait.hidden = !sending;
+      wait.classList.toggle("is-visible", sending);
+      form.setAttribute("aria-busy", sending ? "true" : "false");
+      form.querySelectorAll("button[type='submit']").forEach((button) => {
+        button.disabled = Boolean(sending);
+      });
+    },
+    blankNeed(value) {
+      const folded = String(value || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/['’`]/g, " ");
+      return !folded || folded === "a preciser a l oral";
+    },
     required(field, label) {
-      if (!field.value.trim()) {
+      if (this.blankNeed(field.value)) {
         this.setError(field, "Veuillez renseigner " + label + ".");
         return false;
       }
       this.setError(field, "");
       return true;
+    },
+    sendSiteEmail(payload) {
+      const controller = new AbortController();
+      const timer = setTimeout(function () { controller.abort(); }, 12000);
+      this.playSendChime("start");
+      this.setEmailSending(payload, true);
+      return fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        signal: controller.signal,
+        body: JSON.stringify(payload || {})
+      }).then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        return {
+          ok: response.ok,
+          status: response.status,
+          sent: Boolean(data.sent),
+          pendingActivation: Boolean(data.pendingActivation),
+          configured: data.configured !== false,
+          inbox: data.inbox || "",
+          replyTo: data.replyTo || "",
+          missing: Array.isArray(data.missing) ? data.missing : [],
+          error: data.error || "",
+          message: data.message || ""
+        };
+      }).catch((error) => {
+        const timeout = error && error.name === "AbortError";
+        return {
+          ok: false,
+          status: 0,
+          sent: false,
+          pendingActivation: false,
+          configured: true,
+          inbox: (payload && payload.email) || "",
+          replyTo: "",
+          missing: [],
+          error: timeout ? "L’envoi a pris trop de temps. Réessayez." : "L’envoi n’a pas pu aboutir",
+          message: ""
+        };
+      }).finally(() => clearTimeout(timer)).then((result) => {
+        this.setEmailSending(payload, false, result);
+        this.playSendChime(result.sent ? "ok" : "error");
+        return result;
+      });
     }
   };
 })();

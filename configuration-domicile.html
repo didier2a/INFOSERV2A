@@ -25,11 +25,11 @@
   <link rel="icon" href="assets/images/logo/favicon.png?v=2" type="image/png" sizes="192x192">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
   <link rel="manifest" href="site.webmanifest">
-  <link rel="stylesheet" href="assets/css/variables.css?v=20260902-it16">
-  <link rel="stylesheet" href="assets/css/main.css?v=20260902-it16">
-  <link rel="stylesheet" href="assets/css/components.css?v=20260902-it16">
-  <link rel="stylesheet" href="assets/css/responsive.css?v=20260902-it16">
-  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260902-it16">
+  <link rel="stylesheet" href="assets/css/variables.css?v=20260905-it37">
+  <link rel="stylesheet" href="assets/css/main.css?v=20260905-it37">
+  <link rel="stylesheet" href="assets/css/components.css?v=20260905-it37">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=20260905-it37">
+  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260905-it37">
   <script type="application/ld+json">{
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
@@ -166,6 +166,12 @@
           <span class="claire-status-line"><i class="claire-status-dot" aria-hidden="true"></i><strong>Claire</strong><small data-claire-status>En attente de votre accord</small></span>
           <span class="claire-voice-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
         </figcaption>
+        <div class="claire-send-wait" data-claire-send-wait hidden>
+          <div class="claire-send-wait__track" role="progressbar" aria-label="Envoi en cours" aria-valuemin="0" aria-valuemax="100">
+            <span class="claire-send-wait__bar"></span>
+          </div>
+          <p class="claire-send-wait__label">Envoi vers votre e-mail…</p>
+        </div>
 
         <div class="claire-live-stage__controls">
           <button class="claire-voice-control" type="button" data-claire-mic aria-label="Parler à Claire" aria-pressed="false">
@@ -227,7 +233,7 @@
 
           <form class="claire-command" data-claire-form>
             <label class="sr-only" for="claireCommand">Votre demande</label>
-            <input id="claireCommand" name="command" type="text" autocomplete="off" enterkeyhint="send" inputmode="text" autocapitalize="sentences" maxlength="320" placeholder="Ex. Explique-moi la vidéosurveillance sans fibre">
+            <input id="claireCommand" name="command" type="text" autocomplete="off" enterkeyhint="send" inputmode="text" autocapitalize="sentences" maxlength="320" placeholder="Écrire à Claire">
             <button class="claire-icon-button claire-icon-button--send" type="submit" aria-label="Envoyer la demande">→</button>
           </form>
 
@@ -371,6 +377,27 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <main id="contenu" class="site-main">
   
     <section class="page-hero"><div class="container">
@@ -437,7 +464,7 @@
       <ul>
         <li><a href="mentions-legales.html">Mentions légales</a></li>
         <li><a href="politique-confidentialite.html">Politique de confidentialité</a></li>
-        <li><a href="mailto:devis@infoserv2a.pro">devis@infoserv2a.pro</a></li>
+        <li><a href="mailto:contact@infoserv2a.pro">contact@infoserv2a.pro</a></li>
         <li><a href="mailto:support@infoserv2a.pro">support@infoserv2a.pro</a></li>
       </ul>
     </div>
@@ -493,8 +520,29 @@
 
 
 
-<script src="assets/js/main.js?v=20260902-it16" defer></script>
-  <script src="assets/js/navigation.js?v=20260902-it16" defer></script>
-  <script type="module" src="assets/js/claire-companion.js?v=20260902-it16"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script src="assets/js/main.js?v=20260905-it37" defer></script>
+  <script src="assets/js/navigation.js?v=20260905-it37" defer></script>
+  <script type="module" src="assets/js/claire-companion.js?v=20260905-it37"></script>
 </body>
 </html>

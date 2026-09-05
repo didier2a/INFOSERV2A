@@ -48,9 +48,19 @@ class MockPersistentSurface {
     return { href, launched: true };
   }
 
-  composeEmail(draft) {
+  async sendSiteEmail(payload) {
+    this.calls.push(["sendSiteEmail", payload]);
+    return { sent: true, inbox: payload.email || "", replyTo: "contact@infoserv2a.pro" };
+  }
+
+  async composeEmail(draft) {
     this.calls.push(["composeEmail", draft]);
-    return this.launchHref(`mailto:${draft.to || "contact@infoserv2a.pro"}`);
+    return this.sendSiteEmail({
+      kind: "contact",
+      name: draft.name,
+      email: draft.email,
+      message: draft.message || draft.body
+    });
   }
 
   snapshot() {
@@ -185,6 +195,434 @@ test("simulation vocale : la parole de Claire ouvre l’onglet lu à droite", as
     followSpokenNavigation("Je comprends, votre disque dur n’est plus accessible.", knowledge, { pageId: "home" })?.pageId,
     "data-recovery"
   );
+});
+
+class ActuatorSurface {
+  constructor() {
+    this.activePage = "home";
+    this.activeSection = null;
+    this.calls = [];
+    this.posts = [];
+  }
+
+  async openPage(page) {
+    this.calls.push(["openPage", page.id]);
+    this.activePage = page.id;
+    return page;
+  }
+
+  async scrollTo(anchorId) {
+    this.calls.push(["scrollTo", anchorId]);
+    this.activeSection = anchorId;
+    return { id: anchorId };
+  }
+
+  prefillQuote(draft) {
+    this.calls.push(["prefillQuote", draft]);
+    this.draft = { ...draft };
+    const missing = ["name", "phone", "email", "city", "service", "description"]
+      .filter((key) => !String(draft[key] || "").trim());
+    return { submitted: false, sent: false, missing };
+  }
+
+  quoteMissingFields() {
+    return ["name", "phone", "email", "city", "service", "description"]
+      .filter((key) => !String(this.draft?.[key] || "").trim());
+  }
+
+  async submitQuote(draft) {
+    this.calls.push(["submitQuote", draft]);
+    this.draft = { ...draft };
+    const missing = this.quoteMissingFields();
+    if (missing.length) {
+      return { submitted: false, sent: false, missing };
+    }
+    const result = await this.sendSiteEmail({ kind: "devis", ...draft });
+    return { submitted: Boolean(result.sent), sent: Boolean(result.sent), missing: [], ...result };
+  }
+
+  async sendSiteEmail(payload) {
+    this.posts.push(payload);
+    this.calls.push(["sendSiteEmail", payload]);
+    return { sent: true, inbox: payload.email || "", replyTo: "contact@infoserv2a.pro" };
+  }
+
+  snapshotContactFields() {
+    return { ...(this.contact || {}) };
+  }
+
+  prefillContact(draft) {
+    this.calls.push(["prefillContact", draft]);
+    this.contact = { ...draft };
+    return this.contact;
+  }
+
+  async composeEmail(draft) {
+    this.calls.push(["composeEmail", draft]);
+    this.prefillContact(draft);
+    return this.sendSiteEmail({
+      kind: "contact",
+      name: draft.name,
+      email: draft.email,
+      phone: draft.phone,
+      message: draft.message || draft.body
+    });
+  }
+
+  snapshot() {
+    return { activePage: this.activePage, activeSection: this.activeSection };
+  }
+}
+
+test("simulation vocale : un devis incomplet n’actionne pas l’envoi", async () => {
+  const { rememberTurn, describeQuoteChecklist, canSubmitQuote } = await import("../assets/js/claire-session-memory.mjs");
+  const { classifyUtterance } = await import("../assets/js/claire-core.mjs");
+  const { describeEmailSendOutcome } = await import("../assets/js/site-email.mjs");
+
+  const storage = {
+    data: new Map(),
+    getItem(key) { return this.data.get(key) || null; },
+    setItem(key, value) { this.data.set(key, value); },
+    removeItem(key) { this.data.delete(key); }
+  };
+  globalThis.sessionStorage = storage;
+
+  const dictation = [
+    "Je m’appelle Didier Aouizerate",
+    "J’habite Porto-Vecchio",
+    "Je veux une caméra 4G pour un hangar"
+  ];
+  let memory;
+  for (const heard of dictation) {
+    const kind = classifyUtterance(heard, knowledge).kind;
+    assert.ok(kind === "chat" || kind === "site", `${heard} → ${kind}`);
+    memory = rememberTurn("user", heard, storage);
+  }
+  assert.equal(canSubmitQuote(memory), false);
+  const checklist = describeQuoteChecklist(memory);
+  assert.match(checklist.speech, /n’envoie pas/);
+  assert.match(checklist.speech, /e-mail|téléphone/);
+
+  const surface = new ActuatorSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const outcome = await controller.run("Envoie le devis", { memory });
+  const prefill = outcome.results.find((item) => item.tool === "prefill_quote");
+  const submit = outcome.results.find((item) => item.tool === "submit_quote");
+  assert.ok(prefill);
+  assert.equal(submit, undefined);
+  assert.equal(prefill.output.sent, false);
+  assert.ok(prefill.output.missing.includes("email"));
+  assert.equal(surface.posts.length, 0);
+  assert.match(describeEmailSendOutcome(outcome), /n’ai pas envoyé/);
+  assert.doesNotMatch(describeEmailSendOutcome(outcome), /bien été envoyé/);
+});
+
+test("simulation vocale : devis complet + « envoie le devis » actionne vraiment l’API", async () => {
+  const { canSubmitQuote } = await import("../assets/js/claire-session-memory.mjs");
+  const { describeEmailSendOutcome } = await import("../assets/js/site-email.mjs");
+  const memory = {
+    visitor: {
+      name: "Didier Aouizerate",
+      phone: "07 45 15 60 76",
+      email: "infoserv2a@gmail.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé",
+    turns: []
+  };
+  assert.equal(canSubmitQuote(memory), true);
+  const surface = new ActuatorSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const outcome = await controller.run("Envoie le devis", { memory });
+  const submit = outcome.results.find((item) => item.tool === "submit_quote");
+  assert.equal(submit.output.sent, true);
+  assert.equal(surface.posts.length, 1);
+  assert.equal(surface.posts[0].kind, "devis");
+  assert.equal(surface.posts[0].email, "infoserv2a@gmail.com");
+  assert.match(describeEmailSendOutcome(outcome), /bien été envoyée vers infoserv2a@gmail\.com/);
+});
+
+test("simulation vocale : « c’est bon » avec dossier complet actionne vraiment l’API", async () => {
+  const { canSubmitQuote } = await import("../assets/js/claire-session-memory.mjs");
+  const { describeEmailSendOutcome } = await import("../assets/js/site-email.mjs");
+  const { classifyUtterance, shouldExecuteSiteRuntime } = await import("../assets/js/claire-core.mjs");
+  const memory = {
+    visitor: {
+      name: "Didier Aouizerate",
+      phone: "07 45 15 60 76",
+      email: "infoserv2a@gmail.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé",
+    turns: []
+  };
+  assert.equal(canSubmitQuote(memory), true);
+  const classified = classifyUtterance("c’est bon", knowledge);
+  assert.equal(classified.kind, "chat");
+  assert.equal(shouldExecuteSiteRuntime(classified, "c’est bon"), true);
+  const surface = new ActuatorSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const outcome = await controller.run("c’est bon", { memory, pageId: "quote" });
+  const submit = outcome.results.find((item) => item.tool === "submit_quote");
+  assert.equal(submit.output.sent, true);
+  assert.equal(surface.posts.length, 1);
+  assert.equal(surface.posts[0].kind, "devis");
+  assert.match(describeEmailSendOutcome(outcome), /bien été envoyée vers infoserv2a@gmail\.com/);
+});
+
+test("simulation vocale : un devis prérempli sur le formulaire part à l’envoi", async () => {
+  const { canSubmitQuote } = await import("../assets/js/claire-session-memory.mjs");
+  const thinMemory = {
+    visitor: { name: "Didier Aouizerate", phone: "", email: "", city: "Porto-Vecchio" },
+    service: "videosurveillance",
+    need: "Caméra 4G",
+    turns: []
+  };
+  assert.equal(canSubmitQuote(thinMemory), false);
+  const hydrated = {
+    ...thinMemory,
+    visitor: {
+      name: "Didier Aouizerate",
+      phone: "07 45 15 60 76",
+      email: "infoserv2a@gmail.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé"
+  };
+  assert.equal(canSubmitQuote(hydrated), true);
+  const surface = new ActuatorSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const outcome = await controller.run("Envoie le devis", { memory: hydrated });
+  assert.equal(outcome.results.find((item) => item.tool === "submit_quote")?.output?.sent, true);
+  assert.equal(surface.posts.length, 1);
+});
+
+test("simulation vocale : « c’est bon » sur contact remplit et envoie le message", async () => {
+  const { canSubmitContact } = await import("../assets/js/claire-session-memory.mjs");
+  const { describeEmailSendOutcome } = await import("../assets/js/site-email.mjs");
+  const memory = {
+    visitor: {
+      name: "Didier Aouizerate",
+      phone: "07 45 15 60 76",
+      email: "infoserv2a@gmail.com",
+      city: "Porto-Vecchio"
+    },
+    service: "",
+    need: "Je veux un interlocuteur pour mon réseau",
+    turns: []
+  };
+  assert.equal(canSubmitContact(memory), true);
+  const surface = new ActuatorSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const outcome = await controller.run("c’est bon", { memory, pageId: "contact" });
+  const sent = outcome.results.find((item) => item.tool === "compose_email");
+  assert.equal(sent.output.sent, true);
+  assert.equal(surface.posts.length, 1);
+  assert.equal(surface.posts[0].kind, "contact");
+  assert.equal(surface.posts[0].name, "Didier Aouizerate");
+  assert.equal(surface.posts[0].email, "infoserv2a@gmail.com");
+  assert.match(surface.posts[0].message, /interlocuteur pour mon réseau/);
+  const { normalizeEmailPayload } = await import("../functions/api/send-email.js");
+  const mail = normalizeEmailPayload(surface.posts[0]);
+  assert.match(mail.text, /Nom : Didier Aouizerate/);
+  assert.match(mail.text, /E-mail : infoserv2a@gmail.com/);
+  assert.match(mail.text, /Message :/);
+  assert.match(mail.text, /interlocuteur pour mon réseau/);
+  assert.match(mail.html, /<table/i);
+  assert.ok(surface.calls.some(([name]) => name === "prefillContact"));
+  assert.match(describeEmailSendOutcome(outcome), /bien été envoyé vers infoserv2a@gmail\.com|bien été envoyée vers infoserv2a@gmail\.com/);
+});
+
+test("submitQuote recopie le besoin formalisé si le textarea a le placeholder", async () => {
+  globalThis.sessionStorage = {
+    getItem() { return null; },
+    setItem() {},
+    removeItem() {}
+  };
+  const { BrowserInfoServ2ASurface } = await import("../assets/js/claire-site-runtime-adapter.mjs");
+  const fields = new Map();
+  const seed = {
+    "#devis-name": "Didier Aouizerate",
+    "#devis-phone": "07 45 15 60 76",
+    "#devis-email": "infoserv2a@gmail.com",
+    "#devis-city": "Porto-Vecchio",
+    "#devis-service": "videosurveillance",
+    "#devis-description": "À préciser à l’oral"
+  };
+  const documentRef = {
+    querySelector(sel) {
+      if (sel === "#devis-form") return { id: "devis-form", querySelector() { return { value: "" }; } };
+      if (sel === "#contact-form") return null;
+      if (!String(sel).startsWith("#devis-")) return null;
+      if (!fields.has(sel)) {
+        fields.set(sel, {
+          tagName: sel.includes("service") ? "SELECT" : "TEXTAREA",
+          value: seed[sel] || "",
+          options: [{ value: "videosurveillance", textContent: "Vidéosurveillance" }]
+        });
+      }
+      return fields.get(sel);
+    }
+  };
+  const posts = [];
+  const surface = new BrowserInfoServ2ASurface({
+    knowledge,
+    windowRef: {
+      location: {
+        href: "https://infoserv2a.pro/devis.html",
+        pathname: "/devis.html",
+        origin: "https://infoserv2a.pro",
+        hash: ""
+      },
+      InfoServ: {
+        async sendSiteEmail(payload) {
+          posts.push(payload);
+          return { sent: true, inbox: payload.email, replyTo: "contact@infoserv2a.pro", missing: [] };
+        }
+      }
+    },
+    documentRef,
+    fetchImpl: async () => new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } })
+  });
+  const result = await surface.submitQuote({
+    name: "Didier Aouizerate",
+    phone: "07 45 15 60 76",
+    email: "infoserv2a@gmail.com",
+    city: "Porto-Vecchio",
+    service: "videosurveillance",
+    description: "Caméra 4G hangar isolé, enregistrement 15 jours"
+  });
+  assert.equal(result.sent, true);
+  assert.equal(posts.length, 1);
+  assert.equal(posts[0].kind, "devis");
+  assert.match(posts[0].description, /hangar isolé/);
+  assert.doesNotMatch(posts[0].description, /préciser à l/);
+  assert.match(fields.get("#devis-description").value, /hangar isolé/);
+  const cleared = surface.resetQuoteNeed();
+  assert.equal(cleared.description, "");
+  assert.equal(cleared.service, "");
+  assert.equal(fields.get("#devis-description").value, "");
+  assert.equal(fields.get("#devis-service").value, "");
+  const { normalizeEmailPayload } = await import("../functions/api/send-email.js");
+  const mail = normalizeEmailPayload(posts[0]);
+  assert.match(mail.text, /Besoin :/);
+  assert.match(mail.text, /hangar isolé/);
+  assert.match(mail.html, /<table/i);
+});
+
+test("Claire écrit dans le formulaire contact visible, pas seulement au moment de l’envoi", async () => {
+  const { BrowserInfoServ2ASurface } = await import("../assets/js/claire-site-runtime-adapter.mjs");
+  const fields = new Map();
+  const documentRef = {
+    querySelector(sel) {
+      if (sel === "#contact-form") return { id: "contact-form" };
+      if (sel === "#devis-form") return null;
+      if (!String(sel).startsWith("#contact-")) return null;
+      if (!fields.has(sel)) fields.set(sel, { tagName: "INPUT", value: "", options: [] });
+      return fields.get(sel);
+    }
+  };
+  const surface = new BrowserInfoServ2ASurface({
+    knowledge,
+    windowRef: {
+      location: {
+        href: "https://infoserv2a.pro/contact.html",
+        pathname: "/contact.html",
+        origin: "https://infoserv2a.pro",
+        hash: ""
+      }
+    },
+    documentRef,
+    fetchImpl: async () => new Response("", { status: 200 })
+  });
+  const synced = surface.syncVisibleForms({
+    visitor: {
+      name: "Didier Aouizerate",
+      phone: "07 45 15 60 76",
+      email: "infoserv2a@gmail.com",
+      city: "Porto-Vecchio"
+    },
+    need: "Demande pour le réseau du cabinet"
+  });
+  assert.equal(synced.contact, true);
+  assert.equal(synced.quote, false);
+  assert.equal(fields.get("#contact-name").value, "Didier Aouizerate");
+  assert.equal(fields.get("#contact-email").value, "infoserv2a@gmail.com");
+  assert.equal(fields.get("#contact-phone").value, "07 45 15 60 76");
+  assert.match(fields.get("#contact-message").value, /Demande pour le réseau du cabinet/);
+});
+
+test("simulation vocale : « envoie le message » sur un devis prérempli envoie le devis, une seule fois", async () => {
+  const { canSubmitQuote, quoteDraftSignature } = await import("../assets/js/claire-session-memory.mjs");
+  const { describeEmailSendOutcome } = await import("../assets/js/site-email.mjs");
+  const { planCommand } = await import("../assets/js/claire-runtime-v2.mjs");
+  const memory = {
+    visitor: {
+      name: "Didier Aouizerate",
+      phone: "07 45 15 60 76",
+      email: "infoserv2a@gmail.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé",
+    turns: []
+  };
+  assert.equal(canSubmitQuote(memory), true);
+  const surface = new ActuatorSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const first = await controller.run("envoie le message", { memory, pageId: "quote" });
+  assert.equal(first.results.find((item) => item.tool === "submit_quote")?.output?.sent, true);
+  assert.equal(first.results.find((item) => item.tool === "compose_email"), undefined);
+  assert.equal(surface.posts.length, 1);
+  assert.equal(surface.posts[0].kind, "devis");
+  assert.match(surface.posts[0].description, /Caméra 4G pour un hangar isolé/);
+  const { normalizeEmailPayload } = await import("../functions/api/send-email.js");
+  const mail = normalizeEmailPayload(surface.posts[0]);
+  assert.match(mail.text, /Nom : Didier Aouizerate/);
+  assert.match(mail.text, /E-mail : infoserv2a@gmail.com/);
+  assert.match(mail.text, /Besoin :/);
+  assert.match(mail.text, /hangar isolé/);
+  assert.match(mail.html, /<table/i);
+  assert.match(describeEmailSendOutcome(first), /bien été envoyée/);
+
+  const sentMemory = {
+    ...memory,
+    lastSend: {
+      sent: true,
+      kind: "devis",
+      inbox: "contact@infoserv2a.pro",
+      signature: quoteDraftSignature(memory)
+    }
+  };
+  const second = planCommand("c’est bon", knowledge, manifest, { memory: sentMemory, pageId: "quote" });
+  assert.equal(second.steps.some((step) => step.tool === "submit_quote"), false);
+  assert.match(second.response, /déjà été envoyée/);
+
+  const { beginNewQuoteAfterSend, rememberTurn, saveSessionMemory, isSameDraftAlreadySent } = await import("../assets/js/claire-session-memory.mjs");
+  const storage = {
+    data: new Map(),
+    getItem(key) { return this.data.has(key) ? this.data.get(key) : null; },
+    setItem(key, value) { this.data.set(key, value); },
+    removeItem(key) { this.data.delete(key); }
+  };
+  saveSessionMemory(sentMemory, storage);
+  const reset = beginNewQuoteAfterSend(storage);
+  assert.equal(reset.need, "");
+  assert.equal(isSameDraftAlreadySent(reset), false);
+  const next = rememberTurn("user", "Je veux un site internet pour mon commerce.", storage);
+  assert.match(next.need, /site internet/i);
+  assert.equal(isSameDraftAlreadySent(next), false);
+  const third = planCommand("envoie le devis", knowledge, manifest, { memory: next, pageId: "quote" });
+  assert.ok(third.steps.some((step) => step.tool === "submit_quote"));
 });
 
 test("simulation vocale : l’onglet suivant parcourt le catalogue", async () => {

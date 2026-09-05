@@ -6,7 +6,15 @@ import {
   adjacentPage,
   buildClaireContextPrompt,
   buildSiteBriefing,
+  claimsUnverifiedEmailSend,
   classifyUtterance,
+  isClaireQuotePrompt,
+  isOralSendConfirm,
+  isFormSendIntent,
+  isSubmitQuoteAction,
+  isUrgentSiteCommand,
+  isStableUrgentCommand,
+  shouldExecuteSiteRuntime,
   CLAIRE_WELCOME,
   createSpeechFollowGate,
   currentPage,
@@ -14,7 +22,11 @@ import {
   followSpokenNavigation,
   liveAvatarSessionPhase,
   liveAvatarSessionWarningDelayMs,
+  grantedLiveAvatarSessionMs,
+  parseLiveAvatarAllowedSessionSeconds,
+  resolveLiveAvatarSessionRetrySeconds,
   LIVEAVATAR_MAX_SESSION_MS,
+  LIVEAVATAR_PLAN_FALLBACK_SECONDS,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS,
   mergeSpokenTranscript,
   normalizeText,
@@ -90,11 +102,51 @@ test("un téléphone en panne reste une conversation, pas un appel", () => {
   assert.notEqual(routeCommand("Mon téléphone ne marche plus", knowledge).action, "call");
 });
 
+test("une phrase de Claire qui invente l’envoi est détectée", () => {
+  assert.equal(claimsUnverifiedEmailSend("C’est validé, c’est envoyé."), true);
+  assert.equal(claimsUnverifiedEmailSend("Je n’ai pas envoyé. Il manque votre e-mail."), false);
+});
+
 test("envoie le devis, un appel ou un mail sont des actions orales", () => {
   assert.equal(routeCommand("Envoie le devis", knowledge).action, "submit_quote");
   assert.equal(routeCommand("Appelle InfoServ2A", knowledge).action, "call");
   assert.equal(routeCommand("Envoie un mail", knowledge).action, "email");
   assert.equal(classifyUtterance("Je voudrais un devis gratuit", knowledge).kind, "site");
+});
+
+test("une confirmation orale courte envoie si le formulaire est complet", () => {
+  assert.equal(isOralSendConfirm("c’est bon"), true);
+  assert.equal(isOralSendConfirm("confirme"), true);
+  assert.equal(isUrgentSiteCommand("envoie le devis"), true);
+  assert.equal(isOralSendConfirm("bonjour Claire"), false);
+  assert.equal(isUrgentSiteCommand("bonjour comment ça va"), false);
+  const classified = classifyUtterance("c’est bon", knowledge);
+  assert.equal(classified.kind, "chat");
+  assert.equal(shouldExecuteSiteRuntime(classified, "c’est bon"), true);
+  assert.equal(shouldExecuteSiteRuntime(classified, "confirme"), true);
+  assert.equal(shouldExecuteSiteRuntime(classified, "bonjour comment ça va"), false);
+  assert.equal(isStableUrgentCommand("c’est bon"), true);
+  assert.equal(isStableUrgentCommand("envoie"), false);
+  assert.equal(isStableUrgentCommand("envoie le devis"), true);
+  assert.equal(isFormSendIntent("appuie sur envoyer"), true);
+  assert.equal(isFormSendIntent("envoie le message"), true);
+  assert.equal(isOralSendConfirm("appuie sur la touche envoyer"), true);
+  assert.equal(isUrgentSiteCommand("envoie le message"), true);
+});
+
+test("la phrase de Claire qui redemande une confirmation n’est pas une commande d’envoi", () => {
+  const loop = "Dès que tu te concentres, il suffit de me confirmer qu’on envoie la demande, je le ferai.";
+  assert.equal(isClaireQuotePrompt(loop), true);
+  assert.equal(isOralSendConfirm(loop), false);
+  assert.equal(isSubmitQuoteAction(loop), false);
+});
+
+test("la phrase de Claire sur le devis ne relance pas l’envoi", () => {
+  const speech = "Le devis est complet : votre nom. Dites « envoie le devis » pour que je le transmette vers marie@example.com. Rien n’est parti tant que le site n’a pas confirmé l’envoi.";
+  assert.equal(isClaireQuotePrompt(speech), true);
+  assert.equal(isSubmitQuoteAction(speech), false);
+  assert.notEqual(routeCommand(speech, knowledge).action, "submit_quote");
+  assert.equal(classifyUtterance(speech, knowledge).kind, "chat");
 });
 
 test("restitue immédiatement la navigation manuelle", () => {
@@ -213,9 +265,13 @@ test("le briefing site contient tous les onglets et le rôle consultante IT", ()
   assert.doesNotMatch(prompt, /sans ramener systématiquement à l’informatique/);
   assert.doesNotMatch(prompt, /tous les domaines : métiers, sciences, arts/);
   assert.match(prompt, /INFOSERV2A_SITE_BRIEFING/);
-  assert.match(prompt, /INFOSERV2A_SESSION_MEMORY/);
-  assert.match(prompt, /INFOSERV2A_OFF_TOPIC/);
+  assert.match(prompt, /Une phrase courte au plus/);
+  assert.match(prompt, /champ e-mail du visiteur/);
+  assert.match(prompt, /synthèse fidèle/);
   assert.match(prompt, /être interrompue/);
+  assert.match(prompt, /reste silencieuse/);
+  assert.match(prompt, /Ne dis pas que tu attends le site/);
+  assert.match(prompt, /Un nouveau besoin à l’oral est un nouveau devis/);
   assert.match(CLAIRE_WELCOME, /Moi c’est Claire, votre aidante Live Avatar/);
   assert.match(CLAIRE_WELCOME, /Je vous écoute/);
   assert.doesNotMatch(CLAIRE_WELCOME, /uniquement dans l’informatique/);
@@ -243,13 +299,25 @@ test("un clic visiteur bloque le suivi de parole jusqu’à la prochaine prise d
   assert.equal(gate.allowsFollow(), true);
 });
 
-test("la session LiveAvatar prévient 45 secondes avant la fin des 5 minutes", () => {
-  assert.equal(LIVEAVATAR_MAX_SESSION_MS, 300_000);
+test("la session LiveAvatar prévient 45 secondes avant la fin des 10 minutes", () => {
+  assert.equal(LIVEAVATAR_MAX_SESSION_MS, 600_000);
   assert.equal(LIVEAVATAR_SESSION_WARNING_LEAD_MS, 45_000);
-  assert.equal(liveAvatarSessionWarningDelayMs(), 255_000);
+  assert.equal(liveAvatarSessionWarningDelayMs(), 555_000);
   assert.equal(liveAvatarSessionPhase(0), "active");
-  assert.equal(liveAvatarSessionPhase(254_999), "active");
-  assert.equal(liveAvatarSessionPhase(255_000), "warning");
-  assert.equal(liveAvatarSessionPhase(299_000), "warning");
-  assert.equal(liveAvatarSessionPhase(300_000), "ended");
+  assert.equal(liveAvatarSessionPhase(554_999), "active");
+  assert.equal(liveAvatarSessionPhase(555_000), "warning");
+  assert.equal(liveAvatarSessionPhase(599_000), "warning");
+  assert.equal(liveAvatarSessionPhase(600_000), "ended");
+});
+
+test("si le plan LiveAvatar plafonne à 5 minutes, l’avertissement suit cette durée", () => {
+  const error = { message: "max_session_duration (600s) exceeds the maximum allowed (300s)" };
+  assert.equal(parseLiveAvatarAllowedSessionSeconds(error), 300);
+  assert.equal(resolveLiveAvatarSessionRetrySeconds(600, error, 400), 300);
+  assert.equal(resolveLiveAvatarSessionRetrySeconds(600, { error: "quota exceeded" }, 400), 0);
+  assert.equal(LIVEAVATAR_PLAN_FALLBACK_SECONDS, 300);
+  assert.equal(grantedLiveAvatarSessionMs(600), 600_000);
+  assert.equal(grantedLiveAvatarSessionMs(300), 300_000);
+  assert.equal(grantedLiveAvatarSessionMs(0), 300_000);
+  assert.equal(liveAvatarSessionWarningDelayMs(grantedLiveAvatarSessionMs(300)), 255_000);
 });

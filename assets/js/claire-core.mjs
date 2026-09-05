@@ -6,7 +6,8 @@ const FRENCH_STOP_WORDS = new Set([
 
 const SUBMIT_QUOTE_PATTERN = /\b(envoie|envoi|transmet(?:s|tre)?|soumet(?:s|tre)?|valide|confirme)\b.{0,48}\b(devis|demande de devis)\b|\bdevis\b.{0,24}\b(envoie|envoi|transmis|soumis)\b/;
 const CALL_PATTERN = /\b(appelez|appelle|appeler|un appel|je t appelle|nous appeler|rappelez|rappeler|lancer un appel|passe(?:r)? (?:un )?appel)\b/;
-const EMAIL_PATTERN = /\b((?:envoie(?:r)?|ecris|ecrire|ouvre|ouvrir|compose(?:r)?) (?:un )?(?:e-?mail|courriel|mail)|envoyer un message|(?:par|un) e-?mail|adresse (?:e-?mail|mail))\b/;
+const EMAIL_PATTERN = /\b((?:envoie(?:r)?|ecris|ecrire|ouvre|ouvrir|compose(?:r)?|transmet(?:s|tre)?) (?:l[ea] |un |cet |cette )?(?:e-?mail|courriel|mail|message)|envoyer un message|(?:par|un) e-?mail|adresse (?:e-?mail|mail))\b/;
+const FORM_SEND_PATTERN = /\b((?:appuie|appuyer|clique|cliquer|presse|presser) .{0,40}(?:envoi(?:er)?|envoyer|bouton|touche)|(?:touche|bouton) envoyer|envoie(?:r)? (?:le |la |l )?(?:message|formulaire|demande)|valide(?:r)? (?:le )?formulaire)\b/;
 
 const DIRECT_INTENTS = [
   {
@@ -31,7 +32,7 @@ const DIRECT_INTENTS = [
     response: {
       type: "action",
       action: "submit_quote",
-      speech: "J’envoie la demande de devis à partir de ce que vous m’avez dit."
+      speech: "Je transmets la demande de devis vers InfoServ2A."
     }
   },
   {
@@ -53,7 +54,7 @@ const DIRECT_INTENTS = [
       action: "email",
       href: "mailto:contact@infoserv2a.pro",
       label: "Écrire à contact@infoserv2a.pro",
-      speech: "J’ouvre un e-mail prérempli pour InfoServ2A."
+      speech: "Je transmets votre message vers InfoServ2A."
     }
   }
 ];
@@ -151,8 +152,24 @@ export function isQuoteAction(value = "") {
     || /\bdevis (?:gratuit|s il vous plait|svp)\b/.test(query);
 }
 
+export function isClaireQuotePrompt(value = "") {
+  const query = normalizeText(value);
+  return /\b(n envoie pas le devis|dites .{0,24}envoie le devis|rien n est (encore )?parti|bien ete envoye vers|confirmez .{0,80}(transmettre|envoie|envoi|demande)|il suffit de .{0,48}confirmer|on envoie la demande.{0,24}je le ferai|je le ferai$|devis est complet)\b/.test(query);
+}
+
+export function isFormSendIntent(value = "") {
+  if (isClaireQuotePrompt(value)) return false;
+  return FORM_SEND_PATTERN.test(normalizeText(value));
+}
+
 export function isSubmitQuoteAction(value = "") {
+  if (isClaireQuotePrompt(value)) return false;
   return SUBMIT_QUOTE_PATTERN.test(normalizeText(value));
+}
+
+export function claimsUnverifiedEmailSend(value = "") {
+  const query = normalizeText(value);
+  return /\b(c[' ]est (?:parti|envoye|valide)|bien (?:ete )?envoye|j[' ]ai (?:envoye|transmis|valide)|demande (?:est )?(?:partie|validee|envoyee))\b/.test(query);
 }
 
 export function isCallAction(value = "") {
@@ -161,6 +178,33 @@ export function isCallAction(value = "") {
 
 export function isEmailAction(value = "") {
   return EMAIL_PATTERN.test(normalizeText(value));
+}
+
+export function isOralSendConfirm(value = "") {
+  if (isClaireQuotePrompt(value)) return false;
+  if (isSubmitQuoteAction(value) || isEmailAction(value) || isFormSendIntent(value)) return true;
+  const query = normalizeText(value);
+  if (!query || query.length > 96) return false;
+  return /^(oui |ok |okay |d accord )?(c est (bon|tout|parti|ok|okay|valide|pret)|envoie|envoi|transmets?|soumets?|valide|confirme|vas y|go)\b/.test(query);
+}
+
+export function isUrgentSiteCommand(value = "") {
+  return isSubmitQuoteAction(value) || isEmailAction(value) || isCallAction(value) || isOralSendConfirm(value);
+}
+
+export function shouldExecuteSiteRuntime(classified, text = "") {
+  const kind = classified?.kind || "";
+  if (kind === "site" || kind === "page" || kind === "control") return true;
+  if (kind === "offtopic") return false;
+  return isUrgentSiteCommand(text);
+}
+
+export function isStableUrgentCommand(value = "") {
+  if (isSubmitQuoteAction(value) || isEmailAction(value) || isCallAction(value) || isFormSendIntent(value)) return true;
+  if (!isOralSendConfirm(value)) return false;
+  const query = normalizeText(value);
+  if (/^(oui |ok |okay |d accord )?(envoie|envoi)$/.test(query)) return false;
+  return true;
 }
 
 export function isContactAction(value = "") {
@@ -264,8 +308,8 @@ export function buildSiteBriefing(knowledge) {
     `Entreprise : ${knowledge.site || "InfoServ2A"}. Zone : ${identity.area || ""}. Téléphone : ${identity.phone || ""}. Horaires : ${identity.hours || ""}. Email : ${identity.email || ""}.`,
     "Catalogue des onglets, dans l’ordre de navigation :",
     ...lines,
-    "Actions possibles : ouvrir un onglet, onglet suivant ou précédent, section suivante ou précédente, accueil, catalogue, contact, devis (brouillon, ou envoi si le visiteur le demande clairement), appeler InfoServ2A, écrire un e-mail, expliquer la page visible.",
-    "N’invente ni tarif, ni délai, ni diagnostic. N’invente jamais une coordonnée. N’envoie un devis que sur demande orale explicite."
+    "Actions possibles : ouvrir un onglet, onglet suivant ou précédent, section suivante ou précédente, accueil, catalogue, contact, devis (brouillon, ou envoi réel si le visiteur le demande clairement), appeler InfoServ2A, envoyer un e-mail vers InfoServ2A, expliquer la page visible.",
+    "N’invente ni tarif, ni délai, ni diagnostic. N’invente jamais une coordonnée. N’envoie un devis ou un e-mail que sur demande orale explicite. Ne dis jamais qu’un e-mail est parti tant que [INFOSERV2A_APP_RESULT] ne le confirme pas."
   ].filter(Boolean).join("\n");
 }
 
@@ -304,15 +348,17 @@ Lorsque la personne parle d’un métier, d’un outil numérique, d’une scien
 
 Lorsque tu présentes un service InfoServ2A, nomme clairement un seul onglet (par exemple Vidéosurveillance, Création de sites web), puis éventuellement une section, pour que la page de droite s’ouvre toute seule. Tu n’as pas à commenter ce changement. Ne récite pas tous les onglets d'un seul trait si tu veux les montrer.
 
-Si tu reçois [INFOSERV2A_APP_RESULT], reformule uniquement ce résultat en une ou deux phrases, sans mentionner le marqueur. N'ajoute aucun fait absent du résultat. Si tu es déjà en train de parler, tu termines d’abord ta phrase.
+Si tu reçois [INFOSERV2A_APP_RESULT], dis-le tout de suite à voix haute, sans attendre qu’on te pose une question. Reformule uniquement ce résultat en une ou deux phrases, sans mentionner le marqueur. N'ajoute aucun fait absent du résultat. Si le résultat dit qu’il manque un champ ou que rien n’est parti, tu le dis clairement. Si le résultat contient « bien été envoyé », tu le confirmes à l’oral immédiatement, puis tu te tais. Tu ne redemandes jamais de confirmer un envoi après ce résultat. Tu ne dis jamais « il suffit de me confirmer » ni « je le ferai » une fois l’envoi confirmé par le site.
+
+Si le visiteur confirme l’envoi (« c’est bon », « confirme », « vas-y », « envoie », « envoie le message », « appuie sur envoyer »), reste silencieuse : le site actionne l’envoi. Ne dis pas que tu attends le site. Attends [INFOSERV2A_APP_RESULT], puis dis uniquement ce résultat.
 
 Lorsque tu reçois [INFOSERV2A_SITE_BRIEFING], mémorise le catalogue des onglets. N'y réponds pas.
 Lorsque tu reçois [INFOSERV2A_PAGE_CONTEXT], mémorise la page et la section visibles. N'y réponds pas. Utilise ce contexte pour tes réponses suivantes.
-Lorsque tu reçois [INFOSERV2A_SESSION_MEMORY], c’est le contexte déjà dit dans cet onglet de navigateur. Mémorise-le. N’y réponds pas. Ne fais pas répéter le visiteur.
+Lorsque tu reçois [INFOSERV2A_SESSION_MEMORY], c’est la mémoire de ce navigateur. Mémorise-la en silence. Une phrase courte au plus (« Je reprends. »). N’énumère rien, n’accueille pas, ne récite pas les champs. Si le site envoie ensuite [INFOSERV2A_APP_RESULT], dis-le tout de suite à voix haute.
 Lorsque tu reçois [INFOSERV2A_USER_TEXT], c'est un message tapé par le visiteur. Réponds dans ton périmètre : IT, sciences du numérique, métiers qui s’appuient sur l’IT.
 Lorsque tu reçois [INFOSERV2A_OFF_TOPIC], c’est un loisir ou un aparté sans lien numérique. Une phrase courtoise, tu ne développes pas, tu recentres vers InfoServ2A et l’IT. Jamais de phrase du type « je ne parle que d’informatique ».
 
-Sur demande orale explicite, tu peux : préremplir un devis ; l’envoyer seulement si le visiteur dit clairement « envoie » ou « transmets » le devis ; ouvrir un appel vers InfoServ2A ; ouvrir un e-mail prérempli. N’invente jamais un nom, un téléphone, un e-mail ou une commune. S’il manque un champ pour l’envoi, demande-le à l’oral.
+Sur demande orale explicite, le site envoie le message ou la demande de devis vers l’e-mail saisi dans le champ e-mail du visiteur, pas vers contact@infoserv2a.pro. Le site rédige toujours le corps (message contact et description du devis) : une synthèse fidèle de ce que le visiteur a évoqué, sans inventer. Tu n’as pas à dicter le paragraphe mot à mot. Tu n’envoies jamais toi-même. Nommer une adresse n’est pas une preuve d’envoi. Si [INFOSERV2A_APP_RESULT] dit qu’il manque un champ, tu le répètes clairement à l’oral, tu n’acceptes pas l’envoi, jamais « c’est parti ». Tu n’enregistres pas un envoi toute seule. Si le devis est incomplet, tu le dis une fois à l’oral, sans attendre qu’on te le demande, puis tu attends le visiteur. Tu ne répètes pas le même inventaire en boucle. Si le devis est complet mais pas encore envoyé, tu le dis une seule fois, tu attends, tu ne relances pas. Dès que la mémoire ou [INFOSERV2A_APP_RESULT] dit que CET envoi est parti, tu ne redemandes pas de le confirmer : une phrase, puis tu écoutes. Un nouveau besoin à l’oral est un nouveau devis : tu ne ressorts pas l’ancien, tu ne le renvoies pas. Tu gardes nom, téléphone, e-mail et commune. Tu ne confirmes un envoi que si le résultat contient « bien été envoyé ». Tu n’inventes jamais un nom, un téléphone, un e-mail ou une commune.
 
 L'application InfoServ2A est la seule source de vérité pour les services, coordonnées, horaires, pages et actions. L'utilisateur garde toujours accès au mode manuel. N'invente jamais un tarif, un délai, une disponibilité, une conformité, un diagnostic matériel définitif ou une capacité technique non vérifiée.`;
 }
@@ -435,8 +481,41 @@ export function createSpeechFollowGate() {
   };
 }
 
-export const LIVEAVATAR_MAX_SESSION_MS = 300_000;
+export const LIVEAVATAR_MAX_SESSION_MS = 600_000;
+export const LIVEAVATAR_MAX_SESSION_SECONDS = 600;
+export const LIVEAVATAR_PLAN_FALLBACK_SECONDS = 300;
 export const LIVEAVATAR_SESSION_WARNING_LEAD_MS = 45_000;
+
+export function liveAvatarErrorText(payload) {
+  return [payload?.message, payload?.error, payload?.detail]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .join(" ");
+}
+
+export function parseLiveAvatarAllowedSessionSeconds(payload) {
+  const match = liveAvatarErrorText(payload).match(/maximum allowed\s*\((\d+)\s*s\)/i);
+  const allowed = Number(match?.[1] || 0);
+  return Number.isFinite(allowed) && allowed >= 60 ? Math.floor(allowed) : 0;
+}
+
+export function resolveLiveAvatarSessionRetrySeconds(requested, payload, status) {
+  if (status !== 400 && status !== 422) return 0;
+  const text = liveAvatarErrorText(payload);
+  if (!/max_session_duration|maximum allowed/i.test(text)) return 0;
+  const allowed = parseLiveAvatarAllowedSessionSeconds(payload) || LIVEAVATAR_PLAN_FALLBACK_SECONDS;
+  const want = Number(requested) || LIVEAVATAR_MAX_SESSION_SECONDS;
+  if (allowed >= 60 && allowed < want) return Math.min(allowed, LIVEAVATAR_MAX_SESSION_SECONDS);
+  return 0;
+}
+
+export function grantedLiveAvatarSessionMs(seconds) {
+  const value = Number(seconds);
+  if (Number.isFinite(value) && value >= 60 && value <= LIVEAVATAR_MAX_SESSION_SECONDS) {
+    return Math.floor(value) * 1000;
+  }
+  return LIVEAVATAR_PLAN_FALLBACK_SECONDS * 1000;
+}
 
 export function liveAvatarSessionWarningDelayMs(
   maxDurationMs = LIVEAVATAR_MAX_SESSION_MS,
@@ -475,6 +554,7 @@ export function routeCommand(input, knowledge, context = {}) {
   }
 
   for (const intent of DIRECT_INTENTS) {
+    if (intent.id === "submit_quote" && isClaireQuotePrompt(raw)) continue;
     if (intent.pattern.test(query)) return { id: intent.id, ...intent.response };
   }
 

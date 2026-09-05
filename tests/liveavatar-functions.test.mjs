@@ -122,14 +122,15 @@ test("la fonction échange les références serveur contre un jeton éphémère"
     assert.equal(response.status, 200);
     assert.equal(payload.sessionToken, "ephemeral-test-token");
     assert.equal(payload.appId, "infoserv2a");
+    assert.equal(payload.maxSessionDuration, 600);
     assert.equal(outbound.url, "https://api.liveavatar.com/v1/sessions/token");
     const body = JSON.parse(outbound.options.body);
     assert.equal(body.avatar_id, "avatar-ref");
     assert.equal(body.openai_realtime_config.secret_id, "secret-ref");
     assert.equal(body.openai_realtime_config.context_id, "context-ref");
     assert.equal(body.openai_realtime_config.temperature, 0.75);
-    assert.equal(body.max_session_duration, 300);
-    assert.equal(body.max_session_duration * 1000, 300_000);
+    assert.equal(body.max_session_duration, 600);
+    assert.equal(body.max_session_duration * 1000, 600_000);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -166,6 +167,46 @@ test("une nouvelle clé Cloudflare crée une nouvelle référence LiveAvatar", a
     assert.equal(secretBody.secret_value, "sk-test-new-value");
     const token = outbound.find((item) => item.url.endsWith("/v1/sessions/token"));
     assert.equal(JSON.parse(token.options.body).openai_realtime_config.secret_id, "rotated-secret");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("si LiveAvatar refuse 600 s, la session retombe sur la durée du plan", async () => {
+  const originalFetch = globalThis.fetch;
+  const tokenBodies = [];
+  let tokenCalls = 0;
+  globalThis.fetch = async (url, options = {}) => {
+    if (String(url).includes("/v1/sessions/token")) {
+      tokenCalls += 1;
+      tokenBodies.push(JSON.parse(options.body));
+      if (tokenCalls === 1) {
+        return Response.json(
+          { message: "max_session_duration (600s) exceeds the maximum allowed (300s)" },
+          { status: 400 }
+        );
+      }
+      return Response.json({ data: { session_token: "plan-token", session_id: "plan-session" } });
+    }
+    return Response.json({ data: { results: [] } });
+  };
+  try {
+    const response = await sessionFunction.onRequestPost({
+      request: request(),
+      env: {
+        LIVEAVATAR_API_KEY: "configured",
+        LIVEAVATAR_OPENAI_SECRET_ID: "secret-ref",
+        LIVEAVATAR_CONTEXT_ID: "context-ref",
+        LIVEAVATAR_AVATAR_ID: "avatar-ref"
+      }
+    });
+    const payload = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(payload.sessionToken, "plan-token");
+    assert.equal(payload.maxSessionDuration, 300);
+    assert.equal(tokenCalls, 2);
+    assert.equal(tokenBodies[0].max_session_duration, 600);
+    assert.equal(tokenBodies[1].max_session_duration, 300);
   } finally {
     globalThis.fetch = originalFetch;
   }

@@ -1,4 +1,4 @@
-import { adjacentPage, adjacentSection, catalogEntries, pageById, scorePage } from "./claire-core.mjs";
+import { adjacentPage, adjacentSection, catalogEntries, pageById, scorePage } from "./claire-core.mjs?v=20260905-it37";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -69,10 +69,18 @@ export class InfoServ2ALabAdapter {
           email: String(args.email || "").slice(0, 120),
           city: String(args.city || "").slice(0, 80),
           service: String(args.service || "").slice(0, 80),
-          description: String(args.description || "").slice(0, 500)
+          description: String(args.description || "").slice(0, 4000)
         };
         this.view.submitted = false;
-        return { page: { id: page.id, title: page.title, href: page.href }, draft: clone(this.view.quoteDraft), submitted: false };
+        const missing = ["name", "phone", "email", "city", "service", "description"]
+          .filter((key) => !this.view.quoteDraft[key]);
+        return {
+          page: { id: page.id, title: page.title, href: page.href },
+          draft: clone(this.view.quoteDraft),
+          submitted: false,
+          sent: false,
+          missing
+        };
       }
       case "submit_quote": {
         const page = this.pageById("quote");
@@ -85,7 +93,7 @@ export class InfoServ2ALabAdapter {
           email: String(args.email || "").slice(0, 120),
           city: String(args.city || "").slice(0, 80),
           service: String(args.service || "").slice(0, 80),
-          description: String(args.description || "").slice(0, 500)
+          description: String(args.description || "").slice(0, 4000)
         };
         const missing = ["name", "phone", "email", "city", "service", "description"]
           .filter((key) => !this.view.quoteDraft[key]);
@@ -94,6 +102,9 @@ export class InfoServ2ALabAdapter {
           page: { id: page.id, title: page.title, href: page.href },
           draft: clone(this.view.quoteDraft),
           submitted: this.view.submitted,
+          sent: this.view.submitted,
+          inbox: this.view.quoteDraft.email,
+          replyTo: this.view.quoteDraft.email,
           missing
         };
       }
@@ -119,7 +130,7 @@ export class InfoServ2ALabAdapter {
         this.view.contactChannel = "email";
         this.view.lastLaunch = {
           type: "email",
-          to: String(args.to || "contact@infoserv2a.pro"),
+          to: String(args.to || args.email || ""),
           subject: String(args.subject || "Contact InfoServ2A"),
           body: String(args.body || "")
         };
@@ -127,6 +138,9 @@ export class InfoServ2ALabAdapter {
           page: { id: page.id, title: page.title, href: page.href },
           channel: "email",
           draft: clone(this.view.lastLaunch),
+          sent: true,
+          inbox: this.view.lastLaunch.to,
+          replyTo: args.email || "",
           triggered: true
         };
       }

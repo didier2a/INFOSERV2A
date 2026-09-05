@@ -8,6 +8,7 @@ import {
 } from "../assets/js/claire-runtime-v2.mjs";
 import { InfoServ2ALabAdapter } from "../assets/js/claire-site-adapter.mjs";
 import { InfoServ2ASiteAdapter } from "../assets/js/claire-site-runtime-adapter.mjs";
+import { quoteDraftSignature } from "../assets/js/claire-session-memory.mjs";
 
 const knowledge = JSON.parse(
   await readFile(new URL("../data/site-knowledge.json", import.meta.url), "utf8")
@@ -71,11 +72,12 @@ class MockPersistentSurface {
     return { serviceFound: true, descriptionFound: true, submitted: false };
   }
 
-  submitQuote(draft) {
+  async submitQuote(draft) {
     this.calls.push(["submitQuote", draft]);
     this.draft = draft;
     this.submitted = true;
-    return { submitted: true, missing: [] };
+    const result = await this.sendSiteEmail({ kind: "devis", ...draft });
+    return { submitted: true, sent: true, missing: [], ...result };
   }
 
   launchHref(href) {
@@ -83,9 +85,24 @@ class MockPersistentSurface {
     return { href, launched: true };
   }
 
-  composeEmail(draft) {
+  async sendSiteEmail(payload) {
+    this.calls.push(["sendSiteEmail", payload]);
+    return {
+      sent: true,
+      inbox: payload.email || "",
+      replyTo: "contact@infoserv2a.pro",
+      provider: "test"
+    };
+  }
+
+  async composeEmail(draft) {
     this.calls.push(["composeEmail", draft]);
-    return this.launchHref(`mailto:${draft.to || "contact@infoserv2a.pro"}`);
+    return this.sendSiteEmail({
+      kind: "contact",
+      name: draft.name,
+      email: draft.email,
+      message: draft.message || draft.body
+    });
   }
 
   snapshot() {
@@ -300,7 +317,7 @@ test("un appel oral ouvre le numéro InfoServ2A", async () => {
   assert.ok(surface.calls.some(([name, href]) => name === "launchHref" && String(href).startsWith("tel:")));
 });
 
-test("un mail oral ouvre une messagerie préremplie", async () => {
+test("un mail oral envoie réellement vers InfoServ2A", async () => {
   const surface = new MockPersistentSurface();
   const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
   const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
@@ -314,13 +331,19 @@ test("un mail oral ouvre une messagerie préremplie", async () => {
   assert.equal(plan.steps[0].tool, "compose_email");
   const outcome = await controller.run("Envoie un mail", { memory });
   assert.equal(outcome.verification.pageId, "contact");
-  assert.ok(surface.calls.some(([name]) => name === "composeEmail"));
+  const mail = outcome.results.find((item) => item.tool === "compose_email");
+  assert.equal(mail.output.sent, true);
+  assert.equal(mail.output.inbox, "didier@example.com");
+  assert.ok(surface.calls.some(([name]) => name === "sendSiteEmail"));
+  assert.ok(!surface.calls.some(([, href]) => String(href || "").startsWith("mailto:")));
 });
 
 test("envoie le devis ne part que si le contexte a les coordonnées", async () => {
   const empty = planCommand("Envoie le devis", knowledge, manifest);
   assert.ok(empty.steps.some((step) => step.tool === "prefill_quote"));
   assert.ok(!empty.steps.some((step) => step.tool === "submit_quote"));
+  assert.match(empty.response, /n’envoie pas/);
+  assert.doesNotMatch(empty.response, /bien été envoyé|c’est parti/);
 
   const memory = {
     visitor: {
@@ -341,6 +364,110 @@ test("envoie le devis ne part que si le contexte a les coordonnées", async () =
   const outcome = await controller.run("Envoie le devis", { memory });
   assert.equal(adapter.snapshot().submitted, true);
   assert.equal(outcome.verification.pageId, "quote");
+});
+
+test("une confirmation orale courte envoie le devis déjà complet", () => {
+  const memory = {
+    visitor: {
+      name: "Marie Rossi",
+      phone: "07 45 15 60 76",
+      email: "marie@example.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé",
+    turns: []
+  };
+  const plan = planCommand("c’est bon", knowledge, manifest, { memory, pageId: "quote" });
+  assert.ok(plan.steps.some((step) => step.tool === "submit_quote"));
+  const contact = planCommand("confirme", knowledge, manifest, {
+    memory: {
+      visitor: { name: "Didier", phone: "", email: "didier@example.com", city: "" },
+      need: "Site vitrine",
+      turns: []
+    },
+    pageId: "contact"
+  });
+  assert.ok(contact.steps.some((step) => step.tool === "compose_email"));
+});
+
+test("sur le devis, « envoie le message » transmet le devis et ne part pas en contact", () => {
+  const memory = {
+    visitor: {
+      name: "Marie Rossi",
+      phone: "07 45 15 60 76",
+      email: "marie@example.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé",
+    turns: []
+  };
+  const plan = planCommand("envoie le message", knowledge, manifest, { memory, pageId: "quote" });
+  assert.ok(plan.steps.some((step) => step.tool === "submit_quote"));
+  assert.equal(plan.steps.some((step) => step.tool === "compose_email"), false);
+  const click = planCommand("appuie sur envoyer", knowledge, manifest, { memory, pageId: "quote" });
+  assert.ok(click.steps.some((step) => step.tool === "submit_quote"));
+});
+
+test("un devis déjà envoyé n’est pas renvoyé", () => {
+  const base = {
+    visitor: {
+      name: "Marie Rossi",
+      phone: "07 45 15 60 76",
+      email: "marie@example.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé",
+    turns: []
+  };
+  const memory = {
+    ...base,
+    lastSend: {
+      sent: true,
+      kind: "devis",
+      inbox: "marie@example.com",
+      signature: quoteDraftSignature(base)
+    }
+  };
+  const plan = planCommand("envoie le message", knowledge, manifest, { memory, pageId: "quote" });
+  assert.equal(plan.steps.some((step) => step.tool === "submit_quote"), false);
+  assert.match(plan.response, /déjà été envoyée/);
+});
+
+test("après un envoi, un nouveau besoin oral n’est plus bloqué comme déjà envoyé", () => {
+  const base = {
+    visitor: {
+      name: "Didier",
+      phone: "06 12 34 56 78",
+      email: "didier@exemple.fr",
+      city: "Lyon"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour le commerce",
+    turns: []
+  };
+  const sent = {
+    ...base,
+    lastSend: {
+      sent: true,
+      kind: "devis",
+      inbox: "didier@exemple.fr",
+      signature: quoteDraftSignature(base)
+    }
+  };
+  const stillSame = planCommand("envoie le devis", knowledge, manifest, { memory: sent, pageId: "quote" });
+  assert.equal(stillSame.steps.some((step) => step.tool === "submit_quote"), false);
+
+  const nextNeed = {
+    ...sent,
+    need: "Site internet pour mon commerce",
+    service: "creation-site-web",
+    quoteEpoch: 1
+  };
+  const newQuote = planCommand("envoie le devis", knowledge, manifest, { memory: nextNeed, pageId: "quote" });
+  assert.ok(newQuote.steps.some((step) => step.tool === "submit_quote"));
 });
 
 test("l’ancre canonique existe dans la page publique", async () => {

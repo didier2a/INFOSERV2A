@@ -54,8 +54,8 @@ export class LiveAvatarSession {
       };
     }, 40);
   }
-  startListening() {}
-  stopListening() {}
+  startListening() { this.listenStarts = (this.listenStarts || 0) + 1; }
+  stopListening() { this.listenStops = (this.listenStops || 0) + 1; }
   message(value) { this.messages.push(value); }
   interrupt() { this.interrupted = true; }
   async stop() {}
@@ -235,6 +235,87 @@ test("un aparté hors site laisse Realtime répondre sans couper", async () => {
   assert.equal(session.interrupted, undefined);
   assert.equal(provider.lastLocalContext?.kind, "memory");
 
+  session.emit("avatar-speak-ended");
+  provider.sendMemory("Déjà dit : nom Paul.", { live: true });
+  assert.equal(session.messages.length, before + 1);
+  assert.match(session.messages.at(-1), /INFOSERV2A_SESSION_MEMORY/);
+  assert.match(session.messages.at(-1), /Paul/);
+
+  await provider.stop();
+});
+
+test("un envoi oral coupe la parole et part sans attendre la fin de la récitation", async () => {
+  const commands = [];
+  const barges = [];
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-send-now" })
+  }).install({
+    video,
+    classifyCommand: async () => "site",
+    onCommand: async (text) => commands.push(text),
+    onBargeIn: (detail) => barges.push(detail.reason)
+  });
+
+  await provider.connect({ microphone: false });
+  const session = globalThis.__infoservFakeSession;
+  session.emit("avatar-speak-started");
+  provider.sendMemory("Nom Didier. Ne récite pas tout le dossier.", { live: true });
+  assert.equal(session.messages.length, 0);
+  session.emit("user-transcription", { text: "envoie le devis" });
+  assert.equal(session.interrupted, true);
+  assert.ok(barges.includes("email-send"));
+  session.emit("user-speak-ended");
+  await wait(600);
+  assert.deepEqual(commands, ["envoie le devis"]);
+
+  session.emit("avatar-speak-started");
+  provider.sendEmailResult("La demande de devis a bien été envoyée vers contact@infoserv2a.pro.");
+  assert.ok(barges.includes("email-send"));
+  assert.match(session.messages.at(-1), /INFOSERV2A_APP_RESULT/);
+  assert.match(session.messages.at(-1), /bien été envoyée/);
+
+  await provider.stop();
+});
+
+test("un barge-in d’envoi n’écoute plus jusqu’au résultat du site", async () => {
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-quiet-send" })
+  }).install({
+    video,
+    classifyCommand: async () => "chat",
+    onCommand: async () => {}
+  });
+
+  await provider.connect({ microphone: true });
+  const session = globalThis.__infoservFakeSession;
+  const startsAfterConnect = session.listenStarts || 0;
+  session.emit("avatar-speak-started");
+  provider.bargeIn("email-send");
+  assert.equal(session.interrupted, true);
+  assert.equal(provider.listening, false);
+  assert.equal(session.listenStarts || 0, startsAfterConnect);
+  assert.ok((session.listenStops || 0) >= 1);
+
+  provider.sendEmailResult("La demande de devis a bien été envoyée vers contact@infoserv2a.pro.");
+  assert.equal(provider.listening, false);
+  assert.equal(provider.holdListenForResult, true);
+  assert.match(session.messages.at(-1), /INFOSERV2A_APP_RESULT/);
+
+  session.emit("avatar-speak-started");
+  session.emit("user-transcription", { text: "c’est parti" });
+  session.emit("user-speak-ended");
+  await wait(600);
+  assert.equal(session.listenStarts, startsAfterConnect);
+
+  session.emit("avatar-speak-ended");
+  assert.ok(session.listenStarts > startsAfterConnect);
+  assert.equal(provider.listening, true);
+  assert.equal(provider.holdListenForResult, false);
+
   await provider.stop();
 });
 
@@ -373,5 +454,22 @@ test("SESSION_STOPPED propose de relancer sans arrêter le site", async () => {
   assert.equal(reconnected, true);
   assert.equal(provider.connected, true);
   assert.notEqual(globalThis.__infoservFakeSession, first);
+  await provider.stop();
+});
+
+test("le transport retient la durée de session réellement accordée", async () => {
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({
+      sessionToken: "ephemeral",
+      sessionId: "session-duration",
+      maxSessionDuration: 300
+    })
+  }).install({ video });
+
+  await provider.connect({ microphone: true });
+  assert.equal(provider.grantedSessionSeconds, 300);
+  assert.equal(provider.diagnostic().grantedSessionSeconds, 300);
   await provider.stop();
 });

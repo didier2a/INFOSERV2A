@@ -1,4 +1,4 @@
-import { isInternalSitePrompt } from "./claire-core.mjs";
+import { isInternalSitePrompt, isStableUrgentCommand, isUrgentSiteCommand, isClaireQuotePrompt } from "./claire-core.mjs?v=20260905-it37";
 
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;
@@ -76,6 +76,8 @@ export class InfoServ2ALiveAvatarProvider {
     this.avatarSpeaking = false;
     this.stopping = false;
     this.connectionAttempt = 0;
+    this.grantedSessionSeconds = 0;
+    this.holdListenForResult = false;
     this.silentSendAt = 0;
     this.pendingLiveSpeech = null;
     this.lastLocalContext = null;
@@ -268,9 +270,17 @@ export class InfoServ2ALiveAvatarProvider {
     const text = String(prompt || "").trim();
     if (!text) return false;
     if (this.avatarSpeaking) {
-      const canWait = event === "conversation:user-text-sent" || event === "conversation:off-topic-sent";
+      const canWait = event === "conversation:user-text-sent"
+        || event === "conversation:off-topic-sent"
+        || event === "conversation:email-result-sent"
+        || event === "conversation:session-memory-sent";
       if (!canWait) {
         this.record("conversation:speech-dropped", { event, characters: text.length });
+        return "dropped";
+      }
+      if (event !== "conversation:email-result-sent"
+        && this.pendingLiveSpeech?.event === "conversation:email-result-sent") {
+        this.record("conversation:speech-dropped", { event, characters: text.length, reason: "email-priority" });
         return "dropped";
       }
       this.pendingLiveSpeech = { text, event };
@@ -290,6 +300,28 @@ export class InfoServ2ALiveAvatarProvider {
 
   sendSilentMessage(prompt, event) {
     return this.speakLiveMessage(prompt, event) !== false;
+  }
+
+  resumeListening(label = "Je vous écoute") {
+    try { this.session?.startListening(); } catch { /* Le SDK peut déjà écouter. */ }
+    this.listening = true;
+    this.emit("listening", label);
+  }
+
+  sendEmailResult(value) {
+    if (this.avatarSpeaking) this.bargeIn("email-send");
+    this.holdListenForResult = true;
+    const sent = this.speakLiveMessage(
+      `[INFOSERV2A_APP_RESULT]\nInformation vérifiée par le site : ${value}\nDis cette information à voix haute maintenant, sans attendre qu’on te le demande. Ne prétends pas avoir fait une autre action. Une ou deux phrases, puis silence. Ne redemande pas de confirmer l’envoi.`,
+      "conversation:email-result-sent"
+    );
+    if (sent !== "sent" && sent !== "queued") {
+      this.holdListenForResult = false;
+      this.resumeListening();
+      return false;
+    }
+    this.armReplyTimer();
+    return true;
   }
 
   sendPrompt(value) {
@@ -321,12 +353,12 @@ export class InfoServ2ALiveAvatarProvider {
     );
   }
 
-  sendMemory(value) {
-    return this.keepLocalNote(
-      "memory",
-      `[INFOSERV2A_SESSION_MEMORY]\n${value}\nN’y réponds pas. Reprends le contexte déjà dit. Ne redemande pas ces informations. N’invente rien.`,
-      "conversation:session-memory-kept"
-    );
+  sendMemory(value, { live = false } = {}) {
+    const prompt = `[INFOSERV2A_SESSION_MEMORY]\n${value}\nN’y réponds pas par un accueil ni par un inventaire. Une phrase courte (« Je reprends. »), puis silence. N’invente rien.`;
+    if (!live) {
+      return this.keepLocalNote("memory", prompt, "conversation:session-memory-kept");
+    }
+    return this.speakLiveMessage(prompt, "conversation:session-memory-sent");
   }
 
   sendUserMessage(value) {
@@ -375,6 +407,10 @@ export class InfoServ2ALiveAvatarProvider {
     this.replyTimer = setTimeout(() => {
       if (this.realtimeSignal === "reply-started") return;
       this.realtimeSignal = "reply-timeout";
+      if (this.holdListenForResult) {
+        this.holdListenForResult = false;
+        this.resumeListening();
+      }
       this.emit("error", "Le site a répondu, mais Claire n’a pas encore pu le dire à voix haute");
     }, VERIFIED_REPLY_TIMEOUT_MS);
   }
@@ -383,18 +419,23 @@ export class InfoServ2ALiveAvatarProvider {
     return this.bargeIn(reason);
   }
 
-  bargeIn(reason = "user-barge-in") {
+  bargeIn(reason = "user-barge-in", options = {}) {
     const wasSpeaking = this.avatarSpeaking;
-    this.record("conversation:barge-in", { reason, avatarSpeaking: wasSpeaking });
+    const resumeListen = options.resumeListen ?? reason !== "email-send";
+    this.record("conversation:barge-in", { reason, avatarSpeaking: wasSpeaking, resumeListen });
     try { this.session?.interrupt(); } catch { /* Aucune réponse Realtime à couper. */ }
     this.clearReplyTimer();
     this.pendingSpeech = [];
     this.pendingLiveSpeech = null;
     this.avatarSpeaking = false;
-    try { this.session?.startListening(); } catch { /* Le SDK peut déjà écouter. */ }
-    this.listening = true;
     this.callbacks.onBargeIn?.({ reason, wasSpeaking });
-    this.emit("listening", "Je vous écoute");
+    if (resumeListen) {
+      this.resumeListening();
+    } else {
+      try { this.session?.stopListening(); } catch { /* Le SDK peut déjà être en pause. */ }
+      this.listening = false;
+      this.emit("thinking", "Envoi en cours…");
+    }
     return true;
   }
 
@@ -423,7 +464,7 @@ export class InfoServ2ALiveAvatarProvider {
   stageTranscript(value) {
     const text = String(value || "").trim();
     if (!text) return;
-    if (isInternalSitePrompt(text) || this.isSilentEchoWindow()) {
+    if (isInternalSitePrompt(text) || this.isSilentEchoWindow() || this.holdListenForResult) {
       this.record("conversation:internal-ignored", { characters: text.length });
       return;
     }
@@ -464,6 +505,7 @@ export class InfoServ2ALiveAvatarProvider {
       if (typeof this.callbacks.classifyCommand === "function") {
         kind = (await this.callbacks.classifyCommand(text)) || "chat";
       }
+      if (isUrgentSiteCommand(text)) kind = "site";
       if (kind === "chat" || kind === "offtopic") {
         this.realtimeSignal = kind === "offtopic" ? "off-topic" : "natural-reply";
         this.emit("listening", "Claire vous répond…");
@@ -526,7 +568,12 @@ export class InfoServ2ALiveAvatarProvider {
           const payload = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(payload.error || `LiveAvatar HTTP ${response.status}`);
           if (!payload.sessionToken) throw new Error("Jeton de session LiveAvatar absent");
-          this.record("transport:token-ready", { attempt, sessionId: String(payload.sessionId || "") });
+          this.grantedSessionSeconds = Number(payload.maxSessionDuration) || 0;
+          this.record("transport:token-ready", {
+            attempt,
+            sessionId: String(payload.sessionId || ""),
+            maxSessionDuration: this.grantedSessionSeconds
+          });
 
           this.sdk = sdk;
           const session = new sdk.LiveAvatarSession(payload.sessionToken, { apiUrl: "https://api.liveavatar.com" });
@@ -637,9 +684,9 @@ export class InfoServ2ALiveAvatarProvider {
       }
     });
     session.on(AgentEventsEnum.USER_SPEAK_STARTED, () => {
-      if (this.isSilentEchoWindow() || this.avatarSpeaking) {
+      if (this.isSilentEchoWindow() || this.avatarSpeaking || this.holdListenForResult) {
         this.record("conversation:silent-echo-ignored", {
-          reason: this.avatarSpeaking ? "avatar-echo" : "user-speak-started"
+          reason: this.holdListenForResult ? "hold-listen" : (this.avatarSpeaking ? "avatar-echo" : "user-speak-started")
         });
         return;
       }
@@ -662,13 +709,27 @@ export class InfoServ2ALiveAvatarProvider {
     session.on(AgentEventsEnum.USER_TRANSCRIPTION, (event) => {
       const text = String(event?.text || "").trim();
       if (!text) return;
-      if (isInternalSitePrompt(text) || this.isSilentEchoWindow() || this.avatarSpeaking) {
-        this.record("conversation:internal-ignored", { characters: text.length, avatarSpeaking: this.avatarSpeaking });
+      if (isInternalSitePrompt(text) || this.isSilentEchoWindow() || this.holdListenForResult) {
+        this.record("conversation:internal-ignored", {
+          characters: text.length,
+          holdListen: this.holdListenForResult
+        });
         return;
+      }
+      if (this.avatarSpeaking) {
+        if (!isUrgentSiteCommand(text) || isClaireQuotePrompt(text)) {
+          this.record("conversation:internal-ignored", { characters: text.length, avatarSpeaking: true });
+          return;
+        }
+        this.bargeIn("email-send");
       }
       this.record("conversation:user-transcription", { characters: text.length });
       this.clearReplyTimer();
       this.stageTranscript(text);
+      if (isStableUrgentCommand(text)) {
+        this.userSpeakComplete = true;
+        void this.flushTranscript({ allowIncomplete: true });
+      }
     });
     session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
       this.avatarSpeaking = true;
@@ -689,6 +750,10 @@ export class InfoServ2ALiveAvatarProvider {
       this.clearReplyTimer();
       this.flushQueuedLiveSpeech();
       this.callbacks.onAvatarSpeakEnd?.();
+      if (this.holdListenForResult) {
+        this.holdListenForResult = false;
+        this.resumeListening();
+      }
       this.emit(this.listening ? "listening" : "ready", this.listening ? "Je vous écoute" : "Prête à vous guider");
     });
     session.on(AgentEventsEnum.SESSION_STOPPED, () => {
@@ -815,6 +880,7 @@ export class InfoServ2ALiveAvatarProvider {
       audioState: this.mediaAudible ? "audible" : (this.hasLiveAudio() ? "blocked" : "missing"),
       videoMuted: Boolean(this.video?.muted),
       realtimeSignal: this.realtimeSignal,
+      grantedSessionSeconds: this.grantedSessionSeconds,
       commandInFlight: this.commandInFlight,
       userSpeakComplete: this.userSpeakComplete,
       userSpeaking: this.userSpeaking,
