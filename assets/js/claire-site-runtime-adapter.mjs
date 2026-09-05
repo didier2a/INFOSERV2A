@@ -1,5 +1,5 @@
-import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260904-it35";
-import { contactExtrasFromDocument, firstUsefulText, quoteExtrasFromDocument, usefulText } from "./claire-session-memory.mjs?v=20260904-it35";
+import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260904-it36";
+import { contactExtrasFromDocument, firstUsefulText, quoteExtrasFromDocument, usefulText } from "./claire-session-memory.mjs?v=20260904-it36";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));

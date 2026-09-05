@@ -19,7 +19,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260904-it35";
+} from "./claire-core.mjs?v=20260904-it36";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -40,20 +40,20 @@ import {
   alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260904-it35";
-import { describeEmailSendOutcome } from "./site-email.mjs?v=20260904-it35";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260904-it35";
+} from "./claire-session-memory.mjs?v=20260904-it36";
+import { describeEmailSendOutcome } from "./site-email.mjs?v=20260904-it36";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260904-it36";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260904-it35";
-import "./contact.js?v=20260904-it35";
-import "./devis.js?v=20260904-it35";
+} from "./claire-site-runtime-adapter.mjs?v=20260904-it36";
+import "./contact.js?v=20260904-it36";
+import "./devis.js?v=20260904-it36";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260904-it35";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260904-it35";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260904-it36";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260904-it36";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -1067,7 +1067,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260904-it35");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260904-it36");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));

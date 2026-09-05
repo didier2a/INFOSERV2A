@@ -8,7 +8,7 @@ import {
   resolveCurrentPage,
   isOralSendConfirm,
   isClaireQuotePrompt
-} from "./claire-core.mjs?v=20260904-it35";
+} from "./claire-core.mjs?v=20260904-it36";
 import {
   canSubmitQuote,
   canSubmitContact,
@@ -17,7 +17,7 @@ import {
   quotePrefillFromMemory,
   isSameDraftAlreadySent,
   alreadySentSpeech
-} from "./claire-session-memory.mjs?v=20260904-it35";
+} from "./claire-session-memory.mjs?v=20260904-it36";
 
 export const CONTROLLER_STATES = Object.freeze({
   READY: "ready",
