@@ -503,15 +503,12 @@ function collectNeedSnippets(memory = {}) {
     snippets.push(text.slice(0, MAX_TURN_CHARS));
   }
   const need = usefulText(memory.need, 4000);
-  if (
-    need
-    && !isClaireSynthesis(need)
-    && !looksLikeConversationDump(need, memory)
-    && !snippets.some((item) => folded(item).includes(folded(need)) || folded(need).includes(folded(item)))
-  ) {
+  if (need && !isClaireSynthesis(need) && !looksLikeConversationDump(need, memory)) {
     snippets.push(need);
   }
-  return dedupeNeedSnippets(snippets);
+  return dedupeNeedSnippets(
+    snippets.map((item) => toWrittenClause(item)).filter((item) => item && !isUselessClause(item))
+  );
 }
 
 function uncapitalizeFr(value = "") {

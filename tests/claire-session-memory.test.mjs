@@ -463,6 +463,7 @@ test("Claire rédige le corps du mail comme une synthèse de l’échange", () =
   assert.doesNotMatch(body, /Envoie le devis/);
   assert.doesNotMatch(body, /• /);
   assert.match(body, /vidéosurveillance|videosurveillance/i);
+  assert.equal((body.match(/caméra 4G/gi) || []).length, 1);
 
   const draft = emailDraftFromMemory(loadSessionMemory(storage));
   assert.equal(draft.to, "didier@example.com");
