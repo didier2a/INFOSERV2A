@@ -27,9 +27,32 @@ function methodNotAllowed(allowed) {
   );
 }
 
+function requestHostname(request) {
+  const url = new URL(request.url);
+  const headerHost = request.headers.get("Host");
+  return (headerHost || url.hostname).split(":")[0].toLowerCase();
+}
+
+function isWorkerPreviewHost(hostname) {
+  return hostname.endsWith(".workers.dev");
+}
+
 export default {
   async fetch(request, env) {
-    const { pathname } = new URL(request.url);
+    const url = new URL(request.url);
+    const host = requestHostname(request);
+
+    // Apex uniquement : jamais www, jamais *.workers.dev, jamais localhost.
+    if (host === "infoserv2a.pro" && !isWorkerPreviewHost(url.hostname) && !isWorkerPreviewHost(host)) {
+      return new Response(null, {
+        status: 301,
+        headers: {
+          Location: `https://www.infoserv2a.pro${url.pathname}${url.search}`
+        }
+      });
+    }
+
+    const { pathname } = url;
 
     if (pathname === "/api/liveavatar-status") {
       if (request.method === "GET") return liveAvatarStatus({ request, env });
