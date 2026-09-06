@@ -46,6 +46,7 @@ class HttpSmokeTest(unittest.TestCase):
             "/?claire=1": "text/html",
             "/claire-lab.html": "text/html",
             "/claire-aidant-figma.html": "text/html",
+            "/maquette-arrivee.html": "text/html",
             "/assets/js/claire-companion.js?v=20260830-live3": "text/javascript",
             "/assets/js/claire-runtime-v2.mjs": "text/javascript",
             "/assets/js/claire-site-adapter.mjs": "text/javascript",

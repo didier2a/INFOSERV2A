@@ -71,6 +71,9 @@ test("les pages et assets référencés par Claire existent", async () => {
     "docs/activer-claire-sur-infoserv2a-pro.md",
     "claire-lab.html",
     "claire-aidant-figma.html",
+    "maquette-arrivee.html",
+    "assets/css/maquette-arrivee.css",
+    "docs/maquette-arrivee.md",
     "functions/api/liveavatar-session.js",
     "functions/api/liveavatar-status.js",
     "functions/api/liveavatar-origin.js"
