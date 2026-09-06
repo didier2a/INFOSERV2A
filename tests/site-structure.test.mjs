@@ -261,7 +261,7 @@ test("Realtime ne coupe plus la réponse sur la première syllabe", async () => 
 
 test("le champ de pièces jointes masqué ne crée aucun débordement horizontal", async () => {
   const css = await readFile(path.join(ROOT, "assets/css/components.css"), "utf8");
-  assert.match(css, /\.form input\.sr-only\s*\{[^}]*width:\s*1px[^}]*min-height:\s*1px[^}]*padding:\s*0[^}]*border:\s*0/s);
+  assert.match(css, /\.form input\.sr-only(?:,\s*\.form \.sr-only input)?\s*\{[^}]*width:\s*1px[^}]*min-height:\s*1px[^}]*padding:\s*0[^}]*border:\s*0/s);
 });
 
 test("la parole de Claire s’écrit dans un encart visible, hors de son visage", async () => {
