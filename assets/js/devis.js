@@ -8,6 +8,41 @@
   const dropzone = form.querySelector(".dropzone");
   const dropLabel = form.querySelector("[data-drop-label]");
   const serviceField = form.querySelector("#devis-service");
+  const fields = {
+    name: form.querySelector("#devis-name"),
+    phone: form.querySelector("#devis-phone"),
+    email: form.querySelector("#devis-email"),
+    city: form.querySelector("#devis-city"),
+    service: serviceField,
+    description: form.querySelector("#devis-description")
+  };
+
+  const validateEmail = () => {
+    if (!api.required(fields.email, "votre e-mail")) return false;
+    if (fields.email.value && !api.emailPattern.test(fields.email.value)) {
+      api.setError(fields.email, "L'adresse e-mail n'est pas valide.");
+      return false;
+    }
+    api.setError(fields.email, "");
+    return true;
+  };
+  const validatePhone = () => {
+    if (!api.required(fields.phone, "votre téléphone")) return false;
+    if (fields.phone.value && !api.phonePattern.test(fields.phone.value)) {
+      api.setError(fields.phone, "Le numéro de téléphone n'est pas valide.");
+      return false;
+    }
+    api.setError(fields.phone, "");
+    return true;
+  };
+  if (api.bindLiveValidation) {
+    api.bindLiveValidation(fields.name, () => api.required(fields.name, "votre nom et prénom"));
+    api.bindLiveValidation(fields.phone, validatePhone);
+    api.bindLiveValidation(fields.email, validateEmail);
+    api.bindLiveValidation(fields.city, () => api.required(fields.city, "votre commune"));
+    api.bindLiveValidation(fields.service, () => api.required(fields.service, "le type de service"));
+    api.bindLiveValidation(fields.description, () => api.required(fields.description, "la description du besoin"));
+  }
 
   if (serviceField) {
     const requested = new URLSearchParams(window.location.search).get("service");
@@ -60,14 +95,6 @@
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    const fields = {
-      name: form.querySelector("#devis-name"),
-      phone: form.querySelector("#devis-phone"),
-      email: form.querySelector("#devis-email"),
-      city: form.querySelector("#devis-city"),
-      service: form.querySelector("#devis-service"),
-      description: form.querySelector("#devis-description")
-    };
     let ok = true;
 
     ok = api.required(fields.name, "votre nom et prénom") && ok;

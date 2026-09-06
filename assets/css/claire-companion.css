@@ -847,7 +847,7 @@ body.claire-conversation-open {
   left: calc(var(--claire-stage-width) + 0.9rem);
   right: 0.9rem;
   bottom: 0.9rem;
-  max-height: min(28vh, 240px);
+  max-height: min(42vh, 360px);
   overflow: auto;
 }
 
@@ -912,6 +912,7 @@ body.claire-conversation-open {
   color: var(--claire-muted);
   font-size: 0.72rem;
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .claire-live-prompt__quest li[data-filled="1"] {
@@ -1075,6 +1076,22 @@ body.claire-content-loading #contenu {
   .claire-companion[data-state="guided"] .claire-live-prompt,
   .claire-companion[data-state="guided"] .claire-live-prompt:not([hidden]) {
     display: none;
+  }
+  body.claire-quote-quest.claire-is-guided .claire-companion[data-state="guided"] .claire-live-prompt:not([hidden]) {
+    display: grid;
+    top: calc(var(--claire-mobile-chrome) + var(--header-height) + 0.35rem);
+    bottom: auto;
+    left: 0.5rem;
+    right: 0.5rem;
+    max-height: none;
+    padding: 0.4rem 0.55rem 0.45rem;
+  }
+  body.claire-quote-quest.claire-is-guided .claire-live-prompt__line--speech {
+    display: none;
+  }
+  body.claire-quote-quest.claire-is-guided {
+    padding-top: calc(var(--claire-mobile-chrome) + 4.8rem);
+    scroll-padding-top: calc(var(--claire-mobile-chrome) + var(--header-height) + 5.2rem);
   }
   .claire-session-notice {
     top: 3.4rem;

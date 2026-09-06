@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260906-it40)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260906-it40)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260906-it41)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260906-it41)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -38,7 +38,7 @@ test("les modules Claire sont versionnés pour éviter un cache 24 h cassé", as
     const bare = [...source.matchAll(/(?:from|import)\(?["'](\.\/[^"'?]+)["']/g)].map((match) => match[1]);
     assert.deepEqual(bare, [], `${file} importe sans ?v= : ${bare.join(", ")}`);
     if (source.includes("claire-core.mjs")) {
-      assert.match(source, /claire-core\.mjs\?v=20260906-it40/);
+      assert.match(source, /claire-core\.mjs\?v=20260906-it41/);
     }
   }
 });
@@ -132,7 +132,7 @@ test("Claire accueille l'utilisateur et explique son rôle chez InfoServ2A", asy
   assert.doesNotMatch(core, /Je reste uniquement dans l’informatique/);
   assert.match(client, /CLAIRE_WELCOME/);
   assert.match(endpoint, /CLAIRE_WELCOME/);
-  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.30/);
+  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.31/);
   assert.match(endpoint, /buildClaireContextPrompt/);
   assert.match(endpoint, /temperature:\s*0\.75/);
   assert.match(endpoint, /opening_text:\s*CLAIRE_WELCOME/);
@@ -484,8 +484,11 @@ test("E-TIME-01 : 45 s avant la fin LiveAvatar, relancer sans quitter la page", 
   assert.match(css, /\.claire-live-prompt__quest:not\(\[hidden\]\) \{[\s\S]*pointer-events: none/);
   const reconnect = client.match(/async performLiveAvatarReconnect\([\s\S]*?\n  \}/)?.[0] || "";
   assert.match(reconnect, /provider\.reconnect/);
+  assert.match(reconnect, /skipLiveResumeCue = true/);
+  assert.match(reconnect, /welcomeShown = true/);
   assert.match(reconnect, /navigateInternal\(href, \{ announce: false, silent: true, historyMode: "replace" \}/);
   assert.doesNotMatch(reconnect, /location\.reload|location\.assign|enterManualMode|this\.interrupt\(/);
+  assert.doesNotMatch(reconnect, /scheduleWelcomeTranscript|showWelcome/);
   assert.match(client, /onSessionStopped/);
   assert.match(provider, /async reconnect\(/);
   assert.match(provider, /notifySessionStopped/);
@@ -582,11 +585,21 @@ test("audit externe corroboré : écrit dès l’arrivée, formulaires, rail, ba
   assert.match(devis, /Elles ne partent pas avec le premier mail/);
   assert.match(devis, /method="post"/);
   assert.match(devis, /Envoyer la demande à/);
+  assert.match(devis, /Les champs marqués \* sont obligatoires/);
+  assert.match(devis, /aria-describedby="devis-name-error"/);
   assert.match(contact, /placeholder="Ex\. Je cherche un dépannage PC à Porto-Vecchio\."/);
   assert.match(contact, /Nom <span class="req"/);
   assert.match(contact, /method="post"/);
   assert.match(contact, /Envoyer le message à/);
+  assert.match(contact, /Les champs marqués \* sont obligatoires/);
+  assert.match(contact, /aria-describedby="contact-name-error"/);
+  assert.match(client, /claire-quote-quest/);
+  assert.match(client, /this\.avatarSpoken = ""/);
+  const main = await readFile(path.join(ROOT, "assets/js/main.js"), "utf8");
+  assert.match(main, /bindLiveValidation/);
+  assert.match(main, /Veuillez renseigner /);
   assert.match(css, /body\.claire-is-manual \{[\s\S]*padding-bottom: calc\(6\.5rem/);
+  assert.match(css, /body\.claire-quote-quest/);
   assert.match(headers, /static\.cloudflareinsights\.com/);
 });
 

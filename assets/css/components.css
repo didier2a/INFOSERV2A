@@ -708,6 +708,7 @@ body.nav-open { overflow: hidden; }
 .form input:focus-visible,
 .form select:focus-visible,
 .form textarea:focus-visible { border-color: var(--color-accent); }
+.form-hint { margin: 0 0 0.85rem; color: var(--color-muted); font-size: 0.9rem; }
 .field-error { min-height: 1.1rem; color: var(--color-error); font-size: 0.85rem; }
 
 .form-status { display: none; padding: 0.9rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border); }

@@ -25,11 +25,11 @@
   <link rel="icon" href="assets/images/logo/favicon.png?v=2" type="image/png" sizes="192x192">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
   <link rel="manifest" href="site.webmanifest">
-  <link rel="stylesheet" href="assets/css/variables.css?v=20260906-it40">
-  <link rel="stylesheet" href="assets/css/main.css?v=20260906-it40">
-  <link rel="stylesheet" href="assets/css/components.css?v=20260906-it40">
-  <link rel="stylesheet" href="assets/css/responsive.css?v=20260906-it40">
-  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260906-it40">
+  <link rel="stylesheet" href="assets/css/variables.css?v=20260906-it41">
+  <link rel="stylesheet" href="assets/css/main.css?v=20260906-it41">
+  <link rel="stylesheet" href="assets/css/components.css?v=20260906-it41">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=20260906-it41">
+  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260906-it41">
   <script type="application/ld+json">{
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
@@ -433,6 +433,7 @@
 
 
 
+
 <main id="contenu" class="site-main">
   
     <section class="page-hero"><div class="container">
@@ -452,13 +453,14 @@
         </ul>
       </div>
       <form class="form" id="devis-form" method="post" action="/api/send-email" novalidate data-mail="contact@infoserv2a.pro" data-endpoint="/api/send-email">
-        <div class="form-field"><label for="devis-name">Nom / prénom <span class="req" aria-hidden="true">*</span></label><input id="devis-name" name="name" autocomplete="name" required placeholder="Ex. Marie Rossi" aria-required="true"><span class="field-error"></span></div>
-        <div class="form-field"><label for="devis-phone">Téléphone <span class="req" aria-hidden="true">*</span></label><input id="devis-phone" name="phone" type="tel" autocomplete="tel" required placeholder="Ex. 07 45 15 60 76" aria-required="true"><span class="field-error"></span></div>
-        <div class="form-field"><label for="devis-email">E-mail <span class="req" aria-hidden="true">*</span></label><input id="devis-email" name="email" type="email" autocomplete="email" required placeholder="Ex. marie@exemple.fr" aria-required="true"><span class="field-error"></span></div>
-        <div class="form-field"><label for="devis-city">Commune <span class="req" aria-hidden="true">*</span></label><input id="devis-city" name="city" autocomplete="address-level2" required placeholder="Ex. Porto-Vecchio" aria-required="true"><span class="field-error"></span></div>
+        <p class="form-hint">Les champs marqués * sont obligatoires. Un message s’affiche sous le champ si quelque chose manque.</p>
+        <div class="form-field"><label for="devis-name">Nom / prénom <span class="req" aria-hidden="true">*</span></label><input id="devis-name" name="name" autocomplete="name" required placeholder="Ex. Marie Rossi" aria-required="true" aria-describedby="devis-name-error"><span class="field-error" id="devis-name-error"></span></div>
+        <div class="form-field"><label for="devis-phone">Téléphone <span class="req" aria-hidden="true">*</span></label><input id="devis-phone" name="phone" type="tel" autocomplete="tel" required placeholder="Ex. 07 45 15 60 76" aria-required="true" aria-describedby="devis-phone-error"><span class="field-error" id="devis-phone-error"></span></div>
+        <div class="form-field"><label for="devis-email">E-mail <span class="req" aria-hidden="true">*</span></label><input id="devis-email" name="email" type="email" autocomplete="email" required placeholder="Ex. marie@exemple.fr" aria-required="true" aria-describedby="devis-email-error"><span class="field-error" id="devis-email-error"></span></div>
+        <div class="form-field"><label for="devis-city">Commune <span class="req" aria-hidden="true">*</span></label><input id="devis-city" name="city" autocomplete="address-level2" required placeholder="Ex. Porto-Vecchio" aria-required="true" aria-describedby="devis-city-error"><span class="field-error" id="devis-city-error"></span></div>
         <div class="form-field">
           <label for="devis-service">Type de service <span class="req" aria-hidden="true">*</span></label>
-          <select id="devis-service" name="service" required aria-required="true">
+          <select id="devis-service" name="service" required aria-required="true" aria-describedby="devis-service-error">
             <option value="">Choisir un service</option>
             <option value="videosurveillance">Vidéosurveillance</option>
             <option value="creation-site-web">Création / refonte de site web</option>
@@ -469,9 +471,9 @@
             <option value="recuperation-donnees">Récupération de données</option>
             <option value="autre">Autre</option>
           </select>
-          <span class="field-error"></span>
+          <span class="field-error" id="devis-service-error"></span>
         </div>
-        <div class="form-field"><label for="devis-description">Description du besoin <span class="req" aria-hidden="true">*</span></label><textarea id="devis-description" name="description" required aria-required="true" placeholder="Ex. Caméra 4G pour un hangar isolé, enregistrement 15 jours."></textarea><span class="field-error"></span></div>
+        <div class="form-field"><label for="devis-description">Description du besoin <span class="req" aria-hidden="true">*</span></label><textarea id="devis-description" name="description" required aria-required="true" placeholder="Ex. Caméra 4G pour un hangar isolé, enregistrement 15 jours." aria-describedby="devis-description-error"></textarea><span class="field-error" id="devis-description-error"></span></div>
         <div class="form-field">
           <label for="devis-files">Pièces jointes</label>
           <p class="form-field__lead" id="devis-files-help">Elles ne partent pas avec le premier mail. Listez-les ici, puis renvoyez-les en réponse si besoin.</p>
@@ -619,9 +621,10 @@
 
 
 
-<script src="assets/js/main.js?v=20260906-it40" defer></script>
-  <script src="assets/js/navigation.js?v=20260906-it40" defer></script>
-  <script src="assets/js/devis.js?v=20260906-it40" defer></script>
-  <script type="module" src="assets/js/claire-companion.js?v=20260906-it40"></script>
+
+<script src="assets/js/main.js?v=20260906-it41" defer></script>
+  <script src="assets/js/navigation.js?v=20260906-it41" defer></script>
+  <script src="assets/js/devis.js?v=20260906-it41" defer></script>
+  <script type="module" src="assets/js/claire-companion.js?v=20260906-it41"></script>
 </body>
 </html>

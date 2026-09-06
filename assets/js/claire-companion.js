@@ -19,7 +19,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260906-it40";
+} from "./claire-core.mjs?v=20260906-it41";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -40,20 +40,20 @@ import {
   alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260906-it40";
-import { describeEmailSendOutcome } from "./site-email.mjs?v=20260906-it40";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260906-it40";
+} from "./claire-session-memory.mjs?v=20260906-it41";
+import { describeEmailSendOutcome } from "./site-email.mjs?v=20260906-it41";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260906-it41";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260906-it40";
-import "./contact.js?v=20260906-it40";
-import "./devis.js?v=20260906-it40";
+} from "./claire-site-runtime-adapter.mjs?v=20260906-it41";
+import "./contact.js?v=20260906-it41";
+import "./devis.js?v=20260906-it41";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260906-it40";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260906-it40";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260906-it41";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260906-it41";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -748,7 +748,7 @@ export class ClaireCompanion {
         this.pendingLiveMemory = hasMemoryContent(loadSessionMemory());
         this.skipLiveResumeCue = true;
         this.scheduleSilentSiteSync();
-        if (skipWelcome) this.welcomeShown = true;
+        if (skipWelcome || this.welcomeShown || this.pendingLiveMemory) this.welcomeShown = true;
         else this.scheduleWelcomeTranscript(greeting);
         void this.keepScreenAwake();
       } catch {
@@ -836,8 +836,8 @@ export class ClaireCompanion {
   showWelcome(text) {
     this.updateLiveCaption(text);
     if (this.welcomeShown) return;
-    const live = this.nodes.transcript?.querySelector('.claire-turn--companion[data-live="1"]');
-    if (live) {
+    const already = this.nodes.transcript?.querySelector(".claire-turn--companion");
+    if (already) {
       this.welcomeShown = true;
       return;
     }
@@ -1046,6 +1046,8 @@ export class ClaireCompanion {
       }
       this.setEngineStatus("liveavatar-realtime", "Claire en direct");
       this.armLiveAvatarSessionWatch({ restart: true });
+      this.skipLiveResumeCue = true;
+      this.welcomeShown = true;
       this.pendingLiveMemory = hasMemoryContent(loadSessionMemory());
       this.scheduleSilentSiteSync();
       if (keepGuided && this.state !== "manual") {
@@ -1077,11 +1079,12 @@ export class ClaireCompanion {
           this.queueSpeechFollow(text);
         },
         onAvatarSpeakStart: () => {
-          const { unlocked } = this.speechFollowGate.onAvatarSpeakStart();
-          if (unlocked) this.avatarSpoken = "";
+          this.speechFollowGate.onAvatarSpeakStart();
           this.showLivePrompt();
         },
         onAvatarSpeakEnd: () => {
+          const { unlocked } = this.speechFollowGate.onAvatarSpeakEnd();
+          if (unlocked) this.avatarSpoken = "";
           this.finalizeLiveCompanionTurn();
           this.updateLiveContext();
           this.flushPendingLiveMemory();
@@ -1120,7 +1123,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260906-it40");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260906-it41");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
@@ -1174,6 +1177,7 @@ export class ClaireCompanion {
     if (!this.nodes.livePrompt) return;
     if (this.state !== "guided") {
       this.nodes.livePrompt.hidden = true;
+      document.body.classList.remove("claire-quote-quest");
       return;
     }
     this.nodes.livePrompt.hidden = false;
@@ -1209,9 +1213,11 @@ export class ClaireCompanion {
     if (!shouldShowQuoteQuest(memory, snapshot.page?.id || snapshot.activePage)) {
       quest.hidden = true;
       quest.replaceChildren();
+      document.body.classList.remove("claire-quote-quest");
       return;
     }
     quest.hidden = false;
+    document.body.classList.add("claire-quote-quest");
     quest.replaceChildren();
     quoteQuestionnaire(memory).forEach((item) => {
       const li = document.createElement("li");
@@ -1576,6 +1582,7 @@ export class ClaireCompanion {
       this.setState("guided");
       this.renderSuggestions();
       this.syncVisibleForms();
+      this.showLivePrompt();
       if (isolateVoice) {
         this.pushPageContext(snapshot);
         this.setStatus(
@@ -1679,6 +1686,7 @@ export class ClaireCompanion {
     const hash = decodeURIComponent(String(url.hash || "").replace(/^#/, ""));
     const followKey = page ? `${page.id}#${hash || ""}` : "";
     this.speechFollowGate.claimUserNavigation(url.href, followKey);
+    this.avatarSpoken = "";
     clearTimeout(this.followTimer);
     this.followTimer = 0;
     if (followKey) this.lastFollowKey = followKey;

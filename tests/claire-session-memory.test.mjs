@@ -304,6 +304,8 @@ test("un marqueur interne LiveAvatar n’alimente pas la mémoire ni le question
   assert.equal(shouldShowQuoteQuest({ need: "caméra 4G" }, "home"), false);
   assert.equal(shouldShowQuoteQuest({ visitor: { name: "Marie" } }, "home"), true);
   assert.equal(shouldShowQuoteQuest({ visitor: { name: "Marie" } }, "quote"), true);
+  assert.equal(shouldShowQuoteQuest({}, "quote"), true);
+  assert.equal(quoteQuestionnaire({}).length, 6);
 });
 
 test("la mémoire live reste courte pour ne pas bloquer l’envoi", () => {
