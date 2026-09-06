@@ -1,0 +1,235 @@
+:root {
+  --ink: #071827;
+  --ink-soft: #163044;
+  --muted: #5b6975;
+  --ivory: #f7f3ea;
+  --paper: #fffdf8;
+  --teal: #16776f;
+  --teal-bright: #2aa89d;
+  --cyan: #00c4d6;
+  --line: rgba(7, 24, 39, 0.12);
+  --shadow: 0 28px 80px rgba(7, 24, 39, 0.18);
+  --sans: "Avenir Next", "Segoe UI Variable", "Segoe UI", "Helvetica Neue", ui-sans-serif, system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  color: var(--ink);
+  background: #0b1a24;
+  font-family: var(--sans);
+}
+
+body {
+  min-height: 100svh;
+}
+
+.mock-ribbon {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  margin: 0;
+  padding: 0.45rem 1rem;
+  text-align: center;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #e8fff8;
+  background: #0f3d38;
+}
+
+.storefront {
+  display: grid;
+  min-height: calc(100svh - 2rem);
+  background: var(--ivory);
+}
+
+.storefront__window {
+  position: relative;
+  margin: 0;
+  min-height: 46vh;
+  overflow: hidden;
+  background: #12202c;
+}
+
+.storefront__window img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 8%;
+}
+
+.storefront__chip {
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(7, 24, 39, 0.72);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.storefront__card {
+  display: grid;
+  align-content: center;
+  gap: 1.4rem;
+  padding: clamp(1.4rem, 4vw, 3.2rem);
+}
+
+.storefront__brand {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.storefront__logo {
+  display: block;
+  width: min(280px, 86vw);
+  height: auto;
+}
+
+.storefront__place {
+  margin: 0;
+  color: var(--teal);
+  font-size: 0.82rem;
+  font-weight: 760;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.storefront__copy h1,
+.storefront__copy h2 {
+  margin: 0.2rem 0 0;
+  max-width: 16ch;
+  font-size: clamp(2.1rem, 5vw, 3.4rem);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.storefront__anchor {
+  margin: 0;
+  color: var(--teal);
+  font-size: 1rem;
+  font-weight: 750;
+}
+
+.storefront__lead {
+  margin: 0.85rem 0 0;
+  max-width: 42ch;
+  color: var(--ink-soft);
+  font-size: 1.05rem;
+  line-height: 1.55;
+}
+
+.doors {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.4rem;
+}
+
+.door {
+  appearance: none;
+  display: grid;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0.95rem 1.15rem 1.05rem;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+  background: var(--paper);
+  box-shadow: 0 10px 30px rgba(7, 24, 39, 0.05);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.door:hover,
+.door:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(22, 119, 111, 0.45);
+  box-shadow: 0 16px 36px rgba(7, 24, 39, 0.1);
+  outline: none;
+}
+
+.door--claire {
+  color: #fff8ee;
+  border-color: transparent;
+  background:
+    linear-gradient(135deg, #124f4a 0%, #1b7d74 58%, #2aa89d 100%);
+  box-shadow: 0 16px 40px rgba(22, 119, 111, 0.28);
+}
+
+.door--claire:hover,
+.door--claire:focus-visible {
+  border-color: transparent;
+  box-shadow: 0 20px 48px rgba(22, 119, 111, 0.36);
+}
+
+.door--ghost {
+  background: transparent;
+  box-shadow: none;
+}
+
+.door__kicker {
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.78;
+}
+
+.door__label {
+  font-size: 1.28rem;
+  font-weight: 780;
+  letter-spacing: -0.02em;
+}
+
+.door__hint {
+  color: inherit;
+  opacity: 0.82;
+  font-size: 0.92rem;
+}
+
+.storefront__fine {
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+@media (min-width: 920px) {
+  .storefront {
+    grid-template-columns: minmax(420px, 1.08fr) minmax(460px, 0.92fr);
+    min-height: 100svh;
+  }
+
+  .mock-ribbon { position: fixed; left: 0; right: 0; }
+
+  .storefront__window {
+    min-height: 100svh;
+  }
+
+  .storefront__window img {
+    object-position: 46% 16%;
+  }
+
+  .storefront__card {
+    padding: 5.5rem 4.2rem 3.5rem;
+  }
+
+  .doors {
+    grid-template-columns: 1.2fr 0.9fr;
+    align-items: stretch;
+  }
+
+  .door--site {
+    align-content: center;
+  }
+}

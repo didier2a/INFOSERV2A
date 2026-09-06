@@ -5,5 +5,7 @@ Disallow: /claire-lab.html
 Disallow: /claire-lab
 Disallow: /claire-aidant-figma.html
 Disallow: /claire-aidant-figma
+Disallow: /maquette-arrivee.html
+Disallow: /maquette-arrivee
 
 Sitemap: https://infoserv2a.pro/sitemap.xml

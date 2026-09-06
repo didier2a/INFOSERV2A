@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Maquette d’arrivée — InfoServ2A · Claire</title>
+  <meta name="description" content="Maquette : Claire ouvre la boutique InfoServ2A. Logo + deux portes.">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#071827">
+  <link rel="icon" href="assets/images/logo/favicon.png?v=2" type="image/png" sizes="192x192">
+  <link rel="stylesheet" href="assets/css/maquette-arrivee.css">
+</head>
+<body>
+  <p class="mock-ribbon">Maquette — rien n’est envoyé, le micro ne s’allume pas</p>
+
+  <main class="storefront" data-view="welcome" id="storefront">
+    <figure class="storefront__window" aria-hidden="true">
+      <img src="assets/images/companion/claire-liveavatar-1080x1920.jpg" alt="">
+      <span class="storefront__chip">Votre assistante</span>
+    </figure>
+
+    <section class="storefront__card" aria-labelledby="arrivee-title">
+      <header class="storefront__brand">
+        <img class="storefront__logo" src="assets/images/logo/infoserv2a-logo-light.svg" alt="InfoServ2A — Cyber &amp; Réseau" width="280" height="65">
+        <p class="storefront__place">Porto-Vecchio · Corse-du-Sud</p>
+      </header>
+
+      <div class="storefront__copy" data-panel="welcome">
+        <p class="storefront__anchor">Vous êtes bien chez InfoServ2A.</p>
+        <h1 id="arrivee-title">Claire vous ouvre la boutique.</h1>
+        <p class="storefront__lead">Elle est l’assistante du site — présentatrice, collègue, un peu la légèreté d’InfoServ2A. Dites-lui ce qui vous amène&nbsp;: elle vous situe, elle vous guide, elle prépare votre demande.</p>
+
+        <div class="doors" role="group" aria-label="Deux façons d’entrer">
+          <button class="door door--claire" type="button" data-door="claire">
+            <span class="door__kicker">La devanture</span>
+            <span class="door__label">Parler à Claire</span>
+            <span class="door__hint">Elle vous écoute. C’est le plus simple.</span>
+          </button>
+          <button class="door door--site" type="button" data-door="site">
+            <span class="door__kicker">À votre rythme</span>
+            <span class="door__label">Voir le site d’abord</span>
+            <span class="door__hint">Feuilletez les offres, sans micro.</span>
+          </button>
+        </div>
+
+        <p class="storefront__fine">Le micro ne s’allume que si vous choisissez de lui parler.</p>
+      </div>
+
+      <div class="storefront__copy" data-panel="claire" hidden>
+        <p class="storefront__anchor">Ici, sur le vrai site, Claire prendrait la parole.</p>
+        <h2>« Bonjour — je suis Claire. Je vous écoute. »</h2>
+        <p class="storefront__lead">Maquette seulement : pas de voix, pas d’envoi. Sur www, ce bouton démarre l’accueil. Vous restez chez InfoServ2A ; Claire est la collaboratrice qui vous oriente.</p>
+        <button class="door door--ghost" type="button" data-door="back">Revenir aux deux portes</button>
+      </div>
+
+      <div class="storefront__copy" data-panel="site" hidden>
+        <p class="storefront__anchor">Ici, le vrai site s’ouvrirait — accueil, offres, devis, téléphone.</p>
+        <h2>Le magasin reste le vôtre.</h2>
+        <p class="storefront__lead">Claire ne disparaît pas : une barre « Reprendre avec Claire » resterait à portée. Vous n’êtes pas « sans elle ». Vous feuilletez, et elle reste l’hôtesse.</p>
+        <div class="doors">
+          <button class="door door--claire" type="button" data-door="claire">
+            <span class="door__kicker">Quand vous voulez</span>
+            <span class="door__label">Parler à Claire</span>
+            <span class="door__hint">Elle reprend là où vous en êtes.</span>
+          </button>
+          <button class="door door--ghost" type="button" data-door="back">Revenir aux deux portes</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      var root = document.getElementById("storefront");
+      if (!root) return;
+      root.addEventListener("click", function (event) {
+        var button = event.target.closest("[data-door]");
+        if (!button) return;
+        var next = button.getAttribute("data-door");
+        var view = next === "back" ? "welcome" : next;
+        root.setAttribute("data-view", view);
+        root.querySelectorAll("[data-panel]").forEach(function (panel) {
+          panel.hidden = panel.getAttribute("data-panel") !== view;
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

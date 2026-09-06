@@ -53,6 +53,7 @@ export default {
     if (
       pathname === "/claire-lab" || pathname === "/claire-lab/"
       || pathname === "/claire-aidant-figma" || pathname === "/claire-aidant-figma/"
+      || pathname === "/maquette-arrivee" || pathname === "/maquette-arrivee/"
     ) {
       if (request.method !== "GET" && request.method !== "HEAD") {
         return methodNotAllowed(["GET", "HEAD"]);
