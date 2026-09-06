@@ -19,7 +19,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260906-it41";
+} from "./claire-core.mjs?v=20260906-it42";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -40,23 +40,24 @@ import {
   alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260906-it41";
-import { describeEmailSendOutcome } from "./site-email.mjs?v=20260906-it41";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260906-it41";
+} from "./claire-session-memory.mjs?v=20260906-it42";
+import { describeEmailSendOutcome } from "./site-email.mjs?v=20260906-it42";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260906-it42";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260906-it41";
-import "./contact.js?v=20260906-it41";
-import "./devis.js?v=20260906-it41";
+} from "./claire-site-runtime-adapter.mjs?v=20260906-it42";
+import "./contact.js?v=20260906-it42";
+import "./devis.js?v=20260906-it42";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260906-it41";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260906-it41";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260906-it42";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260906-it42";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
+const SPEAKING_STAGE_HOLD_MS = 1000;
 const PREFETCH_PAGE_IDS = ["videosurveillance", "web", "quote", "contact"];
 const LIVEAVATAR_CLOUD_FALLBACKS = [
   "https://infoserv2a.infoserv2a.workers.dev",
@@ -134,10 +135,14 @@ function storageRemove(key) {
 
 function isPhoneShell() {
   try {
-    return Boolean(globalThis.matchMedia?.("(max-width: 820px), ((pointer: coarse) and (hover: none))")?.matches);
+    return Boolean(globalThis.matchMedia?.("(max-width: 820px)")?.matches);
   } catch {
     return false;
   }
+}
+
+function isSpeakingPresence(value) {
+  return value === "speaking" || value === "sound";
 }
 
 function isTypingControl(node) {
@@ -308,6 +313,7 @@ export class ClaireCompanion {
     this.pendingLiveMemory = false;
     this.skipLiveResumeCue = false;
     this.transcriptRestored = false;
+    this.speakingStageTimer = 0;
     this.browserVoice = new BrowserVoiceProvider({
       onTranscript: (text, final) => this.handleTranscript(text, final),
       onStatus: (value, label) => this.setStatus(value, label)
@@ -476,12 +482,14 @@ export class ClaireCompanion {
     this.nodes.mic?.addEventListener("click", () => void this.toggleMicrophone());
     this.nodes.stage?.addEventListener("click", (event) => {
       if (event.target?.closest?.("button, a, input")) return;
-      if (this.provider?.avatarSpeaking) {
+      if (this.provider?.avatarSpeaking || document.body.classList.contains("claire-stage-speaking")) {
         this.interrupt();
         return;
       }
       void this.provider?.resumeMedia?.();
     });
+    this.nodes.input?.addEventListener("focus", () => this.yieldToHumanType());
+    this.nodes.input?.addEventListener("input", () => this.yieldToHumanType());
     this.nodes.resultLink?.addEventListener("click", () => storageSet(STORAGE_MODE, "guided"));
     document.addEventListener("click", (event) => this.handleSiteLink(event));
     globalThis.addEventListener("popstate", () => {
@@ -557,10 +565,12 @@ export class ClaireCompanion {
     const typing = isTypingControl(document.activeElement);
     document.body.classList.toggle("claire-keyboard-open", Boolean(phone && typing));
     if (typing && isSiteContentTarget(document.activeElement)) this.closeGuidedTranscript();
+    this.syncSpeakingStage(this.root?.dataset.presence, { immediate: !phone });
   }
 
   handleSiteFieldFocus(event) {
     const node = event.target;
+    if (isTypingControl(node)) this.yieldToHumanType();
     if (isSiteContentTarget(node) && isTypingControl(node)) this.closeGuidedTranscript();
     this.syncViewportShell();
   }
@@ -654,6 +664,7 @@ export class ClaireCompanion {
     }
     this.showLivePrompt();
     this.syncViewportShell();
+    this.syncSpeakingStage(this.root?.dataset.presence, { immediate: next !== "guided" });
   }
 
   setStatus(value, label) {
@@ -667,6 +678,37 @@ export class ClaireCompanion {
     if (this.nodes.interrupt) this.nodes.interrupt.hidden = value !== "speaking";
     if (this.nodes.stage) this.nodes.stage.dataset.presence = value;
     this.root.dataset.presence = value;
+    this.syncSpeakingStage(value);
+  }
+
+  syncSpeakingStage(presence = this.root?.dataset.presence, { immediate = false } = {}) {
+    const phone = isPhoneShell();
+    const speaking = this.state === "guided" && phone && isSpeakingPresence(presence);
+    if (speaking) {
+      clearTimeout(this.speakingStageTimer);
+      this.speakingStageTimer = 0;
+      document.body.classList.add("claire-stage-speaking");
+      return;
+    }
+    if (immediate || !phone || this.state !== "guided" || !document.body.classList.contains("claire-stage-speaking")) {
+      clearTimeout(this.speakingStageTimer);
+      this.speakingStageTimer = 0;
+      document.body.classList.remove("claire-stage-speaking");
+      return;
+    }
+    clearTimeout(this.speakingStageTimer);
+    this.speakingStageTimer = globalThis.setTimeout(() => {
+      document.body.classList.remove("claire-stage-speaking");
+      this.speakingStageTimer = 0;
+    }, SPEAKING_STAGE_HOLD_MS);
+  }
+
+  yieldToHumanType() {
+    const speaking = isSpeakingPresence(this.root?.dataset.presence)
+      || Boolean(this.provider?.avatarSpeaking)
+      || document.body.classList.contains("claire-stage-speaking");
+    if (!speaking) return;
+    this.interrupt();
   }
 
   setEngineStatus(provider, label) {
@@ -690,7 +732,7 @@ export class ClaireCompanion {
 
   async start() {
     if (this.startLock) return this.startLock;
-    this.startLock = this.connectLiveSession({ microphone: true, state: "shared" });
+    this.startLock = this.connectLiveSession({ microphone: true, state: "guided" });
     try {
       return await this.startLock;
     } finally {
@@ -707,19 +749,19 @@ export class ClaireCompanion {
     this.welcomeShown = true;
     storageSet(STORAGE_SEEN, "1");
     if (this.provider?.connected) {
-      storageSet(STORAGE_MODE, "shared");
-      this.setState("shared");
+      storageSet(STORAGE_MODE, "guided");
+      this.setState("guided");
       this.setStatus("ready", "Écrivez-moi");
       this.setEngineStatus(this.root.dataset.provider || "liveavatar-realtime", "Claire en direct");
       this.focusComposer();
       return;
     }
-    await this.connectLiveSession({ microphone: false, state: "shared", skipWelcome: true });
+    await this.connectLiveSession({ microphone: false, state: "guided", skipWelcome: true });
   }
 
   async connectLiveSession({ microphone = true, state = "shared", skipWelcome = false } = {}) {
     storageSet(STORAGE_SEEN, "1");
-    storageSet(STORAGE_MODE, "shared");
+    storageSet(STORAGE_MODE, state);
     this.audioEnabled = true;
     this.prepareLocalVideo();
     this.provider?.primeAudio?.();
@@ -799,9 +841,9 @@ export class ClaireCompanion {
   }
 
   recall() {
-    storageSet(STORAGE_MODE, "shared");
+    storageSet(STORAGE_MODE, "guided");
     this.audioEnabled = true;
-    this.setState("shared");
+    this.setState("guided");
     this.setStatus("ready", "Prête");
     void this.provider?.ensureMicrophone?.();
     this.focusComposer();
@@ -1123,7 +1165,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260906-it41");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260906-it42");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
@@ -1781,6 +1823,7 @@ export class ClaireCompanion {
     this.clearSpeechFollow({ keepLastPage: false });
     if (this.provider?.interrupt) this.provider.interrupt();
     this.browserVoice.interrupt();
+    this.syncSpeakingStage("listening", { immediate: true });
     this.setStatus("listening", "J’écoute");
   }
 
