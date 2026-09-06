@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260905-it38)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260905-it38)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260906-it39)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260906-it39)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -38,7 +38,7 @@ test("les modules Claire sont versionnés pour éviter un cache 24 h cassé", as
     const bare = [...source.matchAll(/(?:from|import)\(?["'](\.\/[^"'?]+)["']/g)].map((match) => match[1]);
     assert.deepEqual(bare, [], `${file} importe sans ?v= : ${bare.join(", ")}`);
     if (source.includes("claire-core.mjs")) {
-      assert.match(source, /claire-core\.mjs\?v=20260905-it38/);
+      assert.match(source, /claire-core\.mjs\?v=20260906-it39/);
     }
   }
 });
@@ -122,7 +122,7 @@ test("Claire accueille l'utilisateur et explique son rôle chez InfoServ2A", asy
     readFile(path.join(ROOT, "functions/api/liveavatar-session.js"), "utf8"),
     readFile(path.join(ROOT, "assets/js/claire-core.mjs"), "utf8")
   ]);
-  assert.match(core, /Moi c’est Claire, votre aidante Live Avatar/);
+  assert.match(core, /Moi c’est Claire, votre aidante chez InfoServ2A/);
   assert.match(core, /Je vous écoute/);
   assert.match(core, /navigation manuelle reste toujours disponible/);
   assert.match(core, /être interrompue à tout moment/);
@@ -130,7 +130,7 @@ test("Claire accueille l'utilisateur et explique son rôle chez InfoServ2A", asy
   assert.doesNotMatch(core, /Je reste uniquement dans l’informatique/);
   assert.match(client, /CLAIRE_WELCOME/);
   assert.match(endpoint, /CLAIRE_WELCOME/);
-  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.29/);
+  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.30/);
   assert.match(endpoint, /buildClaireContextPrompt/);
   assert.match(endpoint, /temperature:\s*0\.75/);
   assert.match(endpoint, /opening_text:\s*CLAIRE_WELCOME/);
@@ -379,6 +379,24 @@ test("une transcription vocale coupe la réponse spontanée seulement si le site
   assert.match(provider, /INFOSERV2A_SITE_BRIEFING/);
   assert.match(provider, /INFOSERV2A_SESSION_MEMORY/);
   assert.match(provider, /let kind = "chat"/);
+});
+
+test("l’arrivée montre l’enseigne InfoServ2A et deux portes", async () => {
+  const [header, css, client] = await Promise.all([
+    readFile(path.join(ROOT, "partials/header.html"), "utf8"),
+    readFile(path.join(ROOT, "assets/css/claire-companion.css"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8")
+  ]);
+  assert.match(header, /Claire vous ouvre la boutique/);
+  assert.match(header, /Vous êtes bien chez InfoServ2A/);
+  assert.match(header, /Parler à Claire/);
+  assert.match(header, /Voir le site d’abord/);
+  assert.doesNotMatch(header, /Naviguer sans Claire/);
+  assert.match(header, /infoserv2a-logo-light\.svg/);
+  assert.match(header, /Votre assistante/);
+  assert.match(css, /claire-door--claire/);
+  assert.match(client, /skipLiveResumeCue/);
+  assert.match(client, /Claire reste à portée/);
 });
 
 test("Claire se présente comme aidante Live Avatar", async () => {

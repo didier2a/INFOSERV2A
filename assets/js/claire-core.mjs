@@ -313,7 +313,7 @@ export function buildSiteBriefing(knowledge) {
   ].filter(Boolean).join("\n");
 }
 
-export const CLAIRE_WELCOME = "Bonjour. Moi c’est Claire, votre aidante Live Avatar. Je suis là, avec vous, à Porto-Vecchio, chez InfoServ2A. Prenez votre temps. Qu’est-ce qui vous amène ? Je vous écoute.";
+export const CLAIRE_WELCOME = "Bonjour. Moi c’est Claire, votre aidante chez InfoServ2A, à Porto-Vecchio. Prenez votre temps. Qu’est-ce qui vous amène ? Je vous écoute.";
 
 const INTERNAL_SITE_PROMPT = /\[INFOSERV2A_[A-Z0-9_]+\]/;
 

@@ -272,7 +272,7 @@ test("le briefing site contient tous les onglets et le rôle consultante IT", ()
   assert.match(prompt, /reste silencieuse/);
   assert.match(prompt, /Ne dis pas que tu attends le site/);
   assert.match(prompt, /Un nouveau besoin à l’oral est un nouveau devis/);
-  assert.match(CLAIRE_WELCOME, /Moi c’est Claire, votre aidante Live Avatar/);
+  assert.match(CLAIRE_WELCOME, /Moi c’est Claire, votre aidante chez InfoServ2A/);
   assert.match(CLAIRE_WELCOME, /Je vous écoute/);
   assert.doesNotMatch(CLAIRE_WELCOME, /uniquement dans l’informatique/);
   assert.doesNotMatch(CLAIRE_WELCOME, /De quoi avez-vous besoin/);
