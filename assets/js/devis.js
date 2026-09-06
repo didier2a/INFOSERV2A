@@ -28,7 +28,7 @@
       const count = filesInput.files.length;
       dropLabel.textContent = count
         ? count + " fichier(s) sélectionné(s)"
-        : "Déposez vos fichiers ici ou parcourez";
+        : "Lister des fichiers (non joints au premier envoi)";
     };
     dropzone.addEventListener("click", () => filesInput.click());
     ["dragenter", "dragover"].forEach((type) => {

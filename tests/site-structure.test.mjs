@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260906-it39)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260906-it39)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260906-it40)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260906-it40)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -38,7 +38,7 @@ test("les modules Claire sont versionnés pour éviter un cache 24 h cassé", as
     const bare = [...source.matchAll(/(?:from|import)\(?["'](\.\/[^"'?]+)["']/g)].map((match) => match[1]);
     assert.deepEqual(bare, [], `${file} importe sans ?v= : ${bare.join(", ")}`);
     if (source.includes("claire-core.mjs")) {
-      assert.match(source, /claire-core\.mjs\?v=20260906-it39/);
+      assert.match(source, /claire-core\.mjs\?v=20260906-it40/);
     }
   }
 });
@@ -69,6 +69,7 @@ test("les pages et assets référencés par Claire existent", async () => {
     "data/claire-aidant-figma.json",
     "docs/claire-aidant-plan.md",
     "docs/activer-claire-sur-infoserv2a-pro.md",
+    "docs/audit-externe-20260906-preview.md",
     "claire-lab.html",
     "claire-aidant-figma.html",
     "functions/api/liveavatar-session.js",
@@ -86,7 +87,8 @@ test("Claire conserve une scène majeure et un mode guidé, jamais une bulle de 
     readFile(path.join(ROOT, "assets/js/claire-liveavatar-provider.js"), "utf8")
   ]);
   assert.match(html, /data-claire-guided/);
-  assert.match(html, /OpenAI Realtime · voix marin/);
+  assert.match(html, /Claire en direct/);
+  assert.doesNotMatch(html, /OpenAI Realtime · voix marin/);
   assert.match(css, /--claire-stage-width: clamp\(360px, 38vw, 540px\)/);
   assert.match(css, /body\.claire-is-guided/);
   assert.doesNotMatch(css, /bottom-right|claire-mini/);
@@ -392,10 +394,16 @@ test("l’arrivée montre l’enseigne InfoServ2A et deux portes", async () => {
   assert.match(header, /Parler à Claire/);
   assert.match(header, /Voir le site d’abord/);
   assert.doesNotMatch(header, /Naviguer sans Claire/);
+  assert.match(header, /data-claire-arrival-form/);
+  assert.match(header, /id="claireArrivalCommand"/);
+  assert.match(header, /placeholder="Écrire à Claire"/);
   assert.match(header, /infoserv2a-logo-light\.svg/);
   assert.match(header, /Votre assistante/);
   assert.match(css, /claire-door--claire/);
+  assert.match(css, /\.claire-arrival-write \{/);
   assert.match(client, /skipLiveResumeCue/);
+  assert.match(client, /skipWelcome/);
+  assert.match(client, /ensureTextConversation/);
   assert.match(client, /Claire reste à portée/);
 });
 
@@ -406,12 +414,12 @@ test("Claire se présente comme aidante Live Avatar", async () => {
     readFile(path.join(ROOT, "functions/api/liveavatar-session.js"), "utf8"),
     readFile(path.join(ROOT, "data/site-knowledge.json"), "utf8")
   ]);
-  assert.match(header, /CLAIRE AIDANT LIVE/);
-  assert.match(header, /aidante LiveAvatar/);
+  assert.match(header, /Claire en direct/);
+  assert.match(header, /assistante virtuelle/);
   assert.match(header, /infoserv2a\.claire\.mode/);
   assert.match(header, /requested === "1"/);
   assert.match(header, /InfoServClaireBoot/);
-  assert.match(header, /Appuyez pour parler/);
+  assert.match(header, /Prête/);
   assert.match(header, /data-claire-interrupt/);
   assert.match(header, /Interrompre/);
   assert.match(header, /Ranger Claire/);
@@ -552,6 +560,34 @@ test("la sortie générée reste synchronisée avec le partial", async () => {
   assert.ok(start >= 0 && end > start);
   const generatedHeader = index.slice(start, end).trim();
   assert.equal(generatedHeader, partial.trim());
+});
+
+test("audit externe corroboré : écrit dès l’arrivée, formulaires, rail, badge public", async () => {
+  const [header, css, client, devis, contact, headers] = await Promise.all([
+    readFile(path.join(ROOT, "partials/header.html"), "utf8"),
+    readFile(path.join(ROOT, "assets/css/claire-companion.css"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
+    readFile(path.join(ROOT, "devis.html"), "utf8"),
+    readFile(path.join(ROOT, "contact.html"), "utf8"),
+    readFile(path.join(ROOT, "_headers"), "utf8")
+  ]);
+  assert.match(header, /data-claire-arrival-form/);
+  assert.match(header, /id="claireArrivalCommand"/);
+  assert.match(client, /ensureTextConversation/);
+  assert.match(client, /skipWelcome/);
+  assert.match(client, /const micActive = Boolean\(this\.provider\?\.listening\)/);
+  assert.match(client, /Écrivez-moi/);
+  assert.match(devis, /placeholder="Ex\. Caméra 4G pour un hangar isolé, enregistrement 15 jours\."/);
+  assert.match(devis, /Nom \/ prénom <span class="req"/);
+  assert.match(devis, /Elles ne partent pas avec le premier mail/);
+  assert.match(devis, /method="post"/);
+  assert.match(devis, /Envoyer la demande à/);
+  assert.match(contact, /placeholder="Ex\. Je cherche un dépannage PC à Porto-Vecchio\."/);
+  assert.match(contact, /Nom <span class="req"/);
+  assert.match(contact, /method="post"/);
+  assert.match(contact, /Envoyer le message à/);
+  assert.match(css, /body\.claire-is-manual \{[\s\S]*padding-bottom: calc\(6\.5rem/);
+  assert.match(headers, /static\.cloudflareinsights\.com/);
 });
 
 test("E-MAIL-01 : contact et devis partent vers l’e-mail du client, avec attente visible", async () => {
