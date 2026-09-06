@@ -1,5 +1,7 @@
 # Audit hyper-approfondi — preview IT42, scène magasin Claire
 
+> **IT43 :** le recodage du rythme mobile (scène nominale, plus seulement `speaking`) est dans `docs/audit-preview-it43-scene-magasin.md`. Ce document reste l’audit 55/100, sans patch.
+
 **Date :** 6 septembre 2026, ~19:15 UTC  
 **Cible :** `https://cursor-arrivee-devanture-8f54-infoserv2a.infoserv2a.workers.dev/?claire=1`  
 **Aussi :** `/devis?claire=1`, `/contact?claire=1`  

@@ -19,7 +19,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260906-it42";
+} from "./claire-core.mjs?v=20260906-it43";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -40,24 +40,30 @@ import {
   alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260906-it42";
-import { describeEmailSendOutcome } from "./site-email.mjs?v=20260906-it42";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260906-it42";
+} from "./claire-session-memory.mjs?v=20260906-it43";
+import { describeEmailSendOutcome } from "./site-email.mjs?v=20260906-it43";
+import {
+  MOBILE_SCENE_HOLD_MS,
+  createMobileSceneState,
+  mobileSceneActive,
+  reduceMobileScene
+} from "./claire-mobile-scene.mjs?v=20260906-it43";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260906-it43";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260906-it42";
-import "./contact.js?v=20260906-it42";
-import "./devis.js?v=20260906-it42";
+} from "./claire-site-runtime-adapter.mjs?v=20260906-it43";
+import "./contact.js?v=20260906-it43";
+import "./devis.js?v=20260906-it43";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260906-it42";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260906-it42";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260906-it43";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260906-it43";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
-const SPEAKING_STAGE_HOLD_MS = 1000;
+const SPEAKING_STAGE_HOLD_MS = MOBILE_SCENE_HOLD_MS;
 const PREFETCH_PAGE_IDS = ["videosurveillance", "web", "quote", "contact"];
 const LIVEAVATAR_CLOUD_FALLBACKS = [
   "https://infoserv2a.infoserv2a.workers.dev",
@@ -314,6 +320,8 @@ export class ClaireCompanion {
     this.skipLiveResumeCue = false;
     this.transcriptRestored = false;
     this.speakingStageTimer = 0;
+    this.mobileScene = createMobileSceneState();
+    this.mobileSceneTimer = 0;
     this.browserVoice = new BrowserVoiceProvider({
       onTranscript: (text, final) => this.handleTranscript(text, final),
       onStatus: (value, label) => this.setStatus(value, label)
@@ -369,7 +377,7 @@ export class ClaireCompanion {
 
     if (requested === "1" || requested === "start") this.setState("arrival");
     else if (["guided", "continue"].includes(requested) || storedMode === "guided") this.setState("guided");
-    else if (storedMode === "shared") this.setState("shared");
+    else if (storedMode === "shared") this.setState("guided");
     else if (storedMode === "manual" || seen) this.setState("manual");
     else this.setState("arrival");
 
@@ -447,11 +455,12 @@ export class ClaireCompanion {
     this.root.querySelectorAll("[data-claire-recall]").forEach((button) => button.addEventListener("click", () => this.recall()));
     this.root.querySelectorAll("[data-claire-guided]").forEach((button) => button.addEventListener("click", () => this.enterGuidedMode()));
     this.root.querySelectorAll("[data-claire-expand]").forEach((button) => button.addEventListener("click", () => {
-      if (this.state === "guided") {
-        this.toggleGuidedTranscript();
-        return;
-      }
-      void this.openConversation();
+      this.toggleGuidedTranscript();
+    }));
+    this.root.querySelectorAll("[data-claire-zap-site]").forEach((button) => button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.zapMobileScene();
     }));
     this.nodes.retry?.addEventListener("click", () => void this.retryLiveAvatar());
     this.nodes.sessionContinue?.addEventListener("click", () => void this.reconnectLiveAvatar());
@@ -482,7 +491,16 @@ export class ClaireCompanion {
     this.nodes.mic?.addEventListener("click", () => void this.toggleMicrophone());
     this.nodes.stage?.addEventListener("click", (event) => {
       if (event.target?.closest?.("button, a, input")) return;
-      if (this.provider?.avatarSpeaking || document.body.classList.contains("claire-stage-speaking")) {
+      if (isPhoneShell() && this.state === "guided") {
+        if (this.mobileScene.on) {
+          this.zapMobileScene();
+          return;
+        }
+        this.applyMobileSceneEvent("reopen");
+        void this.provider?.resumeMedia?.();
+        return;
+      }
+      if (this.provider?.avatarSpeaking) {
         this.interrupt();
         return;
       }
@@ -565,7 +583,7 @@ export class ClaireCompanion {
     const typing = isTypingControl(document.activeElement);
     document.body.classList.toggle("claire-keyboard-open", Boolean(phone && typing));
     if (typing && isSiteContentTarget(document.activeElement)) this.closeGuidedTranscript();
-    this.syncSpeakingStage(this.root?.dataset.presence, { immediate: !phone });
+    this.syncMobileSceneDom();
   }
 
   handleSiteFieldFocus(event) {
@@ -663,11 +681,12 @@ export class ClaireCompanion {
       requestAnimationFrame(() => this.root.querySelector("[data-claire-start]")?.focus());
     }
     this.showLivePrompt();
+    if (next !== "guided") this.applyMobileSceneEvent("reset");
     this.syncViewportShell();
-    this.syncSpeakingStage(this.root?.dataset.presence, { immediate: next !== "guided" });
   }
 
   setStatus(value, label) {
+    const previous = this.root?.dataset.presence;
     if (this.nodes.status) this.nodes.status.textContent = label;
     const micActive = Boolean(this.provider?.listening);
     if (this.nodes.mic) {
@@ -678,37 +697,61 @@ export class ClaireCompanion {
     if (this.nodes.interrupt) this.nodes.interrupt.hidden = value !== "speaking";
     if (this.nodes.stage) this.nodes.stage.dataset.presence = value;
     this.root.dataset.presence = value;
-    this.syncSpeakingStage(value);
+    if (isSpeakingPresence(value)) {
+      this.clearMobileSceneTimer();
+      this.applyMobileSceneEvent("speak-start");
+    } else if (isSpeakingPresence(previous)) {
+      this.scheduleMobileSceneHold();
+    } else {
+      this.syncMobileSceneDom();
+    }
   }
 
-  syncSpeakingStage(presence = this.root?.dataset.presence, { immediate = false } = {}) {
+  applyMobileSceneEvent(event) {
+    if (event === "start" || event === "speak-start" || event === "reopen") {
+      this.clearMobileSceneTimer();
+    }
+    this.mobileScene = reduceMobileScene(this.mobileScene, event);
+    this.syncMobileSceneDom();
+    return this.mobileScene;
+  }
+
+  syncMobileSceneDom() {
     const phone = isPhoneShell();
-    const speaking = this.state === "guided" && phone && isSpeakingPresence(presence);
-    if (speaking) {
-      clearTimeout(this.speakingStageTimer);
-      this.speakingStageTimer = 0;
-      document.body.classList.add("claire-stage-speaking");
-      return;
-    }
-    if (immediate || !phone || this.state !== "guided" || !document.body.classList.contains("claire-stage-speaking")) {
-      clearTimeout(this.speakingStageTimer);
-      this.speakingStageTimer = 0;
-      document.body.classList.remove("claire-stage-speaking");
-      return;
-    }
+    const guided = this.state === "guided";
+    const on = mobileSceneActive(this.mobileScene, { phone, guided });
+    if (this.root) this.root.dataset.mobileScene = on ? "on" : "off";
+    document.body.classList.toggle("claire-mobile-scene", on);
+  }
+
+  clearMobileSceneTimer() {
+    clearTimeout(this.mobileSceneTimer);
+    this.mobileSceneTimer = 0;
     clearTimeout(this.speakingStageTimer);
-    this.speakingStageTimer = globalThis.setTimeout(() => {
-      document.body.classList.remove("claire-stage-speaking");
-      this.speakingStageTimer = 0;
+    this.speakingStageTimer = 0;
+  }
+
+  scheduleMobileSceneHold() {
+    this.clearMobileSceneTimer();
+    this.mobileSceneTimer = globalThis.setTimeout(() => {
+      this.applyMobileSceneEvent("speak-end-hold");
+      this.mobileSceneTimer = 0;
     }, SPEAKING_STAGE_HOLD_MS);
   }
 
+  zapMobileScene() {
+    this.applyMobileSceneEvent("zap");
+    this.interrupt({ skipScene: true });
+  }
+
   yieldToHumanType() {
+    const sceneOn = isPhoneShell() && this.state === "guided" && this.mobileScene.on;
     const speaking = isSpeakingPresence(this.root?.dataset.presence)
       || Boolean(this.provider?.avatarSpeaking)
-      || document.body.classList.contains("claire-stage-speaking");
-    if (!speaking) return;
-    this.interrupt();
+      || sceneOn;
+    if (!speaking && !sceneOn) return;
+    if (sceneOn) this.applyMobileSceneEvent("type");
+    this.interrupt({ skipScene: true });
   }
 
   setEngineStatus(provider, label) {
@@ -777,6 +820,7 @@ export class ClaireCompanion {
       microphoneRequested = false;
     }
     this.setState(state);
+    if (state === "guided") this.applyMobileSceneEvent("start");
     this.setStatus("connecting", microphone ? "Connexion à Claire…" : "Écrivez-moi");
     this.setEngineStatus("connecting", "Claire en direct");
     await this.ensureProviderReady();
@@ -844,13 +888,14 @@ export class ClaireCompanion {
     storageSet(STORAGE_MODE, "guided");
     this.audioEnabled = true;
     this.setState("guided");
+    this.applyMobileSceneEvent("start");
     this.setStatus("ready", "Prête");
     void this.provider?.ensureMicrophone?.();
     this.focusComposer();
   }
 
   async openConversation() {
-    await this.connectLiveSession({ microphone: false, state: "shared" });
+    await this.connectLiveSession({ microphone: false, state: "guided" });
   }
 
   toggleGuidedTranscript() {
@@ -978,6 +1023,7 @@ export class ClaireCompanion {
     storageSet(STORAGE_SEEN, "1");
     storageSet(STORAGE_MODE, "guided");
     this.setState("guided");
+    this.applyMobileSceneEvent("start");
     this.setStatus("ready", this.provider ? "Claire reste avec vous" : "Claire · mode local");
   }
 
@@ -1122,11 +1168,13 @@ export class ClaireCompanion {
         },
         onAvatarSpeakStart: () => {
           this.speechFollowGate.onAvatarSpeakStart();
+          this.applyMobileSceneEvent("speak-start");
           this.showLivePrompt();
         },
         onAvatarSpeakEnd: () => {
           const { unlocked } = this.speechFollowGate.onAvatarSpeakEnd();
           if (unlocked) this.avatarSpoken = "";
+          this.scheduleMobileSceneHold();
           this.finalizeLiveCompanionTurn();
           this.updateLiveContext();
           this.flushPendingLiveMemory();
@@ -1165,7 +1213,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260906-it42");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260906-it43");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
@@ -1503,9 +1551,8 @@ export class ClaireCompanion {
     if (classified.kind === "site" && classified.route?.page) {
       storageSet(STORAGE_MODE, "guided");
       this.setState("guided");
-    } else {
-      const keepGuided = this.state === "guided";
-      this.setState(keepGuided ? "guided" : "shared");
+    } else if (this.state !== "guided") {
+      this.setState("guided");
     }
 
     const sendingNow = classified.route?.action === "email"
@@ -1755,7 +1802,7 @@ export class ClaireCompanion {
     const actionable = ["suggest", "navigate", "action"].includes(result.type) && result.href;
     if (!actionable) {
       this.nodes.result.hidden = true;
-      if (this.state !== "guided") this.setState("shared");
+      if (this.state !== "guided") this.setState("guided");
       return;
     }
     const title = result.page?.title || result.label || "Action proposée";
@@ -1819,11 +1866,11 @@ export class ClaireCompanion {
     return false;
   }
 
-  interrupt() {
+  interrupt({ skipScene = false } = {}) {
     this.clearSpeechFollow({ keepLastPage: false });
     if (this.provider?.interrupt) this.provider.interrupt();
     this.browserVoice.interrupt();
-    this.syncSpeakingStage("listening", { immediate: true });
+    if (!skipScene) this.applyMobileSceneEvent("interrupt");
     this.setStatus("listening", "J’écoute");
   }
 
@@ -1843,6 +1890,8 @@ export class ClaireCompanion {
       state: this.state,
       provider: this.provider?.id || "browser-native-fallback",
       phoneShell: isPhoneShell(),
+      mobileScene: this.mobileScene,
+      mobileSceneOn: mobileSceneActive(this.mobileScene, { phone: isPhoneShell(), guided: this.state === "guided" }),
       liveAvatarConfigured: Boolean(this.liveAvatarStatus?.configured),
       grantedSessionMs: this.provider ? this.grantedSessionMs() : null,
       voiceRecognition: this.browserVoice.supported(),
