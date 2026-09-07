@@ -84,6 +84,32 @@ test("le Worker expose le statut d’envoi d’e-mail", async () => {
   assert.equal((await response.json()).configured, false);
 });
 
+test("l’apex infoserv2a.pro redirige 301 vers www en conservant chemin et query", async () => {
+  const response = await worker.fetch(
+    new Request("https://infoserv2a.pro/devis.html?x=1"),
+    env()
+  );
+  assert.equal(response.status, 301);
+  assert.equal(response.headers.get("Location"), "https://www.infoserv2a.pro/devis.html?x=1");
+});
+
+test("www.infoserv2a.pro n’est pas redirigé", async () => {
+  const response = await worker.fetch(new Request("https://www.infoserv2a.pro/"), env());
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("Location"), null);
+  assert.equal(await response.text(), "asset:/");
+});
+
+test("un hôte workers.dev n’est pas redirigé", async () => {
+  const response = await worker.fetch(
+    new Request("https://cursor-arrivee-devanture-8f54-infoserv2a.infoserv2a.workers.dev/contact.html"),
+    env()
+  );
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("Location"), null);
+  assert.equal(await response.text(), "asset:/contact.html");
+});
+
 test("le Worker n’attache pas encore infoserv2a.pro pour ne pas voler le domaine depuis une preview", async () => {
   const source = await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8");
   const uncommented = source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

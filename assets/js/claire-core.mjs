@@ -142,7 +142,7 @@ export function isIsolatedSiteRequest(value = "") {
 }
 
 export function isWebSiteRequest(value = "") {
-  return /\b(site (web|internet|vitrine)|creer un site|refonte|hebergement)\b/.test(normalizeText(value));
+  return /\b(site (web|internet|vitrine)|creer un site|refonte|hebergement|veut un site|un (petit )?site pour)\b/.test(normalizeText(value));
 }
 
 export function isQuoteAction(value = "") {
@@ -313,7 +313,7 @@ export function buildSiteBriefing(knowledge) {
   ].filter(Boolean).join("\n");
 }
 
-export const CLAIRE_WELCOME = "Bonjour. Moi c’est Claire, votre aidante Live Avatar. Je suis là, avec vous, à Porto-Vecchio, chez InfoServ2A. Prenez votre temps. Qu’est-ce qui vous amène ? Je vous écoute.";
+export const CLAIRE_WELCOME = "Bonjour. Moi c’est Claire, votre aidante chez InfoServ2A, à Porto-Vecchio. Prenez votre temps. Qu’est-ce qui vous amène ? Je vous écoute.";
 
 const INTERNAL_SITE_PROMPT = /\[INFOSERV2A_[A-Z0-9_]+\]/;
 
@@ -321,12 +321,12 @@ export function isInternalSitePrompt(text = "") {
   return INTERNAL_SITE_PROMPT.test(String(text || ""));
 }
 
-export const CLAIRE_OFF_TOPIC_SPEECH = "Je suis là pour le numérique et InfoServ2A. Un ordinateur, un site, une caméra, un devis ?";
+export const CLAIRE_OFF_TOPIC_SPEECH = "Je suis là pour le numérique et InfoServ2A — un ordinateur, un site, une caméra ou un devis ?";
 
 export function buildClaireContextPrompt(knowledge) {
   return `Tu incarnes Claire, l'aidante Live Avatar d'InfoServ2A. Ta présence est celle du portrait : un visage calme, ouvert, accueillant. Tu es très à l’écoute. Tu ne précipites rien. Tu es une experte humaine, chaleureuse et précise. Tu ne te présentes jamais comme une personne physique.
 
-Dès le début de la session, tu prononces l'accueil d'ouverture : tu te nommes, tu situes InfoServ2A à Porto-Vecchio, tu invites à parler. Une question douce suffit. Tu écoutes d’abord, tu reformules ce que tu as entendu, puis tu réponds. Tu ne te répètes pas.
+Dès le début de la session, tu prononces l'accueil d'ouverture : tu te nommes, tu situes InfoServ2A à Porto-Vecchio, tu invites à parler. Une question douce suffit. Tu écoutes d’abord, tu reformules ce que tu as entendu, puis tu réponds. Tu ne te répètes pas. Une reconnexion n’est pas un début : si le site t’envoie une mémoire déjà connue, n’accueille pas à nouveau et ne dis pas « Je reprends ».
 
 Tu parles un français chaleureux, souple, un peu littéraire sans être précieux : des phrases qui respirent, un vocabulaire vivant, jamais administratif, jamais impératif. Tu n’ordonnes pas. Tu n’emploies pas de formules du type « dites-moi plutôt », « parlez-moi simplement », « restez dans l’informatique ». Tu invites, tu accompagnes.
 
@@ -354,11 +354,11 @@ Si le visiteur confirme l’envoi (« c’est bon », « confirme », « vas-y �
 
 Lorsque tu reçois [INFOSERV2A_SITE_BRIEFING], mémorise le catalogue des onglets. N'y réponds pas.
 Lorsque tu reçois [INFOSERV2A_PAGE_CONTEXT], mémorise la page et la section visibles. N'y réponds pas. Utilise ce contexte pour tes réponses suivantes.
-Lorsque tu reçois [INFOSERV2A_SESSION_MEMORY], c’est la mémoire de ce navigateur. Mémorise-la en silence. Une phrase courte au plus (« Je reprends. »). N’énumère rien, n’accueille pas, ne récite pas les champs. Si le site envoie ensuite [INFOSERV2A_APP_RESULT], dis-le tout de suite à voix haute.
+Lorsque tu reçois [INFOSERV2A_SESSION_MEMORY], c’est la mémoire de ce navigateur. Mémorise-la en silence. N’accueille pas. Une phrase courte au plus, seulement si le site te demande de parler. Ne dis pas « Je reprends » si le site t’envoie cette mémoire sans te demander de parler. N’énumère rien, ne récite pas les champs. Une reconnexion n’est pas un nouvel accueil. Si le site envoie ensuite [INFOSERV2A_APP_RESULT], dis-le tout de suite à voix haute.
 Lorsque tu reçois [INFOSERV2A_USER_TEXT], c'est un message tapé par le visiteur. Réponds dans ton périmètre : IT, sciences du numérique, métiers qui s’appuient sur l’IT.
-Lorsque tu reçois [INFOSERV2A_OFF_TOPIC], c’est un loisir ou un aparté sans lien numérique. Une phrase courtoise, tu ne développes pas, tu recentres vers InfoServ2A et l’IT. Jamais de phrase du type « je ne parle que d’informatique ».
+Lorsque tu reçois [INFOSERV2A_OFF_TOPIC], c’est un loisir ou un aparté sans lien numérique. Une seule phrase courtoise, tu ne développes pas, tu recentres vers InfoServ2A et l’IT. Pas de catalogue, pas de liste d’onglets, pas de récitation des offres. Jamais de phrase du type « je ne parle que d’informatique ».
 
-Sur demande orale explicite, le site envoie le message ou la demande de devis vers l’e-mail saisi dans le champ e-mail du visiteur, pas vers contact@infoserv2a.pro. Le site rédige toujours le corps (message contact et description du devis) : une synthèse fidèle de ce que le visiteur a évoqué, sans inventer. Tu n’as pas à dicter le paragraphe mot à mot. Tu n’envoies jamais toi-même. Nommer une adresse n’est pas une preuve d’envoi. Si [INFOSERV2A_APP_RESULT] dit qu’il manque un champ, tu le répètes clairement à l’oral, tu n’acceptes pas l’envoi, jamais « c’est parti ». Tu n’enregistres pas un envoi toute seule. Si le devis est incomplet, tu le dis une fois à l’oral, sans attendre qu’on te le demande, puis tu attends le visiteur. Tu ne répètes pas le même inventaire en boucle. Si le devis est complet mais pas encore envoyé, tu le dis une seule fois, tu attends, tu ne relances pas. Dès que la mémoire ou [INFOSERV2A_APP_RESULT] dit que CET envoi est parti, tu ne redemandes pas de le confirmer : une phrase, puis tu écoutes. Un nouveau besoin à l’oral est un nouveau devis : tu ne ressorts pas l’ancien, tu ne le renvoies pas. Tu gardes nom, téléphone, e-mail et commune. Tu ne confirmes un envoi que si le résultat contient « bien été envoyé ». Tu n’inventes jamais un nom, un téléphone, un e-mail ou une commune.
+Sur demande orale explicite, le site envoie le message ou la demande de devis vers l’e-mail saisi dans le champ e-mail du visiteur, pas vers contact@infoserv2a.pro. Le site rédige toujours le corps (message contact et description du devis) : un paragraphe écrit, la synthèse du besoin, jamais le dialogue ni les répliques. Tu n’as pas à dicter le paragraphe mot à mot. Tu ne recopies pas la conversation. Tu n’envoies jamais toi-même. Nommer une adresse n’est pas une preuve d’envoi. Si [INFOSERV2A_APP_RESULT] dit qu’il manque un champ, tu le répètes clairement à l’oral, tu n’acceptes pas l’envoi, jamais « c’est parti ». Tu n’enregistres pas un envoi toute seule. Si le devis est incomplet, tu le dis une fois à l’oral, sans attendre qu’on te le demande, puis tu attends le visiteur. Tu ne répètes pas le même inventaire en boucle. Si le devis est complet mais pas encore envoyé, tu le dis une seule fois, tu attends, tu ne relances pas. Dès que la mémoire ou [INFOSERV2A_APP_RESULT] dit que CET envoi est parti, tu ne redemandes pas de le confirmer : une phrase, puis tu écoutes. Un nouveau besoin à l’oral est un nouveau devis : tu ne ressorts pas l’ancien, tu ne le renvoies pas. Tu gardes nom, téléphone, e-mail et commune. Tu ne confirmes un envoi que si le résultat contient « bien été envoyé ». Tu n’inventes jamais un nom, un téléphone, un e-mail ou une commune.
 
 L'application InfoServ2A est la seule source de vérité pour les services, coordonnées, horaires, pages et actions. L'utilisateur garde toujours accès au mode manuel. N'invente jamais un tarif, un délai, une disponibilité, une conformité, un diagnostic matériel définitif ou une capacité technique non vérifiée.`;
 }
@@ -440,31 +440,47 @@ export function mergeSpokenTranscript(previous, next) {
   return `${prior} ${value}`.replace(/\s+/g, " ").trim();
 }
 
-export function createSpeechFollowGate() {
+export function createSpeechFollowGate({ holdMs = 3000 } = {}) {
   let locked = false;
   let speakGeneration = 0;
-  let lockAtGeneration = 0;
   let navEpoch = 0;
   let userHref = "";
   let userFollowKey = "";
+  let holdUntil = 0;
+  let speaking = false;
+  let requireSpeakEnd = false;
+
+  function releaseIfReady(now = Date.now()) {
+    if (!locked) return true;
+    if (now < holdUntil) return false;
+    if (requireSpeakEnd && speaking) return false;
+    locked = false;
+    requireSpeakEnd = false;
+    return true;
+  }
 
   return {
-    claimUserNavigation(href, followKey = "") {
+    claimUserNavigation(href, followKey = "", now = Date.now()) {
       locked = true;
-      lockAtGeneration = speakGeneration;
       navEpoch += 1;
       userHref = String(href || "");
       userFollowKey = String(followKey || "");
+      holdUntil = Number(now) + holdMs;
+      requireSpeakEnd = speaking;
       return { epoch: navEpoch, href: userHref, followKey: userFollowKey };
     },
     onAvatarSpeakStart() {
       speakGeneration += 1;
-      const wasLocked = locked;
-      if (locked && speakGeneration > lockAtGeneration) locked = false;
-      return { unlocked: wasLocked && !locked, generation: speakGeneration };
+      speaking = true;
+      return { unlocked: false, generation: speakGeneration };
     },
-    allowsFollow() {
-      return !locked;
+    onAvatarSpeakEnd(now = Date.now()) {
+      speaking = false;
+      const unlocked = releaseIfReady(now);
+      return { unlocked, generation: speakGeneration };
+    },
+    allowsFollow(now = Date.now()) {
+      return releaseIfReady(now);
     },
     userHref() {
       return userHref;
@@ -670,9 +686,9 @@ const COMPUTING_PATTERN = /\b(info(?:rmatique)?|ordinateur|ordi|pc|mac|imac|macb
 
 const IT_SYMPTOM_PATTERN = /\b(ne marche plus|ne fonctionne pas|en panne|bug|planter|plante|erreur|ecran bleu|lent|lenteur|plus acces|hors ligne|pas de son|ecran noir|connexion|coupure)\b/;
 
-const PROFESSIONAL_PATTERN = /\b(metier|professionnel|entreprise|cabinet|hopital|clinique|laboratoire|recherche|scientifique|science|physique|chimie|biologie|mathematique|ingenier|industrie|usine|production|logistique|finance|banque|assurance|comptable|comptabilite|juridique|avocat|notaire|sante|medical|medecin|docteur|pharmacie|education|universite|ecole|pedagogie|administration|collectivite|agriculture|architecture|energie|electronique|mecanique|qualite|norme|process|dossier client|activite|restaurant|resto|commerce|boutique|hotel|camping|garage|chantier)\b/;
+const PROFESSIONAL_PATTERN = /\b(metier|professionnel|entreprise|cabinet|hopital|clinique|laboratoire|recherche|scientifique|science|physique|chimie|biologie|mathematique|ingenier|industrie|usine|production|logistique|finance|banque|assurance|comptable|comptabilite|juridique|avocat|notaire|sante|medical|medecin|docteur|pharmacie|education|universite|ecole|pedagogie|administration|collectivite|agriculture|architecture|energie|electronique|mecanique|qualite|norme|process|dossier client|activite|restaurant|resto|commerce|boutique|hotel|camping|garage|chantier|food[- ]?truck|camion pizza|snack|glacier|mairie|mairies|cantine|hotel-restaurant|caisse enregistreuse)\b/;
 
-const OFF_TOPIC_PATTERN = /\b(recette|gateau|patisserie|cuisine|cuisiner|gateaux|cookie|football|rugby|tennis|match de|championnat|capitale|president|politique|elections|meteo|il fait beau|blague|devinette|histoire pour|raconte[- ]moi une histoire|quelle heure|culture generale|ordonnance|regime|calorie|horoscope|astrologie|religion|voyage a|hotel a|billets d avion)\b/;
+const OFF_TOPIC_PATTERN = /\b(recette|gateau|patisserie|cuisine|cuisiner|gateaux|cookie|civelle|football|rugby|tennis|match de|championnat|capitale|president|politique|elections|meteo|il fait beau|blague|devinette|histoire pour|raconte[- ]moi une histoire|quelle heure|culture generale|ordonnance|regime|calorie|horoscope|astrologie|religion|voyage a|hotel a|billets d avion)\b/;
 
 export function isSocialUtterance(input = "") {
   return SOCIAL_PATTERN.test(normalizeText(input));

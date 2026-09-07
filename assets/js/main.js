@@ -153,6 +153,17 @@
       this.setError(field, "");
       return true;
     },
+    bindLiveValidation(field, check) {
+      if (!field || field.dataset.liveVal === "true") return;
+      field.dataset.liveVal = "true";
+      field.addEventListener("blur", () => check());
+      field.addEventListener("input", () => {
+        if (field.getAttribute("aria-invalid") === "true") check();
+      });
+      field.addEventListener("change", () => {
+        if (field.getAttribute("aria-invalid") === "true") check();
+      });
+    },
     sendSiteEmail(payload) {
       const controller = new AbortController();
       const timer = setTimeout(function () { controller.abort(); }, 12000);

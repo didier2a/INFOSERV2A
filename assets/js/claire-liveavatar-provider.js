@@ -1,4 +1,4 @@
-import { isInternalSitePrompt, isStableUrgentCommand, isUrgentSiteCommand, isClaireQuotePrompt } from "./claire-core.mjs?v=20260905-it37";
+import { isInternalSitePrompt, isStableUrgentCommand, isUrgentSiteCommand, isClaireQuotePrompt } from "./claire-core.mjs?v=20260907-it48";
 
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;
@@ -354,7 +354,9 @@ export class InfoServ2ALiveAvatarProvider {
   }
 
   sendMemory(value, { live = false } = {}) {
-    const prompt = `[INFOSERV2A_SESSION_MEMORY]\n${value}\nN’y réponds pas par un accueil ni par un inventaire. Une phrase courte (« Je reprends. »), puis silence. N’invente rien.`;
+    const prompt = live
+      ? `[INFOSERV2A_SESSION_MEMORY]\n${value}\nN’y réponds pas par un accueil ni par un inventaire. Une phrase courte (« Je reprends. »), puis silence. N’invente rien.`
+      : `[INFOSERV2A_SESSION_MEMORY]\n${value}\nN’y réponds pas. Mémorise en silence. Pas d’accueil, pas de « Je reprends », pas d’inventaire. N’invente rien.`;
     if (!live) {
       return this.keepLocalNote("memory", prompt, "conversation:session-memory-kept");
     }
@@ -379,7 +381,7 @@ export class InfoServ2ALiveAvatarProvider {
   sendOffTopic(value) {
     const text = String(value || "").trim();
     if (!text) return false;
-    const prompt = `[INFOSERV2A_OFF_TOPIC]\n${text}\nLoisir ou aparté sans lien numérique : une phrase courtoise, tu ne développes pas, tu recentres vers InfoServ2A et l’IT. Pas de recette, pas de match, pas de cours hors sol. Jamais « je ne parle que d’informatique ».`;
+    const prompt = `[INFOSERV2A_OFF_TOPIC]\n${text}\nLoisir ou aparté sans lien numérique : une seule phrase courtoise, tu ne développes pas, tu recentres vers InfoServ2A et l’IT. Pas de recette, pas de match, pas de catalogue, pas de liste d’onglets. Jamais « je ne parle que d’informatique ».`;
     const sent = this.speakLiveMessage(prompt, "conversation:off-topic-sent");
     if (!sent) return false;
     if (sent === "queued") {

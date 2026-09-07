@@ -5,12 +5,41 @@
     form.dataset.infoservBound = "true";
     const api = window.InfoServ;
 
+    const name = form.querySelector("#contact-name");
+    const email = form.querySelector("#contact-email");
+    const phone = form.querySelector("#contact-phone");
+    const message = form.querySelector("#contact-message");
+
+    const validateEmail = () => {
+      if (!api.required(email, "votre e-mail")) return false;
+      if (email.value && !api.emailPattern.test(email.value)) {
+        api.setError(email, "L'adresse e-mail n'est pas valide.");
+        return false;
+      }
+      api.setError(email, "");
+      return true;
+    };
+    const validatePhone = () => {
+      if (!phone.value) {
+        api.setError(phone, "");
+        return true;
+      }
+      if (!api.phonePattern.test(phone.value)) {
+        api.setError(phone, "Le numéro de téléphone n'est pas valide.");
+        return false;
+      }
+      api.setError(phone, "");
+      return true;
+    };
+    if (api.bindLiveValidation) {
+      api.bindLiveValidation(name, () => api.required(name, "votre nom"));
+      api.bindLiveValidation(email, validateEmail);
+      api.bindLiveValidation(phone, validatePhone);
+      api.bindLiveValidation(message, () => api.required(message, "votre message"));
+    }
+
     form.addEventListener("submit", (event) => {
       event.preventDefault();
-      const name = form.querySelector("#contact-name");
-      const email = form.querySelector("#contact-email");
-      const phone = form.querySelector("#contact-phone");
-      const message = form.querySelector("#contact-message");
       let ok = true;
 
       ok = api.required(name, "votre nom") && ok;

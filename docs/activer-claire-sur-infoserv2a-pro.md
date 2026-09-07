@@ -5,6 +5,14 @@ Objectif : que `https://www.infoserv2a.pro/?claire=1` (puis la racine) serve **l
 
 Preview actuelle à publier : [cursor-claire-it-only-8f54](https://cursor-claire-it-only-8f54-infoserv2a.infoserv2a.workers.dev/?claire=1) · commit `5a970bf` · assets `20260901-it11` · LiveAvatar **configuré**.
 
+## Preview-ready (rail apex, pas encore live)
+
+Le Worker sait désormais répondre **301** `https://infoserv2a.pro` → `https://www.infoserv2a.pro` (même chemin et query) **si** l’hostname apex arrive jusqu’au script (`Host` / hostname exactement `infoserv2a.pro`). `www.infoserv2a.pro` et les hôtes preview `*.workers.dev` ne sont jamais redirigés. `run_worker_first` est à `true` pour que le 301 s’applique aussi aux pages HTML (`/devis.html`, etc.), pas seulement à `/api/*`.
+
+Cette PR **ne rend pas l’apex live**. Attacher le Custom Domain `infoserv2a.pro` reste l’étape tableau de bord [B4](#b4-attacher-le-domaine-au-worker), à faire plus tard par Didier. Cette PR ne le fait pas, et **ne met pas** `"custom_domain"` dans `wrangler.jsonc` (un déploiement preview volerait le domaine public).
+
+**Ne pas traiter cette PR comme « l’apex est en ligne ».** Tant que B4 n’est pas faite, `https://infoserv2a.pro` continue d’être servi par GitHub Pages : le 301 ne peut pas s’exécuter.
+
 ## 0. Où on en est (mesure du 2 septembre 2026, 15:54 UTC)
 
 Les NS sont Cloudflare (`ian.ns.cloudflare.com` / `sarah.ns.cloudflare.com`). Les A de `www` **et** de la racine pointent déjà vers Cloudflare (`104.21.58.132`, `172.67.204.13`). **Ce n’est pas suffisant** : l’origine derrière la racine reste GitHub Pages, et `www` reste le Worker **production** (`main`), pas la preview.
@@ -128,7 +136,7 @@ Cloudflare **ne peut pas** créer un Custom Domain sur un nom qui a déjà un CN
 4. Taper exactement `infoserv2a.pro` (sans `www`, sans `https://`) → **Add Custom Domain**.
 5. Vérifier que `www.infoserv2a.pro` figure déjà dans la liste. S’il n’y est pas, l’ajouter aussi.
 
-Attendu ensuite : `curl -sI https://infoserv2a.pro/` affiche `server: cloudflare` et **plus** `x-github-request-id`. `/api/liveavatar-status` doit renvoyer du JSON (même si `configured` est encore `false` tant que l’étape A n’est pas faite).
+Attendu ensuite : `curl -sI https://infoserv2a.pro/` affiche `server: cloudflare`, **plus** `x-github-request-id`, et — une fois le rail apex en production — `301` vers `https://www.infoserv2a.pro/`. Lire `/api/liveavatar-status` sur **www** (même si `configured` est encore `false` tant que l’étape A n’est pas faite). Le 301 dans le Worker ne remplace pas cette étape B4.
 
 Ne **pas** mettre `"custom_domain": true` dans `wrangler.jsonc` tant que la zone n’est pas Active : un déploiement de **preview** volerait le domaine. Après l’étape B4, on pourra l’ajouter sur `main` uniquement :
 

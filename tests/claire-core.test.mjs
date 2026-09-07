@@ -201,6 +201,35 @@ test("un loisir sans lien IT recentre, sans ouvrir une page", () => {
   assert.equal(classifyUtterance("Quelle heure est-il ?", knowledge).kind, "offtopic");
   assert.equal(classifyUtterance("Quelle est la capitale de la France ?", knowledge).kind, "offtopic");
   assert.equal(classifyUtterance("Donne-moi une recette de gâteau", knowledge).kind, "offtopic");
+  const civelle = classifyUtterance("Quelle est la recette de la civelle ?", knowledge);
+  assert.equal(civelle.kind, "offtopic");
+  assert.notEqual(civelle.route?.type, "navigate");
+  assert.equal(followSpokenNavigation("Quelle est la recette de la civelle ?", knowledge), null);
+});
+
+test("E-CLS-01 : dix phrases métier corses restent chat ou le bon onglet", () => {
+  const cases = [
+    { text: "Je tiens un restaurant à Bonifacio, le Wi-Fi lâche le soir.", kind: "chat" },
+    { text: "Mon cabinet médical à Porto-Vecchio a besoin d’un réseau fiable.", kind: "chat" },
+    { text: "Sur le chantier à Lecci on n’a que la 4G, on veut des caméras.", kind: "chat" },
+    { text: "Je roule un food-truck à Propriano, j’ai besoin d’une caisse et du Wi-Fi.", kind: "chat" },
+    { text: "La mairie de Sartène veut un site et une messagerie.", kind: "site", page: "web" },
+    { text: "Le resto a une caisse qui plante.", kind: "chat" },
+    { text: "Cabinet d’avocat à Ajaccio, dossiers clients à sécuriser.", kind: "chat" },
+    { text: "Chantier isolé, pas de fibre, il me faut de la vidéosurveillance 4G.", kind: "site", page: "videosurveillance" },
+    { text: "Food-truck, je veux un petit site pour le menu.", kind: "site", page: "web" },
+    { text: "Mairie, on a un PC qui ne s’allume plus.", kind: "chat" }
+  ];
+  for (const item of cases) {
+    const classified = classifyUtterance(item.text, knowledge);
+    assert.ok(["chat", "site"].includes(classified.kind), item.text);
+    assert.equal(classified.kind, item.kind, item.text);
+    if (item.page) {
+      assert.equal(classified.route?.page?.id, item.page, item.text);
+    } else {
+      assert.notEqual(classified.route?.type, "navigate", item.text);
+    }
+  }
 });
 
 test("une demande de service continue de piloter le site", () => {
@@ -267,12 +296,12 @@ test("le briefing site contient tous les onglets et le rôle consultante IT", ()
   assert.match(prompt, /INFOSERV2A_SITE_BRIEFING/);
   assert.match(prompt, /Une phrase courte au plus/);
   assert.match(prompt, /champ e-mail du visiteur/);
-  assert.match(prompt, /synthèse fidèle/);
+  assert.match(prompt, /jamais le dialogue ni les répliques/);
   assert.match(prompt, /être interrompue/);
   assert.match(prompt, /reste silencieuse/);
   assert.match(prompt, /Ne dis pas que tu attends le site/);
   assert.match(prompt, /Un nouveau besoin à l’oral est un nouveau devis/);
-  assert.match(CLAIRE_WELCOME, /Moi c’est Claire, votre aidante Live Avatar/);
+  assert.match(CLAIRE_WELCOME, /Moi c’est Claire, votre aidante chez InfoServ2A/);
   assert.match(CLAIRE_WELCOME, /Je vous écoute/);
   assert.doesNotMatch(CLAIRE_WELCOME, /uniquement dans l’informatique/);
   assert.doesNotMatch(CLAIRE_WELCOME, /De quoi avez-vous besoin/);
@@ -281,22 +310,27 @@ test("le briefing site contient tous les onglets et le rôle consultante IT", ()
   assert.equal(adjacentPage(knowledge, knowledge.pages.at(-1).id, 1).id, "home");
 });
 
-test("un clic visiteur bloque le suivi de parole jusqu’à la prochaine prise de parole", () => {
-  const gate = createSpeechFollowGate();
+test("un clic visiteur bloque le suivi de parole pendant la phrase en cours et 3 s", () => {
+  const gate = createSpeechFollowGate({ holdMs: 3000 });
   assert.equal(gate.allowsFollow(), true);
-  gate.claimUserNavigation("https://infoserv2a.test/videosurveillance.html", "videosurveillance#");
-  assert.equal(gate.allowsFollow(), false);
-  assert.equal(gate.userFollowKey(), "videosurveillance#");
+  gate.onAvatarSpeakStart();
+  gate.claimUserNavigation("https://infoserv2a.test/contact.html", "contact#", 1_000);
+  assert.equal(gate.allowsFollow(1_000), false);
+  assert.equal(gate.userFollowKey(), "contact#");
+  const mid = gate.onAvatarSpeakStart();
+  assert.equal(mid.unlocked, false);
+  assert.equal(gate.allowsFollow(2_000), false);
+  const endedEarly = gate.onAvatarSpeakEnd(2_500);
+  assert.equal(endedEarly.unlocked, false);
+  assert.equal(gate.allowsFollow(3_500), false);
+  const ended = gate.onAvatarSpeakEnd(4_200);
+  assert.equal(ended.unlocked, true);
+  assert.equal(gate.allowsFollow(4_200), true);
   const epoch = gate.epoch();
-  const first = gate.onAvatarSpeakStart();
-  assert.equal(first.unlocked, true);
-  assert.equal(gate.allowsFollow(), true);
-  gate.claimUserNavigation("https://infoserv2a.test/contact.html", "contact#");
-  assert.equal(gate.allowsFollow(), false);
-  assert.equal(gate.isStale(epoch), true);
-  const later = gate.onAvatarSpeakStart();
-  assert.equal(later.unlocked, true);
-  assert.equal(gate.allowsFollow(), true);
+  gate.claimUserNavigation("https://infoserv2a.test/contact.html", "contact#", 5_000);
+  assert.equal(gate.allowsFollow(5_000), false);
+  assert.equal(gate.isStale(epoch - 1), true);
+  assert.equal(gate.allowsFollow(8_100), true);
 });
 
 test("la session LiveAvatar prévient 45 secondes avant la fin des 10 minutes", () => {
