@@ -59,6 +59,10 @@ Méthode : simulation écran par écran (moteur horaire Rome) + présence disque
 - Publication Pocket Guide GitHub bloquée (403 Cursor App)
 - Claire n’est pas encore rebranchée (phase suivante prévue)
 
+## Validation navigateur
+
+Chrome sur `http://127.0.0.1:8000/voyage.html` : 5 onglets, GPS simulé Piazza, OSM, carte illustrée, fiches photo, checklist, playlist.
+
 ## Validation et publication prévue
 
 1. Tests Node `voyage-rebuild.test.mjs` + Worker `/voyage`.
