@@ -1112,25 +1112,12 @@ body.claire-content-loading #contenu {
     z-index: 150;
   }
   .claire-companion[data-state="guided"] .claire-live-prompt,
-  .claire-companion[data-state="guided"] .claire-live-prompt:not([hidden]) {
-    display: none;
-  }
+  .claire-companion[data-state="guided"] .claire-live-prompt:not([hidden]),
+  body.claire-quote-quest.claire-is-guided .claire-companion[data-state="guided"] .claire-live-prompt,
+  body.claire-quote-quest.claire-is-guided .claire-companion[data-state="guided"] .claire-live-prompt:not([hidden]),
+  body.claire-quote-quest.claire-is-guided:not(.claire-mobile-scene) .claire-companion[data-state="guided"]:not([data-mobile-scene="on"]) .claire-live-prompt,
   body.claire-quote-quest.claire-is-guided:not(.claire-mobile-scene) .claire-companion[data-state="guided"]:not([data-mobile-scene="on"]) .claire-live-prompt:not([hidden]) {
-    display: grid;
-    top: calc(var(--claire-mobile-chrome) + var(--header-height) + 0.35rem);
-    bottom: auto;
-    left: 0.5rem;
-    right: 0.5rem;
-    max-width: none;
-    max-height: none;
-    padding: 0.4rem 0.55rem 0.45rem;
-  }
-  body.claire-quote-quest.claire-is-guided:not(.claire-mobile-scene) .claire-live-prompt__line--speech {
-    display: none;
-  }
-  body.claire-quote-quest.claire-is-guided:not(.claire-mobile-scene) {
-    padding-top: calc(var(--claire-mobile-chrome) + 4.8rem);
-    scroll-padding-top: calc(var(--claire-mobile-chrome) + var(--header-height) + 5.2rem);
+    display: none !important;
   }
   .claire-session-notice {
     top: 3.4rem;

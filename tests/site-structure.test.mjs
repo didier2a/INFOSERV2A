@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260907-it47)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260907-it47)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260907-it48)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260907-it48)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -39,7 +39,7 @@ test("les modules Claire sont versionnés pour éviter un cache 24 h cassé", as
     const bare = [...source.matchAll(/(?:from|import)\(?["'](\.\/[^"'?]+)["']/g)].map((match) => match[1]);
     assert.deepEqual(bare, [], `${file} importe sans ?v= : ${bare.join(", ")}`);
     if (source.includes("claire-core.mjs")) {
-      assert.match(source, /claire-core\.mjs\?v=20260907-it47/);
+      assert.match(source, /claire-core\.mjs\?v=20260907-it48/);
     }
   }
 });
@@ -597,6 +597,18 @@ test("IT43 : rythme Claire — PC 1/3+2/3 fixe, mobile scène nominale hors spea
   assert.doesNotMatch(client, /void this\.openConversation\(\)/);
 });
 
+test("IT48 : portable — CONTEXTE n’est plus un pop-up sur le site", async () => {
+  const [css, client] = await Promise.all([
+    readFile(path.join(ROOT, "assets/css/claire-companion.css"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8")
+  ]);
+  const mobile = css.split("@media (max-width: 820px)")[1].split("@media")[0];
+  assert.match(mobile, /claire-quote-quest[\s\S]*\.claire-live-prompt:not\(\[hidden\]\) \{[\s\S]*display: none !important/);
+  assert.doesNotMatch(mobile, /padding-top: calc\(var\(--claire-mobile-chrome\) \+ 4\.8rem\)/);
+  assert.match(client, /if \(this\.state !== "guided" \|\| sceneOn \|\| phone\)/);
+  assert.match(client, /isPhoneShell\(\) \|\| !shouldShowQuoteQuest/);
+});
+
 test("IT46 : portable — HUD scène, barre magasin nommée, hold humain", async () => {
   const [css, client, header] = await Promise.all([
     readFile(path.join(ROOT, "assets/css/claire-companion.css"), "utf8"),
@@ -628,8 +640,9 @@ test("IT45 : scène mobile 9:16 — visage libre, CONTEXTE / quest / shop hors c
   assert.match(desktop, /\[data-state="guided"\] \.claire-live-prompt \{[\s\S]*max-width: calc\(100vw - var\(--claire-stage-width\) - 1\.8rem\)/);
   assert.match(desktop, /\[data-state="guided"\] \.claire-session-notice \{[\s\S]*left: calc\(var\(--claire-stage-width\) \+ 0\.85rem\)/);
   assert.match(desktop, /\[data-state="guided"\] \.claire-session-notice \{[\s\S]*max-width: calc\(100vw - var\(--claire-stage-width\) - 1\.7rem\)/);
-  assert.match(mobile, /claire-quote-quest\.claire-is-guided:not\(\.claire-mobile-scene\)/);
+  assert.match(mobile, /claire-quote-quest\.claire-is-guided:not\(\.claire-mobile-scene\)[\s\S]*display: none !important/);
   assert.match(mobile, /\[data-state="guided"\]:not\(\[data-mobile-scene="on"\]\) \.claire-live-prompt:not\(\[hidden\]\)/);
+  assert.doesNotMatch(mobile, /claire-quote-quest\.claire-is-guided:not\(\.claire-mobile-scene\)[\s\S]{0,500}display: grid/);
   assert.match(mobile, /claire-quote-quest\.claire-mobile-scene[\s\S]*\.claire-live-prompt[\s\S]*display: none/);
   assert.match(mobile, /\[data-mobile-scene="on"\] \.claire-live-prompt:not\(\[hidden\]\)/);
   assert.match(mobile, /\[data-mobile-scene="on"\] \.claire-live-prompt__quest/);
@@ -660,7 +673,7 @@ test("E-MOB-FACE-01 : les champs n’écrasent pas le visage de Claire", async (
   const mobile = css.split("@media (max-width: 820px)")[1].split("@media")[0];
   assert.match(mobile, /height: var\(--claire-mobile-lisere\)/);
   assert.match(mobile, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*position: fixed/);
-  assert.match(mobile, /\[data-state="guided"\] \.claire-live-prompt:not\(\[hidden\]\) \{\s*display: none/);
+  assert.match(mobile, /\[data-state="guided"\] \.claire-live-prompt:not\(\[hidden\]\)[\s\S]*display: none !important/);
   assert.match(mobile, /\[data-state="guided"\] \.claire-live-stage__caption/);
   assert.match(mobile, /padding-top: var\(--claire-mobile-chrome\)/);
 });
