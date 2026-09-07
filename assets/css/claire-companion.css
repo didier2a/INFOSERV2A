@@ -1402,6 +1402,13 @@ body.claire-content-loading #contenu {
     background: rgba(22, 119, 111, 0.82);
   }
 
+  .claire-companion[data-state="guided"]:not([data-mobile-scene="on"]) .claire-live-stage,
+  body.claire-mobile-shop .claire-live-stage {
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+  }
+
   .claire-companion[data-state="guided"]:not([data-mobile-scene="on"]) .claire-shop-return,
   body.claire-mobile-shop .claire-shop-return {
     display: flex;
@@ -1416,7 +1423,20 @@ body.claire-content-loading #contenu {
     color: #fff;
     background: linear-gradient(90deg, rgba(7, 24, 39, 0.22), rgba(7, 24, 39, 0.72));
     font: inherit;
+    line-height: 1.1;
     cursor: pointer;
+  }
+
+  body.claire-mobile-shop .claire-session-notice,
+  body.claire-mobile-shop .claire-session-notice:not([hidden]),
+  .claire-companion[data-state="guided"]:not([data-mobile-scene="on"]) .claire-session-notice,
+  .claire-companion[data-state="guided"]:not([data-mobile-scene="on"]) .claire-session-notice:not([hidden]) {
+    position: fixed;
+    top: calc(var(--claire-mobile-lisere) + var(--header-height) + 0.4rem);
+    left: 0.5rem;
+    right: 0.5rem;
+    z-index: 140;
+    max-width: none;
   }
 
   .claire-shop-return__copy {
@@ -1617,6 +1637,12 @@ body.claire-phone-shell:not(.claire-mobile-scene) .claire-companion[data-state="
   min-height: 0;
   max-height: var(--claire-mobile-lisere);
   overflow: hidden;
+  box-shadow: none;
+}
+body.claire-phone-shell:not(.claire-mobile-scene) .claire-companion[data-state="guided"] .claire-live-stage {
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
 }
 
 body.claire-phone-shell.claire-mobile-scene.claire-is-guided,
