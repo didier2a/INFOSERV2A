@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260906-it43)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260906-it43)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260906-it44)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260906-it44)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -39,7 +39,7 @@ test("les modules Claire sont versionnés pour éviter un cache 24 h cassé", as
     const bare = [...source.matchAll(/(?:from|import)\(?["'](\.\/[^"'?]+)["']/g)].map((match) => match[1]);
     assert.deepEqual(bare, [], `${file} importe sans ?v= : ${bare.join(", ")}`);
     if (source.includes("claire-core.mjs")) {
-      assert.match(source, /claire-core\.mjs\?v=20260906-it43/);
+      assert.match(source, /claire-core\.mjs\?v=20260906-it44/);
     }
   }
 });
@@ -568,8 +568,10 @@ test("IT43 : rythme Claire — PC 1/3+2/3 fixe, mobile scène nominale hors spea
   assert.match(mobile, /\[data-mobile-scene="on"\][\s\S]*inset: 0/);
   assert.match(mobile, /\[data-mobile-scene="on"\][\s\S]*height: var\(--claire-vvh/);
   assert.match(mobile, /\[data-state="guided"\] \{[\s\S]*height: var\(--claire-mobile-lisere\)/);
-  assert.match(mobile, /\[data-mobile-scene="on"\] \.claire-dialogue,[\s\S]*display: grid/);
-  assert.doesNotMatch(mobile, /\[data-presence="speaking"\] \.claire-dialogue,[\s\S]*display: none/);
+  assert.match(mobile, /\[data-mobile-scene="on"\] \.claire-dialogue,[\s\S]*display: none/);
+  assert.match(mobile, /\[data-state="arrival"\] \.claire-live-stage,[\s\S]*inset: 0/);
+  assert.match(mobile, /\[data-state="arrival"\] \.claire-dialogue,[\s\S]*max-height: min\(38vh, 320px\)/);
+  assert.doesNotMatch(mobile, /\[data-mobile-scene="on"\] \.claire-dialogue,[\s\S]*background: rgba\(251, 250, 246, 0\.92\)/);
   assert.match(mobile, /claire-speaking-hint/);
   assert.match(mobile, /claire-zap-site/);
   assert.match(header, /Elle vous parle/);
@@ -593,6 +595,18 @@ test("IT43 : rythme Claire — PC 1/3+2/3 fixe, mobile scène nominale hors spea
   assert.doesNotMatch(client, /syncSpeakingStage\(/);
   assert.doesNotMatch(client, /pointer: coarse/);
   assert.doesNotMatch(client, /void this\.openConversation\(\)/);
+});
+
+test("IT44 : aucun pop-up / carte blanche sur le visage (arrivée mobile + scène 9:16)", async () => {
+  const css = await readFile(path.join(ROOT, "assets/css/claire-companion.css"), "utf8");
+  const mobile = css.split("@media (max-width: 820px)")[1].split("@media")[0];
+  assert.match(mobile, /\[data-state="arrival"\] \.claire-live-stage,[\s\S]*inset: 0/);
+  assert.match(mobile, /\[data-state="arrival"\] \.claire-dialogue,[\s\S]*max-height: min\(38vh, 320px\)/);
+  assert.match(mobile, /\[data-state="arrival"\] \.claire-live-stage__chip,[\s\S]*display: none/);
+  assert.match(mobile, /\[data-state="arrival"\] \.claire-live-stage__caption,[\s\S]*display: none/);
+  assert.match(mobile, /\[data-mobile-scene="on"\] \.claire-dialogue,[\s\S]*display: none/);
+  assert.match(mobile, /\[data-mobile-scene="on"\]\[data-transcript="open"\] \.claire-dialogue/);
+  assert.doesNotMatch(mobile, /\[data-mobile-scene="on"\] \.claire-dialogue[\s\S]{0,200}background: rgba\(251, 250, 246/);
 });
 
 test("E-MOB-FACE-01 : les champs n’écrasent pas le visage de Claire", async () => {

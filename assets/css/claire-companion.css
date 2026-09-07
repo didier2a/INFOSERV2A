@@ -1284,21 +1284,10 @@ body.claire-content-loading #contenu {
   }
 
   .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-dialogue,
-  body.claire-mobile-scene .claire-companion[data-state="guided"] .claire-dialogue {
-    display: grid;
-    position: fixed;
-    left: 0.65rem;
-    right: 0.65rem;
-    bottom: max(0.55rem, env(safe-area-inset-bottom));
-    top: auto;
-    z-index: 8;
-    height: auto;
-    max-height: none;
-    padding: 0;
-    overflow: visible;
-    border-radius: 16px;
-    background: rgba(251, 250, 246, 0.92);
-    box-shadow: 0 10px 28px rgba(3, 18, 30, 0.16);
+  .claire-companion[data-state="guided"][data-mobile-scene="on"][data-transcript="open"] .claire-dialogue,
+  body.claire-mobile-scene .claire-companion[data-state="guided"] .claire-dialogue,
+  body.claire-mobile-scene .claire-companion[data-state="guided"][data-transcript="open"] .claire-dialogue {
+    display: none;
   }
 
   .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-speaking-hint,
@@ -1338,6 +1327,106 @@ body.claire-content-loading #contenu {
   body.claire-is-guided:has(.claire-companion[data-mobile-scene="on"]) .nav-panel,
   body.claire-mobile-scene.claire-is-guided .nav-panel {
     top: 0;
+  }
+
+  .claire-companion[data-state="arrival"] .claire-experience,
+  .claire-companion[data-state="loading"] .claire-experience {
+    background: #102c39;
+  }
+  .claire-companion[data-state="arrival"] .claire-experience__layout,
+  .claire-companion[data-state="loading"] .claire-experience__layout {
+    position: relative;
+    display: block;
+    height: var(--claire-vvh, 100dvh);
+    grid-template-columns: none;
+    grid-template-rows: none;
+  }
+  .claire-companion[data-state="arrival"] .claire-live-stage,
+  .claire-companion[data-state="loading"] .claire-live-stage {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+  }
+  .claire-companion[data-state="arrival"] .claire-live-stage__chip,
+  .claire-companion[data-state="arrival"] .claire-live-stage__caption,
+  .claire-companion[data-state="arrival"] .claire-live-stage__controls,
+  .claire-companion[data-state="loading"] .claire-live-stage__chip,
+  .claire-companion[data-state="loading"] .claire-live-stage__caption,
+  .claire-companion[data-state="loading"] .claire-live-stage__controls {
+    display: none;
+  }
+  .claire-companion[data-state="arrival"] .claire-live-stage__shade,
+  .claire-companion[data-state="loading"] .claire-live-stage__shade {
+    background:
+      linear-gradient(180deg, rgba(2, 14, 23, 0.34), transparent 22%),
+      linear-gradient(0deg, rgba(2, 14, 23, 0.78), transparent 36%);
+  }
+  .claire-companion[data-state="arrival"] .claire-dialogue,
+  .claire-companion[data-state="loading"] .claire-dialogue {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    z-index: 4;
+    display: block;
+    height: auto;
+    max-height: min(38vh, 320px);
+    padding: 0;
+    overflow: auto;
+    align-items: end;
+    background: transparent;
+    pointer-events: none;
+  }
+  .claire-companion[data-state="arrival"] .claire-arrival-copy,
+  .claire-companion[data-state="loading"] .claire-arrival-copy {
+    pointer-events: auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0.65rem 0.9rem calc(0.7rem + env(safe-area-inset-bottom, 0px));
+    border-radius: 22px 22px 0 0;
+    background: rgba(251, 250, 246, 0.94);
+    box-shadow: 0 -16px 48px rgba(3, 18, 30, 0.22);
+    backdrop-filter: blur(18px);
+  }
+  .claire-companion[data-state="arrival"] .claire-arrival-copy h1,
+  .claire-companion[data-state="loading"] .claire-arrival-copy h1 {
+    max-width: none;
+    font-size: clamp(1.35rem, 5.8vw, 1.85rem);
+  }
+  .claire-companion[data-state="arrival"] .claire-arrival-logo,
+  .claire-companion[data-state="loading"] .claire-arrival-logo,
+  .claire-companion[data-state="arrival"] .claire-arrival-place,
+  .claire-companion[data-state="loading"] .claire-arrival-place,
+  .claire-companion[data-state="arrival"] .claire-door__hint,
+  .claire-companion[data-state="loading"] .claire-door__hint {
+    display: none;
+  }
+  .claire-companion[data-state="arrival"] .claire-eyebrow,
+  .claire-companion[data-state="arrival"] .claire-arrival-copy > p:not(.claire-eyebrow):not(.claire-privacy):not(.claire-arrival-place):not(.claire-arrival-write__hint),
+  .claire-companion[data-state="arrival"] .claire-privacy,
+  .claire-companion[data-state="arrival"] .claire-arrival-write__hint,
+  .claire-companion[data-state="loading"] .claire-eyebrow,
+  .claire-companion[data-state="loading"] .claire-arrival-copy > p:not(.claire-eyebrow):not(.claire-privacy):not(.claire-arrival-place):not(.claire-arrival-write__hint),
+  .claire-companion[data-state="loading"] .claire-privacy,
+  .claire-companion[data-state="loading"] .claire-arrival-write__hint {
+    display: none;
+  }
+  .claire-companion[data-state="arrival"] .claire-arrival-actions,
+  .claire-companion[data-state="loading"] .claire-arrival-actions {
+    margin-top: 0.75rem;
+  }
+  .claire-companion[data-state="arrival"] .claire-door,
+  .claire-companion[data-state="loading"] .claire-door {
+    padding: 0.7rem 0.9rem 0.75rem;
+  }
+  .claire-companion[data-state="arrival"] .claire-arrival-write,
+  .claire-companion[data-state="loading"] .claire-arrival-write {
+    margin-top: 0.7rem;
   }
 }
 
