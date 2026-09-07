@@ -10,7 +10,7 @@
   --claire-shadow: 0 28px 90px rgba(3, 18, 30, 0.28);
   --claire-stage-width: 33.333vw;
   --claire-mobile-stage: clamp(176px, calc(var(--claire-vvh, 100dvh) * 0.34), 220px);
-  --claire-mobile-lisere: 16px;
+  --claire-mobile-lisere: 48px;
   --claire-composer-band: 3.4rem;
   --claire-mobile-chrome: var(--claire-mobile-lisere);
   --claire-vvh: 100dvh;
@@ -833,7 +833,11 @@ body.claire-conversation-open {
   display: none;
 }
 
-.claire-zap-site {
+.claire-zap-site,
+.claire-scene-hud,
+.claire-scene-caption,
+.claire-scene-write,
+.claire-shop-return {
   display: none;
 }
 
@@ -976,10 +980,6 @@ body.claire-is-manual {
 
 .claire-speaking-hint {
   display: none;
-  position: absolute;
-  top: max(1rem, env(safe-area-inset-top));
-  left: 50%;
-  z-index: 5;
   margin: 0;
   padding: 0.35rem 0.7rem;
   border-radius: 999px;
@@ -988,7 +988,6 @@ body.claire-is-manual {
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.04em;
-  transform: translateX(-50%);
   pointer-events: none;
 }
 
@@ -1144,16 +1143,23 @@ body.claire-content-loading #contenu {
     scroll-margin-top: calc(var(--claire-mobile-chrome) + var(--header-height) + 12px);
   }
   .claire-companion[data-state="guided"] {
+    top: 0;
+    right: 0;
+    left: 0;
     bottom: auto;
     width: 100%;
     height: var(--claire-mobile-lisere);
+    max-height: var(--claire-mobile-lisere);
+    overflow: hidden;
     z-index: 155;
   }
   .claire-companion[data-state="guided"] .claire-experience {
     width: 100%;
     height: var(--claire-mobile-lisere);
     min-height: 0;
+    max-height: var(--claire-mobile-lisere);
     display: block;
+    overflow: hidden;
   }
   .claire-companion[data-state="guided"] .claire-experience__layout {
     display: block;
@@ -1163,7 +1169,9 @@ body.claire-content-loading #contenu {
   .claire-companion[data-state="guided"] .claire-live-stage {
     position: relative;
     height: var(--claire-mobile-lisere);
-    min-height: var(--claire-mobile-lisere);
+    min-height: 0;
+    max-height: var(--claire-mobile-lisere);
+    overflow: hidden;
     cursor: pointer;
   }
   .claire-companion[data-state="guided"] .claire-live-stage__poster,
@@ -1247,6 +1255,8 @@ body.claire-content-loading #contenu {
     inset: 0;
     width: 100%;
     height: var(--claire-vvh, 100dvh);
+    max-height: none;
+    overflow: hidden;
     z-index: 160;
   }
 
@@ -1255,7 +1265,9 @@ body.claire-content-loading #contenu {
     width: 100%;
     height: 100%;
     min-height: 100%;
+    max-height: none;
     display: block;
+    overflow: hidden;
   }
 
   .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-experience__layout,
@@ -1272,6 +1284,7 @@ body.claire-content-loading #contenu {
     width: 100%;
     height: 100%;
     min-height: 100%;
+    max-height: none;
     cursor: pointer;
   }
 
@@ -1319,13 +1332,26 @@ body.claire-content-loading #contenu {
     display: block;
   }
 
-  .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-zap-site,
-  body.claire-mobile-scene .claire-zap-site {
-    display: inline-flex;
+  .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-scene-hud,
+  body.claire-mobile-scene .claire-scene-hud {
+    display: flex;
     position: absolute;
-    top: max(1rem, env(safe-area-inset-top));
+    top: max(0.7rem, env(safe-area-inset-top));
+    left: 0.7rem;
     right: 0.7rem;
-    z-index: 6;
+    z-index: 8;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    pointer-events: none;
+  }
+
+  .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-zap-site,
+  body.claire-mobile-scene .claire-zap-site,
+  .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-scene-write,
+  body.claire-mobile-scene .claire-scene-write {
+    display: inline-flex;
+    pointer-events: auto;
     min-height: 36px;
     align-items: center;
     padding: 0.35rem 0.75rem;
@@ -1336,6 +1362,81 @@ body.claire-content-loading #contenu {
     font-size: 0.74rem;
     font-weight: 700;
     cursor: pointer;
+  }
+
+  .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-zap-site,
+  body.claire-mobile-scene .claire-zap-site {
+    position: static;
+  }
+
+  .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-scene-write,
+  body.claire-mobile-scene .claire-scene-write {
+    position: absolute;
+    left: 0.7rem;
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    z-index: 8;
+  }
+
+  .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-scene-caption:not([hidden]),
+  body.claire-mobile-scene .claire-scene-caption:not([hidden]) {
+    display: -webkit-box;
+    position: absolute;
+    left: 1rem;
+    right: 1rem;
+    bottom: 4.4rem;
+    z-index: 5;
+    overflow: hidden;
+    margin: 0;
+    color: #fff;
+    font-size: 0.94rem;
+    line-height: 1.35;
+    text-align: center;
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.7);
+    pointer-events: none;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .claire-companion[data-state="guided"][data-presence="speaking"] .claire-speaking-hint,
+  .claire-companion[data-state="guided"][data-presence="sound"] .claire-speaking-hint {
+    background: rgba(22, 119, 111, 0.82);
+  }
+
+  .claire-companion[data-state="guided"]:not([data-mobile-scene="on"]) .claire-shop-return,
+  body.claire-mobile-shop .claire-shop-return {
+    display: flex;
+    position: absolute;
+    inset: 0;
+    z-index: 8;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.55rem;
+    padding: 0 0.7rem;
+    border: 0;
+    color: #fff;
+    background: linear-gradient(90deg, rgba(7, 24, 39, 0.22), rgba(7, 24, 39, 0.72));
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .claire-shop-return__copy {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    gap: 0.45rem;
+    font-size: 0.78rem;
+  }
+
+  .claire-shop-return__copy strong {
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .claire-shop-return b {
+    flex: none;
+    font-size: 0.74rem;
+    font-weight: 700;
   }
 
   body.claire-is-guided:has(.claire-companion[data-mobile-scene="on"]),
@@ -1501,15 +1602,21 @@ body.claire-phone-shell.claire-is-guided:not(.claire-mobile-scene) {
   padding-bottom: calc(var(--claire-composer-band) + env(safe-area-inset-bottom, 0px));
 }
 body.claire-phone-shell:not(.claire-mobile-scene) .claire-companion[data-state="guided"] {
-  right: auto;
+  top: 0;
+  right: 0;
+  left: 0;
   bottom: auto;
   width: 100%;
   height: var(--claire-mobile-lisere);
+  max-height: var(--claire-mobile-lisere);
+  overflow: hidden;
 }
 body.claire-phone-shell:not(.claire-mobile-scene) .claire-companion[data-state="guided"] .claire-experience {
   width: 100%;
   height: var(--claire-mobile-lisere);
   min-height: 0;
+  max-height: var(--claire-mobile-lisere);
+  overflow: hidden;
 }
 
 body.claire-phone-shell.claire-mobile-scene.claire-is-guided,
@@ -1523,6 +1630,8 @@ body.claire-phone-shell .claire-companion[data-state="guided"][data-mobile-scene
   inset: 0;
   width: 100%;
   height: var(--claire-vvh, 100dvh);
+  max-height: none;
+  overflow: hidden;
   z-index: 160;
 }
 
@@ -1531,6 +1640,8 @@ body.claire-phone-shell .claire-companion[data-state="guided"][data-mobile-scene
   width: 100%;
   height: 100%;
   min-height: 100%;
+  max-height: none;
+  overflow: hidden;
 }
 
 body.claire-phone-shell.claire-mobile-scene .claire-live-prompt,
@@ -1538,8 +1649,15 @@ body.claire-phone-shell.claire-mobile-scene .claire-live-prompt:not([hidden]),
 body.claire-phone-shell .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-live-prompt,
 body.claire-phone-shell .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-live-prompt:not([hidden]),
 body.claire-phone-shell.claire-mobile-scene .claire-session-notice,
-body.claire-phone-shell.claire-mobile-scene .claire-session-notice:not([hidden]) {
-  display: none;
+body.claire-phone-shell.claire-mobile-scene .claire-session-notice:not([hidden]),
+body.claire-quote-quest.claire-mobile-scene .claire-live-prompt,
+body.claire-quote-quest.claire-mobile-scene .claire-live-prompt:not([hidden]) {
+  display: none !important;
+}
+
+.claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-shop-return,
+body.claire-mobile-scene .claire-shop-return {
+  display: none !important;
 }
 body.nav-just-closed .claire-experience,
 body.nav-just-closed .claire-live-prompt,
