@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#071f24">
+  <meta name="description" content="Santa Teresa Pocket Guide — séjour 17–18 septembre 2026 : agenda, carte GPS, photos et carnet. Sans avatar.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Voyage ST">
+  <link rel="manifest" href="manifest-voyage.webmanifest">
+  <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="voyage.css">
+  <title>Santa Teresa · Voyage</title>
+</head>
+<body>
+  <a class="skip-link" href="#app">Aller au guide</a>
+  <p id="bootError" class="boot-error" hidden role="alert"></p>
+
+  <main class="voyage-app" id="app" data-view="now" data-claire="deferred">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">ST</span>
+        <div>
+          <strong id="tripTitle">Santa Teresa Pocket Guide</strong>
+          <small id="tripMeta">17–18 septembre 2026</small>
+        </div>
+      </div>
+      <div class="clock-wrap">
+        <span id="localClock">--:--</span>
+        <small>heure locale</small>
+      </div>
+    </header>
+
+    <section class="view is-active" data-view-panel="now" aria-label="Maintenant">
+      <article class="now-card">
+        <div class="now-hero" id="nowHero" hidden>
+          <img id="nowHeroImg" alt="">
+        </div>
+        <p class="overline" id="nowKicker">Prochaine étape</p>
+        <h1 id="nowTitle">Chargement…</h1>
+        <p id="nowPlace">Santa Teresa di Gallura</p>
+        <div class="now-meta">
+          <span id="nowTime">—</span>
+          <span id="nowStatus">À venir</span>
+        </div>
+        <p id="nowStory"></p>
+        <div class="now-actions">
+          <button class="action action--accent" id="openNowPlace" type="button" hidden>Voir le lieu</button>
+          <a class="action" id="openNowCalendar" href="#" target="_blank" rel="noopener" hidden>Google Agenda</a>
+          <button class="action" id="jumpToMap" type="button">Carte GPS</button>
+          <button class="action" id="installApp" type="button" hidden>Ajouter à l’accueil</button>
+        </div>
+      </article>
+      <h3 class="preview-title">À suivre</h3>
+      <div class="upcoming" id="upcomingList"></div>
+      <aside class="claire-slot" data-slot="claire-later" hidden>
+        <p>Emplacement réservé pour l’avatar Claire, branché après l’application de voyage.</p>
+      </aside>
+    </section>
+
+    <section class="view" data-view-panel="program" aria-label="Programme" hidden>
+      <header class="section-intro">
+        <div>
+          <span class="overline">Deux jours à Santa Teresa</span>
+          <h2 id="programTitle">Programme</h2>
+        </div>
+        <p id="programSubtitle"></p>
+      </header>
+      <div class="day-switch" id="daySwitch"></div>
+      <div class="timeline" id="timeline"></div>
+    </section>
+
+    <section class="view" data-view-panel="map" aria-label="Carte" hidden>
+      <header class="section-intro">
+        <div>
+          <span class="overline">Navigation</span>
+          <h2>Carte & GPS</h2>
+        </div>
+      </header>
+      <div class="map-toolbar">
+        <button class="action action--accent" id="locateMe" type="button">Activer ma position</button>
+        <button class="action" id="simulateGps" type="button">Simuler à Santa Teresa</button>
+        <button class="action" id="fitRoute" type="button">Voir le parcours</button>
+      </div>
+      <div class="map-tabs" role="tablist">
+        <button class="chip is-active" id="tabInteractive" type="button" data-map-mode="interactive">Carte GPS</button>
+        <button class="chip" id="tabOffline" type="button" data-map-mode="offline">Carte illustrée</button>
+      </div>
+      <div id="gpsStatus" class="gps-status" hidden>
+        <strong id="gpsStatusText">GPS</strong>
+        <small id="gpsMeta">En attente de position…</small>
+      </div>
+      <div id="interactiveMapPanel" class="map-panel">
+        <div id="map" class="map" aria-label="Carte OpenStreetMap du séjour"></div>
+      </div>
+      <div id="offlineMapPanel" class="map-panel" hidden>
+        <figure class="offline-map">
+          <img src="assets/photos/guide-map.svg" alt="Carte illustrée du séjour Santa Teresa et Capo Testa">
+        </figure>
+      </div>
+      <div id="nearestPanel" class="nearest-panel" hidden></div>
+    </section>
+
+    <section class="view" data-view-panel="places" aria-label="Lieux" hidden>
+      <header class="section-intro">
+        <div>
+          <span class="overline">Repères du séjour</span>
+          <h2>Lieux</h2>
+        </div>
+      </header>
+      <div class="places" id="placesList"></div>
+    </section>
+
+    <section class="view" data-view-panel="carnet" aria-label="Carnet" hidden>
+      <header class="section-intro">
+        <div>
+          <span class="overline">Pratique</span>
+          <h2>Carnet</h2>
+        </div>
+      </header>
+      <h3>À découvrir</h3>
+      <div class="discover" id="discoverCards"></div>
+      <h3>Checklist</h3>
+      <div class="checklist" id="checklist"></div>
+      <h3>Playlist</h3>
+      <div class="playlist" id="playlist"></div>
+      <h3>À compléter</h3>
+      <div class="facts" id="facts"></div>
+      <h3>Photos</h3>
+      <p class="muted photo-note" id="photoNote"></p>
+      <div class="credits" id="photoCredits"></div>
+    </section>
+
+    <nav class="main-nav" aria-label="Navigation principale">
+      <button class="is-active" type="button" data-view-target="now" aria-current="page"><span aria-hidden="true">◉</span><small>Maintenant</small></button>
+      <button type="button" data-view-target="program"><span aria-hidden="true">☷</span><small>Programme</small></button>
+      <button type="button" data-view-target="map"><span aria-hidden="true">⌖</span><small>Carte</small></button>
+      <button type="button" data-view-target="places"><span aria-hidden="true">🏛</span><small>Lieux</small></button>
+      <button type="button" data-view-target="carnet"><span aria-hidden="true">✦</span><small>Carnet</small></button>
+    </nav>
+  </main>
+
+  <dialog class="sheet" id="placeDialog">
+    <button class="sheet-close" id="closePlace" type="button" aria-label="Fermer">×</button>
+    <div id="placeContent"></div>
+  </dialog>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script type="module" src="js/voyage/app.js"></script>
+</body>
+</html>

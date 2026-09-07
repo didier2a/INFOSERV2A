@@ -1,0 +1,16 @@
+{
+  "name": "Santa Teresa · Voyage",
+  "short_name": "Voyage ST",
+  "description": "Application de voyage Santa Teresa Pocket Guide : agenda, carte GPS, photos et carnet, sans avatar.",
+  "start_url": "./voyage.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#041519",
+  "theme_color": "#071f24",
+  "lang": "fr",
+  "icons": [
+    {"src": "assets/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"},
+    {"src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png"}
+  ]
+}
