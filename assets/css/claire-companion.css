@@ -860,6 +860,8 @@ body.claire-conversation-open {
   left: calc(var(--claire-stage-width) + 0.9rem);
   right: 0.9rem;
   bottom: 5.4rem;
+  width: auto;
+  max-width: calc(100vw - var(--claire-stage-width) - 1.8rem);
   max-height: min(42vh, 360px);
   overflow: auto;
 }
@@ -960,6 +962,7 @@ body.claire-is-manual {
   right: 0.85rem;
   top: 1rem;
   z-index: 130;
+  max-width: calc(100vw - var(--claire-stage-width) - 1.7rem);
 }
 
 .claire-companion[data-state="guided"] .claire-send-wait {
@@ -968,6 +971,7 @@ body.claire-is-manual {
   right: 0.7rem;
   bottom: 5.4rem;
   z-index: 130;
+  max-width: calc(100vw - var(--claire-stage-width) - 1.4rem);
 }
 
 .claire-speaking-hint {
@@ -1112,19 +1116,20 @@ body.claire-content-loading #contenu {
   .claire-companion[data-state="guided"] .claire-live-prompt:not([hidden]) {
     display: none;
   }
-  body.claire-quote-quest.claire-is-guided .claire-companion[data-state="guided"] .claire-live-prompt:not([hidden]) {
+  body.claire-quote-quest.claire-is-guided:not(.claire-mobile-scene) .claire-companion[data-state="guided"]:not([data-mobile-scene="on"]) .claire-live-prompt:not([hidden]) {
     display: grid;
     top: calc(var(--claire-mobile-chrome) + var(--header-height) + 0.35rem);
     bottom: auto;
     left: 0.5rem;
     right: 0.5rem;
+    max-width: none;
     max-height: none;
     padding: 0.4rem 0.55rem 0.45rem;
   }
-  body.claire-quote-quest.claire-is-guided .claire-live-prompt__line--speech {
+  body.claire-quote-quest.claire-is-guided:not(.claire-mobile-scene) .claire-live-prompt__line--speech {
     display: none;
   }
-  body.claire-quote-quest.claire-is-guided {
+  body.claire-quote-quest.claire-is-guided:not(.claire-mobile-scene) {
     padding-top: calc(var(--claire-mobile-chrome) + 4.8rem);
     scroll-padding-top: calc(var(--claire-mobile-chrome) + var(--header-height) + 5.2rem);
   }
@@ -1278,15 +1283,34 @@ body.claire-content-loading #contenu {
     object-position: center 18%;
   }
 
+  body.claire-quote-quest.claire-mobile-scene.claire-is-guided .claire-companion[data-state="guided"] .claire-live-prompt,
+  body.claire-quote-quest.claire-mobile-scene.claire-is-guided .claire-companion[data-state="guided"] .claire-live-prompt:not([hidden]),
   .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-live-prompt,
-  body.claire-mobile-scene .claire-companion[data-state="guided"] .claire-live-prompt {
-    display: none;
-  }
-
+  .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-live-prompt:not([hidden]),
+  body.claire-mobile-scene .claire-companion[data-state="guided"] .claire-live-prompt,
+  body.claire-mobile-scene .claire-companion[data-state="guided"] .claire-live-prompt:not([hidden]),
+  .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-live-prompt__quest,
+  body.claire-mobile-scene .claire-companion[data-state="guided"] .claire-live-prompt__quest,
   .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-dialogue,
   .claire-companion[data-state="guided"][data-mobile-scene="on"][data-transcript="open"] .claire-dialogue,
   body.claire-mobile-scene .claire-companion[data-state="guided"] .claire-dialogue,
-  body.claire-mobile-scene .claire-companion[data-state="guided"][data-transcript="open"] .claire-dialogue {
+  body.claire-mobile-scene .claire-companion[data-state="guided"][data-transcript="open"] .claire-dialogue,
+  .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-conversation,
+  body.claire-mobile-scene .claire-companion[data-state="guided"] .claire-conversation,
+  .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-result,
+  body.claire-mobile-scene .claire-companion[data-state="guided"] .claire-result,
+  .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-session-notice,
+  .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-session-notice:not([hidden]),
+  body.claire-mobile-scene .claire-companion[data-state="guided"] .claire-session-notice,
+  body.claire-mobile-scene .claire-companion[data-state="guided"] .claire-session-notice:not([hidden]),
+  .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-live-stage__chip,
+  .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-live-stage__caption,
+  .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-engine-badge,
+  .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-experience__header,
+  body.claire-mobile-scene .claire-companion[data-state="guided"] .claire-live-stage__chip,
+  body.claire-mobile-scene .claire-companion[data-state="guided"] .claire-live-stage__caption,
+  body.claire-mobile-scene .claire-companion[data-state="guided"] .claire-engine-badge,
+  body.claire-mobile-scene .claire-companion[data-state="guided"] .claire-experience__header {
     display: none;
   }
 
@@ -1507,6 +1531,15 @@ body.claire-phone-shell .claire-companion[data-state="guided"][data-mobile-scene
   width: 100%;
   height: 100%;
   min-height: 100%;
+}
+
+body.claire-phone-shell.claire-mobile-scene .claire-live-prompt,
+body.claire-phone-shell.claire-mobile-scene .claire-live-prompt:not([hidden]),
+body.claire-phone-shell .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-live-prompt,
+body.claire-phone-shell .claire-companion[data-state="guided"][data-mobile-scene="on"] .claire-live-prompt:not([hidden]),
+body.claire-phone-shell.claire-mobile-scene .claire-session-notice,
+body.claire-phone-shell.claire-mobile-scene .claire-session-notice:not([hidden]) {
+  display: none;
 }
 body.nav-just-closed .claire-experience,
 body.nav-just-closed .claire-live-prompt,
