@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "ovhcloud": {
+      "url": "https://mcp.eu.ovhcloud.com/mcp"
+    },
+    "abby": {
+      "url": "https://api.abby.fr/mcp"
+    }
+  }
+}

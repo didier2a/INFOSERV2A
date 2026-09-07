@@ -1,0 +1,1373 @@
+{
+  "document_type": "infoserv2a_proposed_capability_catalog",
+  "schema_version": "1.0",
+  "status": "design_template_not_a_native_hermes_configuration",
+  "instructions": "Adapter aux interfaces verifiees. Ce fichier n active aucun connecteur et ne donne aucun droit. Les modes sont une proposition de conception, pas une autorisation effective. Les plafonds restent a definir.",
+  "capabilities": [
+    {
+      "capability_id": "knowledge.search",
+      "version": "1.0",
+      "title": "Rechercher des documents autorises",
+      "status": "proposed_not_implemented",
+      "effect": "read_only",
+      "allowed_modes_proposal": [
+        "private",
+        "client",
+        "service"
+      ],
+      "connector_id": "knowledge_index",
+      "mapping_status": "implemented_adapter",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": false,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "report_exact_execution_state"
+      },
+      "argument_schema_status": "proposed_schema_provided",
+      "expected_evidence": [
+        "source_id",
+        "version",
+        "locator",
+        "excerpt",
+        "acl_checked_at"
+      ],
+      "blocking_conditions": [
+        "scope_mismatch",
+        "source_unavailable",
+        "stale_source"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null,
+      "argument_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "query",
+          "max_results"
+        ],
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "project_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "max_results": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          }
+        }
+      },
+      "security_note": "project_id est un filtre de recherche, jamais une preuve de droit. Recalculer les ACL de toutes les sources avant extraction et restitution."
+    },
+    {
+      "capability_id": "knowledge.public.search",
+      "version": "1.0",
+      "title": "Rechercher dans le corpus public valide",
+      "status": "proposed_not_implemented",
+      "effect": "read_only",
+      "allowed_modes_proposal": [
+        "public",
+        "client",
+        "private"
+      ],
+      "connector_id": "public_knowledge_index",
+      "mapping_status": "implemented_adapter",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": false,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "report_exact_execution_state"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "source_id",
+        "version",
+        "public_reference"
+      ],
+      "blocking_conditions": [
+        "non_public_source",
+        "source_unavailable"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "memory.curate",
+      "version": "1.0",
+      "title": "Proposer ou enregistrer une connaissance durable sourcee",
+      "status": "proposed_not_implemented",
+      "effect": "local_write",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "hermes_memory_writer",
+      "mapping_status": "adapter_to_verified_hermes_interface",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "report_exact_execution_state"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "memory_reference",
+        "source_id",
+        "version"
+      ],
+      "blocking_conditions": [
+        "unverified_source",
+        "scope_mismatch",
+        "writer_conflict"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "mission.create",
+      "version": "1.0",
+      "title": "Creer une mission persistante",
+      "status": "proposed_not_implemented",
+      "effect": "draft_write",
+      "allowed_modes_proposal": [
+        "private",
+        "client",
+        "public",
+        "service"
+      ],
+      "connector_id": "mission_service",
+      "mapping_status": "implemented_adapter",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "report_exact_execution_state"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "mission_id",
+        "accepted_capability",
+        "policy_decision"
+      ],
+      "blocking_conditions": [
+        "capability_not_allowed",
+        "invalid_input",
+        "budget_exceeded"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null,
+      "security_note": "Une session publique peut uniquement creer les missions explicitement exposees et lire ses propres resultats avec une reference de session non devinable. Aucune execution generique de commandes."
+    },
+    {
+      "capability_id": "mission.status.read",
+      "version": "1.0",
+      "title": "Lire un resultat et ses preuves autorisees",
+      "status": "proposed_not_implemented",
+      "effect": "read_only",
+      "allowed_modes_proposal": [
+        "private",
+        "client",
+        "public",
+        "service"
+      ],
+      "connector_id": "mission_service",
+      "mapping_status": "implemented_adapter",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": false,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "report_exact_execution_state"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "mission_id",
+        "status",
+        "evidence_references"
+      ],
+      "blocking_conditions": [
+        "scope_mismatch",
+        "unknown_mission"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null,
+      "security_note": "Une session publique peut uniquement creer les missions explicitement exposees et lire ses propres resultats avec une reference de session non devinable. Aucune execution generique de commandes."
+    },
+    {
+      "capability_id": "nas.files.read",
+      "version": "1.0",
+      "title": "Lire un fichier autorise du NAS",
+      "status": "proposed_not_implemented",
+      "effect": "read_only",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "nas_connector",
+      "mapping_status": "smb_or_sftp_to_verify",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": false,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "report_exact_execution_state"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "source_path",
+        "sha256",
+        "read_at"
+      ],
+      "blocking_conditions": [
+        "path_outside_scope",
+        "nas_unavailable"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "pc.files.read",
+      "version": "1.0",
+      "title": "Lire un fichier local autorise",
+      "status": "proposed_not_implemented",
+      "effect": "read_only",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "windows_relay",
+      "mapping_status": "implemented_adapter",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": false,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "report_exact_execution_state"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "source_path",
+        "sha256",
+        "read_at"
+      ],
+      "blocking_conditions": [
+        "path_outside_scope",
+        "pc_offline",
+        "file_not_hydrated"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "pc.command.test",
+      "version": "1.0",
+      "title": "Executer une commande de verification dans un projet",
+      "status": "proposed_not_implemented",
+      "effect": "local_write",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "windows_relay",
+      "mapping_status": "allowlisted_job_runner",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "report_exact_execution_state"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "job_id",
+        "exit_code",
+        "artifact_references"
+      ],
+      "blocking_conditions": [
+        "command_outside_scope",
+        "pc_offline",
+        "expired_job"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "pc.desktop.run",
+      "version": "1.0",
+      "title": "Realiser une tache avec controle du bureau",
+      "status": "proposed_not_implemented",
+      "effect": "local_write",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "windows_desktop_adapter",
+      "mapping_status": "separate_pilot_required",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "report_exact_execution_state"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "job_id",
+        "observed_result",
+        "device_session"
+      ],
+      "blocking_conditions": [
+        "desktop_unavailable",
+        "target_not_verified",
+        "unexpected_dialog"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "crm.customer.upsert",
+      "version": "1.0",
+      "title": "Creer ou rapprocher un dossier client",
+      "status": "proposed_not_implemented",
+      "effect": "draft_write",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "customer_adapter",
+      "mapping_status": "provider_to_choose",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "report_exact_execution_state"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "customer_id",
+        "deduplication_result"
+      ],
+      "blocking_conditions": [
+        "ambiguous_identity",
+        "scope_mismatch"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "calendar.slots.propose",
+      "version": "1.0",
+      "title": "Calculer des creneaux proposes",
+      "status": "proposed_not_implemented",
+      "effect": "read_only",
+      "allowed_modes_proposal": [
+        "private",
+        "client",
+        "public",
+        "service"
+      ],
+      "connector_id": "calendar_adapter",
+      "mapping_status": "provider_to_choose",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": false,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "report_exact_execution_state"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "proposal_id",
+        "timezone",
+        "expires_at"
+      ],
+      "blocking_conditions": [
+        "missing_timezone",
+        "provider_unavailable"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null,
+      "security_note": "Le mode public ne permet que le parcours de reservation prevu : aucun acces aux titres, contacts ou details des autres rendez-vous. Les limites de la reservation sont calculees par le serveur."
+    },
+    {
+      "capability_id": "calendar.booking.create",
+      "version": "1.0",
+      "title": "Reserver le creneau choisi",
+      "status": "proposed_not_implemented",
+      "effect": "external_write",
+      "allowed_modes_proposal": [
+        "private",
+        "client",
+        "public",
+        "service"
+      ],
+      "connector_id": "calendar_adapter",
+      "mapping_status": "provider_to_choose",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "reconcile_before_retry"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "event_id",
+        "calendar_id",
+        "readback",
+        "invitation_state"
+      ],
+      "blocking_conditions": [
+        "stale_proposal",
+        "slot_conflict",
+        "external_state_unknown"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null,
+      "security_note": "Le mode public ne permet que le parcours de reservation prevu : aucun acces aux titres, contacts ou details des autres rendez-vous. Les limites de la reservation sont calculees par le serveur."
+    },
+    {
+      "capability_id": "communications.email.prepare",
+      "version": "1.0",
+      "title": "Preparer un message",
+      "status": "proposed_not_implemented",
+      "effect": "draft_write",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "mail_adapter",
+      "mapping_status": "provider_to_choose",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "report_exact_execution_state"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "draft_reference",
+        "recipient_resolution"
+      ],
+      "blocking_conditions": [
+        "ambiguous_recipient",
+        "missing_content"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "communications.email.send",
+      "version": "1.0",
+      "title": "Envoyer le message autorise",
+      "status": "proposed_not_implemented",
+      "effect": "external_write",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "mail_adapter",
+      "mapping_status": "provider_to_choose",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "reconcile_before_retry"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "message_id",
+        "provider_state",
+        "recipient_reference"
+      ],
+      "blocking_conditions": [
+        "authorization_missing",
+        "ambiguous_recipient",
+        "external_state_unknown"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "abby.estimate.prepare",
+      "version": "1.0",
+      "title": "Preparer un devis dans Abby",
+      "status": "proposed_not_implemented",
+      "effect": "external_write",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "abby_mcp",
+      "mapping_status": "documented_provider_tools",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "reconcile_before_retry"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "billing_id",
+        "draft_state",
+        "line_readback"
+      ],
+      "blocking_conditions": [
+        "unverified_tax_config",
+        "ambiguous_customer",
+        "external_state_unknown"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "abby.estimate.finalize",
+      "version": "1.0",
+      "title": "Finaliser le devis dans le perimetre autorise",
+      "status": "proposed_not_implemented",
+      "effect": "external_write",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "abby_mcp",
+      "mapping_status": "documented_provider_tools",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "reconcile_before_retry"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "billing_id",
+        "provider_state",
+        "document_reference"
+      ],
+      "blocking_conditions": [
+        "authorization_missing",
+        "billing_conflict",
+        "external_state_unknown"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "abby.invoice.prepare",
+      "version": "1.0",
+      "title": "Preparer une facture brouillon",
+      "status": "proposed_not_implemented",
+      "effect": "external_write",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "abby_mcp",
+      "mapping_status": "documented_provider_tools",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "reconcile_before_retry"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "billing_id",
+        "draft_state",
+        "line_readback"
+      ],
+      "blocking_conditions": [
+        "unverified_tax_config",
+        "duplicate_intent",
+        "external_state_unknown"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "abby.invoice.finalize",
+      "version": "1.0",
+      "title": "Finaliser une facture apres verification",
+      "status": "proposed_not_implemented",
+      "effect": "external_write",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "abby_mcp",
+      "mapping_status": "documented_provider_tools",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "reconcile_before_retry"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "billing_id",
+        "number",
+        "provider_state",
+        "readback"
+      ],
+      "blocking_conditions": [
+        "authorization_missing",
+        "billing_conflict",
+        "external_state_unknown"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "abby.invoice.send",
+      "version": "1.0",
+      "title": "Envoyer une facture par le canal Abby",
+      "status": "proposed_not_implemented",
+      "effect": "external_write",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "abby_mcp",
+      "mapping_status": "documented_provider_tools",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "reconcile_before_retry"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "billing_id",
+        "recipient_reference",
+        "provider_send_state"
+      ],
+      "blocking_conditions": [
+        "authorization_missing",
+        "ambiguous_recipient",
+        "external_state_unknown"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "abby.billing.read",
+      "version": "1.0",
+      "title": "Relire un document de facturation",
+      "status": "proposed_not_implemented",
+      "effect": "read_only",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "abby_mcp",
+      "mapping_status": "documented_provider_tools",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": false,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "report_exact_execution_state"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "billing_id",
+        "provider_state",
+        "read_at"
+      ],
+      "blocking_conditions": [
+        "scope_mismatch",
+        "provider_unavailable"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "accounting.payments.reconcile",
+      "version": "1.0",
+      "title": "Rapprocher des paiements et documents",
+      "status": "proposed_not_implemented",
+      "effect": "draft_write",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "accounting_adapter",
+      "mapping_status": "provider_capabilities_to_verify",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "report_exact_execution_state"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "reconciliation_reference",
+        "matched_ids",
+        "unresolved_items"
+      ],
+      "blocking_conditions": [
+        "ambiguous_payment",
+        "missing_source"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "accounting.monthly.prepare",
+      "version": "1.0",
+      "title": "Preparer le dossier comptable de periode",
+      "status": "proposed_not_implemented",
+      "effect": "draft_write",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "accounting_adapter",
+      "mapping_status": "provider_capabilities_to_verify",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "report_exact_execution_state"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "period",
+        "source_references",
+        "exceptions",
+        "export_reference"
+      ],
+      "blocking_conditions": [
+        "missing_documents",
+        "unverified_rule"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "github.change.prepare",
+      "version": "1.0",
+      "title": "Preparer du code dans une branche de mission",
+      "status": "proposed_not_implemented",
+      "effect": "external_write",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "git_executor",
+      "mapping_status": "cursor_or_codex_to_configure",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "reconcile_before_retry"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "commit_sha",
+        "branch",
+        "checks",
+        "diff_reference"
+      ],
+      "blocking_conditions": [
+        "branch_conflict",
+        "missing_repository_access"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "github.pr.create",
+      "version": "1.0",
+      "title": "Creer une proposition de modification",
+      "status": "proposed_not_implemented",
+      "effect": "external_write",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "github_adapter",
+      "mapping_status": "provider_to_configure",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "reconcile_before_retry"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "pull_request_url",
+        "head_sha",
+        "base_sha"
+      ],
+      "blocking_conditions": [
+        "wrong_base",
+        "unreviewed_diff"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "deployment.preview.create",
+      "version": "1.0",
+      "title": "Produire une previsualisation de projet",
+      "status": "proposed_not_implemented",
+      "effect": "external_write",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "deployment_adapter",
+      "mapping_status": "provider_to_verify",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "reconcile_before_retry"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "deployment_id",
+        "commit_sha",
+        "preview_url"
+      ],
+      "blocking_conditions": [
+        "wrong_project",
+        "provider_unavailable"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "deployment.production.promote",
+      "version": "1.0",
+      "title": "Publier la version dans le perimetre autorise",
+      "status": "proposed_not_implemented",
+      "effect": "external_write",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "deployment_adapter",
+      "mapping_status": "provider_to_verify",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "reconcile_before_retry"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "deployment_id",
+        "served_version",
+        "verification",
+        "rollback_reference"
+      ],
+      "blocking_conditions": [
+        "authorization_missing",
+        "failed_release_gate",
+        "wrong_environment"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "network.diagnostics.run",
+      "version": "1.0",
+      "title": "Executer un diagnostic cible",
+      "status": "proposed_not_implemented",
+      "effect": "local_write",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "network_relay",
+      "mapping_status": "equipment_specific_adapter",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "report_exact_execution_state"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "target_reference",
+        "measurement",
+        "captured_at"
+      ],
+      "blocking_conditions": [
+        "target_outside_scope",
+        "equipment_unavailable"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "maintenance.monitor.evaluate",
+      "version": "1.0",
+      "title": "Analyser une alerte et proposer la suite",
+      "status": "proposed_not_implemented",
+      "effect": "read_only",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "monitoring_adapter",
+      "mapping_status": "provider_to_choose",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": false,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "report_exact_execution_state"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "signal_reference",
+        "project_id",
+        "diagnosis_confidence"
+      ],
+      "blocking_conditions": [
+        "unknown_project",
+        "stale_signal"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    },
+    {
+      "capability_id": "media.production.prepare",
+      "version": "1.0",
+      "title": "Preparer une production de contenu",
+      "status": "proposed_not_implemented",
+      "effect": "draft_write",
+      "allowed_modes_proposal": [
+        "private",
+        "service"
+      ],
+      "connector_id": "media_adapter",
+      "mapping_status": "provider_specific_pilot",
+      "connector_status": "not_verified_in_target_environment",
+      "last_verified_at": null,
+      "authorization": {
+        "source": "server_resolved_identity_and_valid_existing_instruction_or_delegation",
+        "scope_constraints": "workspace_customer_project_target_checked_server_side",
+        "defaults_do_not_override_user_authorization": true
+      },
+      "budget_policy_reference": null,
+      "timeout_seconds": null,
+      "idempotency": {
+        "required": true,
+        "scope": [
+          "workspace_id",
+          "actor_id",
+          "capability_id",
+          "idempotency_key"
+        ],
+        "mismatched_payload": "conflict",
+        "external_timeout": "report_exact_execution_state"
+      },
+      "argument_schema_status": "to_define_and_validate",
+      "expected_evidence": [
+        "brief_reference",
+        "asset_manifest",
+        "draft_artifacts"
+      ],
+      "blocking_conditions": [
+        "missing_rights_reference",
+        "budget_exceeded",
+        "provider_unavailable"
+      ],
+      "implementation_reference": null,
+      "acceptance_evidence_reference": null
+    }
+  ]
+}
