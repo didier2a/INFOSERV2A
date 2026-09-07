@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:infoserv2a:proposed:mission:1.0",
+  "title": "Mission interne InfoServ2A proposee",
+  "description": "Contrat a implementer, non natif Hermes. Cette enveloppe est construite ou validee par le serveur apres authentification. Les champs actor et workspace ne sont jamais des droits accordes par le modele.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "mission_id", "correlation_id", "idempotency_key", "workspace_id", "actor", "origin", "capability_id", "capability_version", "objective", "arguments", "status", "created_at", "budget", "evidence", "error"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "mission_id": {"type": "string", "format": "uuid"},
+    "correlation_id": {"type": "string", "format": "uuid"},
+    "idempotency_key": {"type": "string", "minLength": 8, "maxLength": 200},
+    "workspace_id": {"type": "string", "minLength": 1, "maxLength": 100},
+    "customer_id": {"type": ["string", "null"]},
+    "project_id": {"type": ["string", "null"]},
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor_id", "identity_source", "access_mode"],
+      "properties": {
+        "actor_id": {"type": "string", "minLength": 1},
+        "identity_source": {"const": "server_authenticated"},
+        "access_mode": {"enum": ["public", "client", "private", "service"]},
+        "delegation_reference": {"type": ["string", "null"]}
+      }
+    },
+    "origin": {"enum": ["cursor", "codex", "claire", "schedule", "webhook", "operator"]},
+    "capability_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"},
+    "capability_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+$"},
+    "objective": {"type": "string", "minLength": 1, "maxLength": 6000},
+    "arguments": {"type": "object", "description": "A valider aussi avec le schema propre a la capacite. La presente enveloppe ne valide pas tous les arguments metier."},
+    "status": {"enum": ["draft", "ready", "running", "waiting_access", "waiting_input", "waiting_decision", "reconciling", "completed", "failed", "cancel_requested", "cancelled"]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "expires_at": {"type": ["string", "null"], "format": "date-time"},
+    "business_timezone": {"type": ["string", "null"], "description": "Identifiant IANA a verifier dans le service, par exemple Europe/Paris."},
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["currency", "max_cost_minor", "max_duration_seconds"],
+      "properties": {
+        "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+        "max_cost_minor": {"type": "integer", "minimum": 0},
+        "max_duration_seconds": {"type": "integer", "minimum": 1, "maximum": 604800},
+        "policy_reference": {"type": ["string", "null"]}
+      }
+    },
+    "result": {"type": ["object", "null"]},
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["evidence_id", "kind", "reference", "captured_at"],
+        "properties": {
+          "evidence_id": {"type": "string", "minLength": 1},
+          "kind": {"enum": ["source", "provider_readback", "artifact", "test_result", "operator_observation"]},
+          "reference": {"type": "string", "minLength": 1},
+          "captured_at": {"type": "string", "format": "date-time"},
+          "sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+          "provider": {"type": ["string", "null"]},
+          "external_id": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "error": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "message", "retry_safe", "already_executed"],
+          "properties": {
+            "code": {"enum": ["authentication_required", "permission_denied", "invalid_input", "source_unavailable", "stale_source", "rate_limited", "budget_exceeded", "external_state_unknown", "conflict", "desktop_unavailable", "timeout", "cancelled", "provider_error"]},
+            "message": {"type": "string", "minLength": 1},
+            "retry_safe": {"type": "boolean"},
+            "already_executed": {"type": "array", "items": {"type": "string"}},
+            "retry_after_seconds": {"type": ["integer", "null"], "minimum": 0}
+          }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "completed"}}},
+      "then": {"required": ["result"], "properties": {"result": {"type": "object"}, "evidence": {"minItems": 1}, "error": {"type": "null"}}}
+    },
+    {
+      "if": {"properties": {"status": {"const": "failed"}}},
+      "then": {"properties": {"error": {"type": "object"}}}
+    }
+  ]
+}
