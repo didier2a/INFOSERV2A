@@ -27,7 +27,7 @@ test("le Worker expose le laboratoire Claire sans extension HTML", async () => {
 
 test("le Worker expose le guide voyage Santa Teresa sans extension HTML", async () => {
   const response = await worker.fetch(new Request("https://infoserv2a.test/voyage"), env());
-  assert.equal(await response.text(), "asset:/voyage.html");
+  assert.equal(await response.text(), "asset:/voyage");
 });
 
 test("le Worker expose la spec Figma de l’aidante sans extension HTML", async () => {

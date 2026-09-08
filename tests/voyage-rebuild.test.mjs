@@ -192,7 +192,8 @@ test('voyage simulation: HTTP serves screens, photos, Leaflet and trip data', as
 
 test('voyage hosting: Worker, redirects, CSP and SW keep /voyage off the homepage', () => {
   assert.match(worker, /pathname === "\/voyage"/);
-  assert.match(redirects, /\/voyage \/voyage\.html 200/);
+  assert.doesNotMatch(worker, /url\.pathname = "\/voyage\.html"/);
+  assert.doesNotMatch(redirects, /\/voyage \/voyage\.html 200/);
   assert.match(headers, /tile\.openstreetmap\.org/);
   assert.match(sw, /santa-teresa-trip\.json/);
   assert.match(manifest, /icon-512\.png/);
@@ -217,7 +218,7 @@ test('voyage audit: write screen-by-screen score after simulation', async () => 
     ['Honnêteté : hôtel / ferry à compléter', incompleteFacts().every((fact) => fact.value === 'À compléter')],
     ['Claire n’est pas l’accueil', !html.includes('liveavatar') && html.includes('claire-later')],
     ['PWA voyage dédiée', app.includes('voyage-sw.js') && manifest.includes('Voyage ST')],
-    ['Publication /voyage sans remplacer l’accueil', redirects.includes('/voyage /voyage.html 200') && worker.includes('/voyage.html')],
+    ['Publication /voyage sans remplacer l’accueil', worker.includes('pathname === "/voyage"') && !redirects.includes('/voyage /voyage.html 200')],
     ['CSP autorise les tuiles OSM', headers.includes('tile.openstreetmap.org')]
   ];
   const passed = checks.filter(([, ok]) => ok).length;

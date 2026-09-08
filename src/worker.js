@@ -81,10 +81,6 @@ export default {
       if (request.method !== "GET" && request.method !== "HEAD") {
         return methodNotAllowed(["GET", "HEAD"]);
       }
-      if (pathname === "/voyage" || pathname === "/voyage/") {
-        url.pathname = "/voyage.html";
-        return env.ASSETS.fetch(new Request(url, request));
-      }
       return env.ASSETS.fetch(request);
     }
 
