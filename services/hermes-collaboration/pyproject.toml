@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "infoserv2a-hermes-collaboration"
+version = "0.1.0"
+description = "Registre local de collaboration pour Hermes et Cursor"
+requires-python = ">=3.11"
+dependencies = ["mcp>=1.12,<2"]
+
+[project.scripts]
+hermes-collab = "hermes_collab.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hermes_collab"]
+
+[dependency-groups]
+dev = ["pytest>=8,<10"]
