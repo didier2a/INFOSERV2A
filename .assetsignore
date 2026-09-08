@@ -12,3 +12,5 @@ functions/
 partials/
 src/
 tests/
+services/
+HERMES-IMPLEMENTATION-START.md
