@@ -27,6 +27,16 @@ Ouvrir `http://127.0.0.1:8016/`. Le serveur est lancé pour cette présentation 
 
 Le serveur de prévisualisation simule le traitement des formulaires sans e-mail, sans stockage du contenu et sans transfert de fichiers. Il neutralise les appels de statut LiveAvatar de repli vers les services externes. Il commence en mode manuel pour examiner le design ; la navigation normale conserve les transitions de Claire. « Reprendre avec Claire » affiche son panneau. Aucun flux audio ou vidéo en direct n’est simulé visuellement comme s’il était réel.
 
+### Demande de lien S22 Remote, 10 septembre 2026
+
+Didier demande un lien accessible depuis le S22. Aucun lien distant n’existe à ce stade. Le contrôle automatique d’autorisation a refusé la création d’un tunnel temporaire Cloudflare faute d’accord explicite pour exposer les pages et captures via ce fournisseur. Ne pas contourner ce refus : recueillir cet accord avant de relancer le tunnel.
+
+Préparation locale terminée : client portable officiel `cloudflared` 2026.9.0 dans `_references/preview-remote/`, empreinte SHA-256 vérifiée contre la publication officielle ; aucun service système ni configuration de compte ajouté. Le serveur reste lié à `127.0.0.1:8016`.
+
+Le serveur ne sert désormais que les pages publiques, leurs actifs, les deux catalogues JSON nécessaires et la galerie/captures. Les sources serveur, `.git`, les références, les scripts et documents internes renvoient 404. Les en-têtes interdisent l’indexation et l’accès au microphone/caméra ; la CSP limite les connexions à la prévisualisation. Le lien de retour de la galerie est relatif pour fonctionner depuis le téléphone. Contrôles HTTP : 7 chemins autorisés et 13 chemins internes refusés ; envoi d’e-mail toujours simulé.
+
+Après accord explicite pour Cloudflare : démarrer `_references/preview-remote/cloudflared.exe tunnel --no-autoupdate --url http://127.0.0.1:8016`, relever l’URL `https://…trycloudflare.com`, puis vérifier les pages sur cette URL avant de la communiquer. Le lien est temporaire et dépend du PC et des processus en cours. La branche publiée et le site de production restent inchangés.
+
 ## Intégration réalisée
 
 | Menu | Route |
