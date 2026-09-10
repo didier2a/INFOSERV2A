@@ -45,6 +45,20 @@ Le serveur ne sert désormais que les pages publiques, leurs actifs, les deux ca
 
 Tunnel lancé en arrière-plan, sans fenêtre ni installation de service : PID `115696` lors de cette création. Les fichiers locaux `server.pid`, `tunnel.pid`, `server.*.log` et `tunnel.*.log` sont dans `_references/preview-remote/`. Avant tout arrêt ou redémarrage, vérifier que le PID désigne toujours le bon exécutable et les bons arguments. Pour recréer le tunnel après son arrêt : `_references/preview-remote/cloudflared.exe tunnel --no-autoupdate --url http://127.0.0.1:8016`, relever la nouvelle URL puis la vérifier. Le lien est temporaire et dépend du PC allumé, connecté, et des deux processus en cours. La branche publiée et le site de production restent inchangés.
 
+### Preview complète avec Claire réelle — préparation du 10 septembre
+
+Didier demande désormais la preview finale avec voix et vidéo en direct. L’URL trycloudflare ci-dessus reste une preview graphique : ne pas la présenter comme la version connectée.
+
+Vérification GET actuelle : `https://infoserv2a.infoserv2a.workers.dev/api/liveavatar-status` et l’ancienne preview Claire renvoient `configured:true`, LiveAvatar et OpenAI Realtime présents, voix `marin`, modèle `gpt-realtime`. Le statut du formulaire réel annonce `configured:true`, fournisseur Resend, destination e-mail du visiteur. Ces réponses prouvent la configuration, pas encore une session audiovisuelle ni une réception d’e-mail. Aucune session réelle ni aucun e-mail n’a été déclenché pendant cette préparation.
+
+Chemin retenu : le pipeline **Workers Builds: infoserv2a**, déjà associé au dépôt public `didier2a/INFOSERV2A`, compte Cloudflare `45aac699cfed86fedb9631852dc1aaeb`. La branche `main` est la branche stable ; la branche `design/mediterranee-lumineuse` doit produire une version d’aperçu isolée. Le moteur, les API et le CSP existants acceptent déjà les origines `*.infoserv2a.workers.dev`.
+
+Commit préparé : `d57bb28`, ajout de `keep_vars:true` à `wrangler.jsonc` pour préserver les réglages Claire du tableau de bord, en plus des secrets conservés par Cloudflare. Les **195 tests passent** à nouveau. L’accès Git en écriture est confirmé par `git push --dry-run`. Wrangler n’est pas authentifié localement ; utiliser le pipeline existant plutôt que créer ou recopier des clés.
+
+**Blocage actuel :** l’envoi réel `git push --set-upstream origin design/mediterranee-lumineuse` a été refusé par le contrôle automatique, car l’utilisateur n’a pas explicitement autorisé la publication du code de cette branche sur son dépôt GitHub public. L’accord précédent portait sur le tunnel Cloudflare. Aucun push n’a eu lieu. Recueillir l’accord explicite pour ce push et son build de preview, puis reprendre exactement cette opération ; ne pas contourner le refus avec un autre outil.
+
+Après cet accord : pousser la seule branche de design, lire le contrôle GitHub `Workers Builds: infoserv2a`, attendre son succès et relever l’URL effective de version. Vérifier le statut API, puis une session réelle bornée avec lecture/vidéo, navigation préservant la session, et arrêt propre. Ne pas envoyer de formulaire à une autre personne pour tester. Comparer le site publié aux empreintes enregistrées dans `_references/preview-remote/production-before.json`. Ne fusionner, promouvoir, modifier les routes ou les secrets de production à aucun moment.
+
 ## Intégration réalisée
 
 | Menu | Route |
