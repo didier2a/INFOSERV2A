@@ -1,13 +1,13 @@
 # Reprise InfoServ2A — Méditerranée lumineuse
 
-État du 10 septembre 2026 : les huit pages sont intégrées et vérifiées localement. Le résultat est présenté à Didier avant fusion ou publication. Aucun push, déploiement ni changement de secrets n’a été effectué.
+État du 10 septembre 2026 : les huit pages sont intégrées et vérifiées localement. Didier a autorisé explicitement un lien HTTPS temporaire Cloudflare pour consulter la prévisualisation sur S22. Aucun push, déploiement de production ni changement de secrets n’a été effectué.
 
 ## Projet à ouvrir depuis le PC ou Remote
 
 `C:\Users\didie\OneDrive\Documents\SITE INFOSERV2A 2026 2\INFOSERV2A`
 
 - Branche : `design/mediterranee-lumineuse`.
-- Point de reprise enregistré dans un commit local `Intègre la refonte Méditerranée lumineuse et sa validation locale` ; retrouver son identifiant avec `git log -1 --oneline`. Il n’est pas poussé sur GitHub.
+- Intégration enregistrée dans le commit local `b749337`, restrictions du serveur de preview dans `13b0334`. Retrouver le dernier état avec `git log -1 --oneline`. Aucun commit n’est poussé sur GitHub.
 - Point de départ : `b2d8753`, branche `main` propre ; seul `_references/` était non suivi.
 - Dépôt : `https://github.com/didier2a/INFOSERV2A.git`.
 - La copie sœur `claire-infoserv2a` est préservée.
@@ -29,13 +29,21 @@ Le serveur de prévisualisation simule le traitement des formulaires sans e-mail
 
 ### Demande de lien S22 Remote, 10 septembre 2026
 
-Didier demande un lien accessible depuis le S22. Aucun lien distant n’existe à ce stade. Le contrôle automatique d’autorisation a refusé la création d’un tunnel temporaire Cloudflare faute d’accord explicite pour exposer les pages et captures via ce fournisseur. Ne pas contourner ce refus : recueillir cet accord avant de relancer le tunnel.
+Accord explicite reçu de Didier : « OK, je t'autorise à créer un lien HTTPS temporaire via Cloudflare, accessible aux personnes disposant d'un lien, sans modifier le site publié. » Le refus automatique initial est levé par cet accord ; ne pas redemander la même autorisation pour ce raccordement temporaire.
+
+URL créée : **https://called-limitations-donor-fifth.trycloudflare.com/**.
+
+Galerie : **https://called-limitations-donor-fifth.trycloudflare.com/docs/validation-mediterranee/galerie.html**.
+
+Le 10 septembre à 11:43 UTC : accueil, galerie et capture S22 répondent en HTTPS avec statut 200. `.git/config`, `_references/`, README, script de preview et document de reprise répondent 404. Les en-têtes de restriction sont présents sur le lien distant.
+
+À 11:46 UTC, Chrome au format S22 (360 × 780, DPR 3) a vérifié sur ce lien le menu tactile, la navigation vers Réseaux & Wi-Fi, le bouton devis et le retour depuis la galerie : zéro erreur JavaScript. Rapport et capture dans `_references/preview-remote/verification-https.json` et `s22-https.png`. Aucun e-mail ni session vocale réelle déclenché. Le S22 physique reste à examiner par Didier.
 
 Préparation locale terminée : client portable officiel `cloudflared` 2026.9.0 dans `_references/preview-remote/`, empreinte SHA-256 vérifiée contre la publication officielle ; aucun service système ni configuration de compte ajouté. Le serveur reste lié à `127.0.0.1:8016`.
 
 Le serveur ne sert désormais que les pages publiques, leurs actifs, les deux catalogues JSON nécessaires et la galerie/captures. Les sources serveur, `.git`, les références, les scripts et documents internes renvoient 404. Les en-têtes interdisent l’indexation et l’accès au microphone/caméra ; la CSP limite les connexions à la prévisualisation. Le lien de retour de la galerie est relatif pour fonctionner depuis le téléphone. Contrôles HTTP : 7 chemins autorisés et 13 chemins internes refusés ; envoi d’e-mail toujours simulé.
 
-Après accord explicite pour Cloudflare : démarrer `_references/preview-remote/cloudflared.exe tunnel --no-autoupdate --url http://127.0.0.1:8016`, relever l’URL `https://…trycloudflare.com`, puis vérifier les pages sur cette URL avant de la communiquer. Le lien est temporaire et dépend du PC et des processus en cours. La branche publiée et le site de production restent inchangés.
+Tunnel lancé en arrière-plan, sans fenêtre ni installation de service : PID `115696` lors de cette création. Les fichiers locaux `server.pid`, `tunnel.pid`, `server.*.log` et `tunnel.*.log` sont dans `_references/preview-remote/`. Avant tout arrêt ou redémarrage, vérifier que le PID désigne toujours le bon exécutable et les bons arguments. Pour recréer le tunnel après son arrêt : `_references/preview-remote/cloudflared.exe tunnel --no-autoupdate --url http://127.0.0.1:8016`, relever la nouvelle URL puis la vérifier. Le lien est temporaire et dépend du PC allumé, connecté, et des deux processus en cours. La branche publiée et le site de production restent inchangés.
 
 ## Intégration réalisée
 
