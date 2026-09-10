@@ -1,0 +1,196 @@
+/* Méditerranée lumineuse. Site surfaces only; Claire keeps her own tokens. */
+:root {
+  --med-paper: #f6f3ec;
+  --med-ink: #13333d;
+  --med-blue: #006c75;
+  --med-sand: #eee8dc;
+  --med-line: #c8ccc8;
+  --med-muted: #48616a;
+}
+body.med-site { background: var(--med-paper); }
+.med-header { background: #fff; border-bottom: 1px solid #e7e7e1; position: sticky; top: 0; height: auto; }
+.med-header .header-inner { height: auto; }
+.med-header .header-inner { width: 100%; max-width: 1440px; min-height: 108px; padding: 14px 4% 0; display: grid; grid-template-columns: 1fr auto auto; gap: 0 20px; }
+.med-header .brand { grid-row: 1; align-self: center; }
+.med-header .brand__logo { width: 240px; height: auto; max-height: none; }
+.med-header .header-phone { grid-column: 2; grid-row: 1; display: inline-flex; align-items: center; gap: 8px; color: var(--med-ink); font-weight: 650; font-size: 16px; white-space: nowrap; }
+.med-header .header-cta { grid-column: 3; grid-row: 1; }
+.med-header .site-nav { grid-row: 2; grid-column: 1 / -1; justify-content: flex-end; gap: 25px; display: flex; height: 45px; margin: 0; }
+.med-header .site-nav > a { padding: 12px 0 8px; font-size: 14px; font-weight: 500; white-space: nowrap; border-bottom: 2px solid transparent; border-radius: 0; }
+.med-header .site-nav > a:hover, .med-header .site-nav > a[aria-current=page] { color: var(--med-blue); border-color: var(--med-blue); background: transparent; }
+.med-header .nav-toggle { display: none; }
+.med-header.med-compact .header-inner { min-height: 84px; padding: 12px 4%; grid-template-columns: 1fr auto auto; gap: 12px; }
+.med-header.med-compact .site-nav { display: none; }
+.med-header.med-compact .nav-toggle { display: flex; grid-column: 3; grid-row: 1; }
+.med-header.med-compact .header-phone { display: none; }
+.med-header.med-compact .header-cta { grid-column: 2; }
+.med-menu { background: var(--med-paper); color: var(--med-ink); max-width: min(420px, 100%); }
+.med-menu nav { display: grid; gap: 0; }
+.med-menu nav > a { font-size: 18px; padding: 10px 0; border-bottom: 1px solid var(--med-line); }
+.med-menu nav a[aria-current=page] { color: var(--med-blue); font-weight: 700; }
+.med-menu .med-actions { margin-top: 20px; }
+.med-header .med-button, .med-menu .med-button, .med-footer .med-button, .med-main .med-button, .med-dock .med-button { min-height: 46px; display: inline-flex; justify-content: center; align-items: center; gap: 10px; padding: 12px 22px; border: 1px solid var(--med-blue); border-radius: 4px; background: var(--med-blue); color: white; font: inherit; font-size: 16px; font-weight: 600; line-height: 1.25; text-align: center; cursor: pointer; text-decoration: none; transition: background .15s ease; }
+.med-header .med-button { font-size: 14px; padding: 11px 17px; }
+.med-main .med-button:hover, .med-header .med-button:hover { background: #00535b; }
+.med-main .med-button--outline, .med-menu .med-button--outline { color: var(--med-blue); background: transparent; }
+.med-main .med-button--outline:hover { background: #e7eeeb; }
+.med-main .med-button:disabled { opacity: .65; cursor: wait; }
+.med-main :is(a, button, input, textarea, select):focus-visible, .med-header :is(a, button):focus-visible, .med-menu :is(a, button):focus-visible { outline: 3px solid #067c88; outline-offset: 4px; }
+.med-main { color: var(--med-ink); font-family: var(--font-sans); container-type: inline-size; padding: 0; width: 100%; max-width: none; overflow-wrap: break-word; }
+.med-main h1, .med-main h2, .med-main h3 { margin: 0; font-family: var(--font-sans); color: var(--med-ink); letter-spacing: -.045em; font-weight: 750; }
+.med-main h1 { font-size: clamp(32px, 4.4cqi, 62px); line-height: 1.06; }
+.med-main h2 { font-size: clamp(28px, 3.5cqi, 46px); line-height: 1.12; }
+.med-main h3 { font-size: 21px; line-height: 1.25; letter-spacing: -.025em; }
+.med-main p { margin: 0; }
+.med-main h1 em, .med-main h2 em { font-style: normal; color: var(--med-blue); }
+.med-main .med-eyebrow { font-size: 13px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 18px; line-height: 1.5; }
+.med-section { padding: 38px 4%; }
+.med-breadcrumb { font-size: 14px; color: var(--med-muted); padding: 15px 4% 0; }
+.med-breadcrumb a { text-decoration: underline; text-underline-offset: 3px; }
+.med-hero { display: grid; grid-template-columns: 1fr 1.05fr; gap: 36px; align-items: center; padding: 22px 4% 30px; }
+.med-hero--home { padding-top: 0; padding-right: 0; padding-bottom: 0; gap: 34px; }
+.med-hero__copy { padding: 18px 0; }
+.med-hero:not(.med-hero--home) h1 { font-size: clamp(30px, 3.55cqi, 52px); }
+.med-hero .med-intro { font-size: clamp(18px, 1.95cqi, 23px); line-height: 1.45; margin-top: 22px; max-width: 38em; }
+.med-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 26px; }
+.med-audience { margin-top: 23px !important; color: var(--med-muted); font-size: 14px; line-height: 1.5; }
+.med-photo { margin: 0; position: relative; overflow: hidden; border-radius: 10px; background: var(--med-sand); }
+.med-photo img { width: 100%; height: 100%; aspect-ratio: 1.75; object-fit: cover; object-position: var(--med-photo-position, 50% 50%); }
+.med-hero--home .med-photo { border-radius: 28px 0 0 28px; }
+.med-hero--home .med-photo img { min-height: 440px; aspect-ratio: 1.45; }
+.med-photo figcaption { position: absolute; bottom: 0; left: 0; right: 0; padding: 8px 14px; color: white; background: linear-gradient(transparent, rgba(8,30,34,.75)); font-size: 12px; text-align: right; }
+.med-values { display: grid; grid-template-columns: repeat(3, 1fr); padding: 21px 4%; border-block: 1px solid var(--med-line); gap: 18px; }
+.med-values p { display: flex; align-items: center; justify-content: center; gap: 14px; font-size: 16px; }
+.med-values p + p { border-left: 1px solid var(--med-line); }
+.med-icon { flex: 0 0 auto; display: block; width: 42px; height: 42px; color: var(--med-blue); }
+.med-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 36px; margin-bottom: 24px; }
+.med-section-heading > p { max-width: 320px; font-size: 17px; }
+.med-cards { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; margin-top: 22px; }
+.med-cards--home { grid-template-columns: repeat(2, minmax(0,1fr)); }
+.med-card { display: flex; gap: 20px; padding: 24px; border: 1px solid var(--med-line); border-radius: 5px; min-width: 0; }
+.med-card .med-icon { width: 49px; height: 49px; }
+.med-card p { margin-top: 8px; font-size: 16px; line-height: 1.5; }
+.med-card a { display: inline-block; color: var(--med-blue); text-decoration: underline; text-underline-offset: 5px; margin-top: 10px; font-size: 16px; }
+.med-card--photo { display: block; padding: 0; overflow: hidden; }
+.med-card--photo > img { width: 100%; height: 180px; object-fit: cover; }
+.med-card--photo > div { padding: 18px; }
+.med-method { display: grid; grid-template-columns: repeat(var(--med-steps,3), minmax(0,1fr)); gap: 22px; list-style: none; margin-top: 24px; }
+.med-method li { display: flex; align-items: start; gap: 15px; }
+.med-method b { background: var(--med-blue); color: white; border-radius: 50%; width: 44px; height: 44px; flex: 0 0 44px; display: grid; place-items: center; font-size: 19px; }
+.med-method strong { display: block; font-size: 17px; line-height: 1.35; }
+.med-method p { font-size: 15px; margin-top: 5px; color: var(--med-muted); }
+.med-proximity { background: var(--med-sand); display: grid; grid-template-columns: 1fr 1fr; gap: 42px; align-items: center; padding: 28px 4%; }
+.med-proximity .med-photo img { aspect-ratio: 1.8; }
+.med-proximity p:not(.med-eyebrow) { margin-top: 18px; font-size: 18px; line-height: 1.5; }
+.med-location { display: flex; gap: 8px; align-items: center; border-top: 1px solid #b9b9ad; padding-top: 16px; font-size: 14px !important; }
+.med-location .med-icon { width: 20px; height: 24px; }
+.med-cta { background: var(--med-blue); color: white; display: flex; align-items: center; justify-content: space-between; gap: 30px; padding: 38px 4%; }
+.med-cta h2 { color: white; }
+.med-cta p { margin-top: 12px; font-size: 18px; }
+.med-cta .med-actions { flex: 0 0 auto; margin-top: 0; }
+.med-cta .med-button { border-color: white; background: white; color: var(--med-ink); }
+.med-cta .med-button--outline { color: white; background: transparent; }
+.med-cta .med-button:hover { background: #e8eeec; color: var(--med-ink); }
+.med-footer { background: #fff; color: var(--med-ink); padding: 30px 4% 110px; border-top: 1px solid #d9dcd6; }
+.med-footer__top { display: flex; justify-content: space-between; align-items: center; gap: 25px; }
+.med-footer .brand__logo { width: 225px; height: auto; }
+.med-footer p, .med-footer a, .med-footer summary { font-size: 14px; }
+.med-footer__legal { display: flex; gap: 20px; }
+.med-footer__more { margin-top: 22px; padding-top: 16px; border-top: 1px solid #e6e6de; }
+.med-footer__more summary { cursor: pointer; }
+.med-footer__more nav { display: flex; gap: 12px 24px; flex-wrap: wrap; padding-top: 12px; }
+.med-footer a:hover { color: var(--med-blue); text-decoration: underline; }
+.med-contact-grid { display: grid; grid-template-columns: .8fr 1.25fr; gap: 24px; padding: 10px 4% 30px; }
+.med-contact-card, .med-form { background: #fffdf9; padding: 26px; border: 1px solid var(--med-line); border-radius: 6px; }
+.med-contact-card h2, .med-form h2 { font-size: 30px; margin-bottom: 20px; }
+.med-contact-list { display: grid; gap: 20px; list-style: none; padding-block: 20px; border-block: 1px solid var(--med-line); }
+.med-contact-list li { display: flex; gap: 14px; align-items: center; min-width: 0; }
+.med-contact-list .med-icon { width: 26px; height: 26px; }
+.med-contact-list a { overflow-wrap: anywhere; }
+.med-quote-card { background: var(--med-sand); border-radius: 5px; padding: 22px; margin-top: 22px; }
+.med-quote-card p { margin-top: 10px; }
+.med-form .med-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.med-form .form-field { margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.med-form .form-field label { font-size: 14px; font-weight: 550; }
+.med-form .form-field :is(input,textarea,select) { background: white; width: 100%; min-width: 0; padding: 11px 12px; border: 1px solid #aebbc0; border-radius: 4px; font-size: 16px; min-height: 45px; color: var(--med-ink); }
+.med-form .form-field textarea { min-height: 135px; resize: vertical; }
+.med-form .form-field [aria-invalid=true] { border-color: #ad3333; }
+.med-form .field-error { color: #a42727; font-size: 14px; }
+.med-form .field-error:empty { display: none; }
+.med-form .med-full { grid-column: 1 / -1; }
+.med-audience-choice { border: 0; padding: 0; margin: 0 0 20px; display: flex; gap: 20px; flex-wrap: wrap; }
+.med-audience-choice legend { font-size: 14px; margin-bottom: 8px; }
+.med-audience-choice label { display: flex; align-items: center; gap: 7px; font-size: 15px; }
+.med-audience-choice input { accent-color: var(--med-blue); width: 18px; height: 18px; }
+.med-form-note { font-size: 14px; line-height: 1.5; color: var(--med-muted); margin-top: 16px !important; }
+.med-form-note a { text-decoration: underline; }
+.med-banner { min-height: 240px; position: relative; display: flex; align-items: center; padding: 35px 4%; isolation: isolate; }
+.med-banner > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+.med-banner::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, #e5f2f9 5%, #e5f2f9d9 32%, transparent 85%); z-index: -1; }
+.med-banner h2 { max-width: 480px; }
+.med-binome { background: var(--med-sand); }
+.med-binome-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 24px; }
+.med-binome-grid > div { display: flex; gap: 20px; }
+.med-binome-grid p { margin-top: 8px; }
+.med-binome > p { text-align: center; margin-top: 24px; font-size: 15px; }
+.med-presentation { display: grid; grid-template-columns: .8fr 1.2fr; gap: 30px; margin-top: 24px; align-items: start; }
+.med-presentation blockquote { margin: 0; padding-left: 30px; border-left: 1px solid var(--med-line); font-style: italic; font-size: 18px; }
+.med-presentation-status { font-size: 15px; color: var(--med-blue); margin-top: 14px !important; }
+.med-main .med-details { margin-top: 18px; border-top: 1px solid var(--med-line); padding-top: 15px; }
+.med-details summary { cursor: pointer; font-size: 15px; color: var(--med-blue); }
+.med-details p { font-size: 16px; margin-top: 12px; }
+.med-main [id] { scroll-margin-top: 125px; }
+.med-form :is(input, textarea, select) { scroll-margin-bottom: 180px; }
+/* Existing routes retain their content and controls, with the shared identity. */
+.med-site .site-main:not(.med-main) { background: var(--med-paper); }
+.med-site .site-main:not(.med-main) .btn--primary { background: var(--med-blue); border-color: var(--med-blue); color: white; }
+.med-site .site-main:not(.med-main) .form { background: #fffdf9; }
+.med-dock { z-index: 45; }
+@container (max-width: 1100px) {
+  .med-hero { gap: 22px; }
+  .med-cards:not(.med-cards--home) .med-card:not(.med-card--photo) { flex-direction: column; gap: 12px; padding: 18px; }
+  .med-cta { flex-wrap: wrap; }
+  .med-section { padding-block: 30px; }
+}
+@container (max-width: 740px) {
+  .med-hero, .med-contact-grid, .med-proximity { grid-template-columns: 1fr; }
+  .med-hero { gap: 8px; }
+  .med-hero--home { padding-right: 4%; padding-bottom: 25px; }
+  .med-hero--home .med-photo { border-radius: 12px; }
+  .med-hero--home .med-photo img { min-height: 0; aspect-ratio: 1.65; }
+  .med-section-heading { display: block; }
+  .med-section-heading > p { margin-top: 20px; }
+  .med-cards, .med-cards--home { grid-template-columns: 1fr; }
+  .med-cards:not(.med-cards--home) .med-card:not(.med-card--photo) { flex-direction: row; }
+  .med-method { grid-template-columns: 1fr 1fr; }
+  .med-presentation { grid-template-columns: 1fr; }
+  .med-presentation blockquote { padding: 0; border: 0; }
+  .med-binome-grid { grid-template-columns: 1fr; }
+  .med-values { grid-template-columns: 1fr; gap: 14px; }
+  .med-values p { justify-content: start; }
+  .med-values p + p { border: 0; }
+}
+@container (max-width: 450px) {
+  .med-main h1 { font-size: 35px; }
+  .med-hero__copy { padding-top: 24px; }
+  .med-actions { gap: 10px; }
+  .med-main .med-button { padding-inline: 15px; font-size: 15px; }
+  .med-method, .med-form .med-form-grid { grid-template-columns: 1fr; }
+  .med-contact-card, .med-form { padding: 20px; }
+  .med-photo img { aspect-ratio: 1.55; }
+  .med-cta .med-actions { width: 100%; }
+}
+@media (max-width: 820px) {
+  .med-header .header-inner, .med-header.med-compact .header-inner { min-height: 76px; }
+  .med-header .brand__logo { width: 165px; }
+  .med-header .header-cta { display: none; }
+  .med-header.med-compact .nav-toggle { grid-column: 3; }
+  .med-header::after { display: none; }
+  .med-footer__top { flex-direction: column; align-items: start; }
+  .med-footer { padding-bottom: 175px; }
+  /* Keep CTA access in manual mode without covering Claire's existing recall bar. */
+  body.med-site.claire-is-manual .med-dock { display: flex; bottom: 0; height: 56px; padding: 6px 4%; background: white; border-top: 1px solid var(--med-line); gap: 12px; }
+  .med-dock a { flex: 1; font-size: 14px; min-height: 40px; }
+  body.med-site.claire-is-manual .claire-manual-bar { bottom: 65px; }
+  body.med-site.med-form-editing.claire-is-manual :is(.claire-manual-bar, .med-dock) { visibility: hidden; pointer-events: none; }
+}

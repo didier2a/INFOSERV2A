@@ -681,11 +681,11 @@ test("E-MOB-FACE-01 : les champs n’écrasent pas le visage de Claire", async (
 test("la sortie générée reste synchronisée avec le partial", async () => {
   const partial = await readFile(path.join(ROOT, "partials/header.html"), "utf8");
   const index = await readFile(path.join(ROOT, "index.html"), "utf8");
-  const start = index.indexOf('<header class="site-header">');
+  const start = index.indexOf('<header class="site-header med-header">');
   const end = index.indexOf("<!-- /chrome:header -->");
   assert.ok(start >= 0 && end > start);
   const generatedHeader = index.slice(start, end).trim();
-  assert.equal(generatedHeader, partial.trim());
+  assert.equal(generatedHeader.replace(/ aria-current="page"/g, "").replace(/\r\n/g, "\n"), partial.trim().replace(/\r\n/g, "\n"));
 });
 
 test("audit externe corroboré : écrit dès l’arrivée, formulaires, rail, badge public", async () => {
@@ -710,11 +710,11 @@ test("audit externe corroboré : écrit dès l’arrivée, formulaires, rail, ba
   assert.match(devis, /Envoyer la demande à/);
   assert.match(devis, /Les champs marqués \* sont obligatoires/);
   assert.match(devis, /aria-describedby="devis-name-error"/);
-  assert.match(contact, /placeholder="Ex\. Je cherche un dépannage PC à Porto-Vecchio\."/);
-  assert.match(contact, /Nom <span class="req"/);
+  assert.match(contact, /<textarea[^>]+id="contact-message"[^>]+required/);
+  assert.match(contact, /<label for="contact-name">Nom \*<\/label>/);
   assert.match(contact, /method="post"/);
-  assert.match(contact, /Envoyer le message à/);
-  assert.match(contact, /Les champs marqués \* sont obligatoires/);
+  assert.match(contact, /Envoyer ma demande/);
+  assert.match(contact, /\* Champs obligatoires/);
   assert.match(contact, /aria-describedby="contact-name-error"/);
   assert.match(client, /claire-quote-quest/);
   assert.match(client, /this\.avatarSpoken = ""/);
@@ -733,9 +733,9 @@ test("E-MAIL-01 : contact et devis partent vers l’e-mail du client, avec atten
     readFile(path.join(ROOT, "functions/api/send-email.js"), "utf8"),
     readFile(path.join(ROOT, "assets/js/main.js"), "utf8")
   ]);
-  assert.match(contact, /l’e-mail que vous avez indiqué/);
+  assert.match(contact, /Le récapitulatif est envoyé à votre adresse e-mail/);
   assert.match(devis, /l’e-mail que vous avez indiqué/);
-  assert.match(contact, /form-sending/);
+  assert.match(main, /form-sending/);
   assert.match(devis, /form-sending/);
   assert.doesNotMatch(contact, /Le message part réellement vers contact@/);
   assert.doesNotMatch(devis, /La demande part réellement vers contact@/);

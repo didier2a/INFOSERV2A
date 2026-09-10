@@ -61,7 +61,7 @@ test("audit : Claire est une consultante IT ouverte, pas une IA de salon", () =>
 
 test("audit : le catalogue site est injecté et chaque onglet est connu", () => {
   const briefing = buildSiteBriefing(knowledge);
-  assert.equal(knowledge.pages.length, 13);
+  assert.equal(knowledge.pages.length, 15);
   for (const page of knowledge.pages) {
     assert.match(briefing, new RegExp(page.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }

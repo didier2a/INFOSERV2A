@@ -60,24 +60,34 @@
         return;
       }
 
+      const context = [
+        form.querySelector('[name="audience"]:checked')?.value,
+        form.querySelector('#contact-company')?.value.trim() && 'Entreprise : ' + form.querySelector('#contact-company').value.trim(),
+        form.querySelector('#contact-city')?.value.trim() && 'Commune : ' + form.querySelector('#contact-city').value.trim()
+      ].filter(Boolean).join('\n');
+      const payloadMessage = [context, message.value].filter(Boolean).join('\n\n');
       const send = api.sendSiteEmail
         ? api.sendSiteEmail({
             kind: "contact",
             name: name.value,
             email: email.value,
             phone: phone.value,
-            message: message.value,
+            message: payloadMessage,
             website: form.querySelector("[name='website']")?.value || ""
           })
         : Promise.reject(new Error("send"));
 
       send.then((result) => {
+        if (result.simulated) {
+          api.showStatus(form, "ok", "Simulation locale réussie. Aucun e-mail envoyé. En production, le récapitulatif serait envoyé à " + email.value + ".");
+          return;
+        }
         if (result.pendingActivation) {
           api.showStatus(form, "ok", result.message || "Un e-mail d’activation arrive dans " + (result.inbox || email.value) + ". Confirmez-le, puis renvoyez le message.");
           return;
         }
         if (!result.sent) throw new Error(result.error || "network");
-        api.showStatus(form, "ok", "Votre message a bien été transmis vers " + (result.inbox || email.value) + ".");
+        api.showStatus(form, "ok", "Votre récapitulatif a bien été transmis vers " + (result.inbox || email.value) + ". Répondez à cet e-mail pour l’adresser à Didier.");
         document.dispatchEvent(new CustomEvent("infoserv:email-sent", {
           detail: {
             kind: "contact",

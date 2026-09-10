@@ -181,6 +181,7 @@
           ok: response.ok,
           status: response.status,
           sent: Boolean(data.sent),
+          simulated: Boolean(data.simulated),
           pendingActivation: Boolean(data.pendingActivation),
           configured: data.configured !== false,
           inbox: data.inbox || "",
@@ -205,7 +206,7 @@
         };
       }).finally(() => clearTimeout(timer)).then((result) => {
         this.setEmailSending(payload, false, result);
-        this.playSendChime(result.sent ? "ok" : "error");
+        this.playSendChime(result.sent || result.simulated ? "ok" : "error");
         return result;
       });
     }

@@ -1,0 +1,336 @@
+{
+  "date": "2026-09-10T11:31:07.011Z",
+  "mode": "Local preview, simulated services; no external email or live voice/video",
+  "checks": [
+    {
+      "name": "PC route index.html",
+      "passed": true,
+      "detail": {
+        "h1": 1,
+        "width": 1440,
+        "overflow": [],
+        "images": [],
+        "nav": 8,
+        "ratio": {
+          "panel": 479.984375,
+          "main": 960.015625,
+          "w": 1440
+        }
+      }
+    },
+    {
+      "name": "PC route maintenance-distance.html",
+      "passed": true,
+      "detail": {
+        "h1": 1,
+        "width": 1440,
+        "overflow": [],
+        "images": [],
+        "nav": 8,
+        "ratio": {
+          "panel": 479.984375,
+          "main": 960.015625,
+          "w": 1440
+        }
+      }
+    },
+    {
+      "name": "PC route reseaux-wifi.html",
+      "passed": true,
+      "detail": {
+        "h1": 1,
+        "width": 1440,
+        "overflow": [],
+        "images": [],
+        "nav": 8,
+        "ratio": {
+          "panel": 479.984375,
+          "main": 960.015625,
+          "w": 1440
+        }
+      }
+    },
+    {
+      "name": "PC route videosurveillance.html",
+      "passed": true,
+      "detail": {
+        "h1": 1,
+        "width": 1440,
+        "overflow": [],
+        "images": [],
+        "nav": 8,
+        "ratio": {
+          "panel": 479.984375,
+          "main": 960.015625,
+          "w": 1440
+        }
+      }
+    },
+    {
+      "name": "PC route creation-site-web.html",
+      "passed": true,
+      "detail": {
+        "h1": 1,
+        "width": 1440,
+        "overflow": [],
+        "images": [],
+        "nav": 8,
+        "ratio": {
+          "panel": 479.984375,
+          "main": 960.015625,
+          "w": 1440
+        }
+      }
+    },
+    {
+      "name": "PC route claire.html",
+      "passed": true,
+      "detail": {
+        "h1": 1,
+        "width": 1440,
+        "overflow": [],
+        "images": [],
+        "nav": 8,
+        "ratio": {
+          "panel": 479.984375,
+          "main": 960.015625,
+          "w": 1440
+        }
+      }
+    },
+    {
+      "name": "PC route a-propos.html",
+      "passed": true,
+      "detail": {
+        "h1": 1,
+        "width": 1440,
+        "overflow": [],
+        "images": [],
+        "nav": 8,
+        "ratio": {
+          "panel": 479.984375,
+          "main": 960.015625,
+          "w": 1440
+        }
+      }
+    },
+    {
+      "name": "PC route contact.html",
+      "passed": true,
+      "detail": {
+        "h1": 1,
+        "width": 1440,
+        "overflow": [],
+        "images": [],
+        "nav": 8,
+        "ratio": {
+          "panel": 479.984375,
+          "main": 960.015625,
+          "w": 1440
+        }
+      }
+    },
+    {
+      "name": "Menu PC compact et fermeture clavier",
+      "passed": true
+    },
+    {
+      "name": "Navigation PC avec instance et fournisseur de Claire conservés",
+      "passed": true,
+      "detail": {
+        "provider": "simulated",
+        "sessionPreserved": true
+      }
+    },
+    {
+      "name": "Claire : présentation sans microphone puis échange volontaire",
+      "passed": true,
+      "detail": {
+        "connectCalls": [
+          {
+            "microphone": false
+          },
+          {
+            "microphone": true
+          }
+        ],
+        "microphoneRequests": 1,
+        "presentationCount": 1,
+        "presentationListening": false,
+        "visibilityDidNotRequestMicrophone": true,
+        "audio": "not generated or observed"
+      }
+    },
+    {
+      "name": "Claire : ranger puis rappeler sans remplacer la session",
+      "passed": true
+    },
+    {
+      "name": "Contact après navigation : validation, champs supplémentaires, simulation",
+      "passed": true,
+      "detail": {
+        "endpoint": "/api/send-email",
+        "simulated": true,
+        "fields": [
+          "kind",
+          "name",
+          "email",
+          "phone",
+          "message",
+          "website"
+        ],
+        "profileAndCompanyIncluded": true
+      }
+    },
+    {
+      "name": "Contact : échec puis activation (réponses simulées)",
+      "passed": true
+    },
+    {
+      "name": "Devis : parcours, sélection Réseaux & Wi-Fi, simulation",
+      "passed": true,
+      "detail": {
+        "realEmail": false,
+        "attachmentsSent": false
+      }
+    },
+    {
+      "name": "S22 route index.html",
+      "passed": true,
+      "detail": {
+        "h1": 1,
+        "width": 360,
+        "overflow": [],
+        "images": [],
+        "nav": 8
+      }
+    },
+    {
+      "name": "S22 route maintenance-distance.html",
+      "passed": true,
+      "detail": {
+        "h1": 1,
+        "width": 360,
+        "overflow": [],
+        "images": [],
+        "nav": 8
+      }
+    },
+    {
+      "name": "S22 route reseaux-wifi.html",
+      "passed": true,
+      "detail": {
+        "h1": 1,
+        "width": 360,
+        "overflow": [],
+        "images": [],
+        "nav": 8
+      }
+    },
+    {
+      "name": "S22 route videosurveillance.html",
+      "passed": true,
+      "detail": {
+        "h1": 1,
+        "width": 360,
+        "overflow": [],
+        "images": [],
+        "nav": 8
+      }
+    },
+    {
+      "name": "S22 route creation-site-web.html",
+      "passed": true,
+      "detail": {
+        "h1": 1,
+        "width": 360,
+        "overflow": [],
+        "images": [],
+        "nav": 8
+      }
+    },
+    {
+      "name": "S22 route claire.html",
+      "passed": true,
+      "detail": {
+        "h1": 1,
+        "width": 360,
+        "overflow": [],
+        "images": [],
+        "nav": 8
+      }
+    },
+    {
+      "name": "S22 route a-propos.html",
+      "passed": true,
+      "detail": {
+        "h1": 1,
+        "width": 360,
+        "overflow": [],
+        "images": [],
+        "nav": 8
+      }
+    },
+    {
+      "name": "S22 route contact.html",
+      "passed": true,
+      "detail": {
+        "h1": 1,
+        "width": 360,
+        "overflow": [],
+        "images": [],
+        "nav": 8
+      }
+    },
+    {
+      "name": "S22 : menu tactile, navigation et CTA",
+      "passed": true
+    },
+    {
+      "name": "S22 : saisie contact avec hauteur réduite simulant le clavier",
+      "passed": true,
+      "detail": {
+        "physicalKeyboard": false,
+        "viewport": "360x480",
+        "field": {
+          "x": 35.390625,
+          "y": 137.453125,
+          "width": 289.21875,
+          "height": 150.328125
+        },
+        "activeField": "contact-message"
+      }
+    },
+    {
+      "name": "S22 : Claire, retour au site et rangement",
+      "passed": true
+    },
+    {
+      "name": "Aucune erreur JavaScript non gérée",
+      "passed": true
+    }
+  ],
+  "captures": [
+    "01-accueil-pc-manuel.png",
+    "01-index-pc-claire.png",
+    "02-maintenance-distance-pc-claire.png",
+    "03-reseaux-wifi-pc-claire.png",
+    "04-videosurveillance-pc-claire.png",
+    "05-creation-site-web-pc-claire.png",
+    "06-claire-pc-claire.png",
+    "07-a-propos-pc-claire.png",
+    "08-contact-pc-claire.png",
+    "09-contact-simulation-pc.png",
+    "01-index-s22.png",
+    "02-maintenance-distance-s22.png",
+    "03-reseaux-wifi-s22.png",
+    "04-videosurveillance-s22.png",
+    "05-creation-site-web-s22.png",
+    "06-claire-s22.png",
+    "07-a-propos-s22.png",
+    "08-contact-s22.png",
+    "10-contact-clavier-s22.png",
+    "11-claire-s22.png"
+  ],
+  "errors": []
+}
