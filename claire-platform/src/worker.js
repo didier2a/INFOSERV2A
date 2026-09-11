@@ -204,7 +204,7 @@ async function embedPage(request, env) {
   const headers = new Headers(asset.headers);
   headers.set("Content-Security-Policy", [
     "default-src 'self'",
-    "script-src 'self' https://unpkg.com",
+    "script-src 'self' https://unpkg.com 'sha256-siszICy3upvZA7nZw5Ac8j/X776kulN46rMId0om8+Y='",
     "style-src 'self'",
     "img-src 'self' data:",
     "media-src 'self' blob: https:",

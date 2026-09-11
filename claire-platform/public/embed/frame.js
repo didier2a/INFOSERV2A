@@ -104,14 +104,12 @@ async function start() {
   elements.start.disabled = true;
   setStatus("Connexion sécurisée…");
   try {
-    const [module, minted] = await Promise.all([
-      import(SDK_URL),
-      api("/api/liveavatar-session", {
-        method: "POST",
-        headers: headers(true),
-        body: JSON.stringify({ tenantId, appId: tenantId, embedTicket: ticket })
-      })
-    ]);
+    const minted = await api("/api/liveavatar-session", {
+      method: "POST",
+      headers: headers(true),
+      body: JSON.stringify({ tenantId, appId: tenantId, embedTicket: ticket })
+    });
+    const module = await import(SDK_URL);
     sdk = module;
     sessionId = minted.sessionId;
     session = new sdk.LiveAvatarSession(minted.sessionToken, { apiUrl: "https://api.liveavatar.com" });
