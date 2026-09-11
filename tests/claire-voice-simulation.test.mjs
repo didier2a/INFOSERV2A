@@ -334,7 +334,7 @@ test("simulation vocale : confirmation exacte avec champs manquants annonce que 
   const surface = new ActuatorSurface();
   const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
   const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
-  const outcome = await controller.run("Oui, envoie ma demande de devis", {
+  const outcome = await controller.run("Oui, envoie la demande de devis", {
     memory,
     pageId: "quote",
     confirmation: { armed: true, kind: "devis" }
@@ -346,7 +346,7 @@ test("simulation vocale : confirmation exacte avec champs manquants annonce que 
   assert.doesNotMatch(describeEmailSendOutcome(outcome), /bien été envoyée|envoyée avec succès/);
 });
 
-test("simulation vocale : confirmation exacte armée actionne vraiment l’API devis", async () => {
+test("simulation vocale : la première confirmation exacte actionne vraiment l’API devis", async () => {
   const { canSubmitQuote } = await import("../assets/js/claire-session-memory.mjs");
   const { describeEmailSendOutcome } = await import("../assets/js/site-email.mjs");
   const memory = {
@@ -364,10 +364,10 @@ test("simulation vocale : confirmation exacte armée actionne vraiment l’API d
   const surface = new ActuatorSurface();
   const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
   const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
-  const outcome = await controller.run("Oui, envoie ma demande de devis", {
+  const outcome = await controller.run("Oui, envoie la demande de devis", {
     memory,
     pageId: "quote",
-    confirmation: { armed: true, kind: "devis" }
+    confirmation: { armed: false, kind: "devis" }
   });
   const submit = outcome.results.find((item) => item.tool === "submit_quote");
   assert.equal(submit.output.sent, true);
@@ -404,6 +404,30 @@ test("simulation vocale : « c’est bon » avec dossier complet n’actionne ja
   assert.equal(submit, undefined);
   assert.equal(surface.posts.length, 0);
   assert.equal(describeEmailSendOutcome(outcome), "");
+});
+
+test("simulation vocale : « envoie de suite » n’actionne jamais l’API", async () => {
+  const memory = {
+    visitor: {
+      name: "Didier Aouizerate",
+      phone: "07 45 15 60 76",
+      email: "infoserv2a@gmail.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé",
+    turns: []
+  };
+  const surface = new ActuatorSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const outcome = await controller.run("envoie de suite", {
+    memory,
+    pageId: "quote",
+    confirmation: { armed: true, kind: "devis" }
+  });
+  assert.equal(outcome.results.some((item) => item.tool === "submit_quote"), false);
+  assert.equal(surface.posts.length, 0);
 });
 
 test("simulation vocale : un devis prérempli part après confirmation exacte armée", async () => {
