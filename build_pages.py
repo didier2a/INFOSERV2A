@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 ASSET_V = "20260907-it48"
 MED_ASSET_V = "20260910-med1"
+SITE_ORIGIN = "https://www.infoserv2a.pro"
 BRAND = '<span class="brand-name">INFOSERV2A</span>'
 HEADER_MARK_START = "<!-- chrome:header -->"
 HEADER_MARK_END = "<!-- /chrome:header -->"
@@ -254,9 +255,27 @@ def patch_seo(html: str, page: str) -> str:
     return html
 
 
+def patch_canonical_urls(html: str, page: str) -> str:
+    """Keep every indexable URL signal on the public www, extensionless URL."""
+    html = html.replace("https://infoserv2a.pro", SITE_ORIGIN)
+    html = re.sub(
+        rf"{re.escape(SITE_ORIGIN)}/([a-z0-9-]+)\.html",
+        rf"{SITE_ORIGIN}/\1",
+        html,
+    )
+    if page == "claire.html" and 'name="robots"' not in html:
+        html = html.replace(
+            '  <meta name="description"',
+            '  <meta name="robots" content="noindex, follow">\n'
+            '  <meta name="description"',
+            1,
+        )
+    return html
+
+
 def replace_marked(html: str, start: str, end: str, inner: str) -> str | None:
     if start in html and end in html:
-        pattern = re.compile(re.escape(start) + r".*?" + re.escape(end), re.S)
+        pattern = re.compile(re.escape(start) + r".*?" + re.escape(end) + r"\n?", re.S)
         block = start + "\n" + inner.rstrip() + "\n" + end + "\n"
         return pattern.sub(block, html, count=1)
     return None
@@ -300,6 +319,7 @@ def main() -> None:
         if page in STANDALONE_PAGES:
             html = patch_viewport(html)
             html = cache_bust(html)
+            html = patch_canonical_urls(html, page)
             path.write_text(html, encoding="utf-8", newline="\n")
             print("updated", page)
             continue
@@ -311,6 +331,7 @@ def main() -> None:
         html = cache_bust(html)
         html = ensure_mediterranee_assets(html)
         html = patch_seo(html, page)
+        html = patch_canonical_urls(html, page)
         path.write_text(html, encoding="utf-8", newline="\n")
         print("updated", page)
 

@@ -37,6 +37,12 @@ function isWorkerPreviewHost(hostname) {
   return hostname.endsWith(".workers.dev");
 }
 
+function extensionlessPath(pathname) {
+  if (pathname === "/index.html") return "/";
+  if (!pathname.endsWith(".html")) return pathname;
+  return pathname.slice(0, -".html".length) || "/";
+}
+
 /**
  * Preserve the Durable Object class identity already provisioned on the
  * production Worker. The restore does not use this binding; fail closed
@@ -70,13 +76,22 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const host = requestHostname(request);
+    const isPublicHost = host === "infoserv2a.pro" || host === "www.infoserv2a.pro";
+    const canonicalPath = ["GET", "HEAD"].includes(request.method)
+      ? extensionlessPath(url.pathname)
+      : url.pathname;
 
-    // Apex uniquement : jamais www, jamais *.workers.dev, jamais localhost.
-    if (host === "infoserv2a.pro" && !isWorkerPreviewHost(url.hostname) && !isWorkerPreviewHost(host)) {
+    // Une seule redirection vers le www sans extension, jamais sur les previews.
+    if (
+      isPublicHost
+      && !isWorkerPreviewHost(url.hostname)
+      && !isWorkerPreviewHost(host)
+      && (host === "infoserv2a.pro" || canonicalPath !== url.pathname)
+    ) {
       return new Response(null, {
         status: 301,
         headers: {
-          Location: `https://www.infoserv2a.pro${url.pathname}${url.search}`
+          Location: `https://www.infoserv2a.pro${canonicalPath}${url.search}`
         }
       });
     }
