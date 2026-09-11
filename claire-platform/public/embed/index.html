@@ -18,11 +18,13 @@
     </header>
 
     <section class="stage" aria-label="LiveAvatar">
-      <video id="avatar" playsinline autoplay hidden></video>
-      <div class="portrait-placeholder" id="placeholder" aria-hidden="true">
-        <span>C</span>
+      <div class="stage-frame">
+        <video id="avatar" playsinline autoplay hidden></video>
+        <div class="portrait-placeholder" id="placeholder" aria-hidden="true">
+          <span>C</span>
+        </div>
+        <span class="status" id="status" role="status">Prête à vous conseiller</span>
       </div>
-      <span class="status" id="status" role="status">Prête à vous conseiller</span>
     </section>
 
     <section class="conversation" aria-live="polite">

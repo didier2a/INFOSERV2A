@@ -14,7 +14,7 @@ button { cursor: pointer; }
 .shell {
   position: relative;
   display: grid;
-  grid-template-rows: auto minmax(210px, 42%) 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -56,14 +56,30 @@ h2 { margin: 6px 0 8px; font-family: Georgia, serif; font-size: 27px; font-weigh
 }
 
 .stage {
-  position: relative;
+  display: grid;
+  min-height: 0;
   margin: 0 14px;
+  place-items: center;
+}
+
+.stage-frame {
+  position: relative;
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  aspect-ratio: 9 / 16;
   overflow: hidden;
   border-radius: 18px;
   background: linear-gradient(150deg, #dcebe4, #789f95);
 }
 
-.stage video { width: 100%; height: 100%; object-fit: cover; }
+.stage video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
 .portrait-placeholder { display: grid; width: 100%; height: 100%; place-items: center; }
 .portrait-placeholder span {
   display: grid;
@@ -92,7 +108,7 @@ h2 { margin: 6px 0 8px; font-family: Georgia, serif; font-size: 27px; font-weigh
   backdrop-filter: blur(8px);
 }
 
-.conversation { min-height: 0; padding: 15px 20px 10px; overflow-y: auto; }
+.conversation { min-height: 0; max-height: 180px; padding: 15px 20px 10px; overflow-y: auto; }
 .greeting { margin-bottom: 9px; color: #273b4e; font-family: Georgia, serif; font-size: 17px; line-height: 1.38; }
 .transcript { color: #5d6871; font-size: 13px; line-height: 1.45; }
 .transcript p { margin: 6px 0; }
@@ -144,7 +160,6 @@ h2 { margin: 6px 0 8px; font-family: Georgia, serif; font-size: 27px; font-weigh
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
 
 @media (max-height: 560px) {
-  .shell { grid-template-rows: auto 180px 1fr auto; }
   .topbar { padding-block: 10px 7px; }
   .conversation { padding-block: 9px 6px; }
 }

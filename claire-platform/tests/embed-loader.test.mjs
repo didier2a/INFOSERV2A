@@ -5,6 +5,8 @@ import vm from "node:vm";
 
 const loaderSource = await readFile(new URL("../public/claire-embed.js", import.meta.url), "utf8");
 const frameSource = await readFile(new URL("../public/embed/frame.js", import.meta.url), "utf8");
+const frameHtml = await readFile(new URL("../public/embed/index.html", import.meta.url), "utf8");
+const frameStyles = await readFile(new URL("../public/embed/styles.css", import.meta.url), "utf8");
 
 function loaderHarness() {
   const appended = [];
@@ -26,6 +28,8 @@ function loaderHarness() {
   };
   const window = {
     location: { href: "http://localhost:4173/page", origin: "http://localhost:4173" },
+    innerWidth: 1024,
+    innerHeight: 800,
     fetch: async (url) => {
       assert.equal(url.href, "http://localhost:8787/api/embed/bootstrap?tenant=boulangerie-soleil");
       return {
@@ -79,6 +83,7 @@ test("loader mounts a sandboxed iframe using data-tenant and a bootstrap ticket"
   assert.match(iframe.src, /^http:\/\/localhost:8787\/embed\/\?tenant=boulangerie-soleil#ticket=dev_ticket$/);
   assert.match(iframe.allow, /microphone/);
   assert.match(iframe.sandbox, /allow-scripts/);
+  assert.ok(Math.abs(parseFloat(iframe.style.height) / parseFloat(iframe.style.width) - 16 / 9) < 0.000001);
   assert.equal(harness.appended[1].nodeName, "BUTTON");
   assert.equal(script.dataset.claireMounted, "true");
   assert.equal(harness.events[0].type, "claire:mounted");
@@ -104,6 +109,13 @@ test("loader refuses a declared origin that differs from the host page", async (
     /does not match/
   );
   assert.equal(harness.appended.length, 0);
+});
+
+test("iframe UI keeps the LiveAvatar stage in a centered 9:16 frame", () => {
+  assert.match(frameHtml, /<div class="stage-frame">[\s\S]*<video id="avatar"/);
+  assert.match(frameStyles, /\.stage-frame\s*\{[\s\S]*aspect-ratio:\s*9\s*\/\s*16/);
+  assert.match(frameStyles, /\.stage video\s*\{[\s\S]*object-fit:\s*cover;[\s\S]*object-position:\s*center/);
+  assert.doesNotMatch(frameStyles, /minmax\(210px,\s*42%\)/);
 });
 
 test("direct iframe URL bootstraps its own ticket when the hash is missing", async () => {
