@@ -1614,7 +1614,6 @@ export class ClaireCompanion {
   async submit(command, source = "text") {
     const value = String(command || "").trim();
     if (!value || isInternalSitePrompt(value) || isClaireQuotePrompt(value)) return null;
-    this.lastSiteSendOk = false;
     if (source === "text" && (this.state === "arrival" || this.state === "loading")) {
       await this.ensureTextConversation();
     }
@@ -1637,6 +1636,7 @@ export class ClaireCompanion {
       this.lastVoiceCommand = signature;
       this.lastVoiceCommandAt = now;
     }
+    this.lastSiteSendOk = false;
 
     if (classified.kind === "recall" || classified.route?.type === "recall") {
       this.recall();
