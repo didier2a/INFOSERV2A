@@ -529,6 +529,104 @@ test("submitQuote recopie le besoin formalisé si le textarea a le placeholder",
   assert.match(mail.html, /<table/i);
 });
 
+test("le rédacteur silencieux transforme le dialogue boulangerie une seule fois par devis", async () => {
+  const {
+    BrowserInfoServ2ASurface
+  } = await import("../assets/js/claire-site-runtime-adapter.mjs");
+  const {
+    SESSION_MEMORY_KEY,
+    rememberTurn
+  } = await import("../assets/js/claire-session-memory.mjs");
+  const storage = {
+    data: new Map(),
+    getItem(key) { return this.data.get(key) || null; },
+    setItem(key, value) { this.data.set(key, value); },
+    removeItem(key) { this.data.delete(key); }
+  };
+  globalThis.sessionStorage = storage;
+  rememberTurn("user", "Allez, salut Claire, faisons un devis ensemble pour la création d’un site web, s’il te plaît.", storage);
+  rememberTurn("companion", "Très bien. Quel est le projet ?", storage);
+  rememberTurn("user", "On part de zéro pour une boulangerie.", storage);
+  rememberTurn("companion", "Avez-vous déjà un local ?", storage);
+  const memory = rememberTurn("user", "Oui, un local professionnel, mais on n’a pas terminé le besoin.", storage);
+  assert.ok(storage.getItem(SESSION_MEMORY_KEY));
+
+  const fields = new Map();
+  const initial = {
+    "#devis-name": "Didier Aouizerate",
+    "#devis-phone": "07 45 15 60 76",
+    "#devis-email": "didier@example.com",
+    "#devis-city": "Porto-Vecchio",
+    "#devis-service": "creation-site-web",
+    "#devis-description": "Le visiteur souhaite allez, salut Claire, faisons un devis ensemble."
+  };
+  const documentRef = {
+    querySelector(selector) {
+      if (selector === "#devis-form") return { id: "devis-form", querySelector() { return { value: "" }; } };
+      if (selector === "#contact-form") return null;
+      if (!String(selector).startsWith("#devis-")) return null;
+      if (!fields.has(selector)) {
+        fields.set(selector, {
+          tagName: selector === "#devis-service" ? "SELECT" : "INPUT",
+          value: initial[selector] || "",
+          options: [{ value: "creation-site-web", textContent: "Création de site web" }]
+        });
+      }
+      return fields.get(selector);
+    }
+  };
+  let writerCalls = 0;
+  const sent = [];
+  const writerPayload = {
+    qui: "Didier Aouizerate",
+    statut: "Professionnel",
+    besoin: "Le client souhaite créer un site web pour sa boulangerie. Le projet part de zéro. Le site devra présenter l’activité de manière professionnelle. Le client dispose déjà d’un local professionnel.",
+    lieu: "Porto-Vecchio",
+    contraintes: "À préciser",
+    urgence: "À préciser"
+  };
+  const surface = new BrowserInfoServ2ASurface({
+    knowledge,
+    windowRef: {
+      location: {
+        href: "https://infoserv2a.pro/devis.html",
+        pathname: "/devis.html",
+        origin: "https://infoserv2a.pro",
+        hash: ""
+      },
+      InfoServ: {
+        async sendSiteEmail(payload) {
+          sent.push(payload);
+          return { sent: true, inbox: payload.email, replyTo: "contact@infoserv2a.pro", missing: [] };
+        }
+      }
+    },
+    documentRef,
+    fetchImpl: async (url) => {
+      assert.equal(url, "/api/synthesize-need");
+      writerCalls += 1;
+      return Response.json(writerPayload);
+    }
+  });
+
+  surface.syncVisibleForms(memory);
+  const result = await surface.submitQuote({
+    name: "Didier Aouizerate",
+    phone: "07 45 15 60 76",
+    email: "didier@example.com",
+    city: "Porto-Vecchio",
+    service: "creation-site-web"
+  });
+  assert.equal(result.sent, true);
+  assert.equal(writerCalls, 1);
+  assert.equal(sent.length, 1);
+  const besoin = sent[0].description.match(/^3\. Besoin : (.+)$/m)?.[1] || "";
+  assert.match(besoin, /boulangerie/i);
+  assert.match(besoin, /site web/i);
+  assert.doesNotMatch(besoin, /salut Claire|faisons un devis|on n’a pas terminé le besoin|\ballez\b/i);
+  assert.equal(fields.get("#devis-description").value, sent[0].description);
+});
+
 test("Claire écrit dans le formulaire contact visible, pas seulement au moment de l’envoi", async () => {
   const { BrowserInfoServ2ASurface } = await import("../assets/js/claire-site-runtime-adapter.mjs");
   const fields = new Map();

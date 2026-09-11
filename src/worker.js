@@ -11,6 +11,11 @@ import {
   onRequestOptions as sendEmailOptions,
   onRequestPost as sendEmail
 } from "../functions/api/send-email.js";
+import {
+  onRequestGet as synthesizeNeedStatus,
+  onRequestOptions as synthesizeNeedOptions,
+  onRequestPost as synthesizeNeed
+} from "../functions/api/synthesize-need.js";
 
 function methodNotAllowed(allowed) {
   return Response.json(
@@ -99,6 +104,13 @@ export default {
       if (request.method === "GET") return sendEmailStatus({ request, env });
       if (request.method === "POST") return sendEmail({ request, env });
       if (request.method === "OPTIONS") return sendEmailOptions({ request, env });
+      return methodNotAllowed(["GET", "POST", "OPTIONS"]);
+    }
+
+    if (pathname === "/api/synthesize-need") {
+      if (request.method === "GET") return synthesizeNeedStatus({ request, env });
+      if (request.method === "POST") return synthesizeNeed({ request, env });
+      if (request.method === "OPTIONS") return synthesizeNeedOptions({ request, env });
       return methodNotAllowed(["GET", "POST", "OPTIONS"]);
     }
 
