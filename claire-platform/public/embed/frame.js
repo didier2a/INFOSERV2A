@@ -1,7 +1,7 @@
 const SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const url = new URL(location.href);
 const tenantId = url.searchParams.get("tenant") || "";
-const ticket = new URLSearchParams(location.hash.slice(1)).get("ticket") || "";
+let ticket = new URLSearchParams(location.hash.slice(1)).get("ticket") || "";
 history.replaceState(null, "", `${url.pathname}${url.search}`);
 
 const elements = {
@@ -21,6 +21,7 @@ const elements = {
   chatForm: document.querySelector("#chat-form"),
   message: document.querySelector("#message")
 };
+elements.start.disabled = true;
 
 let session = null;
 let sdk = null;
@@ -58,13 +59,28 @@ async function api(path, options = {}) {
   return payload;
 }
 
+async function ensureEmbedTicket() {
+  if (ticket) return ticket;
+  if (!tenantId) throw new Error("Lien d’intégration Claire invalide.");
+  const payload = await api(`/api/embed/bootstrap?tenant=${encodeURIComponent(tenantId)}`, {
+    mode: "cors",
+    credentials: "omit",
+    headers: { Accept: "application/json" }
+  });
+  ticket = String(payload.embedTicket || "");
+  if (!ticket) throw new Error("Ticket d’intégration Claire absent.");
+  return ticket;
+}
+
 async function loadTenant() {
-  if (!tenantId || !ticket) throw new Error("Lien d’intégration Claire invalide.");
+  if (!tenantId) throw new Error("Lien d’intégration Claire invalide.");
+  await ensureEmbedTicket();
   const payload = await api(`/api/tenant?tenant=${encodeURIComponent(tenantId)}`, { headers: headers() });
   const tenant = payload.tenant;
   elements.name.textContent = tenant.persona.name;
   elements.greeting.textContent = tenant.persona.greeting;
   document.title = `${tenant.persona.name} · ${tenant.displayName}`;
+  elements.start.disabled = false;
 }
 
 function wireSession(activeSession) {
@@ -104,6 +120,7 @@ async function start() {
   elements.start.disabled = true;
   setStatus("Connexion sécurisée…");
   try {
+    await ensureEmbedTicket();
     const minted = await api("/api/liveavatar-session", {
       method: "POST",
       headers: headers(true),

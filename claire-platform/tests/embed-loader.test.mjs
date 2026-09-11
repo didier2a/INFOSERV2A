@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 
 const loaderSource = await readFile(new URL("../public/claire-embed.js", import.meta.url), "utf8");
+const frameSource = await readFile(new URL("../public/embed/frame.js", import.meta.url), "utf8");
 
 function loaderHarness() {
   const appended = [];
@@ -103,4 +104,79 @@ test("loader refuses a declared origin that differs from the host page", async (
     /does not match/
   );
   assert.equal(harness.appended.length, 0);
+});
+
+test("direct iframe URL bootstraps its own ticket when the hash is missing", async () => {
+  const calls = [];
+  const button = { disabled: true };
+  const elements = new Map();
+  for (const selector of [
+    "#avatar", "#placeholder", "#status", "#claire-name", "#greeting", "#transcript",
+    "#start", "#close", "#contact", "#lead-overlay", "#lead-close", "#lead-form",
+    "#lead-result", "#chat-form", "#message"
+  ]) {
+    elements.set(selector, {
+      addEventListener() {},
+      querySelector() { return button; },
+      append() {},
+      reset() {},
+      disabled: false,
+      hidden: false,
+      textContent: "",
+      value: ""
+    });
+  }
+  const fetch = async (path, options = {}) => {
+    calls.push({ path, options });
+    if (String(path).startsWith("/api/embed/bootstrap")) {
+      return {
+        ok: true,
+        async json() { return { embedTicket: "dogfood-ticket" }; }
+      };
+    }
+    if (String(path).startsWith("/api/tenant")) {
+      return {
+        ok: true,
+        async json() {
+          return {
+            tenant: {
+              displayName: "Boulangerie du Soleil",
+              persona: { name: "Claire", greeting: "Bonjour dogfood" }
+            }
+          };
+        }
+      };
+    }
+    throw new Error(`Unexpected request ${path}`);
+  };
+
+  vm.runInNewContext(frameSource, {
+    URL,
+    URLSearchParams,
+    encodeURIComponent,
+    location: { href: "https://claire-platform-dev.infoserv2a.workers.dev/embed/?tenant=boulangerie-soleil", hash: "" },
+    history: { replaceState() {} },
+    document: {
+      title: "",
+      querySelector(selector) { return elements.get(selector); },
+      createElement() { return { append() {}, scrollIntoView() {}, textContent: "" }; },
+      createTextNode(value) { return value; }
+    },
+    parent: { postMessage() {} },
+    addEventListener() {},
+    fetch,
+    FormData: class FormData {},
+    Object,
+    String,
+    Promise,
+    console
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(calls[0].path, "/api/embed/bootstrap?tenant=boulangerie-soleil");
+  assert.equal(calls[1].path, "/api/tenant?tenant=boulangerie-soleil");
+  assert.equal(calls[1].options.headers.Authorization, "Bearer dogfood-ticket");
+  assert.equal(elements.get("#greeting").textContent, "Bonjour dogfood");
+  assert.equal(elements.get("#start").disabled, false);
 });

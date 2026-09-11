@@ -10,6 +10,7 @@ Plateforme Claire multi-tenant isolée : un Worker héberge le cerveau LiveAvata
 2. Le Worker compare l’en-tête navigateur `Origin` à l’allowlist exacte du tenant.
 3. Il délivre un ticket de 10 minutes lié au tenant et à cette origine.
 4. Le loader monte `/embed/?tenant=…`; l’iframe utilise le ticket pour ses appels same-origin.
+   Une ouverture dogfood directe de `/embed/?tenant=…` sans fragment demande elle-même ce ticket au bootstrap.
 5. `POST /api/liveavatar-session` crée un jeton LiveAvatar éphémère. Les clés LiveAvatar/OpenAI ne quittent jamais le Worker.
 6. Un Durable Object SQLite par tenant persiste les tickets, les sessions actives et le quota mensuel.
 
@@ -112,6 +113,11 @@ Exemple d’intégration côté client :
 `data-origin` est un garde-fou lisible côté client ; l’autorisation serveur se fonde sur le véritable en-tête `Origin`, puis sur le ticket signé. Aucun secret n’est placé dans ce snippet.
 
 Les deux démos sont des sites statiques autonomes. Leur seule intégration Claire est cette balise `<script>` ; elles n’importent aucun composant, formulaire ou module du dépôt InfoServ2A.
+
+Le Worker dogfood expose aussi deux pages hôtes autonomes :
+
+- `/demo-boulangerie.html`
+- `/demo-atelier.html`
 
 ## API
 

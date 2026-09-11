@@ -5,6 +5,7 @@ const TENANTS = Object.freeze({
     allowedOrigins: Object.freeze([
       "https://boulangerie-du-soleil.example",
       "https://www.boulangerie-du-soleil.example",
+      "https://claire-platform-dev.infoserv2a.workers.dev",
       "http://localhost:4173"
     ]),
     persona: Object.freeze({
@@ -30,6 +31,7 @@ const TENANTS = Object.freeze({
     allowedOrigins: Object.freeze([
       "https://atelier-lumiere.example",
       "https://www.atelier-lumiere.example",
+      "https://claire-platform-dev.infoserv2a.workers.dev",
       "http://localhost:4174"
     ]),
     persona: Object.freeze({

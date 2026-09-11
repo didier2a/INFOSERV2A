@@ -29,3 +29,15 @@ test("InfoServ2A asset upload excludes the complete Claire platform", async () =
   const assetsIgnore = await readFile(new URL("../../.assetsignore", import.meta.url), "utf8");
   assert.match(assetsIgnore, /^claire-platform\/$/m);
 });
+
+test("dogfood pages load only the matching Claire tenant", async () => {
+  const fixtures = [
+    ["../public/demo-boulangerie.html", "boulangerie-soleil"],
+    ["../public/demo-atelier.html", "atelier-lumiere"]
+  ];
+  for (const [path, tenantId] of fixtures) {
+    const html = await readFile(new URL(path, import.meta.url), "utf8");
+    assert.match(html, /src="\/claire-embed\.js"/);
+    assert.match(html, new RegExp(`data-tenant="${tenantId}"`));
+  }
+});

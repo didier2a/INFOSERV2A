@@ -92,6 +92,18 @@ test("bootstrap accepts an allowlisted origin and returns CORS headers", async (
   assert.equal(payload.tenant.allowedOrigins, undefined);
 });
 
+test("dogfood Worker origin can bootstrap both demo tenants", async () => {
+  const dogfoodOrigin = "https://claire-platform-dev.infoserv2a.workers.dev";
+  for (const tenantId of ["boulangerie-soleil", "atelier-lumiere"]) {
+    const response = await worker.fetch(request(`/api/embed/bootstrap?tenant=${tenantId}`, {
+      origin: dogfoodOrigin
+    }), platformEnv());
+    assert.equal(response.status, 200, tenantId);
+    assert.equal(response.headers.get("access-control-allow-origin"), dogfoodOrigin);
+    assert.ok((await response.json()).embedTicket);
+  }
+});
+
 test("an unknown tenant is rejected", async () => {
   const response = await worker.fetch(request("/api/embed/bootstrap?tenant=absent"), platformEnv());
   assert.equal(response.status, 404);
