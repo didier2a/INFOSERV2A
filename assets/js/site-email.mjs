@@ -1,4 +1,4 @@
-import { QUOTE_FIELD_LABELS, joinFrenchList } from "./claire-session-memory.mjs?v=20260907-it48";
+import { QUOTE_FIELD_LABELS, joinFrenchList } from "./claire-session-memory.mjs?v=20260911-claire-actions-v1";
 
 export const SITE_EMAIL_PATH = "/api/send-email";
 export const EMAIL_SEND_TIMEOUT_MS = 12000;
@@ -12,6 +12,7 @@ function emptyEmailResult(error = "") {
     configured: true,
     inbox: "",
     replyTo: "",
+    businessCopy: false,
     missing: [],
     error,
     message: "",
@@ -39,6 +40,7 @@ export async function postSiteEmail(payload, fetchImpl = globalThis.fetch) {
       configured: data.configured !== false,
       inbox: data.inbox || "",
       replyTo: data.replyTo || "",
+      businessCopy: Boolean(data.businessCopy),
       missing: Array.isArray(data.missing) ? data.missing : [],
       error: data.error || "",
       message: data.message || "",
@@ -66,6 +68,7 @@ export function describeEmailSendOutcome(outcome) {
   const output = result.output || {};
   const inbox = output.inbox || output.email || "votre e-mail";
   const reply = output.replyTo ? ` La réponse arrivera sur ${output.replyTo}.` : "";
+  const copy = output.businessCopy ? " Une copie a aussi été transmise à InfoServ2A." : "";
   const missing = Array.isArray(output.missing) ? output.missing : [];
   if (missing.length) {
     return `Je n’ai pas envoyé. Il manque encore ${missingFieldSpeech(missing)}.`;
@@ -75,8 +78,8 @@ export function describeEmailSendOutcome(outcome) {
   }
   if (output.sent) {
     return result.tool === "submit_quote"
-      ? `La demande de devis a bien été envoyée vers ${inbox}.${reply}`
-      : `Le message a bien été envoyé vers ${inbox}.${reply}`;
+      ? `La demande de devis a bien été envoyée vers ${inbox}.${copy}${reply}`
+      : `Le message a bien été envoyé vers ${inbox}.${copy}${reply}`;
   }
   if (output.pendingActivation) {
     return `Je n’ai pas encore transmis le message. Un e-mail d’activation arrive dans ${inbox}. Ouvrez-le, confirmez, puis redemandez-moi d’envoyer.`;

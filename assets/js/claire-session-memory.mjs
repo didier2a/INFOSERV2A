@@ -9,7 +9,6 @@ export const QUOTE_REQUIRED_FIELDS = Object.freeze([
   "description"
 ]);
 
-const MAX_TURNS = 24;
 const MAX_VISITS = 8;
 const MAX_TURN_CHARS = 800;
 export const SYNTHESIS_LEAD = "Synthèse de l’échange :";
@@ -85,12 +84,15 @@ export function firstUsefulText(max, ...values) {
 
 export function emptyMemory() {
   return {
-    version: 2,
+    version: 3,
     startedAt: 0,
     updatedAt: 0,
     clientId: "",
     visitCount: 0,
     visitor: { name: "", phone: "", email: "", city: "" },
+    status: "",
+    constraints: "",
+    urgency: "",
     need: "",
     service: "",
     lastPath: "",
@@ -136,7 +138,6 @@ export function normalizeMemory(value = {}) {
         at: Number(turn?.at) || 0
       }))
       .filter((turn) => turn.text)
-      .slice(-MAX_TURNS)
     : [];
   const visits = Array.isArray(value.visits)
     ? value.visits
@@ -150,12 +151,15 @@ export function normalizeMemory(value = {}) {
       .slice(-MAX_VISITS)
     : [];
   return {
-    version: 2,
+    version: 3,
     startedAt: Number(value.startedAt) || 0,
     updatedAt: Number(value.updatedAt) || 0,
     clientId: compact(value.clientId).slice(0, 80),
     visitCount: Number(value.visitCount) || visits.length || 0,
     visitor: normalizeVisitor(value.visitor),
+    status: compact(value.status).slice(0, 80),
+    constraints: compact(value.constraints).slice(0, 320),
+    urgency: compact(value.urgency).slice(0, 160),
     need: usefulText(value.need, 280),
     service: compact(value.service).slice(0, 80),
     lastPath: compact(value.lastPath).slice(0, 160),
@@ -181,7 +185,7 @@ function readStore(storage) {
     const raw = storage?.getItem?.(SESSION_MEMORY_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (!parsed || (parsed.version !== 1 && parsed.version !== 2)) return null;
+    if (!parsed || ![1, 2, 3].includes(parsed.version)) return null;
     return normalizeMemory(parsed);
   } catch {
     return null;
@@ -205,7 +209,7 @@ function mergeTurns(left = [], right = []) {
     seen.add(key);
     merged.push(turn);
   }
-  return merged.sort((a, b) => (a.at || 0) - (b.at || 0)).slice(-MAX_TURNS);
+  return merged.sort((a, b) => (a.at || 0) - (b.at || 0));
 }
 
 function mergeVisits(left = [], right = []) {
@@ -241,6 +245,9 @@ export function mergeMemories(primary = {}, secondary = {}) {
       email: newer.visitor.email || older.visitor.email,
       city: newer.visitor.city || older.visitor.city
     },
+    status: newer.status || older.status,
+    constraints: newer.constraints || older.constraints,
+    urgency: newer.urgency || older.urgency,
     need: needFrom === newer ? (newer.need || (newerEpoch === olderEpoch ? older.need : "")) : older.need,
     service: needFrom === newer ? (newer.service || (newerEpoch === olderEpoch ? older.service : "")) : older.service,
     lastSend: newer.lastSend || older.lastSend,
@@ -268,10 +275,7 @@ export function loadClientId(persistent = defaultPersistentStore()) {
 
 export function loadSessionMemory(storage, persistent) {
   if (arguments.length === 0) {
-    return mergeMemories(
-      readStore(defaultSessionStore()) || emptyMemory(),
-      readStore(defaultPersistentStore()) || emptyMemory()
-    );
+    return readStore(defaultSessionStore()) || emptyMemory();
   }
   if (arguments.length === 1) return readStore(storage) || emptyMemory();
   return mergeMemories(readStore(storage) || emptyMemory(), readStore(persistent) || emptyMemory());
@@ -300,6 +304,29 @@ export function saveSessionMemory(memory, storage, persistent) {
     writeStore(defaultPersistentStore(), next);
   }
   return next;
+}
+
+export function loadPersistentResumeCandidate(persistent = defaultPersistentStore()) {
+  const candidate = readStore(persistent) || emptyMemory();
+  return hasMemoryContent(candidate) ? candidate : null;
+}
+
+export function resumePersistentMemory(
+  session = defaultSessionStore(),
+  persistent = defaultPersistentStore()
+) {
+  const candidate = loadPersistentResumeCandidate(persistent);
+  if (!candidate) return emptyMemory();
+  return saveSessionMemory(candidate, session);
+}
+
+export function clearSessionMemory(
+  session = defaultSessionStore(),
+  persistent = defaultPersistentStore()
+) {
+  try { session?.removeItem?.(SESSION_MEMORY_KEY); } catch { /* stockage bloqué */ }
+  try { persistent?.removeItem?.(SESSION_MEMORY_KEY); } catch { /* stockage bloqué */ }
+  return emptyMemory();
 }
 
 export function archiveCurrentVisit(storage, persistent) {
@@ -384,7 +411,8 @@ export function isNeedUtterance(text = "") {
 export function isClaireSynthesis(value = "") {
   const query = folded(value);
   return query.startsWith("synthese de l echange")
-    || query.startsWith("le visiteur a indique");
+    || query.startsWith("le visiteur a indique")
+    || query.startsWith("1 qui");
 }
 
 function serviceLabel(service = "") {
@@ -555,16 +583,35 @@ export function formatClaireSynthesis(snippets = [], service = "") {
   return withService.replace(/\n{3,}/g, "\n\n").trim().slice(0, 4000);
 }
 
-export function synthesizeMailBody(memory = {}, extras = {}) {
+export function formatClaireActionCanvas(memory = {}, extras = {}) {
+  const normalized = normalizeMemory(memory);
   const authored = firstUsefulText(4000, extras.description, extras.message);
-  const service = compact(memory.service) || compact(extras.service);
-  const written = formatClaireSynthesis(collectNeedSnippets(memory), service);
+  const snippets = collectNeedSnippets(normalized);
+  if (authored && !isClaireSynthesis(authored) && !looksLikeConversationDump(authored, normalized)) {
+    snippets.push(authored);
+  }
+  const need = joinWrittenClauses(dedupeNeedSnippets(
+    snippets.map((item) => toWrittenClause(item)).filter((item) => item && !isUselessClause(item))
+  ));
+  if (!need && !normalized.service) return "";
+  const visitor = normalized.visitor;
+  return [
+    `1. Qui : ${visitor.name || "À préciser"}`,
+    `2. Statut (pro/particulier) : ${normalized.status || "À préciser"}`,
+    `3. Besoin : ${need || serviceLabel(normalized.service) || "À préciser"}`,
+    `4. Lieu : ${visitor.city || "À préciser"}`,
+    `5. Contraintes : ${normalized.constraints || "À préciser"}`,
+    `6. Urgence : ${normalized.urgency || "À préciser"}`
+  ].join("\n").slice(0, 4000);
+}
+
+export function synthesizeMailBody(memory = {}, extras = {}) {
+  const canvas = formatClaireActionCanvas(memory, extras);
+  if (canvas) return canvas;
   const fallback = usefulText(extras.fallbackDescription, 4000);
-  if (written) return written;
-  if (isHandwrittenBody(authored, memory)) return authored;
-  if (authored && !looksLikeConversationDump(authored, memory) && !isClaireSynthesis(authored)) return authored;
-  if (fallback && !looksLikeConversationDump(fallback, memory) && !isClaireSynthesis(fallback)) return fallback;
-  return "";
+  return fallback && !looksLikeConversationDump(fallback, memory) && !isClaireSynthesis(fallback)
+    ? fallback
+    : "";
 }
 
 export function joinFrenchList(items = []) {
@@ -612,6 +659,16 @@ export function extractFactsFromUtterance(text = "") {
 
   const service = inferService(raw);
   if (service) facts.service = service;
+  const query = folded(raw);
+  if (/\b(particulier|a titre personnel|pour chez moi|ma maison)\b/.test(query)) {
+    facts.status = "Particulier";
+  } else if (/\b(professionnel|entreprise|societe|commerce|cabinet|association|collectivite|mairie|restaurant|boutique)\b/.test(query)) {
+    facts.status = "Professionnel";
+  }
+  const constraint = raw.match(/\b(sans (?:fibre|internet|électricité|electricite|connexion)|budget[^.!?]*|enregistrement[^.!?]*|[0-9]+\s*(?:jours?|semaines?|mois)|accès[^.!?]*|acces[^.!?]*)/i);
+  if (constraint) facts.constraints = compact(constraint[0]);
+  const urgency = raw.match(/\b(urgent(?:e|ement)?|dès que possible|des que possible|cette semaine|aujourd['’]hui|demain|pas urgent(?:e)?|sans urgence)\b/i);
+  if (urgency) facts.urgency = compact(urgency[0]);
   if (
     !isThinUtterance(raw)
     && !isContactOnlyUtterance(raw, facts)
@@ -634,6 +691,9 @@ export function mergeFacts(memory, facts = {}) {
     )
   });
   if (compact(facts.service)) next.service = compact(facts.service).slice(0, 80);
+  if (compact(facts.status)) next.status = compact(facts.status).slice(0, 80);
+  if (compact(facts.constraints)) next.constraints = compact(facts.constraints).slice(0, 320);
+  if (compact(facts.urgency)) next.urgency = compact(facts.urgency).slice(0, 160);
   if (usefulText(facts.need)) next.need = usefulText(facts.need, 280);
   next.summary = buildSummary(next);
   return next;
@@ -649,7 +709,6 @@ export function rememberTurn(role, text, storage, persistent) {
     text: clean,
     at: now()
   });
-  if (memory.turns.length > MAX_TURNS) memory.turns = memory.turns.slice(-MAX_TURNS);
   if (role === "user") memory = mergeFacts(memory, extractFactsFromUtterance(clean));
   return saveSessionMemory(memory, ...storeArgs);
 }
@@ -763,6 +822,8 @@ export function hasQuoteProgress(memory = {}) {
 }
 
 export function shouldAnnounceQuoteTruth(command = "", memory = {}, pageId = "") {
+  const requested = arguments.length >= 4 ? arguments[3] === true : false;
+  if (!requested) return false;
   const facts = extractFactsFromUtterance(command);
   if (facts.email || facts.phone || facts.name || facts.city || facts.service) return true;
   const query = folded(command);
@@ -792,6 +853,8 @@ export function contactExtrasFromDocument(doc = globalThis.document) {
     name: read("#contact-name"),
     phone: read("#contact-phone"),
     email: read("#contact-email"),
+    city: read("#contact-city"),
+    status: read('[name="audience"]:checked'),
     message: read("#contact-message")
   };
 }
@@ -804,6 +867,7 @@ export function formExtrasFromDocument(doc = globalThis.document) {
     phone: quote.phone || contact.phone,
     email: quote.email || contact.email,
     city: quote.city,
+    status: contact.status,
     service: quote.service,
     description: quote.description || contact.message,
     message: contact.message || quote.description
@@ -841,6 +905,7 @@ export function hydrateQuoteMemoryFromForm(storage, doc) {
     phone: extras.phone,
     email: extras.email,
     city: extras.city,
+    status: extras.status,
     service: extras.service
   };
   if (rawNeed && !isClaireSynthesis(rawNeed) && !looksLikeConversationDump(rawNeed, memory)) {
@@ -900,6 +965,8 @@ export function emailDraftFromMemory(memory = {}) {
     name: visitor.name,
     email: visitor.email,
     phone: visitor.phone,
+    city: visitor.city,
+    status: compact(memory.status),
     message
   };
 }
@@ -922,6 +989,7 @@ function buildSummary(memory = {}) {
   const visitor = normalizeVisitor(memory.visitor);
   const bits = [
     visitor.name && `Nom ${visitor.name}`,
+    memory.status,
     visitor.city && `à ${visitor.city}`,
     memory.service && `service ${memory.service}`,
     memory.need && compact(memory.need).slice(0, 80)

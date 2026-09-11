@@ -1,5 +1,5 @@
-import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260907-it48";
-import { contactExtrasFromDocument, firstUsefulText, loadSessionMemory, quoteExtrasFromDocument, synthesizeMailBody, usefulText } from "./claire-session-memory.mjs?v=20260907-it48";
+import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260911-claire-actions-v1";
+import { contactExtrasFromDocument, firstUsefulText, loadSessionMemory, quoteExtrasFromDocument, synthesizeMailBody, usefulText } from "./claire-session-memory.mjs?v=20260911-claire-actions-v1";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -324,6 +324,7 @@ export class BrowserInfoServ2ASurface {
       configured: result.configured,
       inbox: result.inbox,
       replyTo: result.replyTo,
+      businessCopy: Boolean(result.businessCopy),
       missing: result.missing || [],
       error: result.error || ""
     };
@@ -371,6 +372,7 @@ export class BrowserInfoServ2ASurface {
         configured: data.configured !== false,
         inbox: data.inbox || "",
         replyTo: data.replyTo || "",
+        businessCopy: Boolean(data.businessCopy),
         missing: Array.isArray(data.missing) ? data.missing : [],
         error: data.error || "",
         message: data.message || ""
@@ -385,6 +387,7 @@ export class BrowserInfoServ2ASurface {
         configured: true,
         inbox: payload?.email || "",
         replyTo: "",
+          businessCopy: false,
         missing: [],
         error: timeout
           ? "L’envoi a pris trop de temps. Réessayez."
@@ -415,11 +418,21 @@ export class BrowserInfoServ2ASurface {
     this.fillQuoteField("#contact-name", draft.name);
     this.fillQuoteField("#contact-email", draft.email || draft.replyTo);
     this.fillQuoteField("#contact-phone", draft.phone);
+    this.fillQuoteField("#contact-city", draft.city);
+    const status = String(draft.status || "").toLocaleLowerCase("fr");
+    if (status) {
+      const audience = this.document.querySelector(
+        `[name="audience"][value="${status === "particulier" ? "Particulier" : "Professionnel"}"]`
+      );
+      if (audience) audience.checked = true;
+    }
     this.fillQuoteField("#contact-message", draft.message || draft.body);
     return {
       name: this.document.querySelector("#contact-name")?.value || "",
       email: this.document.querySelector("#contact-email")?.value || "",
       phone: this.document.querySelector("#contact-phone")?.value || "",
+      city: this.document.querySelector("#contact-city")?.value || "",
+      status: this.document.querySelector('[name="audience"]:checked')?.value || "",
       message: this.document.querySelector("#contact-message")?.value || ""
     };
   }
@@ -443,6 +456,8 @@ export class BrowserInfoServ2ASurface {
         name: visitor.name,
         email: visitor.email,
         phone: visitor.phone,
+        city: visitor.city,
+        status: memory.status,
         message: synthesizeMailBody(memory, { message: memory.need })
       })
       : null;
@@ -606,6 +621,7 @@ export class InfoServ2ASiteAdapter {
           configured: form.configured,
           inbox: form.inbox || this.view.quoteDraft.email || "",
           replyTo: form.replyTo || this.view.quoteDraft.email,
+          businessCopy: Boolean(form.businessCopy),
           missing: form.missing || [],
           error: form.error || "",
           persistentSession: true
@@ -647,6 +663,8 @@ export class InfoServ2ASiteAdapter {
             name: args.name || filled.name,
             email: args.email || filled.email,
             phone: args.phone || filled.phone,
+            city: args.city || filled.city,
+            status: args.status || filled.status,
             message: args.message || draft.body
           })
           : await this.surface.sendSiteEmail?.({
@@ -665,6 +683,7 @@ export class InfoServ2ASiteAdapter {
           configured: launched.configured,
           inbox: launched.inbox || draft.to,
           replyTo: launched.replyTo || args.email || "",
+          businessCopy: Boolean(launched.businessCopy),
           missing: launched.missing || [],
           error: launched.error || "",
           triggered: Boolean(launched.sent),

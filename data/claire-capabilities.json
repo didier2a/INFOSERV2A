@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.2.0",
-  "runtimeVersion": "2.3.0-memory",
-  "mode": "it-generalist-with-site-catalog",
+  "runtimeVersion": "3.0.0-actions-v1",
+  "mode": "conseil-explicit-devis-contact",
   "site": "InfoServ2A",
   "knowledgeSource": "data/site-knowledge.json",
   "guardrails": {
@@ -51,9 +51,9 @@
     },
     {
       "name": "submit_quote",
-      "description": "Préremplit puis envoie la demande de devis uniquement après une demande orale explicite, sans inventer de coordonnées.",
+      "description": "Envoie une demande de devis uniquement après synthèse visible et confirmation exacte armée.",
       "sideEffect": "form-submission",
-      "confirmation": "spoken-explicit",
+      "confirmation": "exact-armed",
       "required": []
     },
     {
@@ -65,9 +65,9 @@
     },
     {
       "name": "compose_email",
-      "description": "Ouvre un e-mail prérempli vers contact@infoserv2a.pro à partir du contexte de session.",
-      "sideEffect": "external-launch",
-      "confirmation": "spoken-explicit",
+      "description": "Envoie le message au client après synthèse visible et confirmation exacte armée ; copie InfoServ2A si le fournisseur l’autorise.",
+      "sideEffect": "form-submission",
+      "confirmation": "exact-armed",
       "required": []
     },
     {

@@ -25,13 +25,13 @@
   <link rel="icon" href="assets/images/logo/favicon.png?v=2" type="image/png" sizes="192x192">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
   <link rel="manifest" href="site.webmanifest">
-  <link rel="stylesheet" href="assets/css/variables.css?v=20260907-it48">
-  <link rel="stylesheet" href="assets/css/main.css?v=20260907-it48">
-  <link rel="stylesheet" href="assets/css/components.css?v=20260907-it48">
-  <link rel="stylesheet" href="assets/css/responsive.css?v=20260907-it48">
-  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260907-it48">
+  <link rel="stylesheet" href="assets/css/variables.css?v=20260911-claire-actions-v1">
+  <link rel="stylesheet" href="assets/css/main.css?v=20260911-claire-actions-v1">
+  <link rel="stylesheet" href="assets/css/components.css?v=20260911-claire-actions-v1">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=20260911-claire-actions-v1">
+  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260911-claire-actions-v1">
   <script type="importmap">{"imports":{"events":"./vendor/liveavatar/events-browser.mjs"}}</script>
-<link rel="stylesheet" href="assets/css/mediterranee.css?v=20260910-med1">
+<link rel="stylesheet" href="assets/css/mediterranee.css?v=20260911-claire-actions-v1">
 </head>
 <body class="med-site">
   <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -59,10 +59,10 @@
 
     <div class="claire-experience__layout">
       <figure class="claire-live-stage" data-claire-stage data-presence="ready">
-        <img class="claire-live-stage__poster" src="assets/images/companion/claire-liveavatar-1080x1920.jpg" alt="Claire, assistante virtuelle d’InfoServ2A">
+        <img class="claire-live-stage__poster" src="assets/images/companion/claire-liveavatar-1080x1920.jpg" alt="Claire, collaboratrice numérique IT d’InfoServ2A">
         <video class="claire-avatar__video" playsinline webkit-playsinline autoplay muted hidden disablepictureinpicture disableremoteplayback preload="metadata" aria-label="Claire en direct avec synchronisation labiale"></video>
         <span class="claire-live-stage__shade" aria-hidden="true"></span>
-        <span class="claire-live-stage__chip">Votre assistante</span>
+        <span class="claire-live-stage__chip">Collaboratrice numérique IT</span>
         <div class="claire-scene-hud">
           <p class="claire-speaking-hint" data-claire-scene-status>Elle vous parle</p>
           <button class="claire-zap-site" type="button" data-claire-zap-site>Voir le site</button>
@@ -106,12 +106,12 @@
           <p class="claire-arrival-place">Porto-Vecchio · Corse-du-Sud</p>
           <p class="claire-eyebrow">Vous êtes bien chez InfoServ2A.</p>
           <h1 id="claireArrivalTitle">Claire vous ouvre la boutique.</h1>
-          <p id="claireArrivalDescription">Elle est l’assistante virtuelle du site — présentatrice, collègue, un peu la légèreté d’InfoServ2A. Dites-lui ce qui vous amène : elle vous situe, elle vous guide, elle prépare votre demande.</p>
+          <p id="claireArrivalDescription">Claire est la collaboratrice numérique IT d’InfoServ2A. Elle aide Didier, son équipe et chaque client, particulier ou professionnel. Les engagements finaux restent ceux d’InfoServ2A.</p>
           <div class="claire-arrival-actions claire-arrival-actions--doors">
             <button class="claire-button claire-button--primary claire-door claire-door--claire" type="button" data-claire-start>
-              <span class="claire-door__kicker">La devanture</span>
-              <span class="claire-door__label">Parler à Claire</span>
-              <span class="claire-door__hint">Elle vous écoute. C’est le plus simple.</span>
+              <span class="claire-door__kicker">Son désactivé au départ</span>
+              <span class="claire-door__label">Activer le son · ~8s</span>
+              <span class="claire-door__hint">La voix démarre seulement après votre choix. Le micro reste coupé.</span>
             </button>
             <button class="claire-button claire-button--quiet claire-door claire-door--site" type="button" data-claire-manual>
               <span class="claire-door__kicker">À votre rythme</span>
@@ -126,6 +126,14 @@
           </form>
           <p class="claire-arrival-write__hint">Sans micro : une phrase suffit. C’est le filet si vous préférez écrire.</p>
           <p class="claire-privacy">Le micro ne s’allume que si vous choisissez de lui parler.</p>
+          <aside class="claire-resume" data-claire-resume hidden>
+            <strong>Reprendre notre conversation ?</strong>
+            <p>Une conversation précédente est disponible sur cet appareil. La reprise se fera en mode conseil, sans envoi armé.</p>
+            <div>
+              <button type="button" data-claire-resume-yes>Oui, reprendre</button>
+              <button type="button" data-claire-forget>Non, effacer</button>
+            </div>
+          </aside>
         </div>
 
         <div class="claire-conversation">
@@ -165,6 +173,7 @@
           <footer class="claire-conversation__footer">
             <button type="button" data-claire-guided>Voir le site avec Claire</button>
             <button type="button" data-claire-retry hidden>Réessayer LiveAvatar</button>
+            <button type="button" data-claire-forget>Effacer la conversation</button>
             <span>Claire en direct</span>
           </footer>
         </div>
@@ -189,6 +198,7 @@
     <span><strong>Reprendre avec Claire</strong><small>Claire en direct</small></span>
     <b aria-hidden="true">Ouvrir</b>
   </button>
+  <button class="claire-composer-toggle" type="button" data-claire-compose>Écrire à Claire</button>
 
   <p class="sr-only" data-claire-live aria-live="assertive"></p>
   <script>
@@ -356,6 +366,7 @@
 
 
 
+
 <main id="contenu" class="site-main med-main" tabindex="-1">
 <nav class="med-breadcrumb" aria-label="Fil d’Ariane"><a href="/">Accueil</a> / Réseaux &amp; Wi-Fi</nav>
 <section class="med-hero"><div class="med-hero__copy"><p class="med-eyebrow">RÉSEAUX &amp; CONNEXIONS</p><h1>Un réseau fiable.<br><em>Même sur les sites difficiles.</em></h1><p class="med-intro">Wi-Fi, liaisons entre bâtiments et Starlink : des connexions pensées pour votre terrain.</p><div class="med-actions"><a class="med-button" href="devis.html">Demander un devis <span aria-hidden="true">↗</span></a><a class="med-button med-button--outline" href="tel:+33745156076">Appeler</a></div><p class="med-audience">Professionnels du Sud Corse · Particuliers bienvenus</p></div><figure class="med-photo"><img src="assets/images/mediterranee/reseau.webp" alt="Ambiance méditerranéenne, photographie générique provisoire" width="900" height="550" fetchpriority=high><figcaption>Visuel d’ambiance provisoire</figcaption></figure></section><section class="med-section"><p class="med-eyebrow">Des solutions adaptées</p><h2>Chaque lieu a sa solution.</h2><div class="med-cards"><article class="med-card "><svg class="med-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8a16 16 0 0 1 20 0M5 12a11 11 0 0 1 14 0M8 16a6 6 0 0 1 8 0"/><circle cx="12" cy="20" r="1"/></svg><div><h3>Wi-Fi professionnel</h3><p>Bureaux, commerces et espaces d&#x27;accueil.</p><a href="reseaux-wifi.html#wifi-professionnel">En savoir plus <span aria-hidden="true">↗</span><span class="sr-only"> sur Wi-Fi professionnel</span></a></div></article><article class="med-card "><svg class="med-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 22V6l5-4 5 4v16M14 22V9l4-3 4 3v13M5 9h3M5 13h3M5 17h3M17 11h2M17 15h2M17 19h2"/></svg><div><h3>Liaisons entre bâtiments</h3><p>Relier vos espaces selon les contraintes du site.</p><a href="reseaux-wifi.html#liaisons-batiments">En savoir plus <span aria-hidden="true">↗</span><span class="sr-only"> sur Liaisons entre bâtiments</span></a></div></article><article class="med-card "><svg class="med-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3a17 17 0 0 0 18 18ZM5 17l-3 5h12M12 12l7-7M16 3h6v6"/></svg><div><h3>Starlink &amp; sites isolés</h3><p>Étudier la connexion adaptée à votre situation.</p><a href="reseaux-wifi.html#starlink-sites-isoles">En savoir plus <span aria-hidden="true">↗</span><span class="sr-only"> sur Starlink &amp; sites isolés</span></a></div></article></div><details class="med-details" id="wifi-professionnel"><summary>Wi-Fi professionnel</summary><p>Étudier la couverture, les usages et les espaces d’accueil pour construire un Wi-Fi adapté.</p><p><a href="devis.html">Présenter mon besoin dans le devis ↗</a></p></details><details class="med-details" id="liaisons-batiments"><summary>Liaisons entre bâtiments</summary><p>Relier des bâtiments après étude des distances, des obstacles et des usages.</p><p><a href="devis.html">Présenter mon besoin dans le devis ↗</a></p></details><details class="med-details" id="starlink-sites-isoles"><summary>Starlink &amp; sites isolés</summary><p>Étudier Starlink ou une autre connexion selon le terrain, l’alimentation et les contraintes du lieu.</p><p><a href="devis.html">Présenter mon besoin dans le devis ↗</a></p></details></section><section class="med-proximity"><figure class="med-photo"><img src="assets/images/mediterranee/camping.webp" alt="Ambiance du Sud, visuel générique provisoire" width="900" height="550" loading=lazy><figcaption>Visuel d’ambiance provisoire</figcaption></figure><div><p class="med-eyebrow">Un ancrage local</p><h2>Le terrain décide. La solution s&#x27;adapte.</h2><p>Relief, distance, couverture et usages : chaque installation commence par une étude de vos besoins.</p><p class="med-location"><svg class="med-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2"/></svg>Porto-Vecchio · Bonifacio · Solenzara</p></div></section><section class="med-section"><p class="med-eyebrow">Notre méthode</p><ol class="med-method" style="--med-steps:4"><li><b>1</b><div><strong>Étudier</strong><p>Votre situation et vos besoins.</p></div></li><li><b>2</b><div><strong>Installer</strong><p>Des choix expliqués et adaptés.</p></div></li><li><b>3</b><div><strong>Vérifier</strong><p>Un accompagnement jusqu’à l’utilisation.</p></div></li><li><b>4</b><div><strong>Accompagner</strong><p>Rester à vos côtés dans la durée.</p></div></li></ol></section><section class="med-cta"><div><h2>Une connexion à fiabiliser ?</h2><p>Un projet, une question, une idée ? Parlons-en.</p></div><div class="med-actions"><a class="med-button" href="devis.html">Demander un devis <span aria-hidden="true">↗</span></a><a class="med-button med-button--outline" href="tel:+33745156076">Appeler</a></div></section>
@@ -441,11 +452,12 @@
 
 
 
-<script src="assets/js/main.js?v=20260910-med1" defer></script>
-  <script src="assets/js/navigation.js?v=20260907-it48" defer></script>
-  <script src="assets/js/contact.js?v=20260910-med1" defer></script>
-<script src="assets/js/devis.js?v=20260910-med1" defer></script>
-<script type="module" src="assets/js/claire-companion.js?v=20260907-it48"></script>
-<script src="assets/js/mediterranee.js?v=20260910-med1" defer></script>
+
+<script src="assets/js/main.js?v=20260911-claire-actions-v1" defer></script>
+  <script src="assets/js/navigation.js?v=20260911-claire-actions-v1" defer></script>
+  <script src="assets/js/contact.js?v=20260911-claire-actions-v1" defer></script>
+<script src="assets/js/devis.js?v=20260911-claire-actions-v1" defer></script>
+<script type="module" src="assets/js/claire-companion.js?v=20260911-claire-actions-v1"></script>
+<script src="assets/js/mediterranee.js?v=20260911-claire-actions-v1" defer></script>
 </body>
 </html>

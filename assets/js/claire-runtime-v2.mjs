@@ -8,7 +8,7 @@ import {
   resolveCurrentPage,
   isOralSendConfirm,
   isClaireQuotePrompt
-} from "./claire-core.mjs?v=20260907-it48";
+} from "./claire-core.mjs?v=20260911-claire-actions-v1";
 import {
   canSubmitQuote,
   canSubmitContact,
@@ -17,7 +17,11 @@ import {
   quotePrefillFromMemory,
   isSameDraftAlreadySent,
   alreadySentSpeech
-} from "./claire-session-memory.mjs?v=20260907-it48";
+} from "./claire-session-memory.mjs?v=20260911-claire-actions-v1";
+import {
+  CLAIRE_ACTION_MODES,
+  isExactSendConfirmation
+} from "./claire-actions-v1.mjs?v=20260911-claire-actions-v1";
 
 export const CONTROLLER_STATES = Object.freeze({
   READY: "ready",
@@ -91,25 +95,34 @@ function resolveSendClassification(command, classified, context = {}) {
   if (isClaireQuotePrompt(command)) return classified;
   const pageId = context.pageId || "";
   const memory = context.memory || {};
+  const confirmation = context.confirmation || {};
   const routeAction = classified.route?.action || "";
-  const wantsSend = routeAction === "email"
-    || routeAction === "submit_quote"
-    || isOralSendConfirm(command);
-  if (!wantsSend) return classified;
+  const quoteConfirmed = confirmation.armed === true
+    && confirmation.kind === CLAIRE_ACTION_MODES.DEVIS
+    && isExactSendConfirmation(command, CLAIRE_ACTION_MODES.DEVIS);
+  const contactConfirmed = confirmation.armed === true
+    && confirmation.kind === CLAIRE_ACTION_MODES.CONTACT
+    && isExactSendConfirmation(command, CLAIRE_ACTION_MODES.CONTACT);
+  if (quoteConfirmed && canSubmitQuote(memory)) return quoteSendClassification();
+  if (contactConfirmed && canSubmitContact(memory)) return contactSendClassification();
 
-  if (pageId === "contact" && canSubmitContact(memory)) {
-    return contactSendClassification();
+  const wantsSend = routeAction === "email" || routeAction === "submit_quote" || isOralSendConfirm(command);
+  if (!wantsSend) return classified;
+  if (pageId === "contact" || routeAction === "email") {
+    return {
+      kind: "site",
+      route: { type: "navigate", page: pageById(context.knowledge || {}, "contact"), action: "open_contact" }
+    };
   }
-  if (pageId === "quote" && (canSubmitQuote(memory) || routeAction === "email" || isOralSendConfirm(command))) {
-    return quoteSendClassification();
-  }
-  if (pageId !== "contact" && canSubmitQuote(memory)) {
-    return quoteSendClassification();
-  }
-  if (classified.kind === "chat" && isOralSendConfirm(command) && canSubmitContact(memory)) {
-    return contactSendClassification();
-  }
-  return classified;
+  return {
+    kind: "site",
+    route: {
+      type: "navigate",
+      page: pageById(context.knowledge || {}, "quote"),
+      action: "prepare_quote",
+      speech: "Je prépare le devis sans l’envoyer."
+    }
+  };
 }
 
 export function planCommand(input, knowledge, manifest, context = {}) {
@@ -118,7 +131,7 @@ export function planCommand(input, knowledge, manifest, context = {}) {
   const classified = resolveSendClassification(
     command,
     classifyUtterance(routingCommand, knowledge, context),
-    context
+    { ...context, knowledge }
   );
   const route = classified.route || {};
   const steps = [];
@@ -279,6 +292,12 @@ export function planCommand(input, knowledge, manifest, context = {}) {
       });
     }
     steps.push(actionStep("compose_email", emailDraftFromMemory(context.memory), "Envoyer réellement le message vers l’e-mail saisi par le visiteur."));
+  } else if (route.action === "open_contact" && !route.page) {
+    const page = pageById(knowledge, "contact");
+    if (page) steps.push(actionStep("open_contact", { channel: "form" }, "Préparer le contact sans envoyer."));
+  } else if (route.action === "prepare_quote" && !route.page) {
+    const draft = quotePrefillFromMemory(context.memory, { fallbackDescription: command });
+    steps.push(actionStep("prefill_quote", draft, "Préparer le devis sans envoyer."));
   } else if (route.page) {
     steps.push(actionStep("search_site", { query: command }, "Identifier la page et la section les plus pertinentes."));
     if (route.page.id === "contact") {
@@ -290,7 +309,7 @@ export function planCommand(input, knowledge, manifest, context = {}) {
       const draft = quotePrefillFromMemory(context.memory, { fallbackDescription: command });
       steps.push(actionStep("prefill_quote", draft, "Préparer un brouillon. L’envoi n’a lieu que sur demande orale explicite."));
     }
-    if (route.anchor?.id) {
+    if (route.anchor?.id && route.type === "navigate") {
       steps.push(actionStep("scroll_to", { target: route.anchor.id }, "Positionner l’aperçu sur la section déclarée."));
     }
   }
@@ -299,7 +318,7 @@ export function planCommand(input, knowledge, manifest, context = {}) {
   const expected = route.page ? {
     pageId: route.page.id,
     anchorId: route.anchor?.id || null
-  } : route.action === "submit_quote" ? {
+  } : route.action === "submit_quote" || route.action === "prepare_quote" ? {
     pageId: "quote",
     anchorId: null
   } : route.type === "action" ? {
@@ -308,7 +327,7 @@ export function planCommand(input, knowledge, manifest, context = {}) {
   } : null;
 
   let response = route.anchor?.response || route.speech;
-  if (route.action === "submit_quote" || route.page?.id === "quote") {
+  if (route.action === "submit_quote" || route.action === "prepare_quote" || route.page?.id === "quote") {
     const checklist = describeQuoteChecklist(context.memory);
     if (!checklist.complete || route.action !== "submit_quote") {
       response = checklist.speech;

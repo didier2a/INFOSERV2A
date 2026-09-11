@@ -1,0 +1,35 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "infoserv2a-claire-v3-preproduction",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-11",
+  "workers_dev": true,
+  "preview_urls": false,
+  "keep_vars": true,
+  "vars": {
+    "PREVIEW_BUILD_ID": "20260911-claire-actions-v1"
+  },
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CLAIRE_REQUEST_GUARD",
+        "class_name": "ClaireRequestGuard"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "claire-request-guard-v1",
+      "new_classes": ["ClaireRequestGuard"]
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

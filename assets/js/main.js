@@ -186,6 +186,7 @@
           configured: data.configured !== false,
           inbox: data.inbox || "",
           replyTo: data.replyTo || "",
+          businessCopy: Boolean(data.businessCopy),
           missing: Array.isArray(data.missing) ? data.missing : [],
           error: data.error || "",
           message: data.message || ""
