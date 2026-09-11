@@ -3,7 +3,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "postinstall": "node scripts/deploy-pr16-preprod.mjs",
     "test": "node --test tests/*.test.mjs"
   }
 }
