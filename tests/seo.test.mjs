@@ -45,6 +45,9 @@ test("les métadonnées SEO utilisent uniquement le www sans extension HTML", as
       /https:\/\/www\.infoserv2a\.pro\/[^"'<\s]+\.html(?:[#?][^"'<\s]*)?/,
       `${file}: URL absolue .html`
     );
+    if (html.includes('"@type": "LocalBusiness"')) {
+      assert.match(html, /"url": "https:\/\/www\.infoserv2a\.pro\/"/, `${file}: JSON-LD url`);
+    }
   }
 });
 

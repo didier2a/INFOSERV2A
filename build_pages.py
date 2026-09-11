@@ -258,6 +258,7 @@ def patch_seo(html: str, page: str) -> str:
 def patch_canonical_urls(html: str, page: str) -> str:
     """Keep every indexable URL signal on the public www, extensionless URL."""
     html = html.replace("https://infoserv2a.pro", SITE_ORIGIN)
+    html = html.replace(f'"url": "{SITE_ORIGIN}"', f'"url": "{SITE_ORIGIN}/"')
     html = re.sub(
         rf"{re.escape(SITE_ORIGIN)}/([a-z0-9-]+)\.html",
         rf"{SITE_ORIGIN}/\1",
