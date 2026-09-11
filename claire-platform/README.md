@@ -67,6 +67,22 @@ npx wrangler secret put EMBED_SIGNING_SECRET --config wrangler.claire-platform.j
 
 Ne jamais exécuter ces commandes avec `../wrangler.jsonc`. La configuration dédiée porte le nom distinct `claire-platform-dev`, ne déclare aucune route et ne doit jamais être renommée `infoserv2a`.
 
+### Étape exacte pour Didier après authentification
+
+Cet environnement agent n’est pas authentifié auprès de Cloudflare ; aucun Worker distant n’a donc été créé. Depuis un poste autorisé :
+
+```bash
+cd claire-platform
+npx wrangler@latest login
+npx wrangler@latest whoami
+npx wrangler@latest secret put LIVEAVATAR_API_KEY --config wrangler.claire-platform.jsonc
+npx wrangler@latest secret put OPENAI_API_KEY --config wrangler.claire-platform.jsonc
+npx wrangler@latest secret put EMBED_SIGNING_SECRET --config wrangler.claire-platform.jsonc
+npx wrangler@latest deploy --config wrangler.claire-platform.jsonc
+```
+
+La dernière commande doit annoncer une URL `https://claire-platform-dev.<sous-domaine>.workers.dev`. Vérifier `https://…/health`, puis remplacer uniquement le `src` du snippet de démo par cette origine. Cette procédure ne touche pas le Worker `infoserv2a` et n’ajoute aucune route à `infoserv2a.pro`.
+
 ## Ajouter un tenant
 
 Ajouter une entrée dans `src/tenants.js` avec :
