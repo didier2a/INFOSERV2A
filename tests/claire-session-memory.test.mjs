@@ -541,7 +541,8 @@ test("un besoin déjà noté devient le corps du devis même sans tours supplém
     need: "Site vitrine pour mon commerce",
     turns: []
   });
-  assert.match(body, /site vitrine pour mon commerce/i);
+  assert.match(body, /site vitrine/i);
+  assert.match(body, /activité commerciale/i);
   assert.match(body, /^3\. Besoin :/m);
   assert.equal(body.split("\n").length, 6);
   assert.doesNotMatch(body, /• /);
