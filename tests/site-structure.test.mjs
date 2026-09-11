@@ -226,8 +226,8 @@ test("les syllabes et doublons ne peuvent plus piloter la navigation", async () 
   const speakingEnd = provider.match(/AVATAR_SPEAK_ENDED[\s\S]*?SESSION_STOPPED/)?.[0] || "";
   assert.doesNotMatch(speakingStart + speakingEnd, /chat\.(?:mute|unmute)\(\)/);
   assert.match(provider, /conversation:user-transcription/);
-  assert.match(client, /signature === this\.lastVoiceCommand/);
-  assert.match(client, /this\.runtime\?\.activeCommandId/);
+  assert.match(client, /shouldDebounceVoiceCommand\(value, this\.actionMode/);
+  assert.match(client, /runtimeActive: Boolean\(this\.runtime\?\.activeCommandId\)/);
   assert.doesNotMatch(client, /navigationTimer|pendingNavigation/);
   assert.doesNotMatch(client, /article\.scrollIntoView/);
   assert.match(client, /scroller\.scrollTop = scroller\.scrollHeight/);

@@ -977,8 +977,8 @@ export function restoreQuoteDraftForResend(storage, doc) {
   const stored = lastSend?.kind === "devis" ? normalizeStoredQuoteDraft(lastSend.draft) : {};
   const signed = lastSend?.kind === "devis" ? quoteDraftFromSignature(lastSend.signature) : {};
   const archived = (memory.visits || []).at(-1) || {};
-  const service = firstUsefulText(80, form.service, stored.service, archived.service, signed.service);
-  const description = firstUsefulText(4000, form.description, archived.need, stored.description, signed.description);
+  const service = firstUsefulText(80, stored.service, archived.service, form.service, signed.service);
+  const description = firstUsefulText(4000, stored.description, archived.need, form.description, signed.description);
   if (!service && !description) return null;
 
   const restored = normalizeMemory(memory);

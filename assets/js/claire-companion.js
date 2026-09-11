@@ -1511,7 +1511,9 @@ export class ClaireCompanion {
           inbox: detail.inbox || "",
           replyTo: detail.replyTo || "",
           signature,
-          draft: kind === "devis" ? extras : undefined
+          draft: kind === "devis"
+            ? { ...extras, description: memory.need || extras.description }
+            : undefined
         });
       }
       beginNewQuoteAfterSend();
