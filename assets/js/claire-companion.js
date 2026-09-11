@@ -19,7 +19,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260907-it48";
+} from "./claire-core.mjs?v=20260911-it49";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -40,27 +40,27 @@ import {
   alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260907-it48";
-import { describeEmailSendOutcome } from "./site-email.mjs?v=20260907-it48";
+} from "./claire-session-memory.mjs?v=20260911-it49";
+import { describeEmailSendOutcome } from "./site-email.mjs?v=20260911-it49";
 import {
   MOBILE_SCENE_HOLD_MS,
   createMobileSceneState,
   mobileSceneActive,
   reduceMobileScene,
   sceneStatusLabel
-} from "./claire-mobile-scene.mjs?v=20260907-it48";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260907-it48";
+} from "./claire-mobile-scene.mjs?v=20260911-it49";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260911-it49";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260907-it48";
-import "./contact.js?v=20260907-it48";
-import "./devis.js?v=20260907-it48";
+} from "./claire-site-runtime-adapter.mjs?v=20260911-it49";
+import "./contact.js?v=20260911-it49";
+import "./devis.js?v=20260911-it49";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260907-it48";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260907-it48";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260911-it49";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260911-it49";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -323,6 +323,7 @@ export class ClaireCompanion {
     this.speakingStageTimer = 0;
     this.mobileScene = createMobileSceneState();
     this.mobileSceneTimer = 0;
+    this.mobileComposerOpen = false;
     this.browserVoice = new BrowserVoiceProvider({
       onTranscript: (text, final) => this.handleTranscript(text, final),
       onStatus: (value, label) => this.setStatus(value, label)
@@ -468,6 +469,7 @@ export class ClaireCompanion {
     this.root.querySelectorAll("[data-claire-scene-write]").forEach((button) => button.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
+      this.setMobileComposer(true);
       this.yieldToHumanType();
       requestAnimationFrame(() => this.nodes.input?.focus());
     }));
@@ -488,6 +490,8 @@ export class ClaireCompanion {
       const value = this.nodes.input.value.trim();
       if (!value) return;
       this.nodes.input.value = "";
+      this.setMobileComposer(false);
+      this.nodes.input.blur();
       void this.submit(value, "text");
     });
     this.nodes.arrivalForm?.addEventListener("submit", (event) => {
@@ -500,7 +504,10 @@ export class ClaireCompanion {
     this.bindResponsiveShell();
     document.addEventListener("focusin", (event) => this.handleSiteFieldFocus(event));
     document.addEventListener("focusout", () => {
-      globalThis.setTimeout(() => this.syncViewportShell(), 0);
+      globalThis.setTimeout(() => {
+        if (document.activeElement !== this.nodes.input) this.setMobileComposer(false);
+        this.syncViewportShell();
+      }, 0);
     });
     document.addEventListener("pointerdown", (event) => this.handleSiteFieldPointer(event), true);
     this.nodes.mic?.addEventListener("click", () => void this.toggleMicrophone());
@@ -521,8 +528,14 @@ export class ClaireCompanion {
       }
       void this.provider?.resumeMedia?.();
     });
-    this.nodes.input?.addEventListener("focus", () => this.yieldToHumanType());
-    this.nodes.input?.addEventListener("input", () => this.yieldToHumanType());
+    this.nodes.input?.addEventListener("focus", () => {
+      this.setMobileComposer(true);
+      this.yieldToHumanType();
+    });
+    this.nodes.input?.addEventListener("input", () => {
+      this.setMobileComposer(true);
+      this.yieldToHumanType();
+    });
     this.nodes.resultLink?.addEventListener("click", () => storageSet(STORAGE_MODE, "guided"));
     document.addEventListener("click", (event) => this.handleSiteLink(event));
     globalThis.addEventListener("popstate", () => {
@@ -604,7 +617,10 @@ export class ClaireCompanion {
   handleSiteFieldFocus(event) {
     const node = event.target;
     if (isTypingControl(node)) this.yieldToHumanType();
-    if (isSiteContentTarget(node) && isTypingControl(node)) this.closeGuidedTranscript();
+    if (isSiteContentTarget(node) && isTypingControl(node)) {
+      this.setMobileComposer(false);
+      this.closeGuidedTranscript();
+    }
     this.syncViewportShell();
   }
 
@@ -621,6 +637,13 @@ export class ClaireCompanion {
   focusComposer() {
     if (isPhoneShell()) return;
     requestAnimationFrame(() => this.nodes.input?.focus());
+  }
+
+  setMobileComposer(open) {
+    const next = Boolean(open && isPhoneShell() && this.state === "guided");
+    this.mobileComposerOpen = next;
+    if (this.root) this.root.dataset.composer = next ? "open" : "closed";
+    document.body.classList.toggle("claire-composer-open", next);
   }
 
   async keepScreenAwake() {
@@ -688,6 +711,7 @@ export class ClaireCompanion {
     document.body.classList.toggle("claire-conversation-open", next === "shared" || next === "action");
     document.body.classList.toggle("claire-is-guided", next === "guided");
     document.body.classList.toggle("claire-is-manual", next === "manual");
+    if (next !== "guided") this.setMobileComposer(false);
     this.nodes.experience?.setAttribute("aria-hidden", ["arrival", "shared", "action", "guided"].includes(next) ? "false" : "true");
     this.nodes.experience?.setAttribute("aria-modal", ["arrival", "shared", "action"].includes(next) ? "true" : "false");
     this.nodes.experience?.setAttribute("role", next === "guided" ? "complementary" : "dialog");
@@ -726,6 +750,7 @@ export class ClaireCompanion {
     if (event === "start" || event === "speak-start" || event === "reopen") {
       this.clearMobileSceneTimer();
     }
+    if (event === "start" || event === "reopen") this.setMobileComposer(false);
     this.mobileScene = reduceMobileScene(this.mobileScene, event);
     this.syncMobileSceneDom();
     return this.mobileScene;
@@ -1231,7 +1256,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260907-it48");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260911-it49");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));

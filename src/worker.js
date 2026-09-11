@@ -37,6 +37,35 @@ function isWorkerPreviewHost(hostname) {
   return hostname.endsWith(".workers.dev");
 }
 
+/**
+ * Conserves the Durable Object class identity already provisioned on the
+ * infoserv2a Worker. This branch does not use the guard binding yet; the stub
+ * therefore fails closed and never reads, writes, or deletes existing state.
+ */
+export class ClaireRequestGuard {
+  async fetch() {
+    return Response.json(
+      {
+        allowed: false,
+        status: 503,
+        code: "guard_unavailable"
+      },
+      {
+        status: 503,
+        headers: {
+          "Cache-Control": "no-store",
+          "Content-Security-Policy": "default-src 'none'",
+          "X-Content-Type-Options": "nosniff"
+        }
+      }
+    );
+  }
+
+  async alarm() {
+    // Intentionally preserve any existing alarm and Durable Object state.
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
