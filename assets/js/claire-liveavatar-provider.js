@@ -317,7 +317,7 @@ export class InfoServ2ALiveAvatarProvider {
     if (this.avatarSpeaking) this.bargeIn("email-send");
     this.holdListenForResult = true;
     const sent = this.speakLiveMessage(
-      `[INFOSERV2A_APP_RESULT]\nInformation vérifiée par le site : ${value}\nPrononce uniquement cette information vérifiée, mot pour mot, puis silence. N’ajoute aucun fait, aucune confirmation et aucune autre action. Ne redemande pas de confirmer l’envoi.`,
+      `[INFOSERV2A_APP_RESULT]\nInformation vérifiée par le site : ${value}\nPrononce uniquement cette information vérifiée, mot pour mot et sans attendre qu’on te le demande, puis silence. N’ajoute aucun fait, aucune confirmation et aucune autre action. Ne redemande pas de confirmer l’envoi.`,
       "conversation:email-result-sent"
     );
     if (sent !== "sent" && sent !== "queued") {
