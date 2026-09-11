@@ -200,7 +200,7 @@ async function embedPage(request, env) {
   if (!tenant) return json({ error: "Unknown tenant" }, 404);
   if (!env.ASSETS?.fetch) return new Response("Static assets binding unavailable", { status: 503 });
   const assetUrl = new URL("/embed/index.html", request.url);
-  const asset = await env.ASSETS.fetch(new Request(assetUrl, request));
+  const asset = await env.ASSETS.fetch(new Request(assetUrl, { headers: request.headers }));
   const headers = new Headers(asset.headers);
   headers.set("Content-Security-Policy", [
     "default-src 'self'",

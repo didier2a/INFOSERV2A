@@ -42,6 +42,7 @@
     iframe.loading = "eager";
     iframe.allow = "microphone; autoplay";
     iframe.referrerPolicy = "no-referrer";
+    iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
     iframe.dataset.claireTenant = tenant;
     iframe.style.cssText = [
       "position:fixed",
@@ -59,12 +60,43 @@
     const target = script.dataset.target ? document.querySelector(script.dataset.target) : document.body;
     if (!target) throw new Error("Claire embed: target element was not found.");
     target.appendChild(iframe);
+    const launcher = document.createElement("button");
+    launcher.type = "button";
+    launcher.textContent = iframe.title;
+    launcher.hidden = true;
+    launcher.setAttribute("aria-label", "Ouvrir Claire");
+    launcher.style.cssText = [
+      "position:fixed",
+      "right:max(16px,env(safe-area-inset-right))",
+      "bottom:max(16px,env(safe-area-inset-bottom))",
+      "width:64px",
+      "height:64px",
+      "border:0",
+      "border-radius:50%",
+      "z-index:2147483000",
+      "color:white",
+      "background:#174f52",
+      "font:700 12px system-ui,sans-serif",
+      "box-shadow:0 12px 36px rgba(15,23,42,.3)",
+      "cursor:pointer"
+    ].join(";");
+    launcher.addEventListener("click", function () {
+      iframe.hidden = false;
+      launcher.hidden = true;
+    });
+    target.appendChild(launcher);
     script.dataset.claireMounted = "true";
 
     global.addEventListener("message", function (event) {
       if (event.origin !== platformOrigin || event.source !== iframe.contentWindow) return;
-      if (event.data && event.data.type === "claire:close") iframe.hidden = true;
-      if (event.data && event.data.type === "claire:open") iframe.hidden = false;
+      if (event.data && event.data.type === "claire:close") {
+        iframe.hidden = true;
+        launcher.hidden = false;
+      }
+      if (event.data && event.data.type === "claire:open") {
+        iframe.hidden = false;
+        launcher.hidden = true;
+      }
     });
     dispatch("claire:mounted", { tenant: tenant, iframe: iframe });
     return iframe;

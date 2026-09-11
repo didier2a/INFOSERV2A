@@ -17,7 +17,9 @@ function loaderHarness() {
         nodeName: name.toUpperCase(),
         dataset: {},
         style: {},
-        contentWindow: {}
+        contentWindow: {},
+        setAttribute(attribute, value) { this[attribute] = value; },
+        addEventListener() {}
       };
     }
   };
@@ -70,11 +72,13 @@ test("loader mounts a sandboxed iframe using data-tenant and a bootstrap ticket"
 
   const iframe = await harness.window.ClaireEmbed.mount(script);
 
-  assert.equal(harness.appended.length, 1);
+  assert.equal(harness.appended.length, 2);
   assert.equal(iframe.nodeName, "IFRAME");
   assert.equal(iframe.dataset.claireTenant, "boulangerie-soleil");
   assert.match(iframe.src, /^http:\/\/localhost:8787\/embed\/\?tenant=boulangerie-soleil#ticket=dev_ticket$/);
   assert.match(iframe.allow, /microphone/);
+  assert.match(iframe.sandbox, /allow-scripts/);
+  assert.equal(harness.appended[1].nodeName, "BUTTON");
   assert.equal(script.dataset.claireMounted, "true");
   assert.equal(harness.events[0].type, "claire:mounted");
 });
