@@ -6,4 +6,4 @@ Disallow: /claire-lab
 Disallow: /claire-aidant-figma.html
 Disallow: /claire-aidant-figma
 
-Sitemap: https://infoserv2a.pro/sitemap.xml
+Sitemap: https://www.infoserv2a.pro/sitemap.xml
