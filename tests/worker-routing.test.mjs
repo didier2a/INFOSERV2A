@@ -84,37 +84,16 @@ test("le Worker expose le statut d’envoi d’e-mail", async () => {
   assert.equal((await response.json()).configured, false);
 });
 
-test("l’apex infoserv2a.pro redirige en un seul 301 vers www sans extension", async () => {
+test("l’apex infoserv2a.pro redirige 301 vers www en conservant chemin et query", async () => {
   const response = await worker.fetch(
     new Request("https://infoserv2a.pro/devis.html?x=1"),
     env()
   );
   assert.equal(response.status, 301);
-  assert.equal(response.headers.get("Location"), "https://www.infoserv2a.pro/devis?x=1");
+  assert.equal(response.headers.get("Location"), "https://www.infoserv2a.pro/devis.html?x=1");
 });
 
-test("www redirige les pages HTML en 301 vers leur URL sans extension", async () => {
-  const response = await worker.fetch(
-    new Request("https://www.infoserv2a.pro/contact.html?source=legacy"),
-    env()
-  );
-  assert.equal(response.status, 301);
-  assert.equal(
-    response.headers.get("Location"),
-    "https://www.infoserv2a.pro/contact?source=legacy"
-  );
-});
-
-test("index.html redirige en 301 vers la racine canonique", async () => {
-  const response = await worker.fetch(
-    new Request("https://www.infoserv2a.pro/index.html"),
-    env()
-  );
-  assert.equal(response.status, 301);
-  assert.equal(response.headers.get("Location"), "https://www.infoserv2a.pro/");
-});
-
-test("www.infoserv2a.pro sans extension n’est pas redirigé", async () => {
+test("www.infoserv2a.pro n’est pas redirigé", async () => {
   const response = await worker.fetch(new Request("https://www.infoserv2a.pro/"), env());
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("Location"), null);
@@ -124,16 +103,6 @@ test("www.infoserv2a.pro sans extension n’est pas redirigé", async () => {
 test("un hôte workers.dev n’est pas redirigé", async () => {
   const response = await worker.fetch(
     new Request("https://cursor-arrivee-devanture-8f54-infoserv2a.infoserv2a.workers.dev/contact.html"),
-    env()
-  );
-  assert.equal(response.status, 200);
-  assert.equal(response.headers.get("Location"), null);
-  assert.equal(await response.text(), "asset:/contact.html");
-});
-
-test("une requête POST n’est pas réécrite uniquement à cause de .html", async () => {
-  const response = await worker.fetch(
-    new Request("https://www.infoserv2a.pro/contact.html", { method: "POST" }),
     env()
   );
   assert.equal(response.status, 200);

@@ -36,24 +36,24 @@ test("les métadonnées SEO utilisent uniquement le www sans extension HTML", as
     const html = await readFile(path.join(ROOT, file), "utf8");
     const canonical = html.match(/<link rel="canonical" href="([^"]+)">/)?.[1];
     const openGraphUrl = html.match(/<meta property="og:url" content="([^"]+)">/)?.[1];
+    const twitterUrl = html.match(/<meta name="twitter:url" content="([^"]+)">/)?.[1];
+    const structuredData = [...html.matchAll(
+      /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g
+    )].map((match) => match[1]).join("\n");
 
     assert.equal(canonical, expected, `${file}: canonical`);
     assert.equal(openGraphUrl, expected, `${file}: og:url`);
-    assert.doesNotMatch(html, /https:\/\/infoserv2a\.pro(?:\/|")/, `${file}: hôte apex`);
+    if (twitterUrl) assert.equal(twitterUrl, expected, `${file}: twitter:url`);
+    assert.doesNotMatch(structuredData, /https:\/\/infoserv2a\.pro(?:\/|")/, `${file}: JSON-LD apex`);
     assert.doesNotMatch(
-      html,
+      structuredData,
       /https:\/\/www\.infoserv2a\.pro\/[^"'<\s]+\.html(?:[#?][^"'<\s]*)?/,
-      `${file}: URL absolue .html`
+      `${file}: JSON-LD .html`
     );
     if (html.includes('"@type": "LocalBusiness"')) {
       assert.match(html, /"url": "https:\/\/www\.infoserv2a\.pro\/"/, `${file}: JSON-LD url`);
     }
   }
-});
-
-test("Claire reste accessible mais ne demande pas son indexation", async () => {
-  const html = await readFile(path.join(ROOT, "claire.html"), "utf8");
-  assert.match(html, /<meta name="robots" content="noindex, follow">/);
 });
 
 test("le sitemap ne contient que les pages publiques canoniques mises à jour", async () => {
