@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "site": "InfoServ2A",
-  "updated": "2026-09-01",
+  "updated": "2026-09-10",
   "identity": {
     "companion": "Claire",
     "role": "Aidante Live Avatar et compagne numérique d’InfoServ2A",
@@ -20,135 +20,522 @@
     {
       "id": "home",
       "href": "index.html",
-      "aliases": ["/", ""],
+      "aliases": [
+        "/",
+        ""
+      ],
       "title": "Accueil InfoServ2A",
       "summary": "InfoServ2A réunit vidéosurveillance, création de sites web et assistance informatique avec un interlocuteur local à Porto-Vecchio.",
-      "keywords": ["accueil", "infoserv2a", "services", "porto-vecchio", "corse-du-sud"],
-      "prompts": ["Quels services proposez-vous ?", "Dans quelle zone intervenez-vous ?", "Je souhaite un devis"]
+      "keywords": [
+        "accueil",
+        "infoserv2a",
+        "services",
+        "porto-vecchio",
+        "corse-du-sud"
+      ],
+      "prompts": [
+        "Quels services proposez-vous ?",
+        "Dans quelle zone intervenez-vous ?",
+        "Je souhaite un devis"
+      ],
+      "anchors": [
+        {
+          "id": "services",
+          "label": "Services",
+          "keywords": [
+            "services"
+          ]
+        },
+        {
+          "id": "proximite",
+          "label": "Proximite",
+          "keywords": [
+            "proximite"
+          ]
+        }
+      ]
     },
     {
       "id": "videosurveillance",
       "href": "videosurveillance.html",
       "title": "Vidéosurveillance",
       "summary": "InfoServ2A étudie et installe des solutions de vidéosurveillance pour maisons, commerces, chantiers et sites isolés, y compris en 4G/5G ou avec alimentation solaire selon le contexte.",
-      "keywords": ["camera", "caméras", "surveillance", "sécurité", "4g", "5g", "solaire", "sans fibre", "sans électricité", "sans internet", "pas internet", "pas de fibre", "sans connexion", "zone blanche", "connexion", "chantier", "commerce", "maison"],
+      "keywords": [
+        "camera",
+        "caméras",
+        "surveillance",
+        "sécurité",
+        "4g",
+        "5g",
+        "solaire",
+        "sans fibre",
+        "sans électricité",
+        "sans internet",
+        "pas internet",
+        "pas de fibre",
+        "sans connexion",
+        "zone blanche",
+        "connexion",
+        "chantier",
+        "commerce",
+        "maison"
+      ],
       "anchors": [
         {
           "id": "solutions-sans-fibre",
-          "label": "Solutions sans fibre",
-          "keywords": ["sans fibre", "sans internet", "pas internet", "pas de fibre", "zone blanche", "4g", "5g", "solaire", "site isolé", "sans électricité", "sans connexion", "connexion"],
+          "label": "Solutions sans fibre, sans internet",
+          "keywords": [
+            "sans fibre",
+            "sans internet",
+            "pas internet",
+            "pas de fibre",
+            "zone blanche",
+            "4g",
+            "5g",
+            "solaire",
+            "site isolé",
+            "sans électricité",
+            "sans connexion",
+            "connexion"
+          ],
           "response": "Voici les solutions 4G, 5G et solaires adaptées aux sites sans fibre."
+        },
+        {
+          "id": "commerces-bureaux",
+          "label": "Commerces bureaux",
+          "keywords": [
+            "commerces bureaux"
+          ]
+        },
+        {
+          "id": "maisons-residences",
+          "label": "Maisons residences",
+          "keywords": [
+            "maisons residences"
+          ]
         }
       ],
-      "prompts": ["Une caméra peut-elle fonctionner sans fibre ?", "Parlez-moi des solutions solaires", "Je veux sécuriser un commerce"]
+      "prompts": [
+        "Une caméra peut-elle fonctionner sans fibre ?",
+        "Parlez-moi des solutions solaires",
+        "Je veux sécuriser un commerce"
+      ]
     },
     {
       "id": "web",
       "href": "creation-site-web.html",
       "title": "Création de sites web",
       "summary": "InfoServ2A conçoit, héberge, maintient et modernise des sites web professionnels adaptés à une activité locale.",
-      "keywords": ["site", "web", "internet", "refonte", "hébergement", "maintenance", "seo", "visibilité locale", "site vitrine"],
+      "keywords": [
+        "site",
+        "web",
+        "internet",
+        "refonte",
+        "hébergement",
+        "maintenance",
+        "seo",
+        "visibilité locale",
+        "site vitrine"
+      ],
       "anchors": [
         {
           "id": "offre-hebergement",
           "label": "Hébergement et maintenance",
-          "keywords": ["hébergement", "hebergement", "maintenance", "nom de domaine", "https", "sauvegardes"],
+          "keywords": [
+            "hébergement",
+            "hebergement",
+            "maintenance",
+            "nom de domaine",
+            "https",
+            "sauvegardes"
+          ],
           "response": "Voici l’offre de création, d’hébergement et de maintenance du site."
+        },
+        {
+          "id": "creation-refonte",
+          "label": "Moderniser votre présence",
+          "keywords": [
+            "moderniser",
+            "refaire",
+            "refonte"
+          ]
+        },
+        {
+          "id": "visibilite-locale",
+          "label": "Visibilite locale",
+          "keywords": [
+            "visibilite locale"
+          ]
+        },
+        {
+          "id": "site-mobile",
+          "label": "Lecture sur téléphone",
+          "keywords": [
+            "mobile",
+            "smartphone",
+            "tablette"
+          ]
         }
       ],
-      "prompts": ["Je veux créer un site vitrine", "Pouvez-vous refaire mon site ?", "Qui assure la maintenance ?"]
+      "prompts": [
+        "Je veux créer un site vitrine",
+        "Pouvez-vous refaire mon site ?",
+        "Qui assure la maintenance ?"
+      ]
     },
     {
       "id": "cybersecurity",
       "href": "cybersecurite-ia.html",
       "title": "Cybersécurité et intelligence artificielle",
       "summary": "InfoServ2A accompagne la sécurisation des outils numériques, les usages utiles de l’intelligence artificielle et l’analyse de réseau.",
-      "keywords": ["cybersécurité", "cyber", "ia", "intelligence artificielle", "réseau", "protection", "audit"],
+      "keywords": [
+        "cybersécurité",
+        "cyber",
+        "ia",
+        "intelligence artificielle",
+        "réseau",
+        "protection",
+        "audit"
+      ],
       "anchors": [
         {
           "id": "audit-nis2",
           "label": "Audit NIS 2",
-          "keywords": ["nis2", "nis 2", "nice2", "nice 2", "audit réseau", "rapport", "conformité"]
+          "keywords": [
+            "nis2",
+            "nis 2",
+            "nice2",
+            "nice 2",
+            "audit réseau",
+            "rapport",
+            "conformité"
+          ]
         }
       ],
-      "prompts": ["Expliquez-moi l’audit NIS 2", "Comment sécuriser mon réseau ?", "Quel accompagnement IA proposez-vous ?"]
+      "prompts": [
+        "Expliquez-moi l’audit NIS 2",
+        "Comment sécuriser mon réseau ?",
+        "Quel accompagnement IA proposez-vous ?"
+      ]
     },
     {
       "id": "remote-support",
       "href": "maintenance-distance.html",
-      "title": "Maintenance à distance",
+      "title": "Assistance",
       "summary": "InfoServ2A intervient à distance sur Windows, Mac, Linux, Android et les appareils Apple lorsque le diagnostic le permet.",
-      "keywords": ["maintenance", "dépannage", "assistance", "distance", "windows", "mac", "linux", "android", "iphone", "ipad", "ordinateur", "pc"],
-      "prompts": ["Pouvez-vous dépanner mon PC à distance ?", "Intervenez-vous sur Mac ?", "Mon téléphone est mal configuré"]
+      "keywords": [
+        "maintenance",
+        "dépannage",
+        "assistance",
+        "distance",
+        "windows",
+        "mac",
+        "linux",
+        "android",
+        "iphone",
+        "ipad",
+        "ordinateur",
+        "pc"
+      ],
+      "prompts": [
+        "Pouvez-vous dépanner mon PC à distance ?",
+        "Intervenez-vous sur Mac ?",
+        "Mon téléphone est mal configuré"
+      ],
+      "anchors": [
+        {
+          "id": "assistance-distance",
+          "label": "Assistance distance",
+          "keywords": [
+            "assistance distance"
+          ]
+        },
+        {
+          "id": "securisation-acces",
+          "label": "Securisation acces",
+          "keywords": [
+            "securisation acces"
+          ]
+        },
+        {
+          "id": "conseils-quotidien",
+          "label": "Conseils quotidien",
+          "keywords": [
+            "conseils quotidien"
+          ]
+        }
+      ]
     },
     {
       "id": "home-support",
       "href": "configuration-domicile.html",
       "title": "Configuration à domicile",
       "summary": "InfoServ2A configure à domicile les ordinateurs, box, réseaux Wi-Fi et équipements connectés autour de Porto-Vecchio.",
-      "keywords": ["domicile", "configuration", "installation", "wifi", "wi-fi", "box", "ordinateur", "objets connectés", "imprimante"],
-      "prompts": ["Pouvez-vous améliorer mon Wi-Fi ?", "J’ai besoin d’une installation à domicile", "Pouvez-vous configurer ma box ?"]
+      "keywords": [
+        "domicile",
+        "configuration",
+        "installation",
+        "wifi",
+        "wi-fi",
+        "box",
+        "ordinateur",
+        "objets connectés",
+        "imprimante"
+      ],
+      "prompts": [
+        "Pouvez-vous améliorer mon Wi-Fi ?",
+        "J’ai besoin d’une installation à domicile",
+        "Pouvez-vous configurer ma box ?"
+      ]
     },
     {
       "id": "data-recovery",
       "href": "recuperation-donnees.html",
       "title": "Récupération de données",
       "summary": "InfoServ2A réalise un diagnostic avant toute tentative de récupération sur disque dur, SSD, clé USB, PC ou Mac.",
-      "keywords": ["récupération", "données", "fichiers", "disque dur", "ssd", "clé usb", "support inaccessible", "perdu", "effacé"],
+      "keywords": [
+        "récupération",
+        "données",
+        "fichiers",
+        "disque dur",
+        "ssd",
+        "clé usb",
+        "support inaccessible",
+        "perdu",
+        "effacé"
+      ],
       "anchors": [
         {
           "id": "supports",
           "label": "Supports concernés",
-          "keywords": ["disque", "ssd", "usb", "pc", "mac", "supports"]
+          "keywords": [
+            "disque",
+            "ssd",
+            "usb",
+            "pc",
+            "mac",
+            "supports"
+          ]
         }
       ],
-      "prompts": ["Mon disque n’est plus accessible", "Récupérez-vous les clés USB ?", "Comment se passe le diagnostic ?"]
+      "prompts": [
+        "Mon disque n’est plus accessible",
+        "Récupérez-vous les clés USB ?",
+        "Comment se passe le diagnostic ?"
+      ]
     },
     {
       "id": "portfolio",
       "href": "realisations.html",
       "title": "Réalisations",
       "summary": "Cette rubrique présente des exemples anonymisés de vidéosurveillance et de sites web réalisés en Corse-du-Sud.",
-      "keywords": ["réalisations", "portfolio", "exemples", "projets", "clients", "chantier", "commerce", "artisan", "association"],
-      "prompts": ["Montrez-moi des réalisations", "Avez-vous équipé des chantiers ?", "Avez-vous créé des sites locaux ?"]
+      "keywords": [
+        "réalisations",
+        "portfolio",
+        "exemples",
+        "projets",
+        "clients",
+        "chantier",
+        "commerce",
+        "artisan",
+        "association"
+      ],
+      "prompts": [
+        "Montrez-moi des réalisations",
+        "Avez-vous équipé des chantiers ?",
+        "Avez-vous créé des sites locaux ?"
+      ]
     },
     {
       "id": "about",
       "href": "a-propos.html",
       "title": "À propos d’InfoServ2A",
       "summary": "InfoServ2A est un prestataire numérique local à Porto-Vecchio, actif depuis 2010 et orienté vers des solutions utiles et un suivi direct.",
-      "keywords": ["à propos", "qui êtes-vous", "expérience", "depuis 2010", "local", "didier", "entreprise"],
-      "prompts": ["Qui est InfoServ2A ?", "Depuis quand exercez-vous ?", "Quelle est votre zone d’intervention ?"]
+      "keywords": [
+        "à propos",
+        "qui êtes-vous",
+        "expérience",
+        "depuis 2010",
+        "local",
+        "didier",
+        "entreprise"
+      ],
+      "prompts": [
+        "Qui est InfoServ2A ?",
+        "Depuis quand exercez-vous ?",
+        "Quelle est votre zone d’intervention ?"
+      ]
     },
     {
       "id": "contact",
       "href": "contact.html",
       "title": "Contact",
       "summary": "La page Contact regroupe le téléphone, l’adresse e-mail, WhatsApp, les horaires et un formulaire de message.",
-      "keywords": ["contact", "téléphone", "email", "e-mail", "whatsapp", "message", "coordonnées", "horaires", "adresse"],
-      "prompts": ["Quel est votre numéro ?", "Quels sont vos horaires ?", "Je veux envoyer un message"]
+      "keywords": [
+        "contact",
+        "téléphone",
+        "email",
+        "e-mail",
+        "whatsapp",
+        "message",
+        "coordonnées",
+        "horaires",
+        "adresse"
+      ],
+      "prompts": [
+        "Quel est votre numéro ?",
+        "Quels sont vos horaires ?",
+        "Je veux envoyer un message"
+      ],
+      "anchors": [
+        {
+          "id": "contact-coordonnees",
+          "label": "Contact coordonnees",
+          "keywords": [
+            "contact coordonnees"
+          ]
+        },
+        {
+          "id": "contact-form",
+          "label": "Contact form",
+          "keywords": [
+            "contact form"
+          ]
+        }
+      ]
     },
     {
       "id": "quote",
       "href": "devis.html",
       "title": "Demande de devis",
       "summary": "Le formulaire de devis permet de décrire gratuitement un besoin de vidéosurveillance, site web, assistance, cybersécurité ou récupération de données, sans engagement.",
-      "keywords": ["devis", "prix", "tarif", "estimation", "budget", "gratuit", "projet", "demande"],
-      "prompts": ["Le devis est-il gratuit ?", "Je veux décrire mon projet", "Ouvrez le formulaire de devis"]
+      "keywords": [
+        "devis",
+        "prix",
+        "tarif",
+        "estimation",
+        "budget",
+        "gratuit",
+        "projet",
+        "demande"
+      ],
+      "prompts": [
+        "Le devis est-il gratuit ?",
+        "Je veux décrire mon projet",
+        "Ouvrez le formulaire de devis"
+      ]
     },
     {
       "id": "legal",
       "href": "mentions-legales.html",
       "title": "Mentions légales",
       "summary": "Cette page présente l’éditeur, les coordonnées, l’hébergement et les règles de propriété intellectuelle du site.",
-      "keywords": ["mentions légales", "éditeur", "hébergeur", "propriété intellectuelle", "juridique"]
+      "keywords": [
+        "mentions légales",
+        "éditeur",
+        "hébergeur",
+        "propriété intellectuelle",
+        "juridique"
+      ]
     },
     {
       "id": "privacy",
       "href": "politique-confidentialite.html",
       "title": "Politique de confidentialité",
       "summary": "Cette page explique les données susceptibles d’être recueillies, leur finalité, leur durée de conservation et les droits des utilisateurs.",
-      "keywords": ["confidentialité", "vie privée", "données personnelles", "rgpd", "conservation", "droits", "microphone"]
+      "keywords": [
+        "confidentialité",
+        "vie privée",
+        "données personnelles",
+        "rgpd",
+        "conservation",
+        "droits",
+        "microphone"
+      ]
+    },
+    {
+      "id": "networks",
+      "href": "reseaux-wifi.html",
+      "title": "Réseaux & Wi-Fi",
+      "summary": "Wi-Fi, liaisons entre bâtiments et Starlink : des connexions pensées pour votre terrain.",
+      "keywords": [
+        "réseaux",
+        "wifi",
+        "wi-fi",
+        "starlink",
+        "liaisons",
+        "bâtiments",
+        "connexion professionnelle"
+      ],
+      "prompts": [
+        "Améliorer le Wi-Fi de mon commerce",
+        "Relier deux bâtiments",
+        "Étudier Starlink pour un site isolé"
+      ],
+      "anchors": [
+        {
+          "id": "wifi-professionnel",
+          "label": "Wifi professionnel",
+          "keywords": [
+            "wifi professionnel"
+          ]
+        },
+        {
+          "id": "liaisons-batiments",
+          "label": "Liaisons batiments",
+          "keywords": [
+            "liaisons batiments"
+          ]
+        },
+        {
+          "id": "starlink-sites-isoles",
+          "label": "Starlink sites isoles",
+          "keywords": [
+            "starlink sites isoles"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "claire-presentation",
+      "href": "claire.html",
+      "title": "Claire, votre assistante IT",
+      "summary": "Je vous écoute, j'éclaire les choix techniques et je vous aide à préparer votre échange avec Didier.",
+      "keywords": [
+        "claire",
+        "assistante",
+        "présentation",
+        "complice",
+        "binôme",
+        "virtuelle"
+      ],
+      "prompts": [
+        "Présentez-moi Claire",
+        "Quel est le rôle de Didier ?"
+      ],
+      "anchors": [
+        {
+          "id": "missions",
+          "label": "Missions",
+          "keywords": [
+            "missions"
+          ]
+        },
+        {
+          "id": "binome",
+          "label": "Binome",
+          "keywords": [
+            "binome"
+          ]
+        },
+        {
+          "id": "presentation",
+          "label": "Presentation",
+          "keywords": [
+            "presentation"
+          ]
+        }
+      ]
     }
   ]
 }

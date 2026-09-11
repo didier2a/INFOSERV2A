@@ -154,6 +154,10 @@
       : Promise.reject(new Error("send"));
 
     send.then((result) => {
+      if (result.simulated) {
+        api.showStatus(form, "ok", "Simulation locale réussie. Aucun e-mail envoyé, aucun fichier transmis. En production, le récapitulatif serait envoyé à " + fields.email.value + ".");
+        return;
+      }
       if (result.pendingActivation) {
         api.showStatus(form, "ok", result.message || "Un e-mail d’activation arrive dans " + (result.inbox || fields.email.value) + ". Confirmez-le, puis renvoyez la demande.");
         return;

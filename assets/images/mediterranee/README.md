@@ -1,0 +1,1 @@
+Photos génériques provisoires extraites des maquettes validées, sans retouche ni nouvelle génération. Elles ne représentent pas des réalisations clientes vérifiées ni des lieux identifiés. Remplacer les fichiers homonymes par des photographies autorisées. Le cadrage est réglable avec --med-photo-position. Le logo et le portrait de Claire restent ceux du dépôt.

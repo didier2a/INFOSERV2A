@@ -1,5 +1,11 @@
 # InfoServ2A — site local
 
+La refonte **Méditerranée lumineuse** est intégrée localement sur `design/mediterranee-lumineuse`, en attente de revue avant publication. Les huit pages utilisent les maquettes validées ; le moteur de Claire est conservé.
+
+Pour l’aperçu avec formulaires simulés : `python preview_mediterranee.py 8016`, puis ouvrir `http://127.0.0.1:8016/`. L’audio/vidéo en direct et l’envoi réel ne sont pas activés dans cet aperçu.
+
+État détaillé pour reprendre depuis le PC ou Remote : [docs/REPRISE-MEDITERRANEE.md](docs/REPRISE-MEDITERRANEE.md). Captures : [galerie de validation](docs/validation-mediterranee/galerie.html).
+
 Site professionnel d'InfoServ2A, relié à Cloudflare Workers Builds. La branche `main` alimente le déploiement stable Cloudflare et les autres branches produisent des versions d’aperçu isolées avant validation.
 
 Environnement de validation Cloudflare : `https://infoserv2a.infoserv2a.workers.dev/`.

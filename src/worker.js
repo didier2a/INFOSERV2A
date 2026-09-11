@@ -39,7 +39,7 @@ function isWorkerPreviewHost(hostname) {
 
 /**
  * Preserve the Durable Object class identity already provisioned on the
- * production Worker. The rollback does not use this binding; fail closed
+ * production Worker. The restore does not use this binding; fail closed
  * without reading, writing, or deleting existing state.
  */
 export class ClaireRequestGuard {
@@ -62,7 +62,7 @@ export class ClaireRequestGuard {
   }
 
   async alarm() {
-    // Intentionally preserve any existing alarm and Durable Object state.
+    // Intentionally leave existing Durable Object state untouched.
   }
 }
 

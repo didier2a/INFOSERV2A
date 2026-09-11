@@ -3,6 +3,8 @@
   "name": "infoserv2a",
   "main": "src/worker.js",
   "compatibility_date": "2026-08-30",
+  // Conserver l'identité et les réglages de Claire définis dans Cloudflare.
+  "keep_vars": true,
   "assets": {
     "directory": ".",
     "binding": "ASSETS",

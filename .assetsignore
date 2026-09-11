@@ -12,3 +12,7 @@ functions/
 partials/
 src/
 tests/
+_references/
+docs/
+scripts/
+preview_mediterranee.py

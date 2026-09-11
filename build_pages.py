@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 ASSET_V = "20260907-it48"
+MED_ASSET_V = "20260910-med1"
 BRAND = '<span class="brand-name">INFOSERV2A</span>'
 HEADER_MARK_START = "<!-- chrome:header -->"
 HEADER_MARK_END = "<!-- /chrome:header -->"
@@ -23,6 +24,8 @@ CURRENT = {
     "videosurveillance.html": {"videosurveillance.html"},
     "creation-site-web.html": {"creation-site-web.html"},
     "maintenance-distance.html": {"maintenance-distance.html"},
+    "reseaux-wifi.html": {"reseaux-wifi.html"},
+    "claire.html": {"claire.html"},
     "configuration-domicile.html": {"configuration-domicile.html"},
     "cybersecurite-ia.html": {"cybersecurite-ia.html"},
     "recuperation-donnees.html": {"recuperation-donnees.html"},
@@ -42,16 +45,16 @@ OFFRES = {
 
 SEO = {
     "contact.html": {
-        "title": "Contact InfoServ2A — Porto-Vecchio, téléphone et WhatsApp",
-        "description": "Contactez InfoServ2A à Porto-Vecchio : 07 45 15 60 76, contact@infoserv2a.pro, WhatsApp. Lundi au samedi, 9h-17h.",
+        "title": "Contact — InfoServ2A à Porto-Vecchio",
+        "description": "Professionnels du Sud Corse et particuliers : décrivez votre besoin, je vous accompagne. Du lundi au samedi, de 9 h à 17 h.",
     },
     "configuration-domicile.html": {
         "title": "Configuration à domicile — Porto-Vecchio | InfoServ2A",
         "description": "Configuration PC, Mac, Wi-Fi, box et objets connectés à domicile à Porto-Vecchio, de Solenzara à Bonifacio.",
     },
     "a-propos.html": {
-        "title": "À propos d'InfoServ2A — Porto-Vecchio depuis 2010",
-        "description": "Prestataire numérique à Porto-Vecchio depuis 2010 : vidéosurveillance, sites web, cybersécurité et IA en Corse-du-Sud.",
+        "title": "À propos — InfoServ2A à Porto-Vecchio",
+        "description": "Didier, votre interlocuteur InfoServ2A à Porto-Vecchio, accompagne les professionnels du Sud Corse, ainsi que les particuliers.",
     },
     "devis.html": {
         "title": "Devis gratuit InfoServ2A — Porto-Vecchio",
@@ -62,8 +65,8 @@ SEO = {
         "description": "Récupération de données à Porto-Vecchio : disque dur, SSD, clé USB, PC et Mac. Diagnostic avant intervention.",
     },
     "maintenance-distance.html": {
-        "title": "Maintenance à distance — Corse-du-Sud | InfoServ2A",
-        "description": "Dépannage à distance à Porto-Vecchio : Windows, Mac, Linux, Android et Apple. Intervention ponctuelle sur devis.",
+        "title": "Assistance — InfoServ2A à Porto-Vecchio",
+        "description": "À distance ou sur place selon votre besoin, retrouvez des outils fiables et des explications claires.",
     },
 }
 
@@ -195,6 +198,24 @@ def ensure_companion_assets(html: str) -> str:
     return html
 
 
+def ensure_mediterranee_assets(html: str) -> str:
+    if 'med-site' not in re.search(r'<body[^>]*>', html).group(0):
+        html = html.replace('<body>', '<body class="med-site">', 1)
+    if 'assets/css/mediterranee.css' not in html:
+        html = html.replace('</head>', '<link rel="stylesheet" href="assets/css/mediterranee.css">\n</head>', 1)
+    if 'assets/js/mediterranee.js' not in html:
+        html = html.replace('</body>', '<script src="assets/js/mediterranee.js" defer></script>\n</body>', 1)
+    for script in ['contact', 'devis']:
+        if f'src="assets/js/{script}.js' not in html:
+            html = html.replace('<script type="module" src="assets/js/claire-companion.js',
+                                f'<script src="assets/js/{script}.js" defer></script>\n<script type="module" src="assets/js/claire-companion.js', 1)
+    # Changed contact/devis and navigation assets are versioned independently.
+    for asset in ['assets/css/mediterranee.css', 'assets/js/mediterranee.js',
+                  'assets/js/contact.js', 'assets/js/devis.js', 'assets/js/main.js']:
+        html = re.sub(re.escape(asset) + r'(?:\?v=[^"\s]*)?', asset + '?v=' + MED_ASSET_V, html)
+    return html
+
+
 def patch_seo(html: str, page: str) -> str:
     data = SEO.get(page)
     if not data:
@@ -288,6 +309,7 @@ def main() -> None:
         html = ensure_companion_assets(html)
         html = patch_viewport(html)
         html = cache_bust(html)
+        html = ensure_mediterranee_assets(html)
         html = patch_seo(html, page)
         path.write_text(html, encoding="utf-8", newline="\n")
         print("updated", page)

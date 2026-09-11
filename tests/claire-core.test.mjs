@@ -44,8 +44,8 @@ test("normalise le français sans perdre les termes techniques", () => {
 });
 
 test("référence toutes les pages publiques du site", () => {
-  assert.equal(knowledge.pages.length, 13);
-  assert.equal(new Set(knowledge.pages.map((page) => page.href)).size, 13);
+  assert.equal(knowledge.pages.length, 15);
+  assert.equal(new Set(knowledge.pages.map((page) => page.href)).size, 15);
   assert.ok(knowledge.pages.every((page) => page.title && page.summary && page.keywords.length));
 });
 
@@ -283,7 +283,7 @@ test("la parole de Claire synchronise l’onglet et la section visibles", () => 
 test("le briefing site contient tous les onglets et le rôle consultante IT", () => {
   const briefing = buildSiteBriefing(knowledge);
   const prompt = buildClaireContextPrompt(knowledge);
-  assert.equal(knowledge.pages.length, 13);
+  assert.equal(knowledge.pages.length, 15);
   for (const page of knowledge.pages) {
     assert.match(briefing, new RegExp(page.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
