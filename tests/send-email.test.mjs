@@ -16,7 +16,10 @@ import {
   resolveEmailProvider,
   summarizeResendEmail
 } from "../functions/api/send-email.js";
-import { describeEmailSendOutcome } from "../assets/js/site-email.mjs";
+import {
+  describeEmailSendOutcome,
+  didEmailSendThisTurn
+} from "../assets/js/site-email.mjs";
 
 function env(overrides = {}) {
   return {
@@ -379,11 +382,17 @@ test("Claire ne dit pas que c’est parti si l’API n’a pas envoyé", () => {
     results: [{ tool: "compose_email", output: { sent: false, configured: false } }]
   });
   assert.match(failed, /pas encore branché|pas pu envoyer/);
+  assert.equal(didEmailSendThisTurn({
+    results: [{ tool: "compose_email", output: { sent: false } }]
+  }), false);
   const ok = describeEmailSendOutcome({
     results: [{ tool: "compose_email", output: { sent: true, inbox: "didier@example.com", replyTo: "contact@infoserv2a.pro" } }]
   });
   assert.match(ok, /bien été envoyé vers didier@example\.com/);
   assert.match(ok, /contact@infoserv2a\.pro/);
+  assert.equal(didEmailSendThisTurn({
+    results: [{ tool: "compose_email", output: { sent: true } }]
+  }), true);
   const incomplete = describeEmailSendOutcome({
     results: [{ tool: "submit_quote", output: { sent: true, missing: ["email", "phone"], inbox: "contact@infoserv2a.pro" } }]
   });
@@ -396,4 +405,10 @@ test("Claire ne dit pas que c’est parti si l’API n’a pas envoyé", () => {
   });
   assert.match(prefill, /commune/);
   assert.doesNotMatch(prefill, /bien été envoyé/);
+  assert.equal(didEmailSendThisTurn({
+    results: [{ tool: "prefill_quote", output: { sent: true } }]
+  }), false);
+  assert.equal(didEmailSendThisTurn({
+    results: [{ tool: "start_call", output: { sent: true } }]
+  }), false);
 });

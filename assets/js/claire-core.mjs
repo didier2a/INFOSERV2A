@@ -169,7 +169,15 @@ export function isSubmitQuoteAction(value = "") {
 
 export function claimsUnverifiedEmailSend(value = "") {
   const query = normalizeText(value);
-  return /\b(c[' ]est (?:parti|envoye|valide)|bien (?:ete )?envoye|j[' ]ai (?:envoye|transmis|valide)|demande (?:est )?(?:partie|validee|envoyee))\b/.test(query);
+  const explicitClaim = /\b(c est (?:parti|envoye|valide)|bien (?:ete )?envoye|envoye(?:e)? avec succes|j ai (?:envoye|transmis|valide)|je transmets tout de suite|(?:ta|votre|la) demande de (?:devis|contact) a (?:bien )?ete envoyee|demande (?:est )?(?:partie|validee|envoyee))\b/.test(query);
+  const confirmedSend = /\bc est bien confirme\b/.test(query)
+    && /\b(envoi|envoye|envoyee|demande|devis|contact|message|mail|transmis|parti)\b/.test(query);
+  return explicitClaim || confirmedSend;
+}
+
+export function isEmailSendDoubt(value = "") {
+  const query = normalizeText(value);
+  return /^(?:tu es sur|vous etes sur|vraiment|c est parti|ca a marche|cela a marche|c est bien envoye|c est confirme)[ ?.!]*$/.test(query);
 }
 
 export function isCallAction(value = "") {

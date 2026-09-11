@@ -318,6 +318,34 @@ test("simulation vocale : un devis incomplet n’actionne pas l’envoi", async 
   assert.doesNotMatch(describeEmailSendOutcome(outcome), /bien été envoyé/);
 });
 
+test("simulation vocale : confirmation exacte avec champs manquants annonce que rien n’est parti", async () => {
+  const { describeEmailSendOutcome, didEmailSendThisTurn } = await import("../assets/js/site-email.mjs");
+  const memory = {
+    visitor: {
+      name: "Didier Aouizerate",
+      phone: "",
+      email: "",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé",
+    turns: []
+  };
+  const surface = new ActuatorSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+  const outcome = await controller.run("Oui, envoie ma demande de devis", {
+    memory,
+    pageId: "quote",
+    confirmation: { armed: true, kind: "devis" }
+  });
+  assert.equal(outcome.results.some((item) => item.tool === "submit_quote"), false);
+  assert.equal(surface.posts.length, 0);
+  assert.equal(didEmailSendThisTurn(outcome), false);
+  assert.match(describeEmailSendOutcome(outcome), /n’ai pas envoyé/);
+  assert.doesNotMatch(describeEmailSendOutcome(outcome), /bien été envoyée|envoyée avec succès/);
+});
+
 test("simulation vocale : confirmation exacte armée actionne vraiment l’API devis", async () => {
   const { canSubmitQuote } = await import("../assets/js/claire-session-memory.mjs");
   const { describeEmailSendOutcome } = await import("../assets/js/site-email.mjs");
@@ -730,6 +758,9 @@ test("simulation vocale : seul le consentement exact envoie le devis, une seule 
   });
   assert.equal(second.steps.some((step) => step.tool === "submit_quote"), false);
   assert.match(second.response, /déjà été envoyée/);
+  assert.doesNotMatch(second.response, /bien été envoyée|envoyée avec succès/);
+  const { claimsUnverifiedEmailSend } = await import("../assets/js/claire-core.mjs");
+  assert.equal(claimsUnverifiedEmailSend("La demande de devis a été envoyée avec succès."), true);
 
   const { beginNewQuoteAfterSend, rememberTurn, saveSessionMemory, isSameDraftAlreadySent } = await import("../assets/js/claire-session-memory.mjs");
   const storage = {

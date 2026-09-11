@@ -6,8 +6,8 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-ASSET_V = "20260911-claire-besoin-v1"
-MED_ASSET_V = "20260911-claire-besoin-v1"
+ASSET_V = "20260911-claire-send-truth-v1"
+MED_ASSET_V = "20260911-claire-send-truth-v1"
 BRAND = '<span class="brand-name">INFOSERV2A</span>'
 HEADER_MARK_START = "<!-- chrome:header -->"
 HEADER_MARK_END = "<!-- /chrome:header -->"
@@ -152,6 +152,11 @@ def wrap_brand_text(html: str) -> str:
 
 
 def cache_bust(html: str) -> str:
+    html = re.sub(
+        r'((?:href|src)="(?!https?:|//|data:)[^"#?]+)\?v=[^"]*"',
+        rf'\1?v={ASSET_V}"',
+        html,
+    )
     html = re.sub(
         r'href="(assets/css/[^"]+\.css)(?:\?v=[^"]*)?"',
         rf'href="\1?v={ASSET_V}"',

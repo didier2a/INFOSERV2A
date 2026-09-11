@@ -1,4 +1,4 @@
-import { QUOTE_FIELD_LABELS, joinFrenchList } from "./claire-session-memory.mjs?v=20260911-claire-besoin-v1";
+import { QUOTE_FIELD_LABELS, joinFrenchList } from "./claire-session-memory.mjs?v=20260911-claire-send-truth-v1";
 
 export const SITE_EMAIL_PATH = "/api/send-email";
 export const EMAIL_SEND_TIMEOUT_MS = 12000;
@@ -60,10 +60,28 @@ function missingFieldSpeech(keys = []) {
   return joinFrenchList((keys || []).map((key) => QUOTE_FIELD_LABELS[key] || key));
 }
 
+const EMAIL_SEND_TOOLS = new Set(["compose_email", "submit_quote"]);
+
+function hasNoMissingFields(output = {}) {
+  return !Array.isArray(output.missing) || output.missing.length === 0;
+}
+
+export function didEmailSendThisTurn(outcome) {
+  return Boolean((outcome?.results || []).some((item) => (
+    EMAIL_SEND_TOOLS.has(item.tool)
+    && item.output?.sent === true
+    && hasNoMissingFields(item.output)
+  )));
+}
+
 export function describeEmailSendOutcome(outcome) {
-  const result = (outcome?.results || []).find((item) => (
-    item.tool === "compose_email" || item.tool === "submit_quote" || item.tool === "prefill_quote"
-  ));
+  const results = outcome?.results || [];
+  const result = results.find((item) => (
+    EMAIL_SEND_TOOLS.has(item.tool)
+    && item.output?.sent === true
+    && hasNoMissingFields(item.output)
+  )) || results.find((item) => EMAIL_SEND_TOOLS.has(item.tool))
+    || results.find((item) => item.tool === "prefill_quote");
   if (!result) return "";
   const output = result.output || {};
   const inbox = output.inbox || output.email || "votre e-mail";

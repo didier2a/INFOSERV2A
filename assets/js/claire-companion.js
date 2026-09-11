@@ -6,6 +6,7 @@ import {
   buildSiteBriefing,
   followSpokenNavigation,
   claimsUnverifiedEmailSend,
+  isEmailSendDoubt,
   isClaireQuotePrompt,
   isInternalSitePrompt,
   isQuoteAction,
@@ -19,7 +20,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260911-claire-besoin-v1";
+} from "./claire-core.mjs?v=20260911-claire-send-truth-v1";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -43,7 +44,7 @@ import {
   alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260911-claire-besoin-v1";
+} from "./claire-session-memory.mjs?v=20260911-claire-send-truth-v1";
 import {
   CLAIRE_ACTION_MODES,
   actionDraftReady,
@@ -52,28 +53,31 @@ import {
   interviewUpdate,
   isExactSendConfirmation,
   requestedActionMode
-} from "./claire-actions-v1.mjs?v=20260911-claire-besoin-v1";
-import { describeEmailSendOutcome } from "./site-email.mjs?v=20260911-claire-besoin-v1";
+} from "./claire-actions-v1.mjs?v=20260911-claire-send-truth-v1";
+import {
+  describeEmailSendOutcome,
+  didEmailSendThisTurn
+} from "./site-email.mjs?v=20260911-claire-send-truth-v1";
 import {
   MOBILE_SCENE_HOLD_MS,
   createMobileSceneState,
   mobileSceneActive,
   reduceMobileScene,
   sceneStatusLabel
-} from "./claire-mobile-scene.mjs?v=20260911-claire-besoin-v1";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260911-claire-besoin-v1";
+} from "./claire-mobile-scene.mjs?v=20260911-claire-send-truth-v1";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260911-claire-send-truth-v1";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260911-claire-besoin-v1";
-import "./contact.js?v=20260911-claire-besoin-v1";
-import "./devis.js?v=20260911-claire-besoin-v1";
+} from "./claire-site-runtime-adapter.mjs?v=20260911-claire-send-truth-v1";
+import "./contact.js?v=20260911-claire-send-truth-v1";
+import "./devis.js?v=20260911-claire-send-truth-v1";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
 const LOCAL_TEXT_FALLBACK = "Le direct vocal est indisponible, mais je peux continuer par écrit pour vous orienter dans les services InfoServ2A. Décrivez votre besoin informatique ou demandez un onglet précis.";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260911-claire-besoin-v1";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260911-claire-besoin-v1";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260911-claire-send-truth-v1";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260911-claire-send-truth-v1";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -1318,7 +1322,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260911-claire-besoin-v1");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260911-claire-send-truth-v1");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
@@ -1544,15 +1548,15 @@ export class ClaireCompanion {
       || isQuoteAction(command)
       || shouldAnnounceQuoteTruth(command, memory, pageId, this.actionMode !== CLAIRE_ACTION_MODES.CONSEIL);
     if (!relevant) return "";
-    const actuallySent = Boolean(outcome?.results?.some((item) => item.output?.sent));
+    const actuallySent = didEmailSendThisTurn(outcome);
     const checklist = describeQuoteChecklist(memory);
     const alreadySent = Boolean(checklist.alreadySent || isSameDraftAlreadySent(memory));
     if (!actuallySent && alreadySent) {
-      const speech = sendSpeech || outcome?.plan?.response || alreadySentSpeech(
+      const speech = alreadySentSpeech(
         memory,
         pageId === "contact" ? "contact" : "devis"
       );
-      const written = this.writeSiteTruth(speech, { sent: true });
+      const written = this.writeSiteTruth(speech, { sent: false });
       if (written.duplicate) return "";
       this.lastQuoteAnnounceAt = Date.now();
       if (source === "liveavatar") {
@@ -1586,9 +1590,15 @@ export class ClaireCompanion {
   correctInventedSend(spoken) {
     if (this.lastSiteSendOk) return;
     if (!claimsUnverifiedEmailSend(spoken)) return;
-    if (Date.now() - this.lastQuoteAnnounceAt < 8000) return;
-    const speech = describeQuoteChecklist(loadSessionMemory()).speech;
-    this.writeSiteTruth(speech, { sent: false });
+    const checklist = describeQuoteChecklist(loadSessionMemory());
+    const speech = checklist.alreadySent
+      ? `${checklist.speech} Ce tour n’a déclenché aucun nouvel envoi.`
+      : checklist.complete
+        ? "Non : le site n’a pas confirmé d’envoi. Rien n’est parti."
+        : `Non : le site n’a pas confirmé d’envoi. Rien n’est parti. ${checklist.speech}`;
+    const written = this.writeSiteTruth(speech, { sent: false });
+    if (written.duplicate) return;
+    this.lastQuoteAnnounceAt = Date.now();
     this.provider?.bargeIn?.("email-send");
     this.provider?.sendEmailResult?.(speech);
   }
@@ -1626,6 +1636,7 @@ export class ClaireCompanion {
       this.lastVoiceCommand = signature;
       this.lastVoiceCommandAt = now;
     }
+    this.lastSiteSendOk = false;
 
     if (classified.kind === "recall" || classified.route?.type === "recall") {
       this.recall();
@@ -1637,17 +1648,33 @@ export class ClaireCompanion {
     this.appendTurn("user", value);
     this.updateLiveContext();
 
+    if (isEmailSendDoubt(value)) {
+      const speech = "Non : le site n’a pas confirmé d’envoi. Rien n’est parti.";
+      const written = this.writeSiteTruth(speech, { sent: false });
+      if (!written.duplicate) {
+        if (source === "liveavatar") {
+          this.provider?.bargeIn?.("email-send");
+          this.provider?.sendEmailResult?.(speech);
+        } else {
+          this.speak(speech);
+        }
+      }
+      return { kind: "email-truth", sent: false };
+    }
+
     if (this.actionMode !== CLAIRE_ACTION_MODES.CONSEIL) {
       const memory = hydrateQuoteMemoryFromForm();
       const exactConfirmation = isExactSendConfirmation(value, this.actionMode);
       if (exactConfirmation) {
+        if (source === "liveavatar") this.provider?.bargeIn?.("email-send");
         if (this.confirmationArmed !== this.actionMode || !actionDraftReady(this.actionMode, memory)) {
           const update = interviewUpdate(this.actionMode, memory);
           this.confirmationArmed = update.ready ? this.actionMode : "";
           this.syncVisibleForms(memory);
-          this.appendTurn("companion", update.speech, { truth: true });
-          if (source === "liveavatar") this.provider?.sendPrompt?.(update.speech);
-          else this.speak(update.speech);
+          const speech = `Je n’ai pas envoyé. ${update.speech}`;
+          this.writeSiteTruth(speech, { sent: false });
+          if (source === "liveavatar") this.provider?.sendEmailResult?.(speech);
+          else this.speak(speech);
           return { kind: "interview", mode: this.actionMode, ready: update.ready };
         }
       } else if (!requestedMode) {
@@ -1767,9 +1794,12 @@ export class ClaireCompanion {
         this.setState("guided");
         this.renderSuggestions();
       }
-      const sentOk = Boolean(outcome.results?.some((item) => item.output?.sent));
+      const sentOk = didEmailSendThisTurn(outcome);
       if (sentOk) {
-        const sentResult = (outcome.results || []).find((item) => item.output?.sent);
+        const sentResult = (outcome.results || []).find((item) => (
+          (item.tool === "submit_quote" || item.tool === "compose_email")
+          && item.output?.sent === true
+        ));
         const kind = sentResult?.tool === "submit_quote" ? "devis" : "contact";
         this.closeQuoteAfterSuccessfulSend(kind, {
           inbox: sentResult?.output?.inbox || "",

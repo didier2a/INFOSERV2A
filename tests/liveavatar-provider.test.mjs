@@ -322,6 +322,37 @@ test("un barge-in d’envoi n’écoute plus jusqu’au résultat du site", asyn
   await provider.stop();
 });
 
+test("la confirmation exacte coupe immédiatement toute réponse libre avant le résultat site", async () => {
+  const commands = [];
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-exact-send" })
+  }).install({
+    video,
+    classifyCommand: async () => "site",
+    onCommand: async (text) => commands.push(text)
+  });
+
+  await provider.connect({ microphone: true });
+  const session = globalThis.__infoservFakeSession;
+  session.emit("user-speak-started");
+  session.emit("user-transcription", { text: "Oui, envoie ma demande de devis" });
+
+  assert.equal(session.interrupted, true);
+  assert.ok((session.listenStops || 0) >= 1);
+  assert.equal(provider.listening, false);
+  await wait(20);
+  assert.deepEqual(commands, ["Oui, envoie ma demande de devis"]);
+  assert.equal(session.messages.length, 0);
+
+  provider.sendEmailResult("Je n’ai pas envoyé. Il manque encore votre e-mail.");
+  assert.match(session.messages.at(-1), /INFOSERV2A_APP_RESULT/);
+  assert.match(session.messages.at(-1), /Je n’ai pas envoyé/);
+
+  await provider.stop();
+});
+
 test("un écho de contexte site n’est pas traité comme une parole visiteur", async () => {
   const commands = [];
   const barges = [];

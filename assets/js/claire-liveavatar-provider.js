@@ -1,4 +1,9 @@
-import { isInternalSitePrompt, isStableUrgentCommand, isUrgentSiteCommand } from "./claire-core.mjs?v=20260911-claire-besoin-v1";
+import {
+  isInternalSitePrompt,
+  isOralSendConfirm,
+  isStableUrgentCommand,
+  isUrgentSiteCommand
+} from "./claire-core.mjs?v=20260911-claire-send-truth-v1";
 
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;
@@ -312,7 +317,7 @@ export class InfoServ2ALiveAvatarProvider {
     if (this.avatarSpeaking) this.bargeIn("email-send");
     this.holdListenForResult = true;
     const sent = this.speakLiveMessage(
-      `[INFOSERV2A_APP_RESULT]\nInformation vérifiée par le site : ${value}\nDis cette information à voix haute maintenant, sans attendre qu’on te le demande. Ne prétends pas avoir fait une autre action. Une ou deux phrases, puis silence. Ne redemande pas de confirmer l’envoi.`,
+      `[INFOSERV2A_APP_RESULT]\nInformation vérifiée par le site : ${value}\nPrononce uniquement cette information vérifiée, mot pour mot et sans attendre qu’on te le demande, puis silence. N’ajoute aucun fait, aucune confirmation et aucune autre action. Ne redemande pas de confirmer l’envoi.`,
       "conversation:email-result-sent"
     );
     if (sent !== "sent" && sent !== "queued") {
@@ -739,6 +744,12 @@ export class InfoServ2ALiveAvatarProvider {
       this.record("conversation:user-transcription", { characters: text.length });
       this.clearReplyTimer();
       this.stageTranscript(text);
+      if (isOralSendConfirm(text)) {
+        this.userSpeakComplete = true;
+        this.bargeIn("email-send");
+        void this.flushTranscript({ allowIncomplete: true });
+        return;
+      }
       if (isStableUrgentCommand(text)) {
         this.userSpeakComplete = true;
         void this.flushTranscript({ allowIncomplete: true });
