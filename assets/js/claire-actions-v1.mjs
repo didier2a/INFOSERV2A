@@ -1,10 +1,10 @@
-import { normalizeText } from "./claire-core.mjs?v=20260911-claire-send-truth-v1";
+import { normalizeText } from "./claire-core.mjs?v=20260911-claire-send-loop-v1";
 import {
   canSubmitContact,
   canSubmitQuote,
   describeMissingQuoteFields,
   synthesizeMailBody
-} from "./claire-session-memory.mjs?v=20260911-claire-send-truth-v1";
+} from "./claire-session-memory.mjs?v=20260911-claire-send-loop-v1";
 
 export const CLAIRE_ACTION_MODES = Object.freeze({
   CONSEIL: "conseil",
@@ -12,15 +12,17 @@ export const CLAIRE_ACTION_MODES = Object.freeze({
   CONTACT: "contact"
 });
 
-const EXACT_CONFIRMATIONS = Object.freeze({
-  devis: "oui envoie ma demande de devis",
-  contact: "oui envoie ma demande de contact"
-});
+const EXACT_CONFIRMATION_PATTERN = /^oui envoie (?:(?:ma|la) )?demande de (devis|contact)$/;
+
+function exactConfirmationKind(value = "") {
+  return normalizeText(value).match(EXACT_CONFIRMATION_PATTERN)?.[1] || "";
+}
 
 export function requestedActionMode(value = "") {
   const query = normalizeText(value);
   if (!query) return "";
-  if (Object.values(EXACT_CONFIRMATIONS).includes(query)) return "";
+  if (exactConfirmationKind(query)) return "";
+  if (isQuoteResendRequest(query)) return CLAIRE_ACTION_MODES.DEVIS;
   if (
     /\b(je (?:veux|voudrais|souhaite|demande)|peux tu|pourrais tu|on peut|faire|preparer|ouvrir).{0,40}\bdevis\b/.test(query)
     || /\bdemande de devis\b/.test(query)
@@ -46,8 +48,23 @@ export function confirmationPhrase(kind) {
 }
 
 export function isExactSendConfirmation(value = "", kind = "") {
-  const expected = EXACT_CONFIRMATIONS[kind];
-  return Boolean(expected && normalizeText(value) === expected);
+  return exactConfirmationKind(value) === kind;
+}
+
+export function isQuoteResendRequest(value = "") {
+  const query = normalizeText(value);
+  return /\b(?:renvoie|renvoyer|renvoyez|relance|relancer|relancez)\b.{0,36}\b(?:devis|demande de devis)\b/.test(query);
+}
+
+export function shouldDebounceVoiceCommand(
+  value = "",
+  kind = "",
+  { lastCommand = "", lastCommandAt = 0, now = Date.now(), runtimeActive = false } = {}
+) {
+  if (runtimeActive) return true;
+  if (isExactSendConfirmation(value, kind)) return false;
+  const signature = String(value || "").toLocaleLowerCase("fr").replace(/\s+/g, " ");
+  return signature === lastCommand && now - lastCommandAt < 4000;
 }
 
 export function actionDraftReady(kind, memory = {}) {

@@ -4,7 +4,7 @@ const FRENCH_STOP_WORDS = new Set([
   "ou", "par", "pas", "pour", "que", "qui", "sur", "tu", "un", "une", "vous"
 ]);
 
-const SUBMIT_QUOTE_PATTERN = /\b(envoie|envoi|transmet(?:s|tre)?|soumet(?:s|tre)?|valide|confirme)\b.{0,48}\b(devis|demande de devis)\b|\bdevis\b.{0,24}\b(envoie|envoi|transmis|soumis)\b/;
+const SUBMIT_QUOTE_PATTERN = /\b(envoie|envoi|renvoie|renvoyer|renvoyez|relance|relancer|relancez|transmet(?:s|tre)?|soumet(?:s|tre)?|valide|confirme)\b.{0,48}\b(devis|demande de devis)\b|\bdevis\b.{0,24}\b(envoie|envoi|renvoie|relance|transmis|soumis)\b/;
 const CALL_PATTERN = /\b(appelez|appelle|appeler|un appel|je t appelle|nous appeler|rappelez|rappeler|lancer un appel|passe(?:r)? (?:un )?appel)\b/;
 const EMAIL_PATTERN = /\b((?:envoie(?:r)?|ecris|ecrire|ouvre|ouvrir|compose(?:r)?|transmet(?:s|tre)?) (?:l[ea] |un |cet |cette )?(?:e-?mail|courriel|mail|message)|envoyer un message|(?:par|un) e-?mail|adresse (?:e-?mail|mail))\b/;
 const FORM_SEND_PATTERN = /\b((?:appuie|appuyer|clique|cliquer|presse|presser) .{0,40}(?:envoi(?:er)?|envoyer|bouton|touche)|(?:touche|bouton) envoyer|envoie(?:r)? (?:le |la |l )?(?:message|formulaire|demande)|valide(?:r)? (?:le )?formulaire)\b/;
@@ -191,8 +191,7 @@ export function isEmailAction(value = "") {
 export function isOralSendConfirm(value = "") {
   if (isClaireQuotePrompt(value)) return false;
   const query = normalizeText(value);
-  return query === "oui envoie ma demande de devis"
-    || query === "oui envoie ma demande de contact";
+  return /^oui envoie (?:(?:ma|la) )?demande de (?:devis|contact)$/.test(query);
 }
 
 export function isUrgentSiteCommand(value = "") {

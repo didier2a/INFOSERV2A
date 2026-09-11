@@ -114,6 +114,15 @@ function normalizeVisitor(visitor = {}) {
   };
 }
 
+function normalizeStoredQuoteDraft(value = {}) {
+  const visitor = normalizeVisitor(value);
+  return {
+    ...visitor,
+    service: compact(value.service).slice(0, 80),
+    description: usefulText(value.description || value.need, 4000)
+  };
+}
+
 function normalizeLastSend(value = null) {
   if (!value || value.sent !== true) return null;
   const kind = compact(value.kind);
@@ -124,7 +133,8 @@ function normalizeLastSend(value = null) {
     at: compact(value.at).slice(0, 40),
     inbox: compact(value.inbox).slice(0, 80),
     replyTo: compact(value.replyTo).slice(0, 80),
-    signature: compact(value.signature).slice(0, 420)
+    signature: compact(value.signature).slice(0, 420),
+    draft: kind === "devis" ? normalizeStoredQuoteDraft(value.draft) : null
   };
 }
 
@@ -920,7 +930,8 @@ export function rememberSuccessfulSend(detail = {}, storage, persistent) {
     at: detail.at || new Date().toISOString(),
     inbox: detail.inbox || compact(detail.email).slice(0, 80),
     replyTo: detail.replyTo || "",
-    signature: detail.signature || ""
+    signature: detail.signature || "",
+    draft: detail.draft
   });
   return saveSessionMemory(memory, ...storeArgs);
 }
@@ -943,6 +954,47 @@ export function isSameDraftAlreadySent(memory = {}, extras = {}, kind = "devis")
     ? contactDraftSignature(memory, extras)
     : quoteDraftSignature(memory, extras);
   return Boolean(last.signature && signature && last.signature === signature);
+}
+
+function quoteDraftFromSignature(signature = "") {
+  const [name = "", phone = "", email = "", city = "", service = "", ...description] = String(signature).split("|");
+  return normalizeStoredQuoteDraft({
+    name,
+    phone,
+    email,
+    city,
+    service,
+    description: description.join("|")
+  });
+}
+
+export function restoreQuoteDraftForResend(storage, doc) {
+  const storeArgs = arguments.length === 0 ? [] : [storage];
+  const documentRef = arguments.length >= 2 ? doc : globalThis.document;
+  const memory = loadSessionMemory(...storeArgs);
+  const form = formExtrasFromDocument(documentRef);
+  const lastSend = normalizeLastSend(memory.lastSend);
+  const stored = lastSend?.kind === "devis" ? normalizeStoredQuoteDraft(lastSend.draft) : {};
+  const signed = lastSend?.kind === "devis" ? quoteDraftFromSignature(lastSend.signature) : {};
+  const archived = (memory.visits || []).at(-1) || {};
+  const service = firstUsefulText(80, form.service, stored.service, archived.service, signed.service);
+  const description = firstUsefulText(4000, form.description, archived.need, stored.description, signed.description);
+  if (!service && !description) return null;
+
+  const restored = normalizeMemory(memory);
+  restored.visitor = normalizeVisitor({
+    name: firstUsefulText(80, form.name, stored.name, restored.visitor.name, signed.name),
+    phone: firstUsefulText(40, form.phone, stored.phone, restored.visitor.phone, signed.phone),
+    email: firstUsefulText(120, form.email, stored.email, restored.visitor.email, signed.email),
+    city: firstUsefulText(80, form.city, stored.city, restored.visitor.city, signed.city)
+  });
+  restored.service = service;
+  restored.need = description;
+  restored.quoteEpoch = (Number(restored.quoteEpoch) || 0) + 1;
+  if (restored.lastSend?.kind === "devis") {
+    restored.lastSend = { ...restored.lastSend, signature: "" };
+  }
+  return saveSessionMemory(restored, ...storeArgs);
 }
 
 export function alreadySentSpeech(memory = {}, kind = "devis") {

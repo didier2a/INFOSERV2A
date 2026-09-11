@@ -364,7 +364,7 @@ test("envoie le devis ne part jamais avant la confirmation exacte armée", async
   assert.equal(outcome.verification.pageId, "quote");
 });
 
-test("seule la confirmation exacte armée envoie le dossier complet", () => {
+test("la première confirmation exacte envoie le dossier complet", () => {
   const memory = {
     visitor: {
       name: "Marie Rossi",
@@ -381,7 +381,7 @@ test("seule la confirmation exacte armée envoie le dossier complet", () => {
   const exact = planCommand("Oui, envoie ma demande de devis", knowledge, manifest, {
     memory,
     pageId: "quote",
-    confirmation: { armed: true, kind: "devis" }
+    confirmation: { armed: false, kind: "devis" }
   });
   assert.ok(exact.steps.some((step) => step.tool === "submit_quote"));
   const contact = planCommand("Oui, envoie ma demande de contact", knowledge, manifest, {

@@ -8,7 +8,8 @@ import {
   confirmationPhrase,
   interviewUpdate,
   isExactSendConfirmation,
-  requestedActionMode
+  requestedActionMode,
+  shouldDebounceVoiceCommand
 } from "../assets/js/claire-actions-v1.mjs";
 import { planCommand } from "../assets/js/claire-runtime-v2.mjs";
 import {
@@ -59,7 +60,7 @@ test("V1 démarre en conseil et n’ouvre devis/contact que sur demande explicit
   assert.equal(requestedActionMode("Je veux prendre contact"), CLAIRE_ACTION_MODES.CONTACT);
 });
 
-test("V1 exige la phrase exacte et armée avant submit_quote", () => {
+test("V1 envoie dès la première confirmation exacte si le brouillon est prêt", () => {
   const memory = completeQuoteMemory();
   for (const ambiguous of ["c’est bon", "vas-y", "confirme", "envoie"]) {
     assert.equal(isExactSendConfirmation(ambiguous, "devis"), false);
@@ -77,7 +78,8 @@ test("V1 exige la phrase exacte et armée avant submit_quote", () => {
     pageId: "quote",
     confirmation: { armed: false, kind: "devis" }
   });
-  assert.equal(unarmed.steps.some((step) => step.tool === "submit_quote"), false);
+  assert.equal(unarmed.steps.some((step) => step.tool === "submit_quote"), true);
+  assert.doesNotMatch(unarmed.response, /dites exactement|relisez-la/i);
 
   const armed = planCommand(exact, knowledge, manifest, {
     memory,
@@ -85,6 +87,36 @@ test("V1 exige la phrase exacte et armée avant submit_quote", () => {
     confirmation: { armed: true, kind: "devis" }
   });
   assert.equal(armed.steps.some((step) => step.tool === "submit_quote"), true);
+});
+
+test("V1 tolère l’article ASR, mais jamais une confirmation vague", () => {
+  assert.equal(isExactSendConfirmation("Oui, envoie la demande de devis", "devis"), true);
+  assert.equal(isExactSendConfirmation("Oui, envoie demande de devis", "devis"), true);
+  assert.equal(isExactSendConfirmation("envoie de suite", "devis"), false);
+  assert.equal(isExactSendConfirmation("c’est bon", "devis"), false);
+});
+
+test("V1 ne déduplique pas deux confirmations exactes à moins de quatre secondes", () => {
+  assert.equal(shouldDebounceVoiceCommand(
+    "Oui, envoie la demande de devis",
+    "devis",
+    {
+      lastCommand: "oui, envoie la demande de devis",
+      lastCommandAt: 1_000,
+      now: 2_000,
+      runtimeActive: false
+    }
+  ), false);
+  assert.equal(shouldDebounceVoiceCommand(
+    "Montre la vidéosurveillance",
+    "conseil",
+    {
+      lastCommand: "montre la vidéosurveillance",
+      lastCommandAt: 1_000,
+      now: 2_000,
+      runtimeActive: false
+    }
+  ), true);
 });
 
 test("V1 écrit exactement le canevas fixe de six lignes", () => {

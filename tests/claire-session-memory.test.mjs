@@ -24,6 +24,7 @@ import {
   mergeMemories,
   archiveCurrentVisit,
   hydrateQuoteMemoryFromForm,
+  restoreQuoteDraftForResend,
   canSubmitContact,
   quoteExtrasFromDocument,
   synthesizeMailBody,
@@ -428,6 +429,38 @@ test("après un envoi, un nouveau besoin oral n’est plus le devis déjà envoy
   assert.equal(isSameDraftAlreadySent(memory), false);
   assert.equal(canSubmitQuote(memory), true);
   assert.equal(describeQuoteChecklist(memory).alreadySent, false);
+});
+
+test("une demande explicite de renvoi restaure le dernier devis et autorise un nouvel envoi", () => {
+  const storage = memoryStorage();
+  const original = saveSessionMemory({
+    visitor: {
+      name: "Didier Aouizerate",
+      phone: "07 45 15 60 76",
+      email: "infoserv2a@gmail.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé",
+    turns: []
+  }, storage);
+  rememberSuccessfulSend({
+    kind: "devis",
+    inbox: "infoserv2a@gmail.com",
+    signature: quoteDraftSignature(original)
+  }, storage);
+  const cleared = beginNewQuoteAfterSend(storage);
+  assert.equal(cleared.need, "");
+  assert.equal(cleared.service, "");
+
+  const restored = restoreQuoteDraftForResend(storage, { querySelector() { return null; } });
+  assert.ok(restored);
+  assert.equal(restored.service, "videosurveillance");
+  assert.match(restored.need, /hangar isolé/);
+  assert.equal(canSubmitQuote(restored), true);
+  assert.equal(restored.lastSend.signature, "");
+  assert.equal(isSameDraftAlreadySent(restored), false);
+  assert.ok(restored.quoteEpoch > cleared.quoteEpoch);
 });
 
 test("une époque de devis plus récente n’est pas écrasée par l’ancien besoin stocké", () => {
