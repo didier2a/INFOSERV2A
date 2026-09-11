@@ -46,23 +46,16 @@
     iframe.dataset.claireTenant = tenant;
     iframe.style.cssText = [
       "position:fixed",
-      "right:max(12px,env(safe-area-inset-right))",
-      "bottom:max(12px,env(safe-area-inset-bottom))",
+      "inset:0",
+      "width:100vw",
+      "height:100vh",
+      "height:100dvh",
       "border:0",
-      "border-radius:24px",
+      "border-radius:0",
       "z-index:2147483000",
       "background:transparent",
-      "box-shadow:0 24px 80px rgba(15,23,42,.28)"
+      "box-shadow:none"
     ].join(";");
-    function sizePortraitIframe() {
-      const availableWidth = Math.max(0, (Number(global.innerWidth) || 424) - 24);
-      const availableHeight = Math.max(0, (Number(global.innerHeight) || 736) - 24);
-      const frameWidth = Math.min(400, availableWidth, availableHeight * 9 / 16);
-      iframe.style.width = frameWidth + "px";
-      iframe.style.height = (frameWidth * 16 / 9) + "px";
-    }
-    sizePortraitIframe();
-    global.addEventListener("resize", sizePortraitIframe);
 
     const target = script.dataset.target ? document.querySelector(script.dataset.target) : document.body;
     if (!target) throw new Error("Claire embed: target element was not found.");

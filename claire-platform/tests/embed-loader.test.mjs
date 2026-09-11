@@ -83,7 +83,11 @@ test("loader mounts a sandboxed iframe using data-tenant and a bootstrap ticket"
   assert.match(iframe.src, /^http:\/\/localhost:8787\/embed\/\?tenant=boulangerie-soleil#ticket=dev_ticket$/);
   assert.match(iframe.allow, /microphone/);
   assert.match(iframe.sandbox, /allow-scripts/);
-  assert.ok(Math.abs(parseFloat(iframe.style.height) / parseFloat(iframe.style.width) - 16 / 9) < 0.000001);
+  assert.match(iframe.style.cssText, /inset:0/);
+  assert.match(iframe.style.cssText, /width:100vw/);
+  assert.match(iframe.style.cssText, /height:100dvh/);
+  assert.match(iframe.style.cssText, /border-radius:0/);
+  assert.match(iframe.style.cssText, /box-shadow:none/);
   assert.equal(harness.appended[1].nodeName, "BUTTON");
   assert.equal(script.dataset.claireMounted, "true");
   assert.equal(harness.events[0].type, "claire:mounted");
@@ -115,6 +119,9 @@ test("iframe UI keeps the LiveAvatar stage in a centered 9:16 frame", () => {
   assert.match(frameHtml, /<div class="stage-frame">[\s\S]*<video id="avatar"/);
   assert.match(frameStyles, /\.stage-frame\s*\{[\s\S]*aspect-ratio:\s*9\s*\/\s*16/);
   assert.match(frameStyles, /\.stage video\s*\{[\s\S]*object-fit:\s*cover;[\s\S]*object-position:\s*center/);
+  assert.match(frameStyles, /\.stage\s*\{[\s\S]*position:\s*absolute;[\s\S]*inset:\s*0/);
+  assert.match(frameStyles, /\.shell\.chrome-card\s*\{/);
+  assert.match(frameStyles, /env\(safe-area-inset-bottom\)/);
   assert.doesNotMatch(frameStyles, /minmax\(210px,\s*42%\)/);
 });
 
