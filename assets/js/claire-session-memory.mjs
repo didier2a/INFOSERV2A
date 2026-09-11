@@ -505,6 +505,21 @@ export function looksLikeConversationDump(text = "", memory = {}) {
   const query = folded(raw);
   if (/\b(visiteur|vous|claire|assistant)\s*:/.test(query)) return true;
   if (/\bderniers echanges\b/.test(query)) return true;
+  if (
+    /\b(salut|bonjour|bonsoir)\s+claire\b/.test(query)
+    || /\bfaisons un devis\b/.test(query)
+    || /\bon n a pas termine le besoin\b/.test(query)
+    || (/^le visiteur souhaite\b/.test(query) && /\b(allez|salut|faisons|s il te plait)\b/.test(query))
+  ) {
+    return true;
+  }
+  const oralMarkers = [
+    /\b(salut|bonjour|bonsoir)\b/,
+    /\b(allez|euh|bah|ben)\b/,
+    /\b(s il te plait|faisons|on n a pas termine)\b/,
+    /\b(je|on|nous)\b/
+  ].filter((pattern) => pattern.test(query)).length;
+  if (oralMarkers >= 3 && (raw.match(/[,;:]/g) || []).length >= 3) return true;
   const companionHit = (memory.turns || [])
     .filter((turn) => turn.role !== "user")
     .some((turn) => {
@@ -520,6 +535,150 @@ export function looksLikeConversationDump(text = "", memory = {}) {
   });
   if (distinctHits.length >= 2 && /[•\n]/.test(raw)) return true;
   return distinctHits.length >= 3;
+}
+
+function synthesisSource(memory = {}, extras = {}) {
+  const normalized = normalizeMemory(memory);
+  return folded([
+    normalized.service,
+    normalized.need,
+    normalized.constraints,
+    extras.service,
+    extras.description,
+    ...(normalized.turns || [])
+      .filter((turn) => turn.role === "user")
+      .map((turn) => turn.text)
+  ].join(" "));
+}
+
+function controlledNeedSentences(memory = {}, extras = {}) {
+  const normalized = normalizeMemory(memory);
+  const service = compact(extras.service) || normalized.service || inferService(extras.description);
+  const source = synthesisSource(normalized, extras);
+  const sentences = [];
+
+  if (service === "creation-site-web") {
+    if (/\bsite vitrine\b/.test(source)) {
+      sentences.push("Le client souhaite faire créer un site vitrine pour son activité.");
+    } else {
+      sentences.push("Le client souhaite faire créer un site web adapté à son activité.");
+    }
+    if (/\b(boulangerie|boulanger)\b/.test(source)) {
+      sentences.push("Le site est destiné à une boulangerie.");
+    } else if (/\b(commerce|boutique)\b/.test(source)) {
+      sentences.push("Le site est destiné à une activité commerciale.");
+    } else if (/\brestaurant\b/.test(source)) {
+      sentences.push("Le site est destiné à un restaurant.");
+    }
+    if (/\b(part de zero|partir de zero|a partir de zero|depuis zero)\b/.test(source)) {
+      sentences.push("Le projet de site part de zéro.");
+    }
+    if (/\b(local professionnel|local pro)\b/.test(source)) {
+      sentences.push("Le client dispose déjà d’un local professionnel.");
+    }
+  } else if (service === "videosurveillance") {
+    const target = /\bhangar\b/.test(source)
+      ? ` pour un hangar${/\bisole\b/.test(source) ? " isolé" : ""}`
+      : /\b(commerce|boutique)\b/.test(source)
+        ? " pour un commerce"
+        : "";
+    if (/\b4g\b/.test(source)) {
+      sentences.push(`Le client recherche une caméra 4G${target}.`);
+    } else {
+      sentences.push(`Le client recherche une solution de vidéosurveillance${target}.`);
+    }
+    if (/\bquinze jours\b|\b15 jours\b/.test(source)) {
+      sentences.push("Une durée d’enregistrement de quinze jours est demandée.");
+    } else if (/\benregistrement\b/.test(source)) {
+      sentences.push("Un dispositif d’enregistrement est demandé.");
+    }
+  } else if (service === "maintenance-distance") {
+    sentences.push("Le client recherche une intervention de maintenance informatique à distance.");
+  } else if (service === "configuration-domicile") {
+    sentences.push("Le client souhaite une configuration informatique à domicile.");
+  } else if (service === "cybersecurite-ia") {
+    sentences.push("Le client souhaite être accompagné sur un besoin de cybersécurité ou d’intelligence artificielle.");
+  } else if (service === "audit-nis2") {
+    sentences.push("Le client souhaite étudier un audit de conformité NIS 2.");
+  } else if (service === "recuperation-donnees") {
+    sentences.push("Le client sollicite une récupération de données.");
+  }
+
+  if (/\bsans fibre\b/.test(source) && !sentences.some((item) => /sans fibre/i.test(item))) {
+    sentences.push("La solution doit fonctionner sans fibre.");
+  }
+  return dedupeNeedSnippets(sentences);
+}
+
+export function writeNeedParagraph(memory = {}, extras = {}) {
+  const controlled = controlledNeedSentences(memory, extras);
+  if (controlled.length) return controlled.join(" ");
+  const normalized = normalizeMemory(memory);
+  const authored = firstUsefulText(1000, extras.description, normalized.need);
+  if (
+    authored
+    && (normalized.turns || []).length === 0
+    && !isClaireSynthesis(authored)
+    && !looksLikeConversationDump(authored, normalized)
+  ) {
+    const clause = toWrittenClause(authored);
+    if (clause && !isUselessClause(clause)) {
+      return `Le client souhaite ${ensureReadableClause(clause)}.`;
+    }
+  }
+  return normalized.service
+    ? `Le client souhaite étudier un besoin de ${serviceLabel(normalized.service)}.`
+    : "";
+}
+
+export function synthesisFactsFromMemory(memory = {}, extras = {}) {
+  const normalized = normalizeMemory(memory);
+  return {
+    name: compact(extras.name) || normalized.visitor.name,
+    status: compact(extras.status) || normalized.status,
+    service: compact(extras.service) || normalized.service,
+    city: compact(extras.city) || normalized.visitor.city,
+    constraints: compact(extras.constraints) || normalized.constraints,
+    urgency: compact(extras.urgency) || normalized.urgency
+  };
+}
+
+export function synthesisTurnsFromMemory(memory = {}) {
+  return normalizeMemory(memory).turns.slice(-30).map((turn) => ({
+    role: turn.role === "user" ? "user" : "companion",
+    text: compact(turn.text).slice(0, MAX_TURN_CHARS)
+  }));
+}
+
+export function hasEnoughNeedContext(memory = {}, extras = {}) {
+  const normalized = normalizeMemory(memory);
+  const service = compact(extras.service) || normalized.service || inferService(extras.description);
+  if (!service) return false;
+  const source = synthesisSource(normalized, extras);
+  const generic = /^(je |j |on )?(veux|voudrais|souhaite|aimerais|faisons|faire|demande).{0,24}\bdevis\b[.! ]*$/;
+  return source.length >= 20 && !generic.test(source);
+}
+
+export function formatNeedSynthesisCanvas(value = {}, memory = {}) {
+  const normalized = normalizeMemory(memory);
+  const facts = synthesisFactsFromMemory(normalized);
+  const need = usefulText(value.besoin, 2400);
+  const unsafe = folded(need);
+  if (
+    !need
+    || looksLikeConversationDump(need, normalized)
+    || /\bclaire\b|faisons un devis|je voudrais un devis|vous\s*:|on n a pas termine le besoin|\ballez\b|s il te plait/.test(unsafe)
+  ) {
+    return "";
+  }
+  return [
+    `1. Qui : ${facts.name || usefulText(value.qui, 80) || "À préciser"}`,
+    `2. Statut (pro/particulier) : ${facts.status || usefulText(value.statut, 80) || "À préciser"}`,
+    `3. Besoin : ${need}`,
+    `4. Lieu : ${facts.city || usefulText(value.lieu, 80) || "À préciser"}`,
+    `5. Contraintes : ${facts.constraints || usefulText(value.contraintes, 320) || "À préciser"}`,
+    `6. Urgence : ${facts.urgency || usefulText(value.urgence, 160) || "À préciser"}`
+  ].join("\n").slice(0, 4000);
 }
 
 function collectNeedSnippets(memory = {}) {
@@ -585,14 +744,14 @@ export function formatClaireSynthesis(snippets = [], service = "") {
 
 export function formatClaireActionCanvas(memory = {}, extras = {}) {
   const normalized = normalizeMemory(memory);
-  const authored = firstUsefulText(4000, extras.description, extras.message);
-  const snippets = collectNeedSnippets(normalized);
-  if (authored && !isClaireSynthesis(authored) && !looksLikeConversationDump(authored, normalized)) {
-    snippets.push(authored);
-  }
-  const need = joinWrittenClauses(dedupeNeedSnippets(
-    snippets.map((item) => toWrittenClause(item)).filter((item) => item && !isUselessClause(item))
-  ));
+  const remoteCanvas = extras.synthesis
+    ? formatNeedSynthesisCanvas(extras.synthesis, normalized)
+    : "";
+  if (remoteCanvas) return remoteCanvas;
+  const need = writeNeedParagraph(normalized, {
+    ...extras,
+    description: firstUsefulText(4000, extras.description, extras.message)
+  });
   if (!need && !normalized.service) return "";
   const visitor = normalized.visitor;
   return [

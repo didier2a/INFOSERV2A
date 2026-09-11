@@ -1,5 +1,16 @@
-import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260911-claire-actions-v1";
-import { contactExtrasFromDocument, firstUsefulText, loadSessionMemory, quoteExtrasFromDocument, synthesizeMailBody, usefulText } from "./claire-session-memory.mjs?v=20260911-claire-actions-v1";
+import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260911-claire-besoin-v1";
+import {
+  contactExtrasFromDocument,
+  firstUsefulText,
+  formatNeedSynthesisCanvas,
+  hasEnoughNeedContext,
+  loadSessionMemory,
+  quoteExtrasFromDocument,
+  synthesisFactsFromMemory,
+  synthesisTurnsFromMemory,
+  synthesizeMailBody,
+  usefulText
+} from "./claire-session-memory.mjs?v=20260911-claire-besoin-v1";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -56,6 +67,8 @@ export class BrowserInfoServ2ASurface {
     this.activeSectionId = this.window.location.hash ? decodeURIComponent(this.window.location.hash.slice(1)) : null;
     this.navigationCount = 0;
     this.pageCache = new Map();
+    this.needSynthesisKey = "";
+    this.needSynthesisPromise = null;
   }
 
   pageUrl(page) {
@@ -281,6 +294,60 @@ export class BrowserInfoServ2ASurface {
     };
   }
 
+  quoteSynthesisKey(memory = {}) {
+    return `${memory.clientId || memory.startedAt || "session"}:${Number(memory.quoteEpoch) || 0}`;
+  }
+
+  fallbackQuoteCanvas(memory = {}, draft = {}) {
+    return synthesizeMailBody(memory, {
+      name: draft.name,
+      status: draft.status,
+      city: draft.city,
+      service: draft.service,
+      constraints: draft.constraints,
+      urgency: draft.urgency,
+      description: draft.description
+    });
+  }
+
+  async ensureQuoteSynthesis(memory = loadSessionMemory(), draft = {}) {
+    const fallback = this.fallbackQuoteCanvas(memory, draft);
+    if (!hasEnoughNeedContext(memory, draft)) return fallback;
+    const key = this.quoteSynthesisKey(memory);
+    if (this.needSynthesisKey === key && this.needSynthesisPromise) {
+      return this.needSynthesisPromise;
+    }
+
+    this.needSynthesisKey = key;
+    this.needSynthesisPromise = (async () => {
+      const controller = new AbortController();
+      const setTimer = this.window.setTimeout?.bind(this.window) || globalThis.setTimeout;
+      const clearTimer = this.window.clearTimeout?.bind(this.window) || globalThis.clearTimeout;
+      const timer = setTimer(() => controller.abort(), 8000);
+      try {
+        const response = await this.fetchImpl("/api/synthesize-need", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          signal: controller.signal,
+          body: JSON.stringify({
+            appId: "infoserv2a",
+            turns: synthesisTurnsFromMemory(memory),
+            facts: synthesisFactsFromMemory(memory, draft)
+          })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.fallback) return fallback;
+        return formatNeedSynthesisCanvas(data, memory) || fallback;
+      } catch {
+        return fallback;
+      } finally {
+        clearTimer(timer);
+      }
+    })();
+    return this.needSynthesisPromise;
+  }
+
   prefillQuote(draft = {}) {
     const filled = {
       nameFound: this.fillQuoteField("#devis-name", draft.name),
@@ -301,11 +368,9 @@ export class BrowserInfoServ2ASurface {
   }
 
   async submitQuote(draft = {}) {
-    const description = synthesizeMailBody(loadSessionMemory(), {
-      ...draft,
-      description: usefulText(this.document.querySelector("#devis-description")?.value) || draft.description,
-      fallbackDescription: draft.description
-    });
+    const memory = loadSessionMemory();
+    const description = await this.ensureQuoteSynthesis(memory, draft)
+      || this.fallbackQuoteCanvas(memory, draft);
     const formState = this.prefillQuote({ ...draft, description });
     const form = this.document.querySelector("#devis-form");
     const missing = this.quoteMissingFields();
@@ -456,9 +521,14 @@ export class BrowserInfoServ2ASurface {
         email: visitor.email,
         city: visitor.city,
         service: memory.service,
-        description: synthesizeMailBody(memory, { description: memory.need, service: memory.service })
+        description: this.fallbackQuoteCanvas(memory, { service: memory.service })
       })
       : null;
+    if (quoteForm && hasEnoughNeedContext(memory)) {
+      void this.ensureQuoteSynthesis(memory).then((description) => {
+        if (description) this.fillQuoteField("#devis-description", description);
+      });
+    }
     const contact = contactForm
       ? this.prefillContact({
         name: visitor.name,
@@ -591,6 +661,10 @@ export class InfoServ2ASiteAdapter {
         this.view.activePage = page.id;
         this.view.activeSection = null;
         this.view.quoteDraft = quoteDraftFromArgs({ ...filled, ...args });
+        if (this.surface.ensureQuoteSynthesis) {
+          const description = await this.surface.ensureQuoteSynthesis(loadSessionMemory(), this.view.quoteDraft);
+          if (description) this.view.quoteDraft.description = description;
+        }
         const form = this.surface.prefillQuote(this.view.quoteDraft);
         this.view.submitted = false;
         const missing = this.surface.quoteMissingFields

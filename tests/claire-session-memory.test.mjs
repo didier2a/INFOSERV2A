@@ -518,6 +518,22 @@ test("le corps du mail n’imprime jamais la conversation avec Claire", () => {
   assert.doesNotMatch(hydrated.need || "", /Bonjour Claire/);
 });
 
+test("un dump ASR sans labels est détecté et le fallback n’en recopie aucun morceau oral", () => {
+  const dump = "Le visiteur souhaite allez, salut Claire, faisons un devis ensemble, création de site web, s’il te plaît, on part de zéro pour une boulangerie, non, j’ai un local professionnel, mais on n’a pas terminé le besoin, là.";
+  const memory = {
+    visitor: { name: "", phone: "", email: "", city: "" },
+    status: "Professionnel",
+    service: "creation-site-web",
+    need: dump,
+    turns: [{ role: "user", text: dump, at: 1 }]
+  };
+  assert.equal(looksLikeConversationDump(dump, memory), true);
+  const body = synthesizeMailBody(memory);
+  assert.match(body, /boulangerie/i);
+  assert.match(body, /site web/i);
+  assert.doesNotMatch(body, /salut Claire|faisons un devis|on n’a pas terminé le besoin|\ballez\b/i);
+});
+
 test("un besoin déjà noté devient le corps du devis même sans tours supplémentaires", () => {
   const body = synthesizeMailBody({
     visitor: { name: "Marie", phone: "", email: "marie@example.com", city: "" },

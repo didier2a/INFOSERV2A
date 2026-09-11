@@ -19,7 +19,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260911-claire-actions-v1";
+} from "./claire-core.mjs?v=20260911-claire-besoin-v1";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -43,7 +43,7 @@ import {
   alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260911-claire-actions-v1";
+} from "./claire-session-memory.mjs?v=20260911-claire-besoin-v1";
 import {
   CLAIRE_ACTION_MODES,
   actionDraftReady,
@@ -52,28 +52,28 @@ import {
   interviewUpdate,
   isExactSendConfirmation,
   requestedActionMode
-} from "./claire-actions-v1.mjs?v=20260911-claire-actions-v1";
-import { describeEmailSendOutcome } from "./site-email.mjs?v=20260911-claire-actions-v1";
+} from "./claire-actions-v1.mjs?v=20260911-claire-besoin-v1";
+import { describeEmailSendOutcome } from "./site-email.mjs?v=20260911-claire-besoin-v1";
 import {
   MOBILE_SCENE_HOLD_MS,
   createMobileSceneState,
   mobileSceneActive,
   reduceMobileScene,
   sceneStatusLabel
-} from "./claire-mobile-scene.mjs?v=20260911-claire-actions-v1";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260911-claire-actions-v1";
+} from "./claire-mobile-scene.mjs?v=20260911-claire-besoin-v1";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260911-claire-besoin-v1";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260911-claire-actions-v1";
-import "./contact.js?v=20260911-claire-actions-v1";
-import "./devis.js?v=20260911-claire-actions-v1";
+} from "./claire-site-runtime-adapter.mjs?v=20260911-claire-besoin-v1";
+import "./contact.js?v=20260911-claire-besoin-v1";
+import "./devis.js?v=20260911-claire-besoin-v1";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
 const LOCAL_TEXT_FALLBACK = "Le direct vocal est indisponible, mais je peux continuer par écrit pour vous orienter dans les services InfoServ2A. Décrivez votre besoin informatique ou demandez un onglet précis.";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260911-claire-actions-v1";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260911-claire-actions-v1";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260911-claire-besoin-v1";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260911-claire-besoin-v1";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -1318,7 +1318,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260911-claire-duplex-v1");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260911-claire-besoin-v1");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
