@@ -25,13 +25,13 @@
   <link rel="icon" href="assets/images/logo/favicon.png?v=2" type="image/png" sizes="192x192">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
   <link rel="manifest" href="site.webmanifest">
-  <link rel="stylesheet" href="assets/css/variables.css?v=20260911-claire-actions-v1">
-  <link rel="stylesheet" href="assets/css/main.css?v=20260911-claire-actions-v1">
-  <link rel="stylesheet" href="assets/css/components.css?v=20260911-claire-actions-v1">
-  <link rel="stylesheet" href="assets/css/responsive.css?v=20260911-claire-actions-v1">
-  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260911-claire-actions-v1">
+  <link rel="stylesheet" href="assets/css/variables.css?v=20260911-claire-duplex-v1">
+  <link rel="stylesheet" href="assets/css/main.css?v=20260911-claire-duplex-v1">
+  <link rel="stylesheet" href="assets/css/components.css?v=20260911-claire-duplex-v1">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=20260911-claire-duplex-v1">
+  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260911-claire-duplex-v1">
   <script type="importmap">{"imports":{"events":"./vendor/liveavatar/events-browser.mjs"}}</script>
-<link rel="stylesheet" href="assets/css/mediterranee.css?v=20260911-claire-actions-v1">
+<link rel="stylesheet" href="assets/css/mediterranee.css?v=20260911-claire-duplex-v1">
 </head>
 <body class="med-site">
   <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -111,7 +111,7 @@
             <button class="claire-button claire-button--primary claire-door claire-door--claire" type="button" data-claire-start>
               <span class="claire-door__kicker">Son désactivé au départ</span>
               <span class="claire-door__label">Activer le son · ~8s</span>
-              <span class="claire-door__hint">La voix démarre seulement après votre choix. Le micro reste coupé.</span>
+              <span class="claire-door__hint">La voix et le micro démarrent seulement après votre choix.</span>
             </button>
             <button class="claire-button claire-button--quiet claire-door claire-door--site" type="button" data-claire-manual>
               <span class="claire-door__kicker">À votre rythme</span>
@@ -367,6 +367,7 @@
 
 
 
+
 <main id="contenu" class="site-main med-main" tabindex="-1">
 <nav class="med-breadcrumb" aria-label="Fil d’Ariane"><a href="/">Accueil</a> / Contact</nav>
 <section class="med-hero"><div class="med-hero__copy"><p class="med-eyebrow">PARLONS DE VOTRE PROJET</p><h1>Un besoin, une question ?<br><em>Prenons contact.</em></h1><p class="med-intro">Professionnels du Sud Corse et particuliers : décrivez votre besoin, je vous accompagne.</p><div class="med-actions"><a class="med-button" href="devis.html">Demander un devis <span aria-hidden="true">↗</span></a><a class="med-button med-button--outline" href="tel:+33745156076">Appeler</a></div><p class="med-audience">Professionnels du Sud Corse · Particuliers bienvenus</p></div><figure class="med-photo"><img src="assets/images/mediterranee/littoral.webp" alt="Ambiance méditerranéenne, photographie générique provisoire" width="900" height="550" fetchpriority=high><figcaption>Visuel d’ambiance provisoire</figcaption></figure></section><section class="med-contact-grid" id="contact-coordonnees"><aside class="med-contact-card"><h2>Votre interlocuteur local</h2><ul class="med-contact-list"><li><svg class="med-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 2 4 5-3 3c2 4 4 6 8 8l3-3 5 4-3 3C8 22 2 15 2 5Z"/></svg><a href="tel:+33745156076">07 45 15 60 76 · Appeler</a></li><li><svg class="med-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="1"/><path d="m2 5 10 8L22 5"/></svg><a href="mailto:contact@infoserv2a.pro">contact@infoserv2a.pro</a></li><li><svg class="med-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2"/></svg>Porto-Vecchio · Corse-du-Sud</li><li><svg class="med-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Du lundi au samedi · 9 h – 17 h</li></ul><div class="med-quote-card"><h3>Vous souhaitez un devis ?</h3><p>Présentez votre projet dans le formulaire dédié.</p><div class="med-actions"><a class="med-button" href="devis.html">Demander un devis <span aria-hidden="true">↗</span></a><a class="med-button med-button--outline" href="tel:+33745156076">Appeler</a></div></div></aside><form class="form med-form" id="contact-form" method="post" action="/api/send-email" novalidate data-endpoint="/api/send-email"><h2>Écrivez-moi</h2><fieldset class="med-audience-choice"><legend>Vous êtes</legend><label><input type="radio" name="audience" value="Professionnel" checked> Professionnel</label><label><input type="radio" name="audience" value="Particulier"> Particulier</label></fieldset><div class="med-form-grid"><div class="form-field "><label for="contact-name">Nom *</label><input id="contact-name" name="name" type="text" required aria-required="true" autocomplete="name" maxlength="180" aria-describedby="contact-name-error"><span class="field-error" id="contact-name-error"></span></div><div class="form-field "><label for="contact-company">Entreprise (facultatif)</label><input id="contact-company" name="company" type="text" autocomplete="organization" maxlength="180" aria-describedby="contact-company-error"><span class="field-error" id="contact-company-error"></span></div><div class="form-field "><label for="contact-email">E-mail *</label><input id="contact-email" name="email" type="email" required aria-required="true" autocomplete="email" maxlength="180" aria-describedby="contact-email-error"><span class="field-error" id="contact-email-error"></span></div><div class="form-field "><label for="contact-phone">Téléphone (facultatif)</label><input id="contact-phone" name="phone" type="tel" autocomplete="tel" maxlength="180" aria-describedby="contact-phone-error"><span class="field-error" id="contact-phone-error"></span></div><div class="form-field med-full"><label for="contact-city">Commune (facultatif)</label><input id="contact-city" name="city" type="text" autocomplete="address-level2" maxlength="180" aria-describedby="contact-city-error"><span class="field-error" id="contact-city-error"></span></div><div class="form-field med-full"><label for="contact-message">Votre message *</label><textarea id="contact-message" name="message" required aria-required="true" rows="5" maxlength="5000" aria-describedby="contact-message-error"></textarea><span class="field-error" id="contact-message-error"></span></div></div><div class="sr-only" aria-hidden="true"><label for="contact-website">Site web</label><input id="contact-website" name="website" tabindex="-1" autocomplete="off"></div><p class="med-form-note">* Champs obligatoires. Le récapitulatif est envoyé à votre adresse e-mail. Répondez-y pour le transmettre à Didier, ou contactez-le directement par téléphone ou par e-mail.</p><div class="med-actions"><button class="med-button" type="submit">Envoyer ma demande</button><a href="politique-confidentialite.html">Confidentialité</a></div><div class="form-status" role="status" aria-live="polite"></div></form></section><section class="med-banner"><img src="assets/images/mediterranee/littoral.webp" alt="" loading="lazy"><h2>Proche de vous,<br>de Solenzara à Bonifacio.</h2></section>
@@ -453,11 +454,12 @@
 
 
 
-<script src="assets/js/main.js?v=20260911-claire-actions-v1" defer></script>
-  <script src="assets/js/navigation.js?v=20260911-claire-actions-v1" defer></script>
-  <script src="assets/js/contact.js?v=20260911-claire-actions-v1" defer></script>
-  <script src="assets/js/devis.js?v=20260911-claire-actions-v1" defer></script>
-<script type="module" src="assets/js/claire-companion.js?v=20260911-claire-actions-v1"></script>
-<script src="assets/js/mediterranee.js?v=20260911-claire-actions-v1" defer></script>
+
+<script src="assets/js/main.js?v=20260911-claire-duplex-v1" defer></script>
+  <script src="assets/js/navigation.js?v=20260911-claire-duplex-v1" defer></script>
+  <script src="assets/js/contact.js?v=20260911-claire-duplex-v1" defer></script>
+  <script src="assets/js/devis.js?v=20260911-claire-duplex-v1" defer></script>
+<script type="module" src="assets/js/claire-companion.js?v=20260911-claire-duplex-v1"></script>
+<script src="assets/js/mediterranee.js?v=20260911-claire-duplex-v1" defer></script>
 </body>
 </html>

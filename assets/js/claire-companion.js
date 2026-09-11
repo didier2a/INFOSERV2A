@@ -71,6 +71,7 @@ import "./devis.js?v=20260911-claire-actions-v1";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
+const LOCAL_TEXT_FALLBACK = "Le direct vocal est indisponible, mais je peux continuer par écrit pour vous orienter dans les services InfoServ2A. Décrivez votre besoin informatique ou demandez un onglet précis.";
 const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260911-claire-actions-v1";
 const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260911-claire-actions-v1";
 const SILENT_SYNC_DELAY_MS = 4200;
@@ -831,7 +832,7 @@ export class ClaireCompanion {
 
   async start() {
     if (this.startLock) return this.startLock;
-    this.startLock = this.connectLiveSession({ microphone: false, state: "guided" });
+    this.startLock = this.connectLiveSession({ microphone: true, state: "guided" });
     try {
       return await this.startLock;
     } finally {
@@ -852,10 +853,18 @@ export class ClaireCompanion {
       this.setState("guided");
       this.setStatus("ready", "Écrivez-moi");
       this.setEngineStatus(this.root.dataset.provider || "liveavatar-realtime", "Claire en direct");
+      if (isPhoneShell()) {
+        this.yieldToHumanType();
+        this.openMobileComposer();
+      }
       this.focusComposer();
       return;
     }
     await this.connectLiveSession({ microphone: false, state: "guided", skipWelcome: true });
+    if (isPhoneShell()) {
+      this.yieldToHumanType();
+      this.openMobileComposer();
+    }
   }
 
   async connectLiveSession({ microphone = true, state = "shared", skipWelcome = false } = {}) {
@@ -991,7 +1000,15 @@ export class ClaireCompanion {
 
   scheduleWelcomeTranscript(text) {
     clearTimeout(this.welcomeFallbackTimer);
-    this.welcomeFallbackTimer = setTimeout(() => this.showWelcome(text), 1800);
+    this.welcomeFallbackTimer = setTimeout(() => {
+      if (this.welcomeShown) return;
+      const sent = this.provider?.sendWelcome?.(text);
+      if (!sent) {
+        this.showWelcome(text);
+        return;
+      }
+      this.welcomeFallbackTimer = setTimeout(() => this.showWelcome(text), 5000);
+    }, 1200);
   }
 
   pushPageContext(snapshot = this.siteAdapter?.snapshot()) {
@@ -1301,7 +1318,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260911-claire-actions-v1");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260911-claire-duplex-v1");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
@@ -1651,7 +1668,10 @@ export class ClaireCompanion {
         source === "text" || !this.provider?.listening ? "ready" : "listening",
         source === "text" || !this.provider?.listening ? "Écrivez-moi" : "J’écoute"
       );
-      if (source !== "liveavatar") this.provider?.sendUserMessage?.(value);
+      if (source !== "liveavatar") {
+        const sent = this.provider?.sendUserMessage?.(value);
+        if (!sent) this.appendTurn("companion", LOCAL_TEXT_FALLBACK);
+      }
       await this.announceQuoteTruth(value, source);
       return { kind: "chat", classified };
     }
@@ -1662,8 +1682,11 @@ export class ClaireCompanion {
         source === "text" || !this.provider?.listening ? "Écrivez-moi" : "J’écoute"
       );
       if (source !== "liveavatar") {
-        if (this.provider?.sendOffTopic) this.provider.sendOffTopic(value);
-        else this.appendTurn("companion", CLAIRE_OFF_TOPIC_SPEECH);
+        const sent = this.provider?.sendOffTopic?.(value);
+        if (!sent) {
+          this.appendTurn("companion", CLAIRE_OFF_TOPIC_SPEECH);
+          this.setStatus("ready", "Écrivez-moi");
+        }
       }
       await this.announceQuoteTruth(value, source);
       return { kind: "chat", classified };
