@@ -28,6 +28,7 @@ Les protections ajoutées lors des itérations précédentes réduisent certaine
 |---|---|---:|---:|
 | P0 | Un service ou une coordonnée suffit à annoncer la checklist, sans intention de devis active | Bloquante | Élevée, reproduite |
 | P0 | Une simple approbation (« c’est bon ») peut envoyer un dossier complet déduit hors devis, depuis presque toute page | Bloquante | Élevée, reproduite |
+| P0 | Une négation telle que « je ne demande pas de nouveau devis » peut ouvrir et préremplir le devis | Bloquante | Élevée, reproduite |
 | P0 | Une transcription reçue pendant que l’avatar parle reste exécutable si elle ressemble à une commande « urgente » ; la garde anti-écho ne couvre pas les formulations naturelles | Bloquante | Élevée dans le code, occurrence acoustique à confirmer |
 | P0 | L’envoi manuel du formulaire ne clôt probablement pas la mémoire : événement émis sur `document`, écouteur posé sur `window`, événement non remontant par défaut | Forte | Élevée |
 | P0 | Le modèle et l’application ne partagent pas réellement la même mémoire après connexion/reconnexion | Forte | Élevée |
@@ -188,7 +189,7 @@ Il n’existe pas de règle symétrique forte :
 
 > Ne propose pas un devis tant que le visiteur n’a pas exprimé l’intention d’en demander un.
 
-Les règles actuelles disent surtout comment ne pas envoyer trop tôt, pas comment ne pas **entrer** trop tôt dans le funnel.
+Les règles actuelles disent surtout comment ne pas envoyer trop tôt, pas comment ne pas **entrer** trop tôt dans le funnel. Le routeur lexical ne traite pas non plus la négation : « Je ne demande pas de nouveau devis » donne `isQuoteAction=true`, ouvre la page devis et exécute `prefill_quote` (`assets/js/claire-core.mjs:148-153`, `715-742`). C’est particulièrement nocif dans une boucle : demander à Claire d’arrêter peut relancer le funnel.
 
 ### 3.9 P1 — Destination et discours se contredisent
 
@@ -275,6 +276,7 @@ quote: {
 Règles :
 
 - seul un acte explicite (« je veux un devis », bouton devis, ouverture volontaire du formulaire) passe `requested=true`;
+- une négation (« pas de devis », « ne demande pas de devis ») annule ou laisse `requested=false` et ne peut jamais ouvrir le formulaire ;
 - mentionner caméra/site ou donner son nom ne démarre jamais un devis ;
 - `shouldAnnounceQuoteTruth()` exige `requested=true` et un statut `collecting|ready`;
 - annoncer au plus une fois le même état/signature, de façon persistante ;
@@ -282,8 +284,9 @@ Règles :
 
 ### P0.2 — Séparer l’origine audio de l’intention
 
-- Ne jamais exécuter une `USER_TRANSCRIPTION` reçue pendant `avatarSpeaking`, même si elle ressemble à une urgence.
-- Armer l’écoute des commandes seulement après un vrai cycle `USER_SPEAK_STARTED → USER_SPEAK_ENDED` postérieur à la fin de parole de Claire.
+- Ne jamais exécuter une **action à effet de bord** depuis une `USER_TRANSCRIPTION` reçue pendant `avatarSpeaking`.
+- Un `USER_SPEAK_STARTED` pendant la parole peut rester un barge-in et couper Claire, mais la confirmation devis doit être rattachée à un tour humain identifié après cette coupure — sinon demander de répéter.
+- Armer l’écoute des commandes après un vrai cycle utilisateur, avec un identifiant de tour distinct de la génération de parole avatar.
 - Attacher un numéro de génération de parole et rejeter toute transcription de la génération avatar.
 - Garder les regex comme aide de classification, pas comme preuve d’origine humaine.
 
@@ -352,12 +355,13 @@ Ajouter :
 1. conversation caméra sans mot « devis » → aucune checklist ;
 2. nom/commune donnés hors devis → aucune checklist ;
 3. mémoire complète hors devis + « c’est bon » → aucun envoi ;
-4. cinq formulations de Claire contenant « envoyer le devis » → zéro commande ;
-5. reconnexion après succès → aucune relance ;
-6. envoi manuel puis reload → ancien besoin absent ;
-7. double confirmation / timeout → un seul envoi ;
-8. test E2E avec vraie cible d’événement DOM ;
-9. laboratoire avec scénario mémoire et résultat non simulé.
+4. « je ne demande pas de nouveau devis » → aucune ouverture, aucune checklist ;
+5. cinq formulations de Claire contenant « envoyer le devis » → zéro commande ;
+6. reconnexion après succès → aucune relance ;
+7. envoi manuel puis reload → ancien besoin absent ;
+8. double confirmation / timeout → un seul envoi ;
+9. test E2E avec vraie cible d’événement DOM ;
+10. laboratoire avec scénario mémoire et résultat non simulé.
 
 ## 6. Script de recette Didier sur preview
 
@@ -409,6 +413,7 @@ Ensuite seulement, il faut sécuriser l’origine audio, la clôture manuelle, l
 
 - Reproduction déterministe des cinq annonces successives de checklist : confirmée.
 - Reproduction de « c’est bon » envoyant hors page devis : confirmée sur accueil, vidéosurveillance et devis ; contact bascule vers l’envoi contact.
+- Reproduction de « je ne demande pas de nouveau devis » ouvrant et préremplissant le devis : confirmée.
 - Reproduction de cinq formulations d’écho `submit=true / guard=false` : confirmée.
 - Suite locale : **195 tests réussis, 0 échec**.
 - Aucun appel LiveAvatar, aucun e-mail réel, aucune écriture externe, aucun déploiement.
