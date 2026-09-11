@@ -7,7 +7,7 @@
   "preview_urls": false,
   "keep_vars": true,
   "vars": {
-    "PREVIEW_BUILD_ID": "20260911-claire-actions-v1"
+    "PREVIEW_BUILD_ID": "20260911-claire-duplex-v1"
   },
   "assets": {
     "directory": ".",
