@@ -1,3 +1,5 @@
+import { DurableObject } from "cloudflare:workers";
+
 const encoder = new TextEncoder();
 
 function json(data, status = 200) {
@@ -51,8 +53,9 @@ async function ticketStorageKey(ticket) {
   return `ticket:${btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "")}`;
 }
 
-export class ClaireTenantState {
-  constructor(state) {
+export class ClaireTenantState extends DurableObject {
+  constructor(state, env) {
+    super(state, env);
     this.state = state;
   }
 
