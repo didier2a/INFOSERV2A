@@ -1,0 +1,23 @@
+# Copier vers .dev.vars pour le développement local uniquement.
+# Ne jamais committer .dev.vars.
+CLAIRE_ENVIRONMENT=local
+
+# Requis pour une vraie session LiveAvatar/OpenAI.
+LIVEAVATAR_API_KEY=
+OPENAI_API_KEY=
+
+# Facultatif uniquement avec CLAIRE_ENVIRONMENT=local|development|test.
+# Obligatoire dans tout autre environnement.
+EMBED_SIGNING_SECRET=
+
+# Facultatif : réutiliser des ressources LiveAvatar déjà créées.
+LIVEAVATAR_OPENAI_SECRET_ID=
+LIVEAVATAR_AVATAR_ID=
+LIVEAVATAR_CONTEXT_ID_BOULANGERIE_SOLEIL=
+LIVEAVATAR_CONTEXT_ID_ATELIER_LUMIERE=
+
+# Facultatif : canaux de réception des formulaires.
+LEAD_WEBHOOK_BOULANGERIE_SOLEIL=
+LEAD_EMAIL_BOULANGERIE_SOLEIL=
+LEAD_WEBHOOK_ATELIER_LUMIERE=
+LEAD_EMAIL_ATELIER_LUMIERE=

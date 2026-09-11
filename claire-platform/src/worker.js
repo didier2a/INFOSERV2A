@@ -2,13 +2,21 @@ import { getTenant, publicTenant } from "./tenants.js";
 import {
   bearerTicket,
   corsHeaders,
+  EmbedSetupError,
   issueEmbedTicket,
   originAllowed,
   requestOrigin,
   verifyEmbedTicket
 } from "./security.js";
-import { quotaSnapshot, recordSessionEnd, recordSessionStart } from "./metering.js";
+import {
+  ClaireTenantState,
+  quotaSnapshot,
+  recordSessionEnd,
+  recordSessionStart
+} from "./tenant-state.js";
 import { liveAvatarSetup, mintLiveAvatarSession, PlatformSetupError } from "./liveavatar.js";
+
+export { ClaireTenantState };
 
 const API_HEADERS = {
   "Cache-Control": "no-store",
@@ -68,12 +76,17 @@ async function bootstrap(request, env) {
   if (!tenant) return json({ error: "Unknown tenant" }, 404);
   const origin = requestOrigin(request);
   if (!originAllowed(tenant, origin)) return json({ error: "Origin not allowed" }, 403);
-  const embedTicket = await issueEmbedTicket(tenant, origin, env);
-  return json({
-    embedTicket,
-    expiresIn: 600,
-    tenant: publicTenant(tenant)
-  }, 200, tenant, request);
+  try {
+    const embedTicket = await issueEmbedTicket(tenant, origin, env);
+    return json({
+      embedTicket,
+      expiresIn: 600,
+      tenant: publicTenant(tenant)
+    }, 200, tenant, request);
+  } catch (error) {
+    if (error instanceof EmbedSetupError) return json(setupPayload(error), 503, tenant, request);
+    throw error;
+  }
 }
 
 async function tenantConfig(request, env) {
@@ -94,7 +107,7 @@ async function platformStatus(request, env) {
     provider: "liveavatar-realtime",
     connector: "OPENAI_REALTIME",
     ...liveAvatarSetup(env),
-    quota: quotaSnapshot(tenant)
+    quota: await quotaSnapshot(env, tenant)
   }, 200, tenant, request);
 }
 
@@ -106,15 +119,20 @@ async function startSession(request, env) {
   const auth = await authorize(request, tenant, env, input);
   if (!auth) return json({ error: "Origin not allowed" }, 403, tenant, request);
 
-  const quota = quotaSnapshot(tenant);
+  const quota = await quotaSnapshot(env, tenant);
   if (!quota.allowed) {
     return json({ error: "Tenant minute quota exceeded", code: "QUOTA_EXCEEDED", quota }, 429, tenant, request);
   }
 
   try {
     const session = await mintLiveAvatarSession(tenant, env, input.maxSessionDuration);
-    recordSessionStart(tenant, session.sessionId);
-    return json({ ...session, quota: quotaSnapshot(tenant) }, 200, tenant, request);
+    const metering = await recordSessionStart(
+      env,
+      tenant,
+      session.sessionId,
+      session.maxSessionDuration
+    );
+    return json({ ...session, quota: metering }, 200, tenant, request);
   } catch (error) {
     if (error instanceof PlatformSetupError) return json(setupPayload(error), 503, tenant, request);
     console.error("Claire platform session mint failed", String(error?.message || error).slice(0, 240));
@@ -133,7 +151,7 @@ async function endSession(request, env) {
   return json({
     tenantId: tenant.id,
     sessionId: String(input.sessionId),
-    quota: recordSessionEnd(tenant, input.sessionId)
+    quota: await recordSessionEnd(env, tenant, input.sessionId)
   }, 200, tenant, request);
 }
 

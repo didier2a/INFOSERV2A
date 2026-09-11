@@ -3,7 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "guard:worker": "node scripts/assert-safe-worker-config.mjs",
     "dev": "npx wrangler@latest dev --config wrangler.claire-platform.jsonc",
-    "test": "node --test tests/*.test.mjs"
+    "test": "npm run guard:worker && node --test tests/*.test.mjs",
+    "deploy:dry-run": "npm run guard:worker && npx wrangler@latest deploy --dry-run --config wrangler.claire-platform.jsonc",
+    "deploy:dev": "npm run guard:worker && npx wrangler@latest deploy --config wrangler.claire-platform.jsonc"
   }
 }

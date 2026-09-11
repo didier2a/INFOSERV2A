@@ -4,6 +4,9 @@
   "main": "src/worker.js",
   "compatibility_date": "2026-09-01",
   "keep_vars": true,
+  "vars": {
+    "CLAIRE_ENVIRONMENT": "development"
+  },
   "assets": {
     "directory": "public",
     "binding": "ASSETS",
@@ -12,7 +15,21 @@
   },
   "observability": {
     "enabled": true
-  }
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CLAIRE_TENANT_STATE",
+        "class_name": "ClaireTenantState"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "claire-platform-v1",
+      "new_sqlite_classes": ["ClaireTenantState"]
+    }
+  ]
   // Intentionally no routes or custom domains. This configuration must never
   // be renamed to "infoserv2a" or used for infoserv2a.pro.
 }

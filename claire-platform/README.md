@@ -11,9 +11,9 @@ Plateforme Claire multi-tenant isolée : un Worker héberge le cerveau LiveAvata
 3. Il délivre un ticket de 10 minutes lié au tenant et à cette origine.
 4. Le loader monte `/embed/?tenant=…`; l’iframe utilise le ticket pour ses appels same-origin.
 5. `POST /api/liveavatar-session` crée un jeton LiveAvatar éphémère. Les clés LiveAvatar/OpenAI ne quittent jamais le Worker.
-6. Le début et la fin de session alimentent un compteur P0 en mémoire, par tenant et par mois.
+6. Un Durable Object SQLite par tenant persiste les tickets, les sessions actives et le quota mensuel.
 
-En production, `EMBED_SIGNING_SECRET` signe les tickets HMAC. Sans ce secret, le mode local utilise des tickets opaques en mémoire : pratique pour un seul processus `wrangler dev`, mais non adapté à plusieurs isolates. Pour une phase suivante, le compteur et/ou les tickets devront passer dans Durable Objects ou KV.
+`EMBED_SIGNING_SECRET` signe les tickets HMAC. Il est obligatoire dès que `CLAIRE_ENVIRONMENT` n’est pas `local`, `development` ou `test`. En local/dev seulement, des tickets opaques restent possibles, mais ils sont eux aussi conservés dans le Durable Object et non dans la mémoire d’un isolate.
 
 ## Lancer localement
 
@@ -49,6 +49,10 @@ Obligatoires pour une session réelle :
 - `OPENAI_API_KEY` **ou** `LIVEAVATAR_OPENAI_SECRET_ID`
 - `EMBED_SIGNING_SECRET` pour tout environnement partagé/déployé
 
+Configuration non secrète :
+
+- `CLAIRE_ENVIRONMENT` vaut `development` dans la configuration dogfood. Toute autre valeur hors `local|development|test` fait échouer le bootstrap avec un `503` tant que `EMBED_SIGNING_SECRET` manque.
+
 Facultatifs :
 
 - `LIVEAVATAR_AVATAR_ID`
@@ -65,7 +69,7 @@ npx wrangler secret put OPENAI_API_KEY --config wrangler.claire-platform.jsonc
 npx wrangler secret put EMBED_SIGNING_SECRET --config wrangler.claire-platform.jsonc
 ```
 
-Ne jamais exécuter ces commandes avec `../wrangler.jsonc`. La configuration dédiée porte le nom distinct `claire-platform-dev`, ne déclare aucune route et ne doit jamais être renommée `infoserv2a`.
+Ne jamais exécuter ces commandes avec `../wrangler.jsonc`. La configuration dédiée porte le nom distinct `claire-platform-dev`, ne déclare aucune route et ne doit jamais être renommée `infoserv2a`. Le script `npm run guard:worker` bloque tout autre nom, toute route et toute autre entrée Worker.
 
 ### Étape exacte pour Didier après authentification
 
@@ -78,10 +82,10 @@ npx wrangler@latest whoami
 npx wrangler@latest secret put LIVEAVATAR_API_KEY --config wrangler.claire-platform.jsonc
 npx wrangler@latest secret put OPENAI_API_KEY --config wrangler.claire-platform.jsonc
 npx wrangler@latest secret put EMBED_SIGNING_SECRET --config wrangler.claire-platform.jsonc
-npx wrangler@latest deploy --config wrangler.claire-platform.jsonc
+npm run deploy:dev
 ```
 
-La dernière commande doit annoncer une URL `https://claire-platform-dev.<sous-domaine>.workers.dev`. Vérifier `https://…/health`, puis remplacer uniquement le `src` du snippet de démo par cette origine. Cette procédure ne touche pas le Worker `infoserv2a` et n’ajoute aucune route à `infoserv2a.pro`.
+La dernière commande exécute d’abord le garde-fou, puis doit annoncer une URL `https://claire-platform-dev.<sous-domaine>.workers.dev`. Vérifier `https://…/health`, puis remplacer uniquement le `src` du snippet de démo par cette origine. Cette procédure ne touche pas le Worker `infoserv2a` et n’ajoute aucune route à `infoserv2a.pro`.
 
 ## Ajouter un tenant
 
@@ -123,17 +127,28 @@ Les deux démos sont des sites statiques autonomes. Leur seule intégration Clai
 
 ## Limites explicites du P0
 
-- Le metering est en mémoire : il se réinitialise au redémarrage et n’est pas coordonné entre isolates.
+- Le metering et les tickets sont persistés et coordonnés par un Durable Object par tenant. Ce P0 ne fournit pas encore de tableau de bord ni d’export de consommation.
 - La livraison d’un lead nécessite un webhook HTTPS par tenant. Sans lui, l’API répond clairement `503 LEAD_DELIVERY_NOT_CONFIGURED` au lieu de perdre silencieusement les données.
 - Les connaissances sont de petits stubs versionnés. Il n’y a aucun scraping du DOM ou d’un site tiers.
 - Le déploiement n’ajoute aucune route de production. Un éventuel essai doit viser uniquement `claire-platform-dev` sur `workers.dev`.
+
+## Garde-fous CI / Workers Builds
+
+- La racine `.assetsignore` contient `claire-platform/` : aucun fichier plateforme ne peut entrer dans les assets des previews du Worker InfoServ2A.
+- `.github/workflows/claire-platform-guard.yml` exécute les tests et un bundle dry-run sur toute modification de cette zone.
+- `scripts/assert-safe-worker-config.mjs` exige exactement `name = "claire-platform-dev"`, `main = "src/worker.js"` et aucune route.
+- Pour Workers Builds, définir **Root directory** sur `claire-platform`, **Build command** sur `npm test` et **Deploy command** sur `npm run deploy:dev`. Ne jamais sélectionner `wrangler.jsonc` à la racine.
+
+Les tests incluent un contre-test qui injecte volontairement `name: "infoserv2a"` et vérifie le refus.
 
 ## Validation
 
 ```bash
 cd claire-platform
 npm test
-npx wrangler@latest deploy --dry-run --config wrangler.claire-platform.jsonc
+npm run deploy:dry-run
 ```
 
 Le déploiement réel n’est pas nécessaire pour valider ce lot et ne doit jamais cibler `infoserv2a`.
+
+Les pistes P1 non bloquantes sont consignées dans `docs/p1-notes.md`.

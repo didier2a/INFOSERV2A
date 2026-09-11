@@ -1,5 +1,6 @@
+import { persistEmbedTicket, persistedEmbedTicket } from "./tenant-state.js";
+
 const encoder = new TextEncoder();
-const fallbackTickets = new Map();
 const TICKET_TTL_MS = 10 * 60 * 1000;
 
 function base64Url(bytes) {
@@ -64,6 +65,21 @@ export function corsHeaders(tenant, request) {
   };
 }
 
+export function localEnvironment(env = {}) {
+  return ["local", "development", "test"].includes(
+    String(env.CLAIRE_ENVIRONMENT || "").trim().toLowerCase()
+  );
+}
+
+export class EmbedSetupError extends Error {
+  constructor() {
+    super("EMBED_SIGNING_SECRET is required outside local/development environments.");
+    this.name = "EmbedSetupError";
+    this.status = 503;
+    this.requiredSecrets = ["EMBED_SIGNING_SECRET"];
+  }
+}
+
 export async function issueEmbedTicket(tenant, origin, env, now = Date.now()) {
   if (!originAllowed(tenant, origin)) throw new Error("Origin not allowed");
   const payload = {
@@ -73,48 +89,53 @@ export async function issueEmbedTicket(tenant, origin, env, now = Date.now()) {
     nonce: crypto.randomUUID()
   };
   const secret = String(env.EMBED_SIGNING_SECRET || "").trim();
+  let ticket;
   if (!secret) {
-    const ticket = `dev_${crypto.randomUUID()}`;
-    fallbackTickets.set(ticket, payload);
-    return ticket;
+    if (!localEnvironment(env)) throw new EmbedSetupError();
+    ticket = `dev_${crypto.randomUUID()}`;
+  } else {
+    const encoded = base64Url(encoder.encode(JSON.stringify(payload)));
+    const signature = new Uint8Array(await crypto.subtle.sign("HMAC", await signingKey(secret), encoder.encode(encoded)));
+    ticket = `${encoded}.${base64Url(signature)}`;
   }
-  const encoded = base64Url(encoder.encode(JSON.stringify(payload)));
-  const signature = new Uint8Array(await crypto.subtle.sign("HMAC", await signingKey(secret), encoder.encode(encoded)));
-  return `${encoded}.${base64Url(signature)}`;
+  await persistEmbedTicket(env, tenant, ticket, payload);
+  return ticket;
 }
 
 export async function verifyEmbedTicket(ticket, tenant, env, now = Date.now()) {
   const value = String(ticket || "").trim();
+  if (!value) return null;
   const secret = String(env.EMBED_SIGNING_SECRET || "").trim();
-  let payload;
-
-  if (!secret) {
-    payload = fallbackTickets.get(value);
-  } else {
+  let signedPayload = null;
+  if (secret) {
     const [encoded, suppliedSignature, extra] = value.split(".");
     if (!encoded || !suppliedSignature || extra) return null;
     try {
       const expected = new Uint8Array(await crypto.subtle.sign("HMAC", await signingKey(secret), encoder.encode(encoded)));
       const supplied = decodeBase64Url(suppliedSignature);
       if (!timingSafeEqual(expected, supplied)) return null;
-      payload = JSON.parse(new TextDecoder().decode(decodeBase64Url(encoded)));
+      signedPayload = JSON.parse(new TextDecoder().decode(decodeBase64Url(encoded)));
     } catch {
       return null;
     }
-  }
-
-  if (!payload || payload.exp <= now || payload.tenantId !== tenant.id || !originAllowed(tenant, payload.origin)) {
-    if (!secret) fallbackTickets.delete(value);
+  } else if (!localEnvironment(env)) {
     return null;
   }
+
+  const payload = await persistedEmbedTicket(env, tenant, value, now);
+  if (!payload || payload.exp <= now || payload.tenantId !== tenant.id || !originAllowed(tenant, payload.origin)) {
+    return null;
+  }
+  if (signedPayload && (
+    signedPayload.nonce !== payload.nonce
+    || signedPayload.exp !== payload.exp
+    || signedPayload.tenantId !== payload.tenantId
+    || signedPayload.origin !== payload.origin
+  )) return null;
   return payload;
 }
 
 export function bearerTicket(request) {
   const authorization = String(request.headers.get("Authorization") || "");
   return authorization.toLowerCase().startsWith("bearer ") ? authorization.slice(7).trim() : "";
-}
-
-export function resetFallbackTickets() {
-  fallbackTickets.clear();
 }
