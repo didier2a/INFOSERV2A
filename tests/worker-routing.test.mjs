@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import worker from "../src/worker.js";
+import worker, { ClaireRequestGuard } from "../src/worker.js";
 
 function env(overrides = {}) {
   return {
@@ -110,10 +110,24 @@ test("un hôte workers.dev n’est pas redirigé", async () => {
   assert.equal(await response.text(), "asset:/contact.html");
 });
 
+test("ClaireRequestGuard conserve la classe Cloudflare et échoue fermé sans toucher à l’état", async () => {
+  const guard = new ClaireRequestGuard();
+  const response = await guard.fetch(new Request("https://guard.internal/operation"));
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), {
+    allowed: false,
+    status: 503,
+    code: "guard_unavailable"
+  });
+});
+
 test("le Worker n’attache pas encore infoserv2a.pro pour ne pas voler le domaine depuis une preview", async () => {
   const source = await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8");
   const uncommented = source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
   assert.doesNotMatch(uncommented, /custom_domain/);
   assert.doesNotMatch(uncommented, /infoserv2a\.pro/);
+  assert.match(uncommented, /"name": "CLAIRE_REQUEST_GUARD"/);
+  assert.match(uncommented, /"class_name": "ClaireRequestGuard"/);
+  assert.doesNotMatch(uncommented, /deleted_classes|renamed_classes|new_classes|new_sqlite_classes/);
   assert.match(source, /docs\/activer-claire-sur-infoserv2a-pro\.md/);
 });

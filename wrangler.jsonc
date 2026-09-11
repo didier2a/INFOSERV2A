@@ -7,7 +7,18 @@
     "directory": ".",
     "binding": "ASSETS",
     "run_worker_first": true
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CLAIRE_REQUEST_GUARD",
+        "class_name": "ClaireRequestGuard"
+      }
+    ]
   }
+  // ClaireRequestGuard existe déjà dans Cloudflare : ne pas ajouter de
+  // migration new_*, renamed_* ou deleted_* sans connaître sa migration
+  // d’origine. Cette config conserve le namespace et son état tels quels.
   // Domaines personnalisés : NE PAS activer ici tant que la zone infoserv2a.pro
   // n’est pas Active dans Cloudflare. Un custom_domain sur cette config serait
   // aussi déployé sur les previews de branche et volerait le domaine public.
