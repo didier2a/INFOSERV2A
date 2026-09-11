@@ -6,6 +6,7 @@ import {
   CLAIRE_ACTION_MODES,
   actionDraftReady,
   confirmationPhrase,
+  exactConfirmationKind,
   interviewUpdate,
   isExactSendConfirmation,
   requestedActionMode,
@@ -92,8 +93,33 @@ test("V1 envoie dès la première confirmation exacte si le brouillon est prêt"
 test("V1 tolère l’article ASR, mais jamais une confirmation vague", () => {
   assert.equal(isExactSendConfirmation("Oui, envoie la demande de devis", "devis"), true);
   assert.equal(isExactSendConfirmation("Oui, envoie demande de devis", "devis"), true);
+  assert.equal(isExactSendConfirmation("La synthèse est parfaite. Oui, envoie la demande de devis", "devis"), true);
+  assert.equal(exactConfirmationKind("La synthèse est parfaite. Oui, envoie ma demande de contact"), "contact");
   assert.equal(isExactSendConfirmation("envoie de suite", "devis"), false);
   assert.equal(isExactSendConfirmation("c’est bon", "devis"), false);
+});
+
+test("V2 classe la phrase exacte elle-même même si le mode courant est conseil", () => {
+  const memory = completeQuoteMemory();
+  for (const command of [
+    "Oui, envoie ma demande de devis",
+    "La synthèse est parfaite. Oui, envoie la demande de devis"
+  ]) {
+    const plan = planCommand(command, knowledge, manifest, {
+      memory,
+      pageId: "quote",
+      confirmation: { armed: false, kind: CLAIRE_ACTION_MODES.CONSEIL }
+    });
+    assert.equal(plan.steps.some((step) => step.tool === "submit_quote"), true, command);
+    assert.doesNotMatch(plan.response, /confirmez que vous voulez transmettre/i);
+  }
+
+  const soft = planCommand("c’est bon", knowledge, manifest, {
+    memory,
+    pageId: "quote",
+    confirmation: { armed: true, kind: CLAIRE_ACTION_MODES.DEVIS }
+  });
+  assert.equal(soft.steps.some((step) => step.tool === "submit_quote"), false);
 });
 
 test("V1 ne déduplique pas deux confirmations exactes à moins de quatre secondes", () => {

@@ -115,7 +115,7 @@ test("submit laisse la première confirmation prête atteindre submit_quote", as
 
   let runtimeContext;
   const companion = Object.assign(Object.create(ClaireCompanion.prototype), {
-    actionMode: "devis",
+    actionMode: "conseil",
     confirmationArmed: "",
     state: "guided",
     knowledge,
@@ -151,7 +151,18 @@ test("submit laisse la première confirmation prête atteindre submit_quote", as
   });
 
   const outcome = await companion.submit("Oui, envoie la demande de devis", "text");
+  assert.equal(companion.actionMode, "devis");
   assert.equal(runtimeContext.confirmation.armed, true);
   assert.equal(outcome.plan.steps.some((step) => step.tool === "submit_quote"), true);
   assert.doesNotMatch(outcome.plan.response, /dites exactement|relisez-la/i);
+
+  companion.actionMode = "conseil";
+  companion.confirmationArmed = "";
+  const prefixed = await companion.submit(
+    "La synthèse est parfaite. Oui, envoie la demande de devis",
+    "liveavatar"
+  );
+  assert.equal(companion.actionMode, "devis");
+  assert.equal(runtimeContext.confirmation.armed, true);
+  assert.equal(prefixed.plan.steps.some((step) => step.tool === "submit_quote"), true);
 });

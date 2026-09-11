@@ -1,4 +1,4 @@
-import { adjacentPage, adjacentSection, catalogEntries, pageById, scorePage } from "./claire-core.mjs?v=20260911-claire-send-loop-v1";
+import { adjacentPage, adjacentSection, catalogEntries, pageById, scorePage } from "./claire-core.mjs?v=20260911-claire-send-loop-v2";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));

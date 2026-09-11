@@ -391,7 +391,7 @@ test("la première confirmation exacte envoie le dossier complet", () => {
       turns: []
     },
     pageId: "contact",
-    confirmation: { armed: true, kind: "contact" }
+    confirmation: { armed: false, kind: "conseil" }
   });
   assert.ok(contact.steps.some((step) => step.tool === "compose_email"));
 });

@@ -191,7 +191,7 @@ export function isEmailAction(value = "") {
 export function isOralSendConfirm(value = "") {
   if (isClaireQuotePrompt(value)) return false;
   const query = normalizeText(value);
-  return /^oui envoie (?:(?:ma|la) )?demande de (?:devis|contact)$/.test(query);
+  return /(?:^|\b)oui envoie (?:(?:ma|la) )?demande de (?:devis|contact)$/.test(query);
 }
 
 export function isUrgentSiteCommand(value = "") {
