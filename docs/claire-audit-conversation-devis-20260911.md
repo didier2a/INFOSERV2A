@@ -27,6 +27,7 @@ Les protections ajoutées lors des itérations précédentes réduisent certaine
 | Priorité | Cause | Gravité | Confiance |
 |---|---|---:|---:|
 | P0 | Un service ou une coordonnée suffit à annoncer la checklist, sans intention de devis active | Bloquante | Élevée, reproduite |
+| P0 | Une simple approbation (« c’est bon ») peut envoyer un dossier complet déduit hors devis, depuis presque toute page | Bloquante | Élevée, reproduite |
 | P0 | Une transcription reçue pendant que l’avatar parle reste exécutable si elle ressemble à une commande « urgente » ; la garde anti-écho ne couvre pas les formulations naturelles | Bloquante | Élevée dans le code, occurrence acoustique à confirmer |
 | P0 | L’envoi manuel du formulaire ne clôt probablement pas la mémoire : événement émis sur `document`, écouteur posé sur `window`, événement non remontant par défaut | Forte | Élevée |
 | P0 | Le modèle et l’application ne partagent pas réellement la même mémoire après connexion/reconnexion | Forte | Élevée |
@@ -105,7 +106,22 @@ Le visiteur peut donc entendre :
 
 Ce doublage donne l’impression que Claire « revient toujours au devis », même sans boucle infinie stricte.
 
-### 3.3 P0 — La garde anti-écho laisse passer les formulations naturelles
+### 3.3 P0 — « C’est bon » peut envoyer un devis jamais demandé
+
+`isOralSendConfirm()` classe notamment « c’est bon », « valide », « confirme » et « vas-y » comme confirmations globales (`assets/js/claire-core.mjs:182-194`). `resolveSendClassification()` les transforme en `submit_quote` dès que les six champs déduits sont complets, même hors page devis (`assets/js/claire-runtime-v2.mjs:90-112`).
+
+Avec une mémoire complète construite depuis une conversation caméra ordinaire, la reproduction donne :
+
+| Page active | « C’est bon » exécute |
+|---|---|
+| accueil | `submit_quote` |
+| vidéosurveillance | `submit_quote` |
+| devis | `submit_quote` |
+| contact | `compose_email` |
+
+Il n’existe aucun verrou « une demande de devis est actuellement en attente de confirmation ». Une approbation conversationnelle banale peut donc provoquer un envoi réel.
+
+### 3.4 P0 — La garde anti-écho laisse passer les formulations naturelles
 
 Quand `USER_TRANSCRIPTION` arrive pendant que l’avatar parle, le code ignore normalement l’écho. Exception : une commande urgente non reconnue comme « phrase de Claire » est acceptée et interrompt l’avatar (`assets/js/claire-liveavatar-provider.js:711-733`).
 
@@ -119,7 +135,7 @@ La garde `isClaireQuotePrompt()` est une liste d’expressions, tandis que `isSu
 
 Si le micro ou le connecteur réentend une de ces phrases de Claire comme parole utilisateur, elle devient une vraie commande. Une denylist linguistique ne peut pas fiabiliser l’origine d’un événement audio.
 
-### 3.4 P0 — La mémoire « envoyée » n’est pas réellement partagée au modèle
+### 3.5 P0 — La mémoire « envoyée » n’est pas réellement partagée au modèle
 
 Le prompt dit à Claire d’utiliser `[INFOSERV2A_SESSION_MEMORY]`, mais le provider garde briefing, contexte de page et mémoire non-live dans `lastLocalContext` seulement ; il ne les envoie pas à OpenAI (`assets/js/claire-liveavatar-provider.js:239-249`, `340-363`).
 
@@ -134,7 +150,7 @@ Conséquence :
 
 Le système dépend donc d’une mémoire annoncée dans le prompt, mais absente du contexte effectif dans plusieurs chemins.
 
-### 3.5 P0 — L’envoi manuel ne clôt pas la mémoire comme prévu
+### 3.6 P0 — L’envoi manuel ne clôt pas la mémoire comme prévu
 
 Les formulaires émettent `document.dispatchEvent(new CustomEvent("infoserv:email-sent", ...))` (`assets/js/devis.js:163-176`, `assets/js/contact.js:81-91`).
 
@@ -149,7 +165,7 @@ Après un envoi manuel réussi :
 
 L’audit IT34 considérait ce chemin corrigé, mais la différence de cible d’événement invalide l’intention du patch.
 
-### 3.6 P1 — Il n’existe pas de machine d’état métier devis
+### 3.7 P1 — Il n’existe pas de machine d’état métier devis
 
 Le contrôleur connaît seulement `ready/interpreting/planning/executing/verifying/complete/error/manual` (`assets/js/claire-runtime-v2.mjs:22-42`). La mémoire n’a pas de statut devis ; `quoteEpoch` ne sert qu’à départager l’ancien et le nouveau besoin après succès (`assets/js/claire-session-memory.mjs:86-102`, `230-253`).
 
@@ -162,7 +178,7 @@ idle → collecting → ready_for_confirmation → submitting → sent
 
 Aujourd’hui, ces états sont inférés à répétition depuis les champs. `lastQuoteAnnounceAt` et `lastSiteTruthSpeech` vivent seulement dans l’instance JS et expirent au rechargement. La protection principale dure 8 secondes (`assets/js/claire-companion.js:1470-1478`).
 
-### 3.7 P1 — Le langage système pousse spontanément vers le devis
+### 3.8 P1 — Le langage système pousse spontanément vers le devis
 
 Le prompt cite le devis comme réponse métier pour restaurant et panne PC (`assets/js/claire-core.mjs:337`), le briefing l’énumère parmi les actions (`assets/js/claire-core.mjs:311`) et le hors-sujet se termine par « un ordinateur, un site, une caméra ou un devis ? » (`assets/js/claire-core.mjs:324`).
 
@@ -174,7 +190,7 @@ Il n’existe pas de règle symétrique forte :
 
 Les règles actuelles disent surtout comment ne pas envoyer trop tôt, pas comment ne pas **entrer** trop tôt dans le funnel.
 
-### 3.8 P1 — Destination et discours se contredisent
+### 3.9 P1 — Destination et discours se contredisent
 
 Le routeur dit « Je transmets la demande de devis vers InfoServ2A » (`assets/js/claire-core.mjs:30-36`) et le runtime répète cette destination (`assets/js/claire-runtime-v2.mjs:76-80`, `246-264`).
 
@@ -182,13 +198,13 @@ Mais le prompt actuel dit que l’envoi va vers l’e-mail du visiteur, pas vers
 
 Si « demande de devis » signifie prise de contact avec InfoServ2A, ce flux n’achemine pas la demande à l’entreprise. Même si la copie au visiteur est volontaire, le libellé « vers InfoServ2A » est factuellement faux. Un visiteur qui ne reçoit pas le résultat attendu peut recommencer, ce qui ressemble à une boucle.
 
-### 3.9 P1 — Pas d’idempotence bout en bout
+### 3.10 P1 — Pas d’idempotence bout en bout
 
 L’API valide puis envoie chaque POST accepté, sans clé de requête ni signature de brouillon (`functions/api/send-email.js:360-416`). L’anti-doublon existe seulement dans le navigateur et dépend de `lastSend`.
 
 Un timeout après remise effective, une reconnexion, un stockage bloqué ou un second appareil peut donc provoquer un doublon. Le runtime vérifie surtout que la page attendue est active, pas qu’un identifiant d’envoi est unique (`assets/js/claire-site-runtime-adapter.mjs:737-751`).
 
-### 3.10 P2 — Provisionnement du prompt et couverture de test
+### 3.11 P2 — Provisionnement du prompt et couverture de test
 
 `ensureClaireContext()` réutilise tout contexte portant le même nom sans comparer ni mettre à jour son prompt (`functions/api/liveavatar-session.js:87-113`). Une modification future du prompt oubliant d’incrémenter `CONTEXT_NAME` ne sera pas appliquée aux sessions.
 
@@ -335,12 +351,13 @@ Ajouter :
 
 1. conversation caméra sans mot « devis » → aucune checklist ;
 2. nom/commune donnés hors devis → aucune checklist ;
-3. cinq formulations de Claire contenant « envoyer le devis » → zéro commande ;
-4. reconnexion après succès → aucune relance ;
-5. envoi manuel puis reload → ancien besoin absent ;
-6. double confirmation / timeout → un seul envoi ;
-7. test E2E avec vraie cible d’événement DOM ;
-8. laboratoire avec scénario mémoire et résultat non simulé.
+3. mémoire complète hors devis + « c’est bon » → aucun envoi ;
+4. cinq formulations de Claire contenant « envoyer le devis » → zéro commande ;
+5. reconnexion après succès → aucune relance ;
+6. envoi manuel puis reload → ancien besoin absent ;
+7. double confirmation / timeout → un seul envoi ;
+8. test E2E avec vraie cible d’événement DOM ;
+9. laboratoire avec scénario mémoire et résultat non simulé.
 
 ## 6. Script de recette Didier sur preview
 
@@ -391,6 +408,7 @@ Ensuite seulement, il faut sécuriser l’origine audio, la clôture manuelle, l
 ## 8. Vérifications réalisées
 
 - Reproduction déterministe des cinq annonces successives de checklist : confirmée.
+- Reproduction de « c’est bon » envoyant hors page devis : confirmée sur accueil, vidéosurveillance et devis ; contact bascule vers l’envoi contact.
 - Reproduction de cinq formulations d’écho `submit=true / guard=false` : confirmée.
 - Suite locale : **195 tests réussis, 0 échec**.
 - Aucun appel LiveAvatar, aucun e-mail réel, aucune écriture externe, aucun déploiement.
