@@ -37,6 +37,35 @@ function isWorkerPreviewHost(hostname) {
   return hostname.endsWith(".workers.dev");
 }
 
+/**
+ * Preserve the Durable Object class identity already provisioned on the
+ * production Worker. The restore does not use this binding; fail closed
+ * without reading, writing, or deleting existing state.
+ */
+export class ClaireRequestGuard {
+  async fetch() {
+    return Response.json(
+      {
+        allowed: false,
+        status: 503,
+        code: "guard_unavailable"
+      },
+      {
+        status: 503,
+        headers: {
+          "Cache-Control": "no-store",
+          "Content-Security-Policy": "default-src 'none'",
+          "X-Content-Type-Options": "nosniff"
+        }
+      }
+    );
+  }
+
+  async alarm() {
+    // Intentionally leave existing Durable Object state untouched.
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
