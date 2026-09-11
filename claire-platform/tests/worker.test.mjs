@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import worker from "../src/worker.js";
 import { getTenant } from "../src/tenants.js";
-import { issueEmbedTicket, verifyEmbedTicket } from "../src/security.js";
+import { issueEmbedTicket, requestOrigin, verifyEmbedTicket } from "../src/security.js";
 import {
   ClaireTenantState,
   quotaSnapshot,
@@ -102,6 +102,23 @@ test("dogfood Worker origin can bootstrap both demo tenants", async () => {
     assert.equal(response.headers.get("access-control-allow-origin"), dogfoodOrigin);
     assert.ok((await response.json()).embedTicket);
   }
+});
+
+test("missing Origin falls back to the allowlisted request URL origin", async () => {
+  const dogfoodUrl = "https://claire-platform-dev.infoserv2a.workers.dev/api/embed/bootstrap?tenant=boulangerie-soleil";
+  const directRequest = new Request(dogfoodUrl);
+
+  assert.equal(requestOrigin(directRequest), "https://claire-platform-dev.infoserv2a.workers.dev");
+  const response = await worker.fetch(directRequest, platformEnv());
+  assert.equal(response.status, 200);
+  assert.ok((await response.json()).embedTicket);
+});
+
+test("missing Origin prefers the Referer origin before request URL", () => {
+  const refererRequest = new Request("https://platform.invalid/api/embed/bootstrap", {
+    headers: { Referer: "https://claire-platform-dev.infoserv2a.workers.dev/demo-boulangerie.html" }
+  });
+  assert.equal(requestOrigin(refererRequest), "https://claire-platform-dev.infoserv2a.workers.dev");
 });
 
 test("an unknown tenant is rejected", async () => {

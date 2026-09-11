@@ -45,7 +45,25 @@ export function normalizeOrigin(value) {
 }
 
 export function requestOrigin(request) {
-  return normalizeOrigin(request.headers.get("Origin"));
+  const origin = String(request?.headers?.get("Origin") || "").trim();
+  if (origin) return normalizeOrigin(origin);
+
+  const referer = String(request?.headers?.get("Referer") || "").trim();
+  if (referer) {
+    try {
+      const url = new URL(referer);
+      if (url.username || url.password) return "";
+      return normalizeOrigin(url.origin);
+    } catch {
+      return "";
+    }
+  }
+
+  try {
+    return normalizeOrigin(new URL(request.url).origin);
+  } catch {
+    return "";
+  }
 }
 
 export function originAllowed(tenant, origin) {
