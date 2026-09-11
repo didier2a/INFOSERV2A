@@ -8,6 +8,7 @@ import {
   buildSiteBriefing,
   claimsUnverifiedEmailSend,
   classifyUtterance,
+  isEmailSendDoubt,
   isClaireQuotePrompt,
   isOralSendConfirm,
   isFormSendIntent,
@@ -104,7 +105,13 @@ test("un téléphone en panne reste une conversation, pas un appel", () => {
 
 test("une phrase de Claire qui invente l’envoi est détectée", () => {
   assert.equal(claimsUnverifiedEmailSend("C’est validé, c’est envoyé."), true);
+  assert.equal(claimsUnverifiedEmailSend("Ta demande de devis a été envoyée avec succès."), true);
+  assert.equal(claimsUnverifiedEmailSend("D’accord, je transmets tout de suite."), true);
+  assert.equal(claimsUnverifiedEmailSend("C’est bien confirmé : la demande de devis est partie."), true);
   assert.equal(claimsUnverifiedEmailSend("Je n’ai pas envoyé. Il manque votre e-mail."), false);
+  assert.equal(isEmailSendDoubt("Tu es sûr ?"), true);
+  assert.equal(isEmailSendDoubt("Vraiment ?"), true);
+  assert.equal(isEmailSendDoubt("C’est parti ?"), true);
 });
 
 test("envoie le devis, un appel ou un mail sont des actions orales", () => {
