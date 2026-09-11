@@ -117,3 +117,30 @@ test("le Worker n’attache pas encore infoserv2a.pro pour ne pas voler le domai
   assert.doesNotMatch(uncommented, /infoserv2a\.pro/);
   assert.match(source, /docs\/activer-claire-sur-infoserv2a-pro\.md/);
 });
+
+test("la configuration Claire V1 cible uniquement le Worker de préproduction", async () => {
+  const source = await readFile(new URL("../wrangler.preprod.jsonc", import.meta.url), "utf8");
+  assert.match(source, /"name"\s*:\s*"infoserv2a-claire-v3-preproduction"/);
+  assert.match(source, /"PREVIEW_BUILD_ID"\s*:\s*"20260911-claire-actions-v1"/);
+  assert.match(source, /"CLAIRE_REQUEST_GUARD"/);
+  assert.match(source, /"new_classes"\s*:\s*\[\s*"ClaireRequestGuard"\s*\]/);
+  assert.doesNotMatch(source, /delete_classes|custom_domain|infoserv2a\.pro/);
+});
+
+test("ClaireRequestGuard échoue fermé", async () => {
+  const { ClaireRequestGuard } = await import("../src/worker.js");
+  const guard = new ClaireRequestGuard({}, {});
+  const response = await guard.fetch(new Request("https://preview.test/"));
+  assert.equal(response.status, 403);
+  assert.match((await response.json()).error, /fermé par défaut/);
+});
+
+test("la préproduction se distingue par un en-tête de build", async () => {
+  const response = await worker.fetch(
+    new Request("https://infoserv2a-claire-v3-preproduction.infoserv2a.workers.dev/"),
+    env({ PREVIEW_BUILD_ID: "20260911-claire-actions-v1" })
+  );
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("X-InfoServ2A-Preview"), "20260911-claire-actions-v1");
+  assert.equal(response.headers.get("X-Robots-Tag"), "noindex, nofollow");
+});

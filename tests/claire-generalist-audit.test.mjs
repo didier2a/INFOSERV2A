@@ -30,7 +30,7 @@ const companionSource = await readFile(
   "utf8"
 );
 
-test("audit : Claire est une consultante IT ouverte, pas une IA de salon", () => {
+test("audit : Claire est une collaboratrice IT généraliste, pas une IA de salon", () => {
   const prompt = buildClaireContextPrompt(knowledge);
   assert.match(prompt, /interlocutrice professionnelle/);
   assert.match(prompt, /recentres vers InfoServ2A et l’IT/);
@@ -49,9 +49,9 @@ test("audit : Claire est une consultante IT ouverte, pas une IA de salon", () =>
   assert.match(providerSource, /sendOffTopic/);
   assert.match(providerSource, /INFOSERV2A_OFF_TOPIC/);
   assert.match(providerSource, /pas de catalogue, pas de liste d.onglets/);
-  assert.match(sessionSource, /InfoServ2A Claire Aidant 1\.31/);
+  assert.match(sessionSource, /InfoServ2A Claire Actions V1 20260911/);
   assert.match(prompt, /jamais le dialogue ni les répliques/);
-  assert.match(prompt, /jamais « c’est parti »/);
+  assert.match(prompt, /« C’est bon » n’est jamais une confirmation d’envoi/);
   assert.match(prompt, /sans attendre qu’on te pose une question/);
   assert.match(providerSource, /sans attendre qu’on te le demande/);
   assert.match(companionSource, /updateLiveCaption/);

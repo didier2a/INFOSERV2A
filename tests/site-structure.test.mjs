@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260907-it48)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260907-it48)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260911-claire-actions-v1)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260911-claire-actions-v1)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -39,7 +39,7 @@ test("les modules Claire sont versionnés pour éviter un cache 24 h cassé", as
     const bare = [...source.matchAll(/(?:from|import)\(?["'](\.\/[^"'?]+)["']/g)].map((match) => match[1]);
     assert.deepEqual(bare, [], `${file} importe sans ?v= : ${bare.join(", ")}`);
     if (source.includes("claire-core.mjs")) {
-      assert.match(source, /claire-core\.mjs\?v=20260907-it48/);
+      assert.match(source, /claire-core\.mjs\?v=20260911-claire-actions-v1/);
     }
   }
 });
@@ -94,7 +94,7 @@ test("Claire conserve une scène majeure et un mode guidé, jamais une bulle de 
   assert.match(css, /--claire-stage-width: 33\.333vw/);
   assert.match(css, /body\.claire-is-guided/);
   assert.doesNotMatch(css, /bottom-right|claire-mini/);
-  assert.match(client, /connectLiveSession\(\{ microphone: true/);
+  assert.match(client, /connectLiveSession\(\{ microphone: false/);
   assert.match(client, /provider\.connect\(\{ microphone: microphoneRequested \}\)/);
   assert.match(client, /Mode local · Realtime non configuré/);
   assert.match(client, /LiveAvatar configuré · transport interrompu/);
@@ -126,15 +126,14 @@ test("Claire accueille l'utilisateur et explique son rôle chez InfoServ2A", asy
     readFile(path.join(ROOT, "functions/api/liveavatar-session.js"), "utf8"),
     readFile(path.join(ROOT, "assets/js/claire-core.mjs"), "utf8")
   ]);
-  assert.match(core, /Moi c’est Claire, votre aidante chez InfoServ2A/);
-  assert.match(core, /Je vous écoute/);
+  assert.match(core, /Moi c’est Claire, collaboratrice numérique IT d’InfoServ2A/);
   assert.match(core, /navigation manuelle reste toujours disponible/);
   assert.match(core, /être interrompue à tout moment/);
   assert.match(core, /onglets du site/);
   assert.doesNotMatch(core, /Je reste uniquement dans l’informatique/);
   assert.match(client, /CLAIRE_WELCOME/);
   assert.match(endpoint, /CLAIRE_WELCOME/);
-  assert.match(endpoint, /InfoServ2A Claire Aidant 1\.31/);
+  assert.match(endpoint, /InfoServ2A Claire Actions V1 20260911/);
   assert.match(endpoint, /buildClaireContextPrompt/);
   assert.match(endpoint, /temperature:\s*0\.75/);
   assert.match(endpoint, /opening_text:\s*CLAIRE_WELCOME/);
@@ -143,7 +142,7 @@ test("Claire accueille l'utilisateur et explique son rôle chez InfoServ2A", asy
   assert.match(core, /INFOSERV2A_SESSION_MEMORY/);
   assert.match(core, /INFOSERV2A_OFF_TOPIC/);
   assert.match(core, /interlocutrice professionnelle/);
-  assert.match(core, /consultante IT ouverte/);
+  assert.match(core, /collaboratrice numérique IT généraliste/);
   assert.doesNotMatch(client, /this\.speak\(greeting\)/);
   assert.doesNotMatch(core, /n’importe quel sujet/);
 });
@@ -292,11 +291,12 @@ test("la conversation guidée garde le champ d’écriture dans le rail", async 
   assert.match(desktop, /\[data-transcript="open"\] \.claire-dialogue \{[\s\S]*position: fixed/);
   assert.match(desktop, /left: calc\(var\(--claire-stage-width\) \+ 0\.75rem\)/);
   assert.doesNotMatch(desktop, /max-height: min\(38vh, 340px\)/);
-  assert.match(mobile, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*display: grid/);
+  assert.match(mobile, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*display: none/);
+  assert.match(mobile, /\[data-composer="open"\] \.claire-dialogue \{[\s\S]*display: grid/);
   assert.match(mobile, /\[data-transcript="open"\] \.claire-dialogue \{[\s\S]*position: fixed/);
   assert.doesNotMatch(mobile, /max-height: min\(32vh, 210px\)/);
   assert.match(css, /--claire-mobile-stage: clamp\(176px/);
-  assert.match(css, /--claire-mobile-lisere: 48px/);
+  assert.match(css, /--claire-mobile-lisere: 40px/);
   assert.match(css, /min-width: 821px/);
   assert.match(mobile, /scroll-padding-top/);
   assert.match(mobile, /scroll-margin-top/);
@@ -394,14 +394,14 @@ test("l’arrivée montre l’enseigne InfoServ2A et deux portes", async () => {
   ]);
   assert.match(header, /Claire vous ouvre la boutique/);
   assert.match(header, /Vous êtes bien chez InfoServ2A/);
-  assert.match(header, /Parler à Claire/);
+  assert.match(header, /Activer le son · ~8s/);
   assert.match(header, /Voir le site d’abord/);
   assert.doesNotMatch(header, /Naviguer sans Claire/);
   assert.match(header, /data-claire-arrival-form/);
   assert.match(header, /id="claireArrivalCommand"/);
   assert.match(header, /placeholder="Écrire à Claire"/);
   assert.match(header, /infoserv2a-logo-light\.svg/);
-  assert.match(header, /Votre assistante/);
+  assert.match(header, /Collaboratrice numérique IT/);
   assert.match(css, /claire-door--claire/);
   assert.match(css, /\.claire-arrival-write \{/);
   assert.match(client, /skipLiveResumeCue/);
@@ -410,7 +410,7 @@ test("l’arrivée montre l’enseigne InfoServ2A et deux portes", async () => {
   assert.match(client, /Claire reste à portée/);
 });
 
-test("Claire se présente comme aidante Live Avatar", async () => {
+test("Claire se présente comme collaboratrice numérique IT", async () => {
   const [header, client, endpoint, knowledge] = await Promise.all([
     readFile(path.join(ROOT, "partials/header.html"), "utf8"),
     readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
@@ -418,7 +418,7 @@ test("Claire se présente comme aidante Live Avatar", async () => {
     readFile(path.join(ROOT, "data/site-knowledge.json"), "utf8")
   ]);
   assert.match(header, /Claire en direct/);
-  assert.match(header, /assistante virtuelle/);
+  assert.match(header, /collaboratrice numérique IT/);
   assert.match(header, /infoserv2a\.claire\.mode/);
   assert.match(header, /requested === "1"/);
   assert.match(header, /InfoServClaireBoot/);
@@ -433,7 +433,7 @@ test("Claire se présente comme aidante Live Avatar", async () => {
   assert.doesNotMatch(header, /Connexion en attente/);
   assert.match(client, /CLAIRE_WELCOME/);
   assert.match(endpoint, /CLAIRE_WELCOME/);
-  assert.match(knowledge, /Aidante Live Avatar/);
+  assert.match(knowledge, /Collaboratrice numérique IT généraliste/);
 });
 
 test("la parole de Claire enchaîne les pages sans coupure nette", async () => {
@@ -538,7 +538,7 @@ test("E-MOB-FORM-01 : le doigt sur le devis ne déplie pas Claire", async () => 
     readFile(path.join(ROOT, "partials/header.html"), "utf8")
   ]);
   assert.match(css, /--claire-mobile-stage: clamp\(176px, calc\(var\(--claire-vvh, 100dvh\) \* 0\.34\), 220px\)/);
-  assert.match(css, /--claire-mobile-lisere: 48px/);
+  assert.match(css, /--claire-mobile-lisere: 40px/);
   assert.match(css, /--claire-composer-band: 3\.4rem/);
   assert.match(css, /--claire-mobile-chrome: var\(--claire-mobile-lisere\)/);
   assert.match(css, /body\.claire-keyboard-open\.claire-is-guided:not\(\.claire-mobile-scene\) \{[\s\S]*padding-top: var\(--claire-mobile-lisere\)/);
@@ -558,7 +558,7 @@ test("IT43 : rythme Claire — PC 1/3+2/3 fixe, mobile scène nominale hors spea
   const desktop = css.split("@media (max-width: 820px)")[0];
   const mobile = css.split("@media (max-width: 820px)")[1].split("@media")[0];
   assert.match(css, /--claire-stage-width: 33\.333vw/);
-  assert.match(css, /--claire-mobile-lisere: 48px/);
+  assert.match(css, /--claire-mobile-lisere: 40px/);
   assert.match(desktop, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*position: fixed[\s\S]*left: calc\(var\(--claire-stage-width\) \+ 0\.75rem\)/);
   assert.match(desktop, /\[data-state="guided"\] \.claire-live-prompt \{[\s\S]*left: calc\(var\(--claire-stage-width\) \+ 0\.9rem\)/);
   assert.doesNotMatch(desktop, /\[data-state="guided"\] \.claire-dialogue \{[\s\S]*left: 0\.5rem/);
@@ -578,7 +578,7 @@ test("IT43 : rythme Claire — PC 1/3+2/3 fixe, mobile scène nominale hors spea
   assert.match(header, /data-claire-zap-site/);
   assert.match(header, /data-mobile-scene="off"/);
   assert.match(header, /Claire vous ouvre la boutique/);
-  assert.match(header, /Parler à Claire/);
+  assert.match(header, /Activer le son · ~8s/);
   assert.match(header, /Voir le site d’abord/);
   assert.match(client, /function isSpeakingPresence\(/);
   assert.match(client, /applyMobileSceneEvent\("start"\)/);
@@ -588,7 +588,7 @@ test("IT43 : rythme Claire — PC 1/3+2/3 fixe, mobile scène nominale hors spea
   assert.match(client, /claire-mobile-scene/);
   assert.match(client, /yieldToHumanType/);
   assert.match(client, /zapMobileScene/);
-  assert.match(client, /connectLiveSession\(\{ microphone: true, state: "guided" \}/);
+  assert.match(client, /connectLiveSession\(\{ microphone: false, state: "guided" \}/);
   assert.match(client, /storageSet\(STORAGE_MODE, state\)/);
   assert.match(client, /matchMedia\?\.\("\(max-width: 820px\)"\)/);
   assert.match(client, /nodes\.input\?\.addEventListener\("input", \(\) => this\.yieldToHumanType\(\)\)/);
@@ -606,7 +606,8 @@ test("IT48 : portable — CONTEXTE n’est plus un pop-up sur le site", async ()
   assert.match(mobile, /claire-quote-quest[\s\S]*\.claire-live-prompt:not\(\[hidden\]\) \{[\s\S]*display: none !important/);
   assert.doesNotMatch(mobile, /padding-top: calc\(var\(--claire-mobile-chrome\) \+ 4\.8rem\)/);
   assert.match(client, /if \(this\.state !== "guided" \|\| sceneOn \|\| phone\)/);
-  assert.match(client, /isPhoneShell\(\) \|\| !shouldShowQuoteQuest/);
+  assert.match(client, /!shouldShowQuoteQuest\(/);
+  assert.match(client, /this\.actionMode !== CLAIRE_ACTION_MODES\.CONSEIL/);
 });
 
 test("IT46 : portable — HUD scène, barre magasin nommée, hold humain", async () => {
@@ -620,7 +621,7 @@ test("IT46 : portable — HUD scène, barre magasin nommée, hold humain", async
   assert.match(header, /data-claire-reopen-scene/);
   assert.match(header, /data-claire-scene-caption/);
   assert.match(header, /La revoir/);
-  assert.match(css, /--claire-mobile-lisere: 48px/);
+  assert.match(css, /--claire-mobile-lisere: 40px/);
   assert.match(css, /claire-shop-return/);
   assert.match(css, /claire-scene-hud/);
   assert.match(css, /claire-mobile-shop/);

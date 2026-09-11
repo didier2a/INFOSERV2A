@@ -1,4 +1,4 @@
-import { isInternalSitePrompt, isStableUrgentCommand, isUrgentSiteCommand, isClaireQuotePrompt } from "./claire-core.mjs?v=20260907-it48";
+import { isInternalSitePrompt, isStableUrgentCommand, isUrgentSiteCommand } from "./claire-core.mjs?v=20260911-claire-actions-v1";
 
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;
@@ -711,19 +711,19 @@ export class InfoServ2ALiveAvatarProvider {
     session.on(AgentEventsEnum.USER_TRANSCRIPTION, (event) => {
       const text = String(event?.text || "").trim();
       if (!text) return;
+      if (this.avatarSpeaking) {
+        this.record("conversation:transcription-ignored", {
+          characters: text.length,
+          reason: "avatar-speaking"
+        });
+        return;
+      }
       if (isInternalSitePrompt(text) || this.isSilentEchoWindow() || this.holdListenForResult) {
         this.record("conversation:internal-ignored", {
           characters: text.length,
           holdListen: this.holdListenForResult
         });
         return;
-      }
-      if (this.avatarSpeaking) {
-        if (!isUrgentSiteCommand(text) || isClaireQuotePrompt(text)) {
-          this.record("conversation:internal-ignored", { characters: text.length, avatarSpeaking: true });
-          return;
-        }
-        this.bargeIn("email-send");
       }
       this.record("conversation:user-transcription", { characters: text.length });
       this.clearReplyTimer();

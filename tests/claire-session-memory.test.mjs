@@ -139,7 +139,8 @@ test("l’encart de contexte montre la page et le questionnaire de devis", () =>
   };
   const context = formatCaptionContext({
     page: { title: "Demande de devis", id: "quote" },
-    memory
+    memory,
+    requested: true
   });
   assert.match(context, /Demande de devis/);
   assert.match(context, /Marie Rossi/);
@@ -183,14 +184,15 @@ test("un e-mail ou « envoie le devis » n’écrase pas le besoin déjà dit", 
 });
 
 test("une conversation de devis doit afficher la vérité même en chat", () => {
-  assert.equal(shouldAnnounceQuoteTruth("Je m’appelle Didier", {}, ""), true);
+  assert.equal(shouldAnnounceQuoteTruth("Je m’appelle Didier", {}, ""), false);
+  assert.equal(shouldAnnounceQuoteTruth("Je m’appelle Didier", {}, "", true), true);
   assert.equal(shouldAnnounceQuoteTruth("Bonjour", {}, ""), false);
   assert.equal(shouldAnnounceQuoteTruth("ok", {
     visitor: { name: "Didier", phone: "", email: "", city: "" }
   }, ""), false);
   assert.equal(shouldAnnounceQuoteTruth("c’est tout", {
     visitor: { name: "Didier", phone: "", email: "", city: "" }
-  }, "quote"), true);
+  }, "quote", true), true);
 });
 
 test("le checklist dit à l’oral ce qui manque et ne prétend pas que c’est parti", () => {
@@ -302,9 +304,10 @@ test("un marqueur interne LiveAvatar n’alimente pas la mémoire ni le question
   assert.equal(shouldShowQuoteQuest(leaked, "home"), false);
   assert.equal(shouldShowQuoteQuest({ service: "videosurveillance" }, "home"), false);
   assert.equal(shouldShowQuoteQuest({ need: "caméra 4G" }, "home"), false);
-  assert.equal(shouldShowQuoteQuest({ visitor: { name: "Marie" } }, "home"), true);
-  assert.equal(shouldShowQuoteQuest({ visitor: { name: "Marie" } }, "quote"), true);
-  assert.equal(shouldShowQuoteQuest({}, "quote"), true);
+  assert.equal(shouldShowQuoteQuest({ visitor: { name: "Marie" } }, "home"), false);
+  assert.equal(shouldShowQuoteQuest({ visitor: { name: "Marie" } }, "home", true), true);
+  assert.equal(shouldShowQuoteQuest({ visitor: { name: "Marie" } }, "quote", true), true);
+  assert.equal(shouldShowQuoteQuest({}, "quote", true), true);
   assert.equal(quoteQuestionnaire({}).length, 6);
 });
 
@@ -458,13 +461,13 @@ test("Claire rédige le corps du mail comme une synthèse de l’échange", () =
   rememberTurn("user", "Et un enregistrement de quinze jours.", storage);
   rememberTurn("user", "Envoie le devis", storage);
   const body = synthesizeMailBody(loadSessionMemory(storage));
-  assert.match(body, new RegExp(SYNTHESIS_LEAD.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.equal(body.split("\n").length, 6);
+  assert.match(body, /^1\. Qui :/);
   assert.match(body, /hangar isolé/);
   assert.match(body, /quinze jours/);
-  assert.match(body, /Le visiteur a indiqué qu’il souhaite/);
+  assert.match(body, /^3\. Besoin :/m);
   assert.doesNotMatch(body, /Envoie le devis/);
   assert.doesNotMatch(body, /• /);
-  assert.match(body, /vidéosurveillance|videosurveillance/i);
   assert.equal((body.match(/caméra 4G/gi) || []).length, 1);
 
   const draft = emailDraftFromMemory(loadSessionMemory(storage));
@@ -491,8 +494,8 @@ test("le corps du mail n’imprime jamais la conversation avec Claire", () => {
       "Claire : Très bien, je note une vidéosurveillance 4G."
     ].join("\n")
   });
-  assert.match(body, /Synthèse de l’échange/);
-  assert.match(body, /Le visiteur a indiqué qu’il souhaite/);
+  assert.match(body, /^1\. Qui :/);
+  assert.match(body, /^3\. Besoin :/m);
   assert.match(body, /hangar isolé/);
   assert.match(body, /quinze jours/);
   assert.doesNotMatch(body, /Bonjour Claire/);
@@ -511,7 +514,7 @@ test("le corps du mail n’imprime jamais la conversation avec Claire", () => {
       return selector === "#devis-description" ? { value: body } : null;
     }
   });
-  assert.doesNotMatch(hydrated.need || "", /Synthèse de l’échange/);
+  assert.doesNotMatch(hydrated.need || "", /1\. Qui/);
   assert.doesNotMatch(hydrated.need || "", /Bonjour Claire/);
 });
 
@@ -523,7 +526,7 @@ test("un besoin déjà noté devient le corps du devis même sans tours supplém
     turns: []
   });
   assert.match(body, /site vitrine pour mon commerce/i);
-  assert.match(body, /Le visiteur a indiqué qu’il souhaite/);
-  assert.match(body, /Synthèse de l’échange/);
+  assert.match(body, /^3\. Besoin :/m);
+  assert.equal(body.split("\n").length, 6);
   assert.doesNotMatch(body, /• /);
 });

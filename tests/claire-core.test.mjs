@@ -114,23 +114,25 @@ test("envoie le devis, un appel ou un mail sont des actions orales", () => {
   assert.equal(classifyUtterance("Je voudrais un devis gratuit", knowledge).kind, "site");
 });
 
-test("une confirmation orale courte envoie si le formulaire est complet", () => {
-  assert.equal(isOralSendConfirm("c’est bon"), true);
-  assert.equal(isOralSendConfirm("confirme"), true);
+test("seule la confirmation exacte peut autoriser un envoi", () => {
+  assert.equal(isOralSendConfirm("c’est bon"), false);
+  assert.equal(isOralSendConfirm("confirme"), false);
+  assert.equal(isOralSendConfirm("Oui, envoie ma demande de devis"), true);
+  assert.equal(isOralSendConfirm("Oui, envoie ma demande de contact"), true);
   assert.equal(isUrgentSiteCommand("envoie le devis"), true);
   assert.equal(isOralSendConfirm("bonjour Claire"), false);
   assert.equal(isUrgentSiteCommand("bonjour comment ça va"), false);
   const classified = classifyUtterance("c’est bon", knowledge);
   assert.equal(classified.kind, "chat");
-  assert.equal(shouldExecuteSiteRuntime(classified, "c’est bon"), true);
-  assert.equal(shouldExecuteSiteRuntime(classified, "confirme"), true);
+  assert.equal(shouldExecuteSiteRuntime(classified, "c’est bon"), false);
+  assert.equal(shouldExecuteSiteRuntime(classified, "confirme"), false);
   assert.equal(shouldExecuteSiteRuntime(classified, "bonjour comment ça va"), false);
-  assert.equal(isStableUrgentCommand("c’est bon"), true);
+  assert.equal(isStableUrgentCommand("c’est bon"), false);
   assert.equal(isStableUrgentCommand("envoie"), false);
   assert.equal(isStableUrgentCommand("envoie le devis"), true);
   assert.equal(isFormSendIntent("appuie sur envoyer"), true);
   assert.equal(isFormSendIntent("envoie le message"), true);
-  assert.equal(isOralSendConfirm("appuie sur la touche envoyer"), true);
+  assert.equal(isOralSendConfirm("appuie sur la touche envoyer"), false);
   assert.equal(isUrgentSiteCommand("envoie le message"), true);
 });
 
@@ -287,7 +289,7 @@ test("le briefing site contient tous les onglets et le rôle consultante IT", ()
   for (const page of knowledge.pages) {
     assert.match(briefing, new RegExp(page.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
-  assert.match(briefing, /consultante IT ouverte/);
+  assert.match(briefing, /collaboratrice numérique IT généraliste/);
   assert.match(prompt, /interlocutrice professionnelle/);
   assert.match(prompt, /recentres vers InfoServ2A et l’IT/);
   assert.match(prompt, /pas la recette/);
@@ -295,14 +297,13 @@ test("le briefing site contient tous les onglets et le rôle consultante IT", ()
   assert.doesNotMatch(prompt, /tous les domaines : métiers, sciences, arts/);
   assert.match(prompt, /INFOSERV2A_SITE_BRIEFING/);
   assert.match(prompt, /Une phrase courte au plus/);
-  assert.match(prompt, /champ e-mail du visiteur/);
+  assert.match(prompt, /six lignes : Qui, Statut, Besoin, Lieu, Contraintes, Urgence/);
   assert.match(prompt, /jamais le dialogue ni les répliques/);
   assert.match(prompt, /être interrompue/);
   assert.match(prompt, /reste silencieuse/);
   assert.match(prompt, /Ne dis pas que tu attends le site/);
-  assert.match(prompt, /Un nouveau besoin à l’oral est un nouveau devis/);
-  assert.match(CLAIRE_WELCOME, /Moi c’est Claire, votre aidante chez InfoServ2A/);
-  assert.match(CLAIRE_WELCOME, /Je vous écoute/);
+  assert.match(prompt, /mode par défaut est conseil/i);
+  assert.match(CLAIRE_WELCOME, /Moi c’est Claire, collaboratrice numérique IT d’InfoServ2A/);
   assert.doesNotMatch(CLAIRE_WELCOME, /uniquement dans l’informatique/);
   assert.doesNotMatch(CLAIRE_WELCOME, /De quoi avez-vous besoin/);
   assert.match(prompt, /Jamais de phrase du type/);

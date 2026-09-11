@@ -77,7 +77,7 @@ const SPOKEN_SCENES = [
   {
     heard: "Je n’ai pas internet, je veux une caméra.",
     pageId: "videosurveillance",
-    anchorId: "solutions-sans-fibre"
+    anchorId: null
   },
   {
     heard: "Montre-moi la vidéosurveillance sans fibre.",
@@ -318,7 +318,7 @@ test("simulation vocale : un devis incomplet n’actionne pas l’envoi", async 
   assert.doesNotMatch(describeEmailSendOutcome(outcome), /bien été envoyé/);
 });
 
-test("simulation vocale : devis complet + « envoie le devis » actionne vraiment l’API", async () => {
+test("simulation vocale : confirmation exacte armée actionne vraiment l’API devis", async () => {
   const { canSubmitQuote } = await import("../assets/js/claire-session-memory.mjs");
   const { describeEmailSendOutcome } = await import("../assets/js/site-email.mjs");
   const memory = {
@@ -336,7 +336,11 @@ test("simulation vocale : devis complet + « envoie le devis » actionne vraimen
   const surface = new ActuatorSurface();
   const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
   const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
-  const outcome = await controller.run("Envoie le devis", { memory });
+  const outcome = await controller.run("Oui, envoie ma demande de devis", {
+    memory,
+    pageId: "quote",
+    confirmation: { armed: true, kind: "devis" }
+  });
   const submit = outcome.results.find((item) => item.tool === "submit_quote");
   assert.equal(submit.output.sent, true);
   assert.equal(surface.posts.length, 1);
@@ -345,7 +349,7 @@ test("simulation vocale : devis complet + « envoie le devis » actionne vraimen
   assert.match(describeEmailSendOutcome(outcome), /bien été envoyée vers infoserv2a@gmail\.com/);
 });
 
-test("simulation vocale : « c’est bon » avec dossier complet actionne vraiment l’API", async () => {
+test("simulation vocale : « c’est bon » avec dossier complet n’actionne jamais l’API", async () => {
   const { canSubmitQuote } = await import("../assets/js/claire-session-memory.mjs");
   const { describeEmailSendOutcome } = await import("../assets/js/site-email.mjs");
   const { classifyUtterance, shouldExecuteSiteRuntime } = await import("../assets/js/claire-core.mjs");
@@ -363,19 +367,18 @@ test("simulation vocale : « c’est bon » avec dossier complet actionne vraime
   assert.equal(canSubmitQuote(memory), true);
   const classified = classifyUtterance("c’est bon", knowledge);
   assert.equal(classified.kind, "chat");
-  assert.equal(shouldExecuteSiteRuntime(classified, "c’est bon"), true);
+  assert.equal(shouldExecuteSiteRuntime(classified, "c’est bon"), false);
   const surface = new ActuatorSurface();
   const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
   const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
   const outcome = await controller.run("c’est bon", { memory, pageId: "quote" });
   const submit = outcome.results.find((item) => item.tool === "submit_quote");
-  assert.equal(submit.output.sent, true);
-  assert.equal(surface.posts.length, 1);
-  assert.equal(surface.posts[0].kind, "devis");
-  assert.match(describeEmailSendOutcome(outcome), /bien été envoyée vers infoserv2a@gmail\.com/);
+  assert.equal(submit, undefined);
+  assert.equal(surface.posts.length, 0);
+  assert.equal(describeEmailSendOutcome(outcome), "");
 });
 
-test("simulation vocale : un devis prérempli sur le formulaire part à l’envoi", async () => {
+test("simulation vocale : un devis prérempli part après confirmation exacte armée", async () => {
   const { canSubmitQuote } = await import("../assets/js/claire-session-memory.mjs");
   const thinMemory = {
     visitor: { name: "Didier Aouizerate", phone: "", email: "", city: "Porto-Vecchio" },
@@ -399,12 +402,16 @@ test("simulation vocale : un devis prérempli sur le formulaire part à l’envo
   const surface = new ActuatorSurface();
   const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
   const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
-  const outcome = await controller.run("Envoie le devis", { memory: hydrated });
+  const outcome = await controller.run("Oui, envoie ma demande de devis", {
+    memory: hydrated,
+    pageId: "quote",
+    confirmation: { armed: true, kind: "devis" }
+  });
   assert.equal(outcome.results.find((item) => item.tool === "submit_quote")?.output?.sent, true);
   assert.equal(surface.posts.length, 1);
 });
 
-test("simulation vocale : « c’est bon » sur contact remplit et envoie le message", async () => {
+test("simulation vocale : confirmation exacte armée remplit et envoie le contact", async () => {
   const { canSubmitContact } = await import("../assets/js/claire-session-memory.mjs");
   const { describeEmailSendOutcome } = await import("../assets/js/site-email.mjs");
   const memory = {
@@ -422,7 +429,11 @@ test("simulation vocale : « c’est bon » sur contact remplit et envoie le mes
   const surface = new ActuatorSurface();
   const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
   const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
-  const outcome = await controller.run("c’est bon", { memory, pageId: "contact" });
+  const outcome = await controller.run("Oui, envoie ma demande de contact", {
+    memory,
+    pageId: "contact",
+    confirmation: { armed: true, kind: "contact" }
+  });
   const sent = outcome.results.find((item) => item.tool === "compose_email");
   assert.equal(sent.output.sent, true);
   assert.equal(surface.posts.length, 1);
@@ -558,11 +569,11 @@ test("Claire écrit dans le formulaire contact visible, pas seulement au moment 
   assert.equal(fields.get("#contact-email").value, "infoserv2a@gmail.com");
   assert.equal(fields.get("#contact-phone").value, "07 45 15 60 76");
   assert.match(fields.get("#contact-message").value, /demande pour le réseau du cabinet/i);
-  assert.match(fields.get("#contact-message").value, /Synthèse de l’échange/);
+  assert.match(fields.get("#contact-message").value, /^1\. Qui :/);
   assert.doesNotMatch(fields.get("#contact-message").value, /Vous\s*:|Claire\s*:/);
 });
 
-test("simulation vocale : « envoie le message » sur un devis prérempli envoie le devis, une seule fois", async () => {
+test("simulation vocale : seul le consentement exact envoie le devis, une seule fois", async () => {
   const { canSubmitQuote, quoteDraftSignature } = await import("../assets/js/claire-session-memory.mjs");
   const { describeEmailSendOutcome } = await import("../assets/js/site-email.mjs");
   const { planCommand } = await import("../assets/js/claire-runtime-v2.mjs");
@@ -581,13 +592,20 @@ test("simulation vocale : « envoie le message » sur un devis prérempli envoie
   const surface = new ActuatorSurface();
   const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
   const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
-  const first = await controller.run("envoie le message", { memory, pageId: "quote" });
+  const unconfirmed = await controller.run("envoie le message", { memory, pageId: "quote" });
+  assert.equal(unconfirmed.results.some((item) => item.tool === "submit_quote"), false);
+  assert.equal(surface.posts.length, 0);
+  const first = await controller.run("Oui, envoie ma demande de devis", {
+    memory,
+    pageId: "quote",
+    confirmation: { armed: true, kind: "devis" }
+  });
   assert.equal(first.results.find((item) => item.tool === "submit_quote")?.output?.sent, true);
   assert.equal(first.results.find((item) => item.tool === "compose_email"), undefined);
   assert.equal(surface.posts.length, 1);
   assert.equal(surface.posts[0].kind, "devis");
   assert.match(surface.posts[0].description, /caméra 4G pour un hangar isolé/i);
-  assert.match(surface.posts[0].description, /Le visiteur a indiqué qu’il souhaite/);
+  assert.match(surface.posts[0].description, /^3\. Besoin :/m);
   assert.doesNotMatch(surface.posts[0].description, /• /);
   const { normalizeEmailPayload } = await import("../functions/api/send-email.js");
   const mail = normalizeEmailPayload(surface.posts[0]);
@@ -607,7 +625,11 @@ test("simulation vocale : « envoie le message » sur un devis prérempli envoie
       signature: quoteDraftSignature(memory)
     }
   };
-  const second = planCommand("c’est bon", knowledge, manifest, { memory: sentMemory, pageId: "quote" });
+  const second = planCommand("Oui, envoie ma demande de devis", knowledge, manifest, {
+    memory: sentMemory,
+    pageId: "quote",
+    confirmation: { armed: true, kind: "devis" }
+  });
   assert.equal(second.steps.some((step) => step.tool === "submit_quote"), false);
   assert.match(second.response, /déjà été envoyée/);
 
@@ -625,7 +647,11 @@ test("simulation vocale : « envoie le message » sur un devis prérempli envoie
   const next = rememberTurn("user", "Je veux un site internet pour mon commerce.", storage);
   assert.match(next.need, /site internet/i);
   assert.equal(isSameDraftAlreadySent(next), false);
-  const third = planCommand("envoie le devis", knowledge, manifest, { memory: next, pageId: "quote" });
+  const third = planCommand("Oui, envoie ma demande de devis", knowledge, manifest, {
+    memory: next,
+    pageId: "quote",
+    confirmation: { armed: true, kind: "devis" }
+  });
   assert.ok(third.steps.some((step) => step.tool === "submit_quote"));
 });
 

@@ -37,6 +37,35 @@ function isWorkerPreviewHost(hostname) {
   return hostname.endsWith(".workers.dev");
 }
 
+function previewResponse(response, env) {
+  if (!env.PREVIEW_BUILD_ID) return response;
+  const next = new Response(response.body, response);
+  next.headers.set("X-InfoServ2A-Preview", String(env.PREVIEW_BUILD_ID));
+  next.headers.set("X-Robots-Tag", "noindex, nofollow");
+  return next;
+}
+
+export class ClaireRequestGuard {
+  constructor(state, env) {
+    this.state = state;
+    this.env = env;
+  }
+
+  async fetch() {
+    return Response.json(
+      { error: "ClaireRequestGuard fermé par défaut" },
+      {
+        status: 403,
+        headers: {
+          "Cache-Control": "no-store",
+          "Content-Security-Policy": "default-src 'none'",
+          "X-Content-Type-Options": "nosniff"
+        }
+      }
+    );
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -80,9 +109,9 @@ export default {
       if (request.method !== "GET" && request.method !== "HEAD") {
         return methodNotAllowed(["GET", "HEAD"]);
       }
-      return env.ASSETS.fetch(request);
+      return previewResponse(await env.ASSETS.fetch(request), env);
     }
 
-    return env.ASSETS.fetch(request);
+    return previewResponse(await env.ASSETS.fetch(request), env);
   }
 };

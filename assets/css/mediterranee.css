@@ -188,9 +188,8 @@ body.med-site { background: var(--med-paper); }
   .med-header::after { display: none; }
   .med-footer__top { flex-direction: column; align-items: start; }
   .med-footer { padding-bottom: 175px; }
-  /* Keep CTA access in manual mode without covering Claire's existing recall bar. */
-  body.med-site.claire-is-manual .med-dock { display: flex; bottom: 0; height: 56px; padding: 6px 4%; background: white; border-top: 1px solid var(--med-line); gap: 12px; }
-  .med-dock a { flex: 1; font-size: 14px; min-height: 40px; }
-  body.med-site.claire-is-manual .claire-manual-bar { bottom: 65px; }
+  /* Un seul chrome bas : la barre Claire remplace le dock en mode manuel. */
+  body.med-site.claire-is-manual .med-dock { display: none; }
+  body.med-site.claire-is-manual .claire-manual-bar { bottom: max(0.65rem, env(safe-area-inset-bottom)); }
   body.med-site.med-form-editing.claire-is-manual :is(.claire-manual-bar, .med-dock) { visibility: hidden; pointer-events: none; }
 }

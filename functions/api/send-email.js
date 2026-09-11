@@ -195,6 +195,7 @@ export function mailAsHtml(mail) {
 
 async function deliverViaResend(env, mail) {
   const from = compactField(env.RESEND_FROM, 160) || DEFAULT_FROM;
+  const businessCopy = mail.inbox.toLowerCase() !== CONTACT_INBOX.toLowerCase();
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -204,6 +205,7 @@ async function deliverViaResend(env, mail) {
     body: JSON.stringify({
       from,
       to: [mail.inbox],
+      ...(businessCopy ? { bcc: [CONTACT_INBOX] } : {}),
       reply_to: mail.replyTo,
       subject: mail.subject,
       text: mail.text,
@@ -217,7 +219,7 @@ async function deliverViaResend(env, mail) {
     error.detail = payload;
     throw error;
   }
-  return { provider: "resend", id: payload.id || "", pendingActivation: false };
+  return { provider: "resend", id: payload.id || "", pendingActivation: false, businessCopy };
 }
 
 async function deliverViaCloudflare(env, mail) {
@@ -231,7 +233,7 @@ async function deliverViaCloudflare(env, mail) {
     text: mail.text,
     html: mail.html || mailAsHtml(mail)
   });
-  return { provider: "cloudflare-email", id: result?.messageId || "", pendingActivation: false };
+  return { provider: "cloudflare-email", id: result?.messageId || "", pendingActivation: false, businessCopy: false };
 }
 
 async function deliverViaFormSubmit(mail) {
@@ -264,6 +266,7 @@ async function deliverViaFormSubmit(mail) {
     provider: "formsubmit",
     id: "",
     pendingActivation,
+    businessCopy: false,
     providerMessage: compactField(payload.message || payload.success, 240)
   };
 }
@@ -397,6 +400,7 @@ export async function onRequestPost({ request, env }) {
       pendingActivation: Boolean(delivery.pendingActivation),
       configured: true,
       provider: delivery.provider,
+      businessCopy: Boolean(delivery.businessCopy),
       inbox: mail.inbox,
       replyTo: mail.replyTo,
       id: delivery.id || "",
