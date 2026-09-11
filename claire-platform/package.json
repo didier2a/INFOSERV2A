@@ -1,0 +1,9 @@
+{
+  "name": "claire-platform",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx wrangler@latest dev --config wrangler.claire-platform.jsonc",
+    "test": "node --test tests/*.test.mjs"
+  }
+}

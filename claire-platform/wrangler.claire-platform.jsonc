@@ -1,0 +1,17 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "claire-platform-dev",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-01",
+  "keep_vars": true,
+  "assets": {
+    "directory": "public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "observability": {
+    "enabled": true
+  }
+  // Intentionally no routes or custom domains. This configuration must never
+  // be renamed to "infoserv2a" or used for infoserv2a.pro.
+}

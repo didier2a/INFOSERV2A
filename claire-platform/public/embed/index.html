@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Claire</title>
+  <link rel="stylesheet" href="/embed/styles.css">
+</head>
+<body>
+  <main class="shell" aria-label="Conseil avec Claire">
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">CONSEIL EN DIRECT</span>
+        <h1 id="claire-name">Claire</h1>
+      </div>
+      <button class="icon-button" id="close" type="button" aria-label="Fermer Claire">×</button>
+    </header>
+
+    <section class="stage" aria-label="LiveAvatar">
+      <video id="avatar" playsinline autoplay hidden></video>
+      <div class="portrait-placeholder" id="placeholder" aria-hidden="true">
+        <span>C</span>
+      </div>
+      <span class="status" id="status" role="status">Prête à vous conseiller</span>
+    </section>
+
+    <section class="conversation" aria-live="polite">
+      <p class="greeting" id="greeting">Bonjour. Comment puis-je vous aider&nbsp;?</p>
+      <div id="transcript" class="transcript"></div>
+      <form id="chat-form" class="chat-form">
+        <label class="sr-only" for="message">Votre question</label>
+        <input id="message" name="message" autocomplete="off" maxlength="500" placeholder="Écrivez votre question…" disabled>
+        <button type="submit" disabled>Envoyer</button>
+      </form>
+    </section>
+
+    <footer class="actions">
+      <button class="primary" id="start" type="button">Parler à Claire</button>
+      <button class="secondary" id="contact" type="button">Être recontacté</button>
+    </footer>
+
+    <section class="lead-overlay" id="lead-overlay" hidden aria-labelledby="lead-title">
+      <div class="lead-card">
+        <button class="icon-button overlay-close" id="lead-close" type="button" aria-label="Fermer le formulaire">×</button>
+        <span class="eyebrow">CONTACT</span>
+        <h2 id="lead-title">Parlons de votre besoin</h2>
+        <p>Ces informations restent dans Claire et sont envoyées au canal configuré pour cette entreprise.</p>
+        <form id="lead-form">
+          <label>Nom<input name="name" required maxlength="100"></label>
+          <label>E-mail<input name="email" type="email" required maxlength="160"></label>
+          <label>Téléphone <span>(facultatif)</span><input name="phone" type="tel" maxlength="50"></label>
+          <label>Votre besoin<textarea name="message" required maxlength="3000" rows="4"></textarea></label>
+          <label class="honeypot" aria-hidden="true">Site web<input name="website" tabindex="-1" autocomplete="off"></label>
+          <button class="primary" type="submit">Envoyer la demande</button>
+          <p id="lead-result" role="status"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="/embed/frame.js"></script>
+</body>
+</html>

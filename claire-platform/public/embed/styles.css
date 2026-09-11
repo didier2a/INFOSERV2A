@@ -1,0 +1,150 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #102338;
+  background: transparent;
+}
+
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; }
+body { padding: 1px; background: transparent; }
+button, input, textarea { font: inherit; }
+button { cursor: pointer; }
+
+.shell {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(210px, 42%) 1fr auto;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .7);
+  border-radius: 23px;
+  background: #f6f4ee;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .8);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 12px;
+}
+
+.eyebrow {
+  color: #3d6c65;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .15em;
+}
+
+h1, h2, p { margin-top: 0; }
+h1 { margin-bottom: 0; font-family: Georgia, serif; font-size: 28px; font-weight: 500; }
+h2 { margin: 6px 0 8px; font-family: Georgia, serif; font-size: 27px; font-weight: 500; }
+
+.icon-button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid #d5d9d4;
+  border-radius: 50%;
+  color: #43505c;
+  background: rgba(255,255,255,.62);
+  font-size: 23px;
+}
+
+.stage {
+  position: relative;
+  margin: 0 14px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: linear-gradient(150deg, #dcebe4, #789f95);
+}
+
+.stage video { width: 100%; height: 100%; object-fit: cover; }
+.portrait-placeholder { display: grid; width: 100%; height: 100%; place-items: center; }
+.portrait-placeholder span {
+  display: grid;
+  width: 116px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.7);
+  border-radius: 50%;
+  color: white;
+  background: rgba(255,255,255,.16);
+  font-family: Georgia, serif;
+  font-size: 54px;
+}
+
+.status {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: white;
+  background: rgba(15, 35, 49, .76);
+  font-size: 12px;
+  text-align: center;
+  backdrop-filter: blur(8px);
+}
+
+.conversation { min-height: 0; padding: 15px 20px 10px; overflow-y: auto; }
+.greeting { margin-bottom: 9px; color: #273b4e; font-family: Georgia, serif; font-size: 17px; line-height: 1.38; }
+.transcript { color: #5d6871; font-size: 13px; line-height: 1.45; }
+.transcript p { margin: 6px 0; }
+.transcript strong { color: #153b44; }
+
+.chat-form { display: flex; gap: 7px; margin-top: 10px; }
+.chat-form input, label input, label textarea {
+  width: 100%;
+  border: 1px solid #ccd3cf;
+  border-radius: 11px;
+  color: #102338;
+  background: white;
+  outline: none;
+}
+.chat-form input { min-width: 0; padding: 10px 11px; }
+.chat-form button { border: 0; border-radius: 11px; color: white; background: #174f52; }
+.chat-form :disabled { cursor: not-allowed; opacity: .5; }
+
+.actions { display: flex; gap: 8px; padding: 10px 14px 14px; }
+.actions button, .lead-card > form > button { flex: 1; min-height: 44px; border-radius: 12px; font-weight: 700; }
+.primary { border: 1px solid #164b4e; color: white; background: #174f52; }
+.secondary { border: 1px solid #c5cdc8; color: #17444a; background: white; }
+
+.lead-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  padding: 16px;
+  overflow-y: auto;
+  background: rgba(16, 35, 56, .38);
+  backdrop-filter: blur(9px);
+}
+.lead-overlay[hidden] { display: none; }
+.lead-card {
+  position: relative;
+  min-height: 100%;
+  padding: 25px 20px;
+  border-radius: 18px;
+  background: #fffdf8;
+}
+.overlay-close { position: absolute; top: 14px; right: 14px; }
+.lead-card > p { color: #68737b; font-size: 13px; line-height: 1.45; }
+.lead-card label { display: block; margin: 12px 0; color: #304450; font-size: 12px; font-weight: 700; }
+.lead-card label span { color: #748089; font-weight: 400; }
+.lead-card label input, .lead-card label textarea { display: block; margin-top: 5px; padding: 10px; resize: vertical; }
+.lead-card form .primary { width: 100%; }
+.honeypot { position: absolute; left: -10000px; }
+#lead-result { margin: 10px 0 0; color: #285b54; font-size: 12px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+
+@media (max-height: 560px) {
+  .shell { grid-template-rows: auto 180px 1fr auto; }
+  .topbar { padding-block: 10px 7px; }
+  .conversation { padding-block: 9px 6px; }
+}
