@@ -166,3 +166,63 @@ test("submit laisse la première confirmation prête atteindre submit_quote", as
   assert.equal(runtimeContext.confirmation.armed, true);
   assert.equal(prefixed.plan.steps.some((step) => step.tool === "submit_quote"), true);
 });
+
+test("submit livre un APP_RESULT d’erreur et reprend l’écoute si le runtime échoue après barge-in", async () => {
+  const storage = memoryStorage();
+  globalThis.sessionStorage = storage;
+  saveSessionMemory({
+    visitor: {
+      name: "Didier Aouizerate",
+      phone: "07 45 15 60 76",
+      email: "infoserv2a@gmail.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé",
+    turns: []
+  }, storage);
+
+  const calls = [];
+  const companion = Object.assign(Object.create(ClaireCompanion.prototype), {
+    actionMode: "devis",
+    confirmationArmed: "devis",
+    state: "guided",
+    knowledge,
+    pendingEmailSend: false,
+    lastSiteSendOk: false,
+    lastSiteTruthSpeech: "",
+    siteAdapter: { view: { activePage: "quote", activeSection: null } },
+    surface: { window: { location: { pathname: "/devis.html" } } },
+    runtime: {
+      activeCommandId: null,
+      async run() {
+        throw new Error("La page attendue n’est pas active");
+      }
+    },
+    nodes: { live: { textContent: "" } },
+    provider: {
+      bargeIn(reason) { calls.push(["bargeIn", reason]); },
+      sendEmailResult(speech) {
+        calls.push(["sendEmailResult", speech]);
+        return false;
+      },
+      resumeListening() { calls.push(["resumeListening"]); }
+    },
+    syncVisibleForms() {},
+    appendTurn() {},
+    updateLiveContext() {},
+    setStatus() {},
+    setState() {},
+    speak() { calls.push(["localSpeak"]); }
+  });
+
+  const outcome = await companion.submit("Oui, envoie ma demande de devis", "liveavatar");
+  const delivered = calls.find(([name]) => name === "sendEmailResult");
+
+  assert.equal(outcome, null);
+  assert.deepEqual(calls[0], ["bargeIn", "email-send"]);
+  assert.match(delivered?.[1] || "", /ne confirme pas que le message est parti/);
+  assert.ok(calls.some(([name]) => name === "resumeListening"));
+  assert.equal(calls.some(([name]) => name === "localSpeak"), false);
+  assert.equal(companion.pendingEmailSend, false);
+});

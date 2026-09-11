@@ -377,6 +377,39 @@ test("simulation vocale : la première confirmation exacte actionne vraiment l�
   assert.match(describeEmailSendOutcome(outcome), /bien été envoyée vers infoserv2a@gmail\.com/);
 });
 
+test("simulation vocale : un envoi réussi reste vérifié si la surface affiche encore l’ancienne page", async () => {
+  const { describeEmailSendOutcome } = await import("../assets/js/site-email.mjs");
+  const memory = {
+    visitor: {
+      name: "Didier Aouizerate",
+      phone: "07 45 15 60 76",
+      email: "infoserv2a@gmail.com",
+      city: "Porto-Vecchio"
+    },
+    service: "videosurveillance",
+    need: "Caméra 4G pour un hangar isolé",
+    turns: []
+  };
+  const surface = new ActuatorSurface();
+  const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
+  adapter.view.activePage = "quote";
+  surface.activePage = "home";
+  const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
+
+  const outcome = await controller.run("Oui, envoie ma demande de devis", {
+    memory,
+    pageId: "quote",
+    confirmation: { armed: true, kind: "devis" }
+  });
+
+  assert.equal(outcome.state, "ready");
+  assert.equal(outcome.verification.ok, true);
+  assert.equal(outcome.verification.emailTool, "submit_quote");
+  assert.equal(outcome.verification.sent, true);
+  assert.equal(surface.calls.some(([name]) => name === "openPage"), false);
+  assert.match(describeEmailSendOutcome(outcome), /bien été envoyée/);
+});
+
 test("simulation vocale : « c’est bon » avec dossier complet n’actionne jamais l’API", async () => {
   const { canSubmitQuote } = await import("../assets/js/claire-session-memory.mjs");
   const { describeEmailSendOutcome } = await import("../assets/js/site-email.mjs");

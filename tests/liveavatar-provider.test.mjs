@@ -322,6 +322,36 @@ test("un barge-in d’envoi n’écoute plus jusqu’au résultat du site", asyn
   await provider.stop();
 });
 
+test("le résultat d’envoi reprend l’écoute si la fin de parole LiveAvatar n’arrive jamais", async () => {
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    verifiedReplyTimeoutMs: 25,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-stalled-result" })
+  }).install({
+    video,
+    classifyCommand: async () => "chat",
+    onCommand: async () => {}
+  });
+
+  await provider.connect({ microphone: true });
+  const session = globalThis.__infoservFakeSession;
+  const startsAfterConnect = session.listenStarts || 0;
+  provider.bargeIn("email-send");
+  provider.sendEmailResult("La demande de devis a bien été envoyée.");
+  session.emit("avatar-speak-started");
+
+  await wait(60);
+
+  assert.equal(provider.realtimeSignal, "reply-timeout");
+  assert.equal(provider.avatarSpeaking, false);
+  assert.equal(provider.holdListenForResult, false);
+  assert.equal(provider.listening, true);
+  assert.ok((session.listenStarts || 0) > startsAfterConnect);
+
+  await provider.stop();
+});
+
 test("la confirmation exacte coupe immédiatement toute réponse libre avant le résultat site", async () => {
   const commands = [];
   const video = fakeVideo();

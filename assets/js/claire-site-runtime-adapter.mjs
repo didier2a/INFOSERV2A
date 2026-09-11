@@ -1,4 +1,4 @@
-import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260911-claire-send-loop-v2";
+import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260911-claire-send-hang-v1";
 import {
   contactExtrasFromDocument,
   firstUsefulText,
@@ -10,7 +10,7 @@ import {
   synthesisTurnsFromMemory,
   synthesizeMailBody,
   usefulText
-} from "./claire-session-memory.mjs?v=20260911-claire-send-loop-v2";
+} from "./claire-session-memory.mjs?v=20260911-claire-send-hang-v1";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -686,6 +686,7 @@ export class InfoServ2ASiteAdapter {
         if (!page) throw new Error("Page devis absente de l’index");
         const filled = this.surface.snapshotQuoteFields?.() || {};
         if (this.view.activePage !== page.id) await this.surface.openPage(page);
+        else if ("activePageId" in this.surface) this.surface.activePageId = page.id;
         this.view.activePage = page.id;
         this.view.activeSection = null;
         this.view.quoteDraft = quoteDraftFromArgs({ ...filled, ...args });
@@ -731,6 +732,7 @@ export class InfoServ2ASiteAdapter {
         if (!page) throw new Error("Page contact absente de l’index");
         const filled = this.surface.snapshotContactFields?.() || {};
         if (this.view.activePage !== page.id) await this.surface.openPage(page);
+        else if ("activePageId" in this.surface) this.surface.activePageId = page.id;
         this.view.activePage = page.id;
         this.view.activeSection = null;
         this.view.contactChannel = "email";
@@ -835,8 +837,22 @@ export class InfoServ2ASiteAdapter {
     return this.snapshot();
   }
 
-  async verify(plan) {
+  async verify(plan, results = []) {
     if (!plan.expected) return { ok: true, reason: "Aucun changement de page attendu", persistentSession: true };
+    const emailResult = results.find((item) => (
+      (item.tool === "submit_quote" || item.tool === "compose_email")
+      && typeof item.output?.sent === "boolean"
+    ));
+    if (emailResult) {
+      return {
+        ok: true,
+        pageId: plan.expected.pageId || this.view.activePage,
+        anchorId: plan.expected.anchorId || null,
+        emailTool: emailResult.tool,
+        sent: emailResult.output.sent,
+        persistentSession: true
+      };
+    }
     const actual = this.surface.snapshot?.() || {};
     if (this.view.activePage !== plan.expected.pageId || actual.activePage !== plan.expected.pageId) {
       return { ok: false, reason: "La page attendue n’est pas active" };

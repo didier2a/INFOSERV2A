@@ -3,7 +3,7 @@ import {
   isOralSendConfirm,
   isStableUrgentCommand,
   isUrgentSiteCommand
-} from "./claire-core.mjs?v=20260911-claire-send-loop-v2";
+} from "./claire-core.mjs?v=20260911-claire-send-hang-v1";
 
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;
@@ -54,12 +54,14 @@ export class InfoServ2ALiveAvatarProvider {
   constructor({
     endpoint = "/api/liveavatar-session",
     sdkUrl = DEFAULT_SDK_URL,
-    fetchImpl = globalThis.fetch
+    fetchImpl = globalThis.fetch,
+    verifiedReplyTimeoutMs = VERIFIED_REPLY_TIMEOUT_MS
   } = {}) {
     this.id = "liveavatar-realtime";
     this.endpoint = validEndpoint(endpoint);
     this.sdkUrl = sdkUrl;
     this.fetchImpl = fetchImpl.bind(globalThis);
+    this.verifiedReplyTimeoutMs = verifiedReplyTimeoutMs;
     this.session = null;
     this.sdk = null;
     this.video = null;
@@ -423,14 +425,16 @@ export class InfoServ2ALiveAvatarProvider {
   armReplyTimer() {
     this.clearReplyTimer();
     this.replyTimer = setTimeout(() => {
-      if (this.realtimeSignal === "reply-started") return;
+      if (this.realtimeSignal === "reply-started" && !this.holdListenForResult) return;
       this.realtimeSignal = "reply-timeout";
       if (this.holdListenForResult) {
         this.holdListenForResult = false;
+        this.avatarSpeaking = false;
+        try { this.session?.interrupt(); } catch { /* La réponse était déjà interrompue. */ }
         this.resumeListening();
       }
       this.emit("error", "Le site a répondu, mais Claire n’a pas encore pu le dire à voix haute");
-    }, VERIFIED_REPLY_TIMEOUT_MS);
+    }, this.verifiedReplyTimeoutMs);
   }
 
   cancelUnauthorizedReply(reason = "user-command") {
@@ -759,7 +763,8 @@ export class InfoServ2ALiveAvatarProvider {
       this.avatarSpeaking = true;
       this.realtimeSignal = "reply-started";
       this.record("conversation:avatar-speak-started");
-      this.clearReplyTimer();
+      if (this.holdListenForResult) this.armReplyTimer();
+      else this.clearReplyTimer();
       this.callbacks.onAvatarSpeakStart?.();
       this.emit(this.mediaAudible ? "speaking" : "sound", this.mediaAudible ? "Parlez ou touchez pour m’interrompre" : "Touchez Claire pour entendre sa réponse");
     });
