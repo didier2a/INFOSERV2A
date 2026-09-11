@@ -20,13 +20,18 @@ function pageSummary(page) {
 }
 
 function quoteDraftFromArgs(args = {}) {
+  const description = String(args.description || "")
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .trim()
+    .slice(0, 4000);
   return {
     name: String(args.name || "").slice(0, 80),
     phone: String(args.phone || "").slice(0, 40),
     email: String(args.email || "").slice(0, 120),
     city: String(args.city || "").slice(0, 80),
     service: String(args.service || "").slice(0, 80),
-    description: firstUsefulText(4000, args.description)
+    description
   };
 }
 
@@ -241,7 +246,10 @@ export class BrowserInfoServ2ASurface {
   fillQuoteField(selector, value, { allowEmpty = false } = {}) {
     const field = this.document.querySelector(selector);
     if (!field) return false;
-    const next = usefulText(value, 4000);
+    const multiline = selector === "#devis-description" || selector === "#contact-message";
+    const next = multiline
+      ? String(value || "").replace(/\r\n/g, "\n").replace(/[ \t]+\n/g, "\n").trim().slice(0, 4000)
+      : usefulText(value, 4000);
     if (!next && !allowEmpty) return true;
     if (field.tagName === "SELECT") {
       if (!next) {

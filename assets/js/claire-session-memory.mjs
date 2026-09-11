@@ -412,7 +412,7 @@ export function isClaireSynthesis(value = "") {
   const query = folded(value);
   return query.startsWith("synthese de l echange")
     || query.startsWith("le visiteur a indique")
-    || query.startsWith("1 qui");
+    || /^1\.?\s+qui\b/.test(query);
 }
 
 function serviceLabel(service = "") {

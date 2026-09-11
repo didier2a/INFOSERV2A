@@ -38,8 +38,8 @@ test("le manifeste généraliste expose le catalogue d’onglets", () => {
       "prev_section"
     ]
   );
-  assert.equal(manifest.runtimeVersion, "2.3.0-memory");
-  assert.equal(manifest.mode, "it-generalist-with-site-catalog");
+  assert.equal(manifest.runtimeVersion, "3.0.0-actions-v1");
+  assert.equal(manifest.mode, "conseil-explicit-devis-contact");
   assert.equal(manifest.guardrails.allowDirectDomFromModel, false);
   assert.equal(manifest.guardrails.allowFormSubmission, true);
   assert.equal(manifest.guardrails.defaultUtteranceKind, "chat");
@@ -122,10 +122,10 @@ test("une demande isolée sans fibre ouvre toujours la page, même sans verbe d�
     manifest
   );
   assert.equal(plan.expected.pageId, "videosurveillance");
-  assert.equal(plan.expected.anchorId, "solutions-sans-fibre");
+  assert.equal(plan.expected.anchorId, null);
   assert.deepEqual(
     plan.steps.map((step) => step.tool),
-    ["search_site", "open_service", "scroll_to"]
+    ["search_site", "open_service"]
   );
 });
 
@@ -317,7 +317,7 @@ test("un appel oral ouvre le numéro InfoServ2A", async () => {
   assert.ok(surface.calls.some(([name, href]) => name === "launchHref" && String(href).startsWith("tel:")));
 });
 
-test("un mail oral envoie réellement vers InfoServ2A", async () => {
+test("un mail oral prépare le contact mais n’envoie pas sans confirmation armée", async () => {
   const surface = new MockPersistentSurface();
   const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
   const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
@@ -328,17 +328,15 @@ test("un mail oral envoie réellement vers InfoServ2A", async () => {
     turns: []
   };
   const plan = planCommand("Envoie un mail", knowledge, manifest, { memory });
-  assert.equal(plan.steps[0].tool, "compose_email");
+  assert.equal(plan.steps.some((step) => step.tool === "compose_email"), false);
   const outcome = await controller.run("Envoie un mail", { memory });
   assert.equal(outcome.verification.pageId, "contact");
-  const mail = outcome.results.find((item) => item.tool === "compose_email");
-  assert.equal(mail.output.sent, true);
-  assert.equal(mail.output.inbox, "didier@example.com");
-  assert.ok(surface.calls.some(([name]) => name === "sendSiteEmail"));
+  assert.equal(outcome.results.some((item) => item.tool === "compose_email"), false);
+  assert.ok(!surface.calls.some(([name]) => name === "sendSiteEmail"));
   assert.ok(!surface.calls.some(([, href]) => String(href || "").startsWith("mailto:")));
 });
 
-test("envoie le devis ne part que si le contexte a les coordonnées", async () => {
+test("envoie le devis ne part jamais avant la confirmation exacte armée", async () => {
   const empty = planCommand("Envoie le devis", knowledge, manifest);
   assert.ok(empty.steps.some((step) => step.tool === "prefill_quote"));
   assert.ok(!empty.steps.some((step) => step.tool === "submit_quote"));
@@ -357,16 +355,16 @@ test("envoie le devis ne part que si le contexte a les coordonnées", async () =
     turns: []
   };
   const ready = planCommand("Envoie le devis", knowledge, manifest, { memory });
-  assert.ok(ready.steps.some((step) => step.tool === "submit_quote"));
+  assert.ok(!ready.steps.some((step) => step.tool === "submit_quote"));
 
   const adapter = new InfoServ2ALabAdapter({ knowledge, manifest });
   const controller = new ClaireRuntimeController({ knowledge, manifest, adapter });
   const outcome = await controller.run("Envoie le devis", { memory });
-  assert.equal(adapter.snapshot().submitted, true);
+  assert.equal(adapter.snapshot().submitted, false);
   assert.equal(outcome.verification.pageId, "quote");
 });
 
-test("une confirmation orale courte envoie le devis déjà complet", () => {
+test("seule la confirmation exacte armée envoie le dossier complet", () => {
   const memory = {
     visitor: {
       name: "Marie Rossi",
@@ -379,19 +377,26 @@ test("une confirmation orale courte envoie le devis déjà complet", () => {
     turns: []
   };
   const plan = planCommand("c’est bon", knowledge, manifest, { memory, pageId: "quote" });
-  assert.ok(plan.steps.some((step) => step.tool === "submit_quote"));
-  const contact = planCommand("confirme", knowledge, manifest, {
+  assert.ok(!plan.steps.some((step) => step.tool === "submit_quote"));
+  const exact = planCommand("Oui, envoie ma demande de devis", knowledge, manifest, {
+    memory,
+    pageId: "quote",
+    confirmation: { armed: true, kind: "devis" }
+  });
+  assert.ok(exact.steps.some((step) => step.tool === "submit_quote"));
+  const contact = planCommand("Oui, envoie ma demande de contact", knowledge, manifest, {
     memory: {
       visitor: { name: "Didier", phone: "", email: "didier@example.com", city: "" },
       need: "Site vitrine",
       turns: []
     },
-    pageId: "contact"
+    pageId: "contact",
+    confirmation: { armed: true, kind: "contact" }
   });
   assert.ok(contact.steps.some((step) => step.tool === "compose_email"));
 });
 
-test("sur le devis, « envoie le message » transmet le devis et ne part pas en contact", () => {
+test("sur le devis, « envoie le message » n’envoie rien sans confirmation exacte", () => {
   const memory = {
     visitor: {
       name: "Marie Rossi",
@@ -404,10 +409,10 @@ test("sur le devis, « envoie le message » transmet le devis et ne part pas en 
     turns: []
   };
   const plan = planCommand("envoie le message", knowledge, manifest, { memory, pageId: "quote" });
-  assert.ok(plan.steps.some((step) => step.tool === "submit_quote"));
+  assert.equal(plan.steps.some((step) => step.tool === "submit_quote"), false);
   assert.equal(plan.steps.some((step) => step.tool === "compose_email"), false);
   const click = planCommand("appuie sur envoyer", knowledge, manifest, { memory, pageId: "quote" });
-  assert.ok(click.steps.some((step) => step.tool === "submit_quote"));
+  assert.ok(!click.steps.some((step) => step.tool === "submit_quote"));
 });
 
 test("un devis déjà envoyé n’est pas renvoyé", () => {
@@ -433,7 +438,7 @@ test("un devis déjà envoyé n’est pas renvoyé", () => {
   };
   const plan = planCommand("envoie le message", knowledge, manifest, { memory, pageId: "quote" });
   assert.equal(plan.steps.some((step) => step.tool === "submit_quote"), false);
-  assert.match(plan.response, /déjà été envoyée/);
+  assert.equal(plan.steps.some((step) => step.tool === "submit_quote"), false);
 });
 
 test("après un envoi, un nouveau besoin oral n’est plus bloqué comme déjà envoyé", () => {
@@ -466,7 +471,11 @@ test("après un envoi, un nouveau besoin oral n’est plus bloqué comme déjà 
     service: "creation-site-web",
     quoteEpoch: 1
   };
-  const newQuote = planCommand("envoie le devis", knowledge, manifest, { memory: nextNeed, pageId: "quote" });
+  const newQuote = planCommand("Oui, envoie ma demande de devis", knowledge, manifest, {
+    memory: nextNeed,
+    pageId: "quote",
+    confirmation: { armed: true, kind: "devis" }
+  });
   assert.ok(newQuote.steps.some((step) => step.tool === "submit_quote"));
 });
 

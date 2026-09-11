@@ -317,7 +317,7 @@ export function planCommand(input, knowledge, manifest, context = {}) {
   validate();
   const expected = route.page ? {
     pageId: route.page.id,
-    anchorId: route.anchor?.id || null
+    anchorId: route.type === "navigate" ? (route.anchor?.id || null) : null
   } : route.action === "submit_quote" || route.action === "prepare_quote" ? {
     pageId: "quote",
     anchorId: null

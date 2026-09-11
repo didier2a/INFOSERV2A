@@ -91,7 +91,7 @@ test("V1 écrit exactement le canevas fixe de six lignes", () => {
   const canvas = formatClaireActionCanvas(completeQuoteMemory());
   const lines = canvas.split("\n");
   assert.equal(lines.length, 6);
-  assert.deepEqual(lines.map((line) => line.split(":")[0]), [
+  assert.deepEqual(lines.map((line) => line.split(":")[0].trim()), [
     "1. Qui",
     "2. Statut (pro/particulier)",
     "3. Besoin",
