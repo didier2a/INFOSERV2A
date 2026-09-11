@@ -378,6 +378,17 @@ export class InfoServ2ALiveAvatarProvider {
     return true;
   }
 
+  sendWelcome(value) {
+    const text = String(value || "").trim();
+    if (!text) return false;
+    const prompt = `[INFOSERV2A_OPENING]\nDis exactement cet accueil à voix haute, une seule fois :\n${text}`;
+    const sent = this.speakLiveMessage(prompt, "conversation:opening-sent");
+    if (sent !== "sent") return false;
+    this.armReplyTimer();
+    this.emit("thinking", "Claire vous accueille…");
+    return true;
+  }
+
   sendOffTopic(value) {
     const text = String(value || "").trim();
     if (!text) return false;

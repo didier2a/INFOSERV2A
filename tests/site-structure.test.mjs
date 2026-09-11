@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260911-claire-actions-v1)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260911-claire-actions-v1)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260911-claire-duplex-v1)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260911-claire-duplex-v1)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -94,7 +94,10 @@ test("Claire conserve une scène majeure et un mode guidé, jamais une bulle de 
   assert.match(css, /--claire-stage-width: 33\.333vw/);
   assert.match(css, /body\.claire-is-guided/);
   assert.doesNotMatch(css, /bottom-right|claire-mini/);
-  assert.match(client, /connectLiveSession\(\{ microphone: false/);
+  const voiceStart = client.match(/async start\(\)[\s\S]*?\n  \}/)?.[0] || "";
+  const textStart = client.match(/async ensureTextConversation\(\)[\s\S]*?\n  \}/)?.[0] || "";
+  assert.match(voiceStart, /connectLiveSession\(\{ microphone: true/);
+  assert.match(textStart, /connectLiveSession\(\{ microphone: false/);
   assert.match(client, /provider\.connect\(\{ microphone: microphoneRequested \}\)/);
   assert.match(client, /Mode local · Realtime non configuré/);
   assert.match(client, /LiveAvatar configuré · transport interrompu/);
@@ -178,7 +181,7 @@ test("Chrome Android reçoit le son Realtime directement et peut le déverrouill
   assert.match(provider, /async resumeMedia\(\)/);
 });
 
-test("l’accueil Realtime est prononcé une seule fois par le contexte LiveAvatar", async () => {
+test("l’accueil Realtime est prononcé une seule fois, avec relance explicite si le contexte reste muet", async () => {
   const [client, endpoint, provider] = await Promise.all([
     readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
     readFile(path.join(ROOT, "functions/api/liveavatar-session.js"), "utf8"),
@@ -189,6 +192,9 @@ test("l’accueil Realtime est prononcé une seule fois par le contexte LiveAvat
   assert.doesNotMatch(client, /this\.speak\(greeting\)/);
   assert.doesNotMatch(client, /this\.speak\(CLAIRE_WELCOME\)/);
   assert.match(client, /scheduleSilentSiteSync/);
+  assert.match(client, /provider\?\.sendWelcome\?\.\(text\)/);
+  assert.match(provider, /sendWelcome\(value\)/);
+  assert.match(provider, /INFOSERV2A_OPENING/);
   assert.match(provider, /isInternalSitePrompt/);
   assert.match(endpoint, /opening_text:\s*CLAIRE_WELCOME/);
 });
@@ -395,6 +401,8 @@ test("l’arrivée montre l’enseigne InfoServ2A et deux portes", async () => {
   assert.match(header, /Claire vous ouvre la boutique/);
   assert.match(header, /Vous êtes bien chez InfoServ2A/);
   assert.match(header, /Activer le son · ~8s/);
+  assert.match(header, /La voix et le micro démarrent seulement après votre choix/);
+  assert.doesNotMatch(header, /Le micro reste coupé/);
   assert.match(header, /Voir le site d’abord/);
   assert.doesNotMatch(header, /Naviguer sans Claire/);
   assert.match(header, /data-claire-arrival-form/);
@@ -588,7 +596,11 @@ test("IT43 : rythme Claire — PC 1/3+2/3 fixe, mobile scène nominale hors spea
   assert.match(client, /claire-mobile-scene/);
   assert.match(client, /yieldToHumanType/);
   assert.match(client, /zapMobileScene/);
-  assert.match(client, /connectLiveSession\(\{ microphone: false, state: "guided" \}/);
+  const voiceStart = client.match(/async start\(\)[\s\S]*?\n  \}/)?.[0] || "";
+  const textStart = client.match(/async ensureTextConversation\(\)[\s\S]*?\n  \}/)?.[0] || "";
+  assert.match(voiceStart, /connectLiveSession\(\{ microphone: true, state: "guided" \}/);
+  assert.match(textStart, /connectLiveSession\(\{ microphone: false, state: "guided", skipWelcome: true \}/);
+  assert.match(textStart, /openMobileComposer\(\)/);
   assert.match(client, /storageSet\(STORAGE_MODE, state\)/);
   assert.match(client, /matchMedia\?\.\("\(max-width: 820px\)"\)/);
   assert.match(client, /nodes\.input\?\.addEventListener\("input", \(\) => this\.yieldToHumanType\(\)\)/);

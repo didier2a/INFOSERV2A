@@ -105,6 +105,10 @@ test("le transport attend les pistes Android retardées sans arrêter la session
   assert.ok(provider.diagnostic().timeline.some((entry) => entry.event === "media:tracks-live"));
   assert.ok(statuses.some((entry) => entry.label.includes("son actif")));
 
+  assert.equal(provider.sendWelcome("Bonjour, je suis Claire."), true);
+  assert.match(session.messages.at(-1), /^\[INFOSERV2A_OPENING\]/);
+  assert.match(session.messages.at(-1), /une seule fois/);
+
   session.emit("avatar-speak-started");
   session.emit("avatar-speak-ended");
   assert.equal(session.voiceChat.mutes, 0);
