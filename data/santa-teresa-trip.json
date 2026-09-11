@@ -1,0 +1,458 @@
+{
+  "trip": {
+    "title": "Santa Teresa Pocket Guide",
+    "version": "V4B",
+    "start": "2026-09-17",
+    "end": "2026-09-18",
+    "timezone": "Europe/Rome",
+    "travelers": 10,
+    "sync": {
+      "mode": "calendar-snapshot",
+      "generatedAt": "2026-08-21T14:22:00+02:00",
+      "note": "Liens directs vers les événements Google Agenda existants."
+    }
+  },
+  "days": [
+    {
+      "date": "2026-09-17",
+      "label": "Jeudi 17 septembre",
+      "subtitle": "Arrivée, village et Capo Testa",
+      "events": [
+        {
+          "time": "11:30",
+          "end": "12:00",
+          "title": "Arrivée & installation à l’hôtel",
+          "type": "transfert",
+          "place": "Santa Teresa Gallura",
+          "placeId": "piazza",
+          "calendarUrl": "https://www.google.com/calendar/event?eid=M2dpdThrbmw4cWxwaTFzOGNwbDB2dWRzNWsgZGlkaWVyLmFvdWl6ZXJhdGVAbQ&ctz=Europe/Rome"
+        },
+        {
+          "time": "12:00",
+          "end": "13:00",
+          "title": "Centre & Rena Bianca",
+          "type": "balade",
+          "place": "Piazza Vittorio Emanuele I → Rena Bianca",
+          "placeId": "rena",
+          "calendarUrl": "https://www.google.com/calendar/event?eid=cmw0bGcwNDM0cWhlZmthMDQwcmJ0NmRqODQgZGlkaWVyLmFvdWl6ZXJhdGVAbQ&ctz=Europe/Rome"
+        },
+        {
+          "time": "13:00",
+          "end": "14:30",
+          "title": "Déjeuner à Santa Teresa",
+          "type": "repas",
+          "place": "Centre de Santa Teresa",
+          "placeId": "piazza",
+          "calendarUrl": "https://www.google.com/calendar/event?eid=cDA2M2ExdmhraDVkc3FqajhlczY5ZjZrcjAgZGlkaWVyLmFvdWl6ZXJhdGVAbQ&ctz=Europe/Rome"
+        },
+        {
+          "time": "14:30",
+          "end": "15:05",
+          "title": "Marche vers Piazza Bruno Modesto",
+          "type": "marche",
+          "place": "Gare routière",
+          "placeId": "modesto",
+          "calendarUrl": "https://www.google.com/calendar/event?eid=bDNxcnB1bGZicG02ZnRicWxvMzQ2NGI2bG8gZGlkaWVyLmFvdWl6ZXJhdGVAbQ&ctz=Europe/Rome"
+        },
+        {
+          "time": "15:10",
+          "end": "15:40",
+          "title": "Navette vers Capo Testa",
+          "type": "bus",
+          "place": "Piazza Bruno Modesto → Faro",
+          "placeId": "faro",
+          "calendarUrl": "https://www.google.com/calendar/event?eid=OTRuaGVrOGdtMW9hNGoyZHZyYW5vMnJqN2sgZGlkaWVyLmFvdWl6ZXJhdGVAbQ&ctz=Europe/Rome"
+        },
+        {
+          "time": "15:40",
+          "end": "19:00",
+          "title": "Capo Testa · phare · Cala Francese · Valle della Luna",
+          "type": "balade",
+          "place": "Capo Testa",
+          "placeId": "faro",
+          "calendarUrl": "https://www.google.com/calendar/event?eid=NDQyaDRvcXJzc3M2ODcyYmJyZTQ5bDZ0am8gZGlkaWVyLmFvdWl6ZXJhdGVAbQ&ctz=Europe/Rome"
+        },
+        {
+          "time": "19:00",
+          "end": "19:35",
+          "title": "Navette retour Santa Teresa",
+          "type": "bus",
+          "place": "Faro → Santa Teresa",
+          "placeId": "faro",
+          "calendarUrl": "https://www.google.com/calendar/event?eid=OHByMmd2Nmwzbmg5M21vMWxvYWkzYmdlaTAgZGlkaWVyLmFvdWl6ZXJhdGVAbQ&ctz=Europe/Rome"
+        },
+        {
+          "time": "20:00",
+          "end": "22:00",
+          "title": "Dîner & soirée dans le centre",
+          "type": "repas",
+          "place": "Centre de Santa Teresa",
+          "placeId": "piazza",
+          "calendarUrl": "https://www.google.com/calendar/event?eid=azM1NmdoaTFpOWFtOGZlcHNhMGFiMWlyaWsgZGlkaWVyLmFvdWl6ZXJhdGVAbQ&ctz=Europe/Rome"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-18",
+      "label": "Vendredi 18 septembre",
+      "subtitle": "Tour, plage et dolce vita",
+      "events": [
+        {
+          "time": "08:30",
+          "end": "09:45",
+          "title": "Centre & Torre di Longonsardo",
+          "type": "balade",
+          "place": "Torre di Longonsardo",
+          "placeId": "torre",
+          "calendarUrl": "https://www.google.com/calendar/event?eid=NXI4OWJiMmw5NGU5N2tobWNqYXJuYWsxOHMgZGlkaWVyLmFvdWl6ZXJhdGVAbQ&ctz=Europe/Rome"
+        },
+        {
+          "time": "09:45",
+          "end": "10:45",
+          "title": "Promenade à Rena Bianca",
+          "type": "plage",
+          "place": "Spiaggia Rena Bianca",
+          "placeId": "rena",
+          "calendarUrl": "https://www.google.com/calendar/event?eid=MmsyMDQ0cHBpOG80dWlpZDZwaTI4cmZybWMgZGlkaWVyLmFvdWl6ZXJhdGVAbQ&ctz=Europe/Rome"
+        },
+        {
+          "time": "10:45",
+          "end": "11:30",
+          "title": "Centre historique · café · temps libre",
+          "type": "pause",
+          "place": "Piazza Vittorio Emanuele I",
+          "placeId": "piazza",
+          "calendarUrl": "https://www.google.com/calendar/event?eid=OTlzanE0bzdtOGM0bjJ0OHI2bWhlZXBqZjggZGlkaWVyLmFvdWl6ZXJhdGVAbQ&ctz=Europe/Rome"
+        },
+        {
+          "time": "11:30",
+          "end": "12:00",
+          "title": "Retour hôtel & bagages",
+          "type": "transfert",
+          "place": "Santa Teresa Gallura",
+          "placeId": "piazza",
+          "calendarUrl": "https://www.google.com/calendar/event?eid=YzdqNmVtdnI3MXNrOXF1dGJ2dDRwZmQ1cTggZGlkaWVyLmFvdWl6ZXJhdGVAbQ&ctz=Europe/Rome"
+        }
+      ]
+    }
+  ],
+  "places": [
+    {
+      "id": "piazza",
+      "name": "Piazza Vittorio Emanuele I",
+      "lat": 41.24016,
+      "lng": 9.18869,
+      "icon": "🏘️",
+      "note": "Cœur piéton de Santa Teresa, cafés et ruelles du centre.",
+      "heroImage": "assets/photos/piazza-v4b.jpg",
+      "repere": "Repérez la place centrale, les terrasses et les rues qui descendent vers la mer.",
+      "description": "Le meilleur point de départ pour comprendre le centre de Santa Teresa et rejoindre rapidement la plage ou la tour.",
+      "historyShort": "La place est le salon à ciel ouvert du bourg moderne de Santa Teresa.",
+      "historyLong": "Le centre actuel s’est structuré autour du développement du bourg au XIXe siècle, face aux Bouches de Bonifacio. La Piazza Vittorio Emanuele I concentre aujourd’hui la vie locale et les principaux départs de promenade.",
+      "arCue": "Regardez comment la place distribue les parcours vers le port, Rena Bianca et la Torre di Longonsardo.",
+      "waze": "https://waze.com/ul?ll=41.24016%2C9.18869&navigate=yes&utm_source=santa_teresa_pocket",
+      "sourceLabel": "Office de tourisme de Santa Teresa Gallura",
+      "sourceUrl": "https://www.santateresagalluraturismo.com/",
+      "photoCredit": "Basilicofresco / Wikimedia Commons, CC BY-SA 4.0",
+      "photoSource": "https://commons.wikimedia.org/wiki/File:Santa_Teresa_di_Gallura,_piazza_Vittorio_Emanuele_I.jpg"
+    },
+    {
+      "id": "rena",
+      "name": "Rena Bianca",
+      "lat": 41.24417,
+      "lng": 9.18795,
+      "icon": "🏖️",
+      "note": "Plage emblématique au pied du centre.",
+      "heroImage": "assets/photos/rena-v4b.jpg",
+      "repere": "Descendez vers la baie : le sable blanc et l’eau claire apparaissent juste sous le centre.",
+      "description": "Rena Bianca est la plage la plus célèbre de Santa Teresa, facilement accessible à pied.",
+      "historyShort": "Le secteur conserve des traces d’anciennes carrières de granite d’époque romaine.",
+      "historyLong": "La plage se trouve à quelques centaines de mètres du centre. Son sable fin et clair, ses fonds peu profonds et sa vue vers la Corse en font l’un des paysages emblématiques de Santa Teresa. Le promontoire voisin porte la Torre di Longonsardo.",
+      "arCue": "Face à la mer, cherchez les falaises de Bonifacio par temps clair et, sur le promontoire, la tour historique.",
+      "waze": "https://waze.com/ul?ll=41.24417%2C9.18795&navigate=yes&utm_source=santa_teresa_pocket",
+      "sourceLabel": "Idese / Ministero della Cultura",
+      "sourceUrl": "https://idese.cultura.gov.it/place/rena-bianca/",
+      "photoCredit": "Or kriminal / Wikimedia Commons, CC BY-SA 3.0",
+      "photoSource": "https://commons.wikimedia.org/wiki/File:Rena_Bianca_Beach,_Santa_Teresa_Gallura.jpg"
+    },
+    {
+      "id": "torre",
+      "name": "Torre di Longonsardo",
+      "lat": 41.24482,
+      "lng": 9.19207,
+      "icon": "🏰",
+      "note": "Tour historique et panorama sur les Bouches de Bonifacio.",
+      "heroImage": "assets/photos/torre-v4b.jpg",
+      "repere": "Cherchez la grande tour ronde en pierre sur l’éperon rocheux dominant la mer.",
+      "description": "L’un des monuments majeurs de Santa Teresa et un remarquable belvédère maritime.",
+      "historyShort": "Édifiée en 1577 sur ordre du roi d’Espagne Philippe II, elle surveillait les Bouches de Bonifacio.",
+      "historyLong": "La Torre di Longonsardo appartenait au système défensif espagnol de la côte. Sa position permettait de contrôler le passage maritime entre Sardaigne et Corse. Elle fut démilitarisée au XIXe siècle.",
+      "arCue": "Depuis le promontoire, imaginez la fonction de vigie : repérer les navires et protéger l’approche du rivage.",
+      "waze": "https://waze.com/ul?ll=41.24482%2C9.19207&navigate=yes&utm_source=santa_teresa_pocket",
+      "sourceLabel": "Santa Teresa Gallura",
+      "sourceUrl": "https://www.santateresadigallura.com/fi/torre-di-longosardo/",
+      "photoCredit": "Basilicofresco / Wikimedia Commons, CC BY-SA 4.0",
+      "photoSource": "https://commons.wikimedia.org/wiki/File:Torre_di_Longonsardo,_Santa_Teresa_di_Gallura.jpg"
+    },
+    {
+      "id": "modesto",
+      "name": "Piazza Bruno Modesto",
+      "lat": 41.2385,
+      "lng": 9.18806,
+      "icon": "🚌",
+      "note": "Gare routière et départ de la navette Capo Testa.",
+      "heroImage": "assets/photos/piazza-v4b.jpg",
+      "repere": "Repérez les arrêts de bus et les véhicules de la navette vers Capo Testa.",
+      "description": "Point fonctionnel du parcours : c’est ici que vous rejoignez la navette pour Capo Testa.",
+      "historyShort": "Repère pratique du réseau local plutôt qu’un monument historique.",
+      "historyLong": "Cette étape permet de relier le centre de Santa Teresa au promontoire de Capo Testa sans voiture.",
+      "arCue": "Vérifiez le sens de départ et l’horaire avant de quitter le centre.",
+      "waze": "https://waze.com/ul?ll=41.23850%2C9.18806&navigate=yes&utm_source=santa_teresa_pocket",
+      "sourceLabel": "Office de tourisme de Santa Teresa Gallura",
+      "sourceUrl": "https://www.santateresagalluraturismo.com/",
+      "photoCredit": "János Korom / Wikimedia Commons, CC BY-SA 2.0 — rue du centre, près de la gare routière",
+      "photoSource": "https://commons.wikimedia.org/wiki/File:Santa_Teresa_Gallura_68DSC_0646_(49669862218).jpg"
+    },
+    {
+      "id": "faro",
+      "name": "Faro di Capo Testa",
+      "lat": 41.24395,
+      "lng": 9.14545,
+      "icon": "🌅",
+      "note": "Phare, granite et départ des sentiers.",
+      "heroImage": "assets/photos/faro-v4b.jpg",
+      "repere": "Le phare blanc posé sur les blocs de granite est le repère principal du promontoire.",
+      "description": "Le phare marque l’extrémité spectaculaire de Capo Testa.",
+      "historyShort": "Mis en service en 1845, il est un ouvrage essentiel pour la navigation du nord de la Sardaigne.",
+      "historyLong": "Le phare actuel est actif depuis 1845. Sa tour et sa lanterne dominent les rochers de granite et signalent l’entrée des Bouches de Bonifacio, passage maritime stratégique entre Corse et Sardaigne.",
+      "arCue": "Regardez le phare comme un signal maritime : son emplacement répond d’abord à la nécessité de sécuriser la navigation.",
+      "waze": "https://waze.com/ul?ll=41.24395%2C9.14545&navigate=yes&utm_source=santa_teresa_pocket",
+      "sourceLabel": "Idese / Ministero della Cultura",
+      "sourceUrl": "https://idese.cultura.gov.it/place/faro-di-capotesta/",
+      "photoCredit": "Gianni Careddu / Wikimedia Commons, CC BY-SA 3.0",
+      "photoSource": "https://commons.wikimedia.org/wiki/File:Santa_Teresa_Gallura_-_Faro_di_Capo_Testa_(01).JPG"
+    },
+    {
+      "id": "francese",
+      "name": "Cala Francese",
+      "lat": 41.24494,
+      "lng": 9.1428,
+      "icon": "🌊",
+      "note": "Petite crique rocheuse près du phare.",
+      "heroImage": "assets/photos/francese-v4b.jpg",
+      "repere": "Depuis le secteur du phare, suivez le sentier côtier vers la petite anse encaissée dans le granite.",
+      "description": "Une crique minérale et intime, parfaite pour une courte dérivation pendant la balade.",
+      "historyShort": "Son intérêt principal est géologique : eau translucide et granite sculpté par l’érosion.",
+      "historyLong": "À cette échelle, on observe particulièrement bien le travail du vent, du sel et de l’eau sur le granite de Capo Testa.",
+      "arCue": "Regardez les formes arrondies des roches et la transparence de l’eau au pied des blocs.",
+      "waze": "https://waze.com/ul?ll=41.24494%2C9.14280&navigate=yes&utm_source=santa_teresa_pocket",
+      "sourceLabel": "Comune di Santa Teresa Gallura — Capo Testa",
+      "sourceUrl": "https://www.comune.santateresagallura.ss.it/it/vivere/capo-testa",
+      "photoCredit": "Benoît Prieur / Wikimedia Commons, CC0 — crique granitique de Capo Testa",
+      "photoSource": "https://commons.wikimedia.org/wiki/File:Capo_Testa_2016_(4).JPG"
+    },
+    {
+      "id": "luna",
+      "name": "Valle della Luna",
+      "lat": 41.2399,
+      "lng": 9.1477,
+      "icon": "🥾",
+      "note": "Chaos granitique, vallée et criques sauvages.",
+      "heroImage": "assets/photos/luna-v4b.jpg",
+      "repere": "Le sentier entre dans un paysage de gros blocs de granite sculptés, avec la mer en perspective.",
+      "description": "Le paysage le plus spectaculaire de Capo Testa, presque irréel mais entièrement naturel.",
+      "historyShort": "Capo Testa était à l’origine une petite île, aujourd’hui reliée à la terre par un isthme.",
+      "historyLong": "La Valle della Luna appartient au paysage géologique de Capo Testa. Les agents atmosphériques ont sculpté le granite en formes étonnantes, souvent appelées tafoni, donnant au site son caractère très reconnaissable.",
+      "arCue": "Lisez les roches comme des sculptures naturelles produites par le vent, le sel et le temps.",
+      "waze": "https://waze.com/ul?ll=41.23990%2C9.14770&navigate=yes&utm_source=santa_teresa_pocket",
+      "sourceLabel": "Idese / Ministero della Cultura",
+      "sourceUrl": "https://idese.cultura.gov.it/place/capo-testa-e-la-valle-della-luna/",
+      "photoCredit": "Benoît Prieur / Wikimedia Commons, CC0 — chaos granitique de Capo Testa (pas la Valle della Luna d’Aggius)",
+      "photoSource": "https://commons.wikimedia.org/wiki/File:Capo_Testa_2016_(2).JPG"
+    },
+    {
+      "id": "brandali",
+      "name": "Lu Brandali",
+      "lat": 41.2525,
+      "lng": 9.1732,
+      "icon": "🗿",
+      "note": "Complexe nuragique aux portes de Santa Teresa.",
+      "heroImage": "assets/photos/brandali-v4b.jpg",
+      "repere": "Le site se lit dans les murs bas, les structures de pierre et les reliefs granitiques.",
+      "description": "Lu Brandali révèle une Sardaigne bien plus ancienne que le bourg moderne.",
+      "historyShort": "Le complexe date des XIVe–Xe siècles av. J.-C. et comprend nuraghe, village et tombe des géants.",
+      "historyLong": "Le complexe nuragique s’étend sur les pentes d’un promontoire granitique. Il comprend un nuraghe, un village de nombreuses cabanes, des abris sous roche et une tombe des géants, permettant de comprendre la vie quotidienne et funéraire de la civilisation nuragique.",
+      "arCue": "Essayez d’identifier les zones d’habitat, les structures défensives et l’espace funéraire.",
+      "waze": "https://waze.com/ul?ll=41.2525%2C9.1732&navigate=yes&utm_source=santa_teresa_pocket",
+      "sourceLabel": "Idese / Ministero della Cultura",
+      "sourceUrl": "https://idese.cultura.gov.it/place/lu-brandali/",
+      "photoCredit": "Photo2023 / Wikimedia Commons, CC BY 4.0",
+      "photoSource": "https://commons.wikimedia.org/wiki/File:Lu_Brandali.jpg"
+    },
+    {
+      "id": "panorama",
+      "name": "Belvédère de Capo Testa",
+      "lat": 41.2396,
+      "lng": 9.1478,
+      "icon": "👀",
+      "note": "Grand point de vue sur le promontoire et la mer.",
+      "heroImage": "assets/photos/panorama-v4b.jpg",
+      "repere": "Depuis le haut du sentier, la presqu’île se lit avec la mer de part et d’autre.",
+      "description": "Le meilleur point pour comprendre la géographie générale de Capo Testa.",
+      "historyShort": "Le promontoire relie paysage marin, chaos granitique et ancienne voie d’accès au nord de la Sardaigne.",
+      "historyLong": "Depuis ce point haut, on comprend immédiatement la singularité de Capo Testa : une langue de terre entourée par la mer, des rochers modelés par l’érosion et des sentiers reliant les principales criques.",
+      "arCue": "Balayez l’horizon : côte rocheuse, anses turquoise, phare et, par temps clair, la Corse au loin.",
+      "waze": "https://waze.com/ul?ll=41.2396%2C9.1478&navigate=yes&utm_source=santa_teresa_pocket",
+      "sourceLabel": "Comune di Santa Teresa Gallura",
+      "sourceUrl": "https://www.comune.santateresagallura.ss.it/it/vivere/capo-testa",
+      "photoCredit": "Pierre Bona / Wikimedia Commons, CC BY-SA 4.0",
+      "photoSource": "https://commons.wikimedia.org/wiki/File:Santa_Teresa_Gallura_panorama.jpg"
+    }
+  ],
+  "routes": [
+    {
+      "day": "2026-09-17",
+      "name": "Village & Capo Testa",
+      "points": [
+        "piazza",
+        "rena",
+        "modesto",
+        "faro",
+        "francese",
+        "luna",
+        "faro"
+      ]
+    },
+    {
+      "day": "2026-09-18",
+      "name": "Tour & Rena Bianca",
+      "points": [
+        "piazza",
+        "torre",
+        "rena",
+        "piazza"
+      ]
+    }
+  ],
+  "discover": [
+    {
+      "placeId": "panorama",
+      "icon": "👀",
+      "title": "Belvédère de Capo Testa",
+      "text": "Lire le promontoire dans son ensemble.",
+      "image": "assets/photos/panorama-v4b.jpg"
+    },
+    {
+      "placeId": "faro",
+      "icon": "🌅",
+      "title": "Phare de Capo Testa",
+      "text": "Le grand repère maritime du séjour.",
+      "image": "assets/photos/faro-v4b.jpg"
+    },
+    {
+      "placeId": "luna",
+      "icon": "🥾",
+      "title": "Valle della Luna",
+      "text": "Le sentier le plus spectaculaire.",
+      "image": "assets/photos/luna-v4b.jpg"
+    },
+    {
+      "placeId": "francese",
+      "icon": "🌊",
+      "title": "Cala Francese",
+      "text": "Une crique discrète dans le granite.",
+      "image": "assets/photos/francese-v4b.jpg"
+    },
+    {
+      "placeId": "rena",
+      "icon": "🏖️",
+      "title": "Rena Bianca",
+      "text": "La plage iconique du centre.",
+      "image": "assets/photos/rena-v4b.jpg"
+    },
+    {
+      "placeId": "torre",
+      "icon": "🏰",
+      "title": "Torre di Longonsardo",
+      "text": "Le monument historique face aux Bouches.",
+      "image": "assets/photos/torre-v4b.jpg"
+    },
+    {
+      "placeId": "brandali",
+      "icon": "🗿",
+      "title": "Lu Brandali",
+      "text": "La profondeur archéologique de la Gallura.",
+      "image": "assets/photos/brandali-v4b.jpg"
+    }
+  ],
+  "playlist": [
+    {
+      "artist": "Paolo Conte",
+      "title": "Via con me",
+      "moment": "Traversée",
+      "youtube": "https://www.youtube.com/results?search_query=Paolo%20Conte%20Via%20con%20me",
+      "spotify": "https://open.spotify.com/search/Paolo%20Conte%20Via%20con%20me"
+    },
+    {
+      "artist": "Domenico Modugno",
+      "title": "Nel blu dipinto di blu",
+      "moment": "Arrivée",
+      "youtube": "https://www.youtube.com/results?search_query=Domenico%20Modugno%20Nel%20blu%20dipinto%20di%20blu",
+      "spotify": "https://open.spotify.com/search/Domenico%20Modugno%20Nel%20blu%20dipinto%20di%20blu"
+    },
+    {
+      "artist": "Gino Paoli",
+      "title": "Sapore di sale",
+      "moment": "Santa Teresa",
+      "youtube": "https://www.youtube.com/results?search_query=Gino%20Paoli%20Sapore%20di%20sale",
+      "spotify": "https://open.spotify.com/search/Gino%20Paoli%20Sapore%20di%20sale"
+    },
+    {
+      "artist": "Paolo Fresu",
+      "title": "Eros",
+      "moment": "Balade",
+      "youtube": "https://www.youtube.com/results?search_query=Paolo%20Fresu%20Eros",
+      "spotify": "https://open.spotify.com/search/Paolo%20Fresu%20Eros"
+    },
+    {
+      "artist": "Andrea Parodi",
+      "title": "No Potho Reposare",
+      "moment": "Capo Testa",
+      "youtube": "https://www.youtube.com/results?search_query=Andrea%20Parodi%20No%20Potho%20Reposare",
+      "spotify": "https://open.spotify.com/search/Andrea%20Parodi%20No%20Potho%20Reposare"
+    },
+    {
+      "artist": "Tazenda",
+      "title": "Spunta la luna dal monte",
+      "moment": "Valle della Luna",
+      "youtube": "https://www.youtube.com/results?search_query=Tazenda%20Spunta%20la%20luna%20dal%20monte",
+      "spotify": "https://open.spotify.com/search/Tazenda%20Spunta%20la%20luna%20dal%20monte"
+    },
+    {
+      "artist": "Ludovico Einaudi",
+      "title": "Una Mattina",
+      "moment": "Retour",
+      "youtube": "https://www.youtube.com/results?search_query=Ludovico%20Einaudi%20Una%20Mattina",
+      "spotify": "https://open.spotify.com/search/Ludovico%20Einaudi%20Una%20Mattina"
+    },
+    {
+      "artist": "Air",
+      "title": "La femme d'argent",
+      "moment": "Soirée",
+      "youtube": "https://www.youtube.com/results?search_query=Air%20La%20femme%20d%27argent",
+      "spotify": "https://open.spotify.com/search/Air%20La%20femme%20d%27argent"
+    }
+  ],
+  "checklist": [
+    "Bouteille d’eau",
+    "Chaussures de marche",
+    "Batterie externe",
+    "Lunettes de soleil",
+    "Casquette / chapeau",
+    "Maillot / serviette légère"
+  ],
+  "media": {
+    "offlineMap": "assets/photos/guide-map.svg",
+    "photoNote": "Photos Wikimedia Commons des sites du séjour, compressées pour mobile. Crédits dans chaque fiche lieu."
+  }
+}

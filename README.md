@@ -2,6 +2,20 @@
 
 Site professionnel d'InfoServ2A, relié à Cloudflare Workers Builds. La branche `main` alimente le déploiement stable Cloudflare et les autres branches produisent des versions d’aperçu isolées avant validation.
 
+## Santa Teresa · application de voyage
+
+Reconstruction du séjour Pocket Guide **sans avatar**, avant de rebrancher Claire :
+
+- Application : [`voyage.html`](voyage.html) — aussi [`/voyage`](/voyage)
+- Données : `data/santa-teresa-trip.json`
+- Photos : `assets/photos/` (Wikimedia Commons, crédits dans `assets/photos/CREDITS.md`)
+- Carte GPS : Leaflet local + OpenStreetMap + simulation Piazza
+- Note : `docs/VOYAGE_REBUILD.md`
+- Audit simulation : `docs/VOYAGE_SIMULATION_AUDIT.md`
+- Schémas Figma : [architecture](https://www.figma.com/board/bWqGR15O4vbk7fqgrjI2Jw) · [écrans](https://www.figma.com/board/uNYNSeYH9niAqK0NKKkrJq) · [modèle](https://www.figma.com/board/7tgmcU2M4HDcv1vlmg4Sv5)
+
+Le dépôt `santa-teresa-pocket-guide` reste la référence historique ; cet agent n’a pas le droit d’y pousser. `/pocketguide-2.3.3` n’est pas remplacé.
+
 Environnement de validation Cloudflare : `https://infoserv2a.infoserv2a.workers.dev/`.
 
 Preview Claire (cette branche) : `https://cursor-claire-it-only-8f54-infoserv2a.infoserv2a.workers.dev/?claire=1`.

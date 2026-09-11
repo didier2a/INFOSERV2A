@@ -30,6 +30,8 @@ class InfoServHandler(SimpleHTTPRequestHandler):
             self.send_header("Location", "/")
             self.end_headers()
             return
+        if path in ("/voyage", "/voyage/"):
+            self.path = "/voyage.html" + (("?" + self.path.split("?", 1)[1]) if "?" in self.path else "")
         return super().do_GET()
 
     def do_HEAD(self):
@@ -39,6 +41,8 @@ class InfoServHandler(SimpleHTTPRequestHandler):
             self.send_header("Location", "/")
             self.end_headers()
             return
+        if path in ("/voyage", "/voyage/"):
+            self.path = "/voyage.html"
         return super().do_HEAD()
 
     def send_head(self):

@@ -55,6 +55,8 @@ class HttpSmokeTest(unittest.TestCase):
             "/data/site-knowledge.json?v=20260830-live3": "application/json",
             "/data/claire-capabilities.json": "application/json",
             "/assets/images/companion/claire-liveavatar-1080x1920.jpg": "image/jpeg",
+            "/voyage.html": "text/html",
+            "/data/santa-teresa-trip.json": "application/json",
         }
         for path, expected_type in cases.items():
             with self.subTest(path=path):
