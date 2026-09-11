@@ -1,0 +1,17 @@
+{
+  "name": "InfoServ2A — site statique + Worker Cloudflare",
+  "install": "npx --yes wrangler@latest --version",
+  "terminals": [
+    {
+      "name": "static-server",
+      "command": "python3 serve.py 8000",
+      "description": "Serveur HTTP local du site sur http://localhost:8000 (404 réel, MIME WebP/woff2, redirection /index.html -> /). Reconstruire les pages avec `python3 build_pages.py`. Tests : `node --test tests/*.test.mjs` et `python3 tests/http_smoke.py`. Aperçu/déploiement du Worker : `npx wrangler dev` / `npx wrangler deploy`."
+    }
+  ],
+  "ports": [
+    {
+      "name": "site statique",
+      "port": 8000
+    }
+  ]
+}
