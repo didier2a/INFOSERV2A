@@ -8,7 +8,7 @@ import {
   resolveCurrentPage,
   isOralSendConfirm,
   isClaireQuotePrompt
-} from "./claire-core.mjs?v=20260911-claire-send-loop-v1";
+} from "./claire-core.mjs?v=20260911-claire-send-loop-v2";
 import {
   canSubmitQuote,
   canSubmitContact,
@@ -17,11 +17,11 @@ import {
   quotePrefillFromMemory,
   isSameDraftAlreadySent,
   alreadySentSpeech
-} from "./claire-session-memory.mjs?v=20260911-claire-send-loop-v1";
+} from "./claire-session-memory.mjs?v=20260911-claire-send-loop-v2";
 import {
   CLAIRE_ACTION_MODES,
-  isExactSendConfirmation
-} from "./claire-actions-v1.mjs?v=20260911-claire-send-loop-v1";
+  exactConfirmationKind
+} from "./claire-actions-v1.mjs?v=20260911-claire-send-loop-v2";
 
 export const CONTROLLER_STATES = Object.freeze({
   READY: "ready",
@@ -95,12 +95,10 @@ function resolveSendClassification(command, classified, context = {}) {
   if (isClaireQuotePrompt(command)) return classified;
   const pageId = context.pageId || "";
   const memory = context.memory || {};
-  const confirmation = context.confirmation || {};
   const routeAction = classified.route?.action || "";
-  const quoteConfirmed = confirmation.kind === CLAIRE_ACTION_MODES.DEVIS
-    && isExactSendConfirmation(command, CLAIRE_ACTION_MODES.DEVIS);
-  const contactConfirmed = confirmation.kind === CLAIRE_ACTION_MODES.CONTACT
-    && isExactSendConfirmation(command, CLAIRE_ACTION_MODES.CONTACT);
+  const confirmationKind = exactConfirmationKind(command);
+  const quoteConfirmed = confirmationKind === CLAIRE_ACTION_MODES.DEVIS;
+  const contactConfirmed = confirmationKind === CLAIRE_ACTION_MODES.CONTACT;
   if (quoteConfirmed && canSubmitQuote(memory)) return quoteSendClassification();
   if (contactConfirmed && canSubmitContact(memory)) return contactSendClassification();
 

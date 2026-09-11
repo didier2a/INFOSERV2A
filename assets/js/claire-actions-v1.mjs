@@ -1,10 +1,10 @@
-import { normalizeText } from "./claire-core.mjs?v=20260911-claire-send-loop-v1";
+import { normalizeText } from "./claire-core.mjs?v=20260911-claire-send-loop-v2";
 import {
   canSubmitContact,
   canSubmitQuote,
   describeMissingQuoteFields,
   synthesizeMailBody
-} from "./claire-session-memory.mjs?v=20260911-claire-send-loop-v1";
+} from "./claire-session-memory.mjs?v=20260911-claire-send-loop-v2";
 
 export const CLAIRE_ACTION_MODES = Object.freeze({
   CONSEIL: "conseil",
@@ -12,9 +12,9 @@ export const CLAIRE_ACTION_MODES = Object.freeze({
   CONTACT: "contact"
 });
 
-const EXACT_CONFIRMATION_PATTERN = /^oui envoie (?:(?:ma|la) )?demande de (devis|contact)$/;
+const EXACT_CONFIRMATION_PATTERN = /(?:^|\b)oui envoie (?:(?:ma|la) )?demande de (devis|contact)$/;
 
-function exactConfirmationKind(value = "") {
+export function exactConfirmationKind(value = "") {
   return normalizeText(value).match(EXACT_CONFIRMATION_PATTERN)?.[1] || "";
 }
 
