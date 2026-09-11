@@ -390,7 +390,7 @@ test("simulation vocale : un envoi réussi reste vérifié si la surface affiche
     need: "Caméra 4G pour un hangar isolé",
     turns: []
   };
-  const surface = new MockPersistentSurface();
+  const surface = new ActuatorSurface();
   const adapter = new InfoServ2ASiteAdapter({ knowledge, manifest, surface });
   adapter.view.activePage = "quote";
   surface.activePage = "home";
