@@ -27,6 +27,7 @@ Les protections ajoutées lors des itérations précédentes réduisent certaine
 | Priorité | Cause | Gravité | Confiance |
 |---|---|---:|---:|
 | P0 | Un service ou une coordonnée suffit à annoncer la checklist, sans intention de devis active | Bloquante | Élevée, reproduite |
+| P0 | Sur la page devis, chaque « c’est bon » répète le même préremplissage et le même refus tant que des champs manquent | Bloquante | Élevée, reproduite |
 | P0 | Une simple approbation (« c’est bon ») peut envoyer un dossier complet déduit hors devis, depuis presque toute page | Bloquante | Élevée, reproduite |
 | P0 | Une négation telle que « je ne demande pas de nouveau devis » peut ouvrir et préremplir le devis | Bloquante | Élevée, reproduite |
 | P0 | Une transcription reçue pendant que l’avatar parle reste exécutable si elle ressemble à une commande « urgente » ; la garde anti-écho ne couvre pas les formulations naturelles | Bloquante | Élevée dans le code, occurrence acoustique à confirmer |
@@ -107,7 +108,25 @@ Le visiteur peut donc entendre :
 
 Ce doublage donne l’impression que Claire « revient toujours au devis », même sans boucle infinie stricte.
 
-### 3.3 P0 — « C’est bon » peut envoyer un devis jamais demandé
+Il contredit aussi l’architecture documentée : `docs/claire-aidant-plan.md:45-49` indique que le site n’envoie plus `[INFOSERV2A_APP_RESULT]` pour une commande LiveAvatar, alors que `announceQuoteTruth()` appelle bien `sendEmailResult()` pour ce canal.
+
+### 3.3 P0 — « C’est bon » boucle si incomplet et peut envoyer hors devis
+
+Sur la page devis, `resolveSendClassification()` transforme toute confirmation orale en action `submit_quote`, y compris lorsque `canSubmitQuote(memory)` est faux : la condition contient `isOralSendConfirm(command)` comme alternative autonome (`assets/js/claire-runtime-v2.mjs:90-105`).
+
+`planCommand()` constate ensuite que le brouillon est incomplet, remplace l’envoi par `prefill_quote` et restitue la même checklist (`assets/js/claire-runtime-v2.mjs:246-265`, `310-317`). Une nouvelle confirmation repart exactement dans le même chemin.
+
+Reproduction, deux fois de suite avec nom, commune, service et besoin déjà connus :
+
+```text
+« c’est bon »
+→ outil prefill_quote
+→ « Je n’envoie pas le devis. Il manque encore votre téléphone et votre e-mail. »
+→ « c’est bon »
+→ même outil, même réponse
+```
+
+C’est une boucle déterministe complète : l’application interprète la confirmation comme une tentative, mais ne change ni l’état ni la question suivante.
 
 `isOralSendConfirm()` classe notamment « c’est bon », « valide », « confirme » et « vas-y » comme confirmations globales (`assets/js/claire-core.mjs:182-194`). `resolveSendClassification()` les transforme en `submit_quote` dès que les six champs déduits sont complets, même hors page devis (`assets/js/claire-runtime-v2.mjs:90-112`).
 
@@ -282,6 +301,8 @@ Règles :
 - annoncer au plus une fois le même état/signature, de façon persistante ;
 - après `sent`, aucun nouveau devis sans nouvelle intention explicite.
 
+Mesure de confinement immédiate, avant la refonte d’état : sur la page devis, une confirmation ne doit être reclassée en `submit_quote` que si `canSubmitQuote(memory)` est vrai. Si le brouillon est incomplet, ne pas relancer `prefill_quote` sur « c’est bon » ; demander un seul champ manquant puis attendre une nouvelle donnée.
+
 ### P0.2 — Séparer l’origine audio de l’intention
 
 - Ne jamais exécuter une **action à effet de bord** depuis une `USER_TRANSCRIPTION` reçue pendant `avatarSpeaking`.
@@ -354,14 +375,15 @@ Ajouter :
 
 1. conversation caméra sans mot « devis » → aucune checklist ;
 2. nom/commune donnés hors devis → aucune checklist ;
-3. mémoire complète hors devis + « c’est bon » → aucun envoi ;
-4. « je ne demande pas de nouveau devis » → aucune ouverture, aucune checklist ;
-5. cinq formulations de Claire contenant « envoyer le devis » → zéro commande ;
-6. reconnexion après succès → aucune relance ;
-7. envoi manuel puis reload → ancien besoin absent ;
-8. double confirmation / timeout → un seul envoi ;
-9. test E2E avec vraie cible d’événement DOM ;
-10. laboratoire avec scénario mémoire et résultat non simulé.
+3. devis incomplet + deux « c’est bon » → aucun second `prefill_quote`, aucune checklist répétée ;
+4. mémoire complète hors devis + « c’est bon » → aucun envoi ;
+5. « je ne demande pas de nouveau devis » → aucune ouverture, aucune checklist ;
+6. cinq formulations de Claire contenant « envoyer le devis » → zéro commande ;
+7. reconnexion après succès → aucune relance ;
+8. envoi manuel puis reload → ancien besoin absent ;
+9. double confirmation / timeout → un seul envoi ;
+10. test E2E avec vraie cible d’événement DOM ;
+11. laboratoire avec scénario mémoire et résultat non simulé.
 
 ## 6. Script de recette Didier sur preview
 
@@ -412,6 +434,7 @@ Ensuite seulement, il faut sécuriser l’origine audio, la clôture manuelle, l
 ## 8. Vérifications réalisées
 
 - Reproduction déterministe des cinq annonces successives de checklist : confirmée.
+- Reproduction de deux « c’est bon » successifs sur devis incomplet produisant deux `prefill_quote` et la même checklist : confirmée.
 - Reproduction de « c’est bon » envoyant hors page devis : confirmée sur accueil, vidéosurveillance et devis ; contact bascule vers l’envoi contact.
 - Reproduction de « je ne demande pas de nouveau devis » ouvrant et préremplissant le devis : confirmée.
 - Reproduction de cinq formulations d’écho `submit=true / guard=false` : confirmée.
