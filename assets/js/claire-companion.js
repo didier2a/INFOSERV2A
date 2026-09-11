@@ -1389,7 +1389,8 @@ export class ClaireCompanion {
     const context = formatCaptionContext({
       page: snapshot.page,
       section: snapshot.section,
-      memory
+      memory,
+      requested: this.actionMode !== CLAIRE_ACTION_MODES.CONSEIL
     });
     if (this.nodes.captionContext) this.nodes.captionContext.textContent = context;
     this.renderQuoteQuest(memory, snapshot);
@@ -1398,7 +1399,14 @@ export class ClaireCompanion {
   renderQuoteQuest(memory, snapshot = {}) {
     const quest = this.nodes.quest;
     if (!quest) return;
-    if (isPhoneShell() || !shouldShowQuoteQuest(memory, snapshot.page?.id || snapshot.activePage)) {
+    if (
+      isPhoneShell()
+      || !shouldShowQuoteQuest(
+        memory,
+        snapshot.page?.id || snapshot.activePage,
+        this.actionMode !== CLAIRE_ACTION_MODES.CONSEIL
+      )
+    ) {
       quest.hidden = true;
       quest.replaceChildren();
       document.body.classList.remove("claire-quote-quest");

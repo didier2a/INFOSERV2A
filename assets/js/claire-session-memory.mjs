@@ -1009,17 +1009,18 @@ export function quoteQuestionnaire(memory = {}) {
   ];
 }
 
-export function shouldShowQuoteQuest(memory = {}, pageId = "") {
+export function shouldShowQuoteQuest(memory = {}, pageId = "", requested = false) {
+  if (requested !== true) return false;
   if (pageId === "quote") return true;
   const visitor = normalizeVisitor(memory.visitor);
   return Boolean(visitor.name || visitor.phone || visitor.email || visitor.city);
 }
 
-export function formatCaptionContext({ page, section, memory } = {}) {
+export function formatCaptionContext({ page, section, memory, requested = false } = {}) {
   const bits = [];
   if (page?.title) bits.push(page.title);
   if (section?.label) bits.push(section.label);
-  if (page?.id === "quote") {
+  if (page?.id === "quote" && requested === true) {
     const visitor = normalizeVisitor(memory?.visitor);
     if (visitor.name) bits.push(visitor.name);
     if (missingQuoteFields(memory).length) {

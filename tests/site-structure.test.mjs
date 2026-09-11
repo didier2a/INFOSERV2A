@@ -606,7 +606,8 @@ test("IT48 : portable — CONTEXTE n’est plus un pop-up sur le site", async ()
   assert.match(mobile, /claire-quote-quest[\s\S]*\.claire-live-prompt:not\(\[hidden\]\) \{[\s\S]*display: none !important/);
   assert.doesNotMatch(mobile, /padding-top: calc\(var\(--claire-mobile-chrome\) \+ 4\.8rem\)/);
   assert.match(client, /if \(this\.state !== "guided" \|\| sceneOn \|\| phone\)/);
-  assert.match(client, /isPhoneShell\(\) \|\| !shouldShowQuoteQuest/);
+  assert.match(client, /!shouldShowQuoteQuest\(/);
+  assert.match(client, /this\.actionMode !== CLAIRE_ACTION_MODES\.CONSEIL/);
 });
 
 test("IT46 : portable — HUD scène, barre magasin nommée, hold humain", async () => {

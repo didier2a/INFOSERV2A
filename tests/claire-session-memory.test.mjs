@@ -139,7 +139,8 @@ test("l’encart de contexte montre la page et le questionnaire de devis", () =>
   };
   const context = formatCaptionContext({
     page: { title: "Demande de devis", id: "quote" },
-    memory
+    memory,
+    requested: true
   });
   assert.match(context, /Demande de devis/);
   assert.match(context, /Marie Rossi/);
@@ -303,9 +304,10 @@ test("un marqueur interne LiveAvatar n’alimente pas la mémoire ni le question
   assert.equal(shouldShowQuoteQuest(leaked, "home"), false);
   assert.equal(shouldShowQuoteQuest({ service: "videosurveillance" }, "home"), false);
   assert.equal(shouldShowQuoteQuest({ need: "caméra 4G" }, "home"), false);
-  assert.equal(shouldShowQuoteQuest({ visitor: { name: "Marie" } }, "home"), true);
-  assert.equal(shouldShowQuoteQuest({ visitor: { name: "Marie" } }, "quote"), true);
-  assert.equal(shouldShowQuoteQuest({}, "quote"), true);
+  assert.equal(shouldShowQuoteQuest({ visitor: { name: "Marie" } }, "home"), false);
+  assert.equal(shouldShowQuoteQuest({ visitor: { name: "Marie" } }, "home", true), true);
+  assert.equal(shouldShowQuoteQuest({ visitor: { name: "Marie" } }, "quote", true), true);
+  assert.equal(shouldShowQuoteQuest({}, "quote", true), true);
   assert.equal(quoteQuestionnaire({}).length, 6);
 });
 
