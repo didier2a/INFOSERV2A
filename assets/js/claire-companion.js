@@ -20,7 +20,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260912-mobile-bdae-v1";
+} from "./claire-core.mjs?v=20260912-mobile-d2-c1-v1";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -46,7 +46,7 @@ import {
   alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260912-mobile-bdae-v1";
+} from "./claire-session-memory.mjs?v=20260912-mobile-d2-c1-v1";
 import {
   CLAIRE_ACTION_MODES,
   actionDraftReady,
@@ -58,38 +58,45 @@ import {
   isQuoteResendRequest,
   shouldDebounceVoiceCommand,
   requestedActionMode
-} from "./claire-actions-v1.mjs?v=20260912-mobile-bdae-v1";
+} from "./claire-actions-v1.mjs?v=20260912-mobile-d2-c1-v1";
 import {
   describeEmailSendOutcome,
   didEmailSendThisTurn
-} from "./site-email.mjs?v=20260912-mobile-bdae-v1";
+} from "./site-email.mjs?v=20260912-mobile-d2-c1-v1";
 import {
   MOBILE_SCENE_HOLD_MS,
   createMobileSceneState,
   mobileSceneActive,
   reduceMobileScene,
   sceneStatusLabel
-} from "./claire-mobile-scene.mjs?v=20260912-mobile-bdae-v1";
+} from "./claire-mobile-scene.mjs?v=20260912-mobile-d2-c1-v1";
 import {
+  MOBILE_PIP_EDGE_MAGNET_PX,
+  MOBILE_PIP_STORAGE_KEY,
   MOBILE_SURFACES,
   PHONE_MEDIA_QUERY,
+  clampMobilePipPoint,
   createMobileUxState,
+  magnetizeMobilePipPoint,
+  mobilePipDragExceeded,
+  mobilePipPercentFromPoint,
+  mobilePipPointFromPercent,
   mobileUxLocksScroll,
   reduceMobileUx
-} from "./claire-mobile-ux.mjs?v=20260912-mobile-bdae-v1";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260912-mobile-bdae-v1";
+} from "./claire-mobile-ux.mjs?v=20260912-mobile-d2-c1-v1";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260912-mobile-d2-c1-v1";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260912-mobile-bdae-v1";
-import "./contact.js?v=20260912-mobile-bdae-v1";
-import "./devis.js?v=20260912-mobile-bdae-v1";
+} from "./claire-site-runtime-adapter.mjs?v=20260912-mobile-d2-c1-v1";
+import "./contact.js?v=20260912-mobile-d2-c1-v1";
+import "./devis.js?v=20260912-mobile-d2-c1-v1";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
 const LOCAL_TEXT_FALLBACK = "Le direct vocal est indisponible, mais je peux continuer par écrit pour vous orienter dans les services InfoServ2A. Décrivez votre besoin informatique ou demandez un onglet précis.";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260912-mobile-bdae-v1";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260912-mobile-bdae-v1";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260912-mobile-d2-c1-v1";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260912-mobile-d2-c1-v1";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -359,6 +366,10 @@ export class ClaireCompanion {
       hash: location.hash
     });
     this.mobileChrome = null;
+    this.mobilePipDrag = null;
+    this.mobilePipPosition = this.loadMobilePipPosition();
+    this.mobilePipLayoutFrame = 0;
+    this.mobilePipSuppressClickUntil = 0;
     this.browserVoice = new BrowserVoiceProvider({
       onTranscript: (text, final) => this.handleTranscript(text, final),
       onStatus: (value, label) => this.setStatus(value, label)
@@ -507,6 +518,175 @@ export class ClaireCompanion {
     };
   }
 
+  loadMobilePipPosition() {
+    try {
+      const parsed = JSON.parse(storageGet(MOBILE_PIP_STORAGE_KEY) || "null");
+      if (
+        parsed
+        && Number.isFinite(Number(parsed.x))
+        && Number.isFinite(Number(parsed.y))
+      ) {
+        return {
+          x: Math.min(1, Math.max(0, Number(parsed.x))),
+          y: Math.min(1, Math.max(0, Number(parsed.y)))
+        };
+      }
+    } catch { /* La position par défaut reste disponible. */ }
+    return { x: 1, y: 1 };
+  }
+
+  saveMobilePipPosition(position) {
+    this.mobilePipPosition = {
+      x: Math.min(1, Math.max(0, Number(position?.x) || 0)),
+      y: Math.min(1, Math.max(0, Number(position?.y) || 0))
+    };
+    storageSet(MOBILE_PIP_STORAGE_KEY, JSON.stringify(this.mobilePipPosition));
+  }
+
+  mobileSafeInsets() {
+    const style = this.mobileChrome?.safeProbe
+      ? getComputedStyle(this.mobileChrome.safeProbe)
+      : null;
+    const number = (value) => Number.parseFloat(value || "0") || 0;
+    return {
+      top: number(style?.paddingTop),
+      right: number(style?.paddingRight),
+      bottom: number(style?.paddingBottom),
+      left: number(style?.paddingLeft)
+    };
+  }
+
+  mobilePipBounds() {
+    const viewport = globalThis.visualViewport;
+    const viewportLeft = Number(viewport?.offsetLeft) || 0;
+    const viewportTop = Number(viewport?.offsetTop) || 0;
+    const viewportWidth = Number(viewport?.width) || globalThis.innerWidth || 0;
+    const viewportHeight = Number(viewport?.height) || globalThis.innerHeight || 0;
+    const safe = this.mobileSafeInsets();
+    const gap = 12;
+    const viewportRight = viewportLeft + viewportWidth;
+    const viewportBottom = viewportTop + viewportHeight;
+    let top = viewportTop + safe.top + gap;
+    let bottom = viewportBottom - safe.bottom - gap;
+    const header = document.querySelector(".site-header");
+    if (header && getComputedStyle(header).visibility !== "hidden") {
+      const rect = header.getBoundingClientRect();
+      if (rect.height > 0 && rect.bottom > viewportTop && rect.top < viewportBottom) {
+        top = Math.max(top, rect.bottom + 8);
+      }
+    }
+    const tabs = this.mobileChrome?.shell.querySelector(".claire-mobile-tabs");
+    const tabsRect = tabs?.getBoundingClientRect();
+    if (tabsRect?.height > 0) bottom = Math.min(bottom, tabsRect.top - 10);
+    return {
+      left: viewportLeft + safe.left + gap,
+      top,
+      right: viewportRight - safe.right - gap,
+      bottom
+    };
+  }
+
+  mobilePipSize() {
+    const rect = this.nodes.stage?.getBoundingClientRect();
+    return {
+      width: rect?.width || 104,
+      height: rect?.height || 136
+    };
+  }
+
+  setMobilePipPoint(point) {
+    if (!this.root) return;
+    this.root.style.setProperty("--claire-pip-x", `${Math.round(point.x)}px`);
+    this.root.style.setProperty("--claire-pip-y", `${Math.round(point.y)}px`);
+    this.root.dataset.pipPositioned = "true";
+  }
+
+  layoutMobilePip() {
+    if (
+      !isPhoneShell()
+      || this.mobileUx.surface !== MOBILE_SURFACES.PIP
+      || this.mobilePipDrag
+    ) return;
+    const bounds = this.mobilePipBounds();
+    const size = this.mobilePipSize();
+    this.setMobilePipPoint(
+      mobilePipPointFromPercent(this.mobilePipPosition, bounds, size)
+    );
+  }
+
+  scheduleMobilePipLayout() {
+    cancelAnimationFrame(this.mobilePipLayoutFrame);
+    this.mobilePipLayoutFrame = requestAnimationFrame(() => {
+      this.mobilePipLayoutFrame = 0;
+      this.layoutMobilePip();
+    });
+  }
+
+  mobilePipClickSuppressed() {
+    return performance.now() < this.mobilePipSuppressClickUntil;
+  }
+
+  bindMobilePipDrag() {
+    const stage = this.nodes.stage;
+    if (!stage) return;
+    stage.addEventListener("pointerdown", (event) => {
+      if (
+        !isPhoneShell()
+        || this.mobileUx.surface !== MOBILE_SURFACES.PIP
+        || (event.pointerType === "mouse" && event.button !== 0)
+      ) return;
+      const rect = this.root.getBoundingClientRect();
+      this.mobilePipDrag = {
+        pointerId: event.pointerId,
+        start: { x: event.clientX, y: event.clientY },
+        origin: { x: rect.left, y: rect.top },
+        current: { x: rect.left, y: rect.top },
+        bounds: this.mobilePipBounds(),
+        size: this.mobilePipSize(),
+        moved: false
+      };
+      try { stage.setPointerCapture(event.pointerId); } catch { /* Capture non disponible. */ }
+    });
+    stage.addEventListener("pointermove", (event) => {
+      const drag = this.mobilePipDrag;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      const current = { x: event.clientX, y: event.clientY };
+      if (!drag.moved && !mobilePipDragExceeded(drag.start, current)) return;
+      drag.moved = true;
+      event.preventDefault();
+      drag.current = clampMobilePipPoint({
+        x: drag.origin.x + current.x - drag.start.x,
+        y: drag.origin.y + current.y - drag.start.y
+      }, drag.bounds, drag.size);
+      this.root.classList.add("is-pip-dragging");
+      this.setMobilePipPoint(drag.current);
+    });
+    const finish = (event, { cancelled = false } = {}) => {
+      const drag = this.mobilePipDrag;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      this.mobilePipDrag = null;
+      this.root.classList.remove("is-pip-dragging");
+      try { stage.releasePointerCapture(event.pointerId); } catch { /* Capture déjà rendue. */ }
+      if (!drag.moved) return;
+      event.preventDefault();
+      const point = cancelled
+        ? clampMobilePipPoint(drag.current, drag.bounds, drag.size)
+        : magnetizeMobilePipPoint(
+          drag.current,
+          drag.bounds,
+          drag.size,
+          MOBILE_PIP_EDGE_MAGNET_PX
+        );
+      this.setMobilePipPoint(point);
+      this.saveMobilePipPosition(
+        mobilePipPercentFromPoint(point, drag.bounds, drag.size)
+      );
+      this.mobilePipSuppressClickUntil = performance.now() + 400;
+    };
+    stage.addEventListener("pointerup", (event) => finish(event));
+    stage.addEventListener("pointercancel", (event) => finish(event, { cancelled: true }));
+  }
+
   installMobileUx() {
     if (this.mobileChrome || !document.body) return;
 
@@ -547,6 +727,7 @@ export class ClaireCompanion {
           <span aria-hidden="true">▤</span><b>Devis</b>
         </button>
       </nav>
+      <i class="claire-mobile-safe-probe" aria-hidden="true"></i>
     `;
     document.body.append(shell);
 
@@ -565,15 +746,34 @@ export class ClaireCompanion {
     siteReturn.textContent = "Voir le site";
     this.nodes.experience?.append(siteReturn);
 
+    const voiceRow = document.createElement("div");
+    voiceRow.className = "claire-mobile-voice-row";
+    voiceRow.hidden = true;
+    voiceRow.innerHTML = `
+      <button class="claire-mobile-voice-row__mic" type="button" data-mobile-voice-mic aria-label="Parler à Claire" aria-pressed="false">
+        <span aria-hidden="true">●</span>
+        <strong data-mobile-voice-label>Parler à Claire</strong>
+      </button>
+      <small data-mobile-voice-status>Prête</small>
+      <button class="claire-mobile-voice-row__interrupt" type="button" data-mobile-voice-interrupt hidden>Interrompre</button>
+    `;
+    this.nodes.stage?.after(voiceRow);
+
     this.mobileChrome = {
       shell,
       tabs: [...shell.querySelectorAll("[data-mobile-tab]")],
+      safeProbe: shell.querySelector(".claire-mobile-safe-probe"),
       sheet: shell.querySelector("[data-mobile-sheet]"),
       sheetToggle: shell.querySelector("[data-mobile-sheet-toggle]"),
       sheetContext: shell.querySelector("[data-mobile-sheet-context]"),
       sheetStatus: shell.querySelector("[data-mobile-sheet-status]"),
       sheetForm: shell.querySelector("[data-mobile-sheet-form]"),
-      sheetInput: shell.querySelector("#claireMobileSheetCommand")
+      sheetInput: shell.querySelector("#claireMobileSheetCommand"),
+      voiceRow,
+      voiceMic: voiceRow.querySelector("[data-mobile-voice-mic]"),
+      voiceLabel: voiceRow.querySelector("[data-mobile-voice-label]"),
+      voiceStatus: voiceRow.querySelector("[data-mobile-voice-status]"),
+      voiceInterrupt: voiceRow.querySelector("[data-mobile-voice-interrupt]")
     };
 
     this.mobileChrome.tabs.forEach((button) => {
@@ -585,8 +785,17 @@ export class ClaireCompanion {
         void this.navigateMobileTab(button.dataset.mobileHref);
       });
     });
-    pipOpen.addEventListener("click", () => void this.openMobileClaire());
+    pipOpen.addEventListener("click", (event) => {
+      if (this.mobilePipClickSuppressed()) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      void this.openMobileClaire();
+    });
     siteReturn.addEventListener("click", () => this.showMobileSite());
+    this.mobileChrome.voiceMic?.addEventListener("click", () => void this.toggleMicrophone());
+    this.mobileChrome.voiceInterrupt?.addEventListener("click", () => this.interrupt());
     shell.querySelector("[data-mobile-sheet-site]")?.addEventListener("click", () => {
       this.applyMobileUxEvent({ type: "collapse-sheet" });
       document.querySelector("#devis-form, #contact-form")?.scrollIntoView?.({
@@ -622,6 +831,7 @@ export class ClaireCompanion {
       await this.submit(value, "mobile-sheet");
     });
 
+    this.bindMobilePipDrag();
     this.renderMobileUx();
   }
 
@@ -636,6 +846,7 @@ export class ClaireCompanion {
     const phone = isPhoneShell();
     this.mobileChrome.shell.hidden = !phone;
     if (!phone) {
+      this.mobileChrome.voiceRow.hidden = true;
       delete this.root.dataset.mobileSurface;
       delete document.body.dataset.claireMobileSurface;
       document.body.classList.remove("claire-mobile-scroll-lock");
@@ -655,6 +866,7 @@ export class ClaireCompanion {
       this.mobileChrome.sheet.hidden = surface !== MOBILE_SURFACES.SHEET;
       this.mobileChrome.sheet.setAttribute("aria-expanded", sheetExpanded ? "true" : "false");
     }
+    this.mobileChrome.voiceRow.hidden = surface !== MOBILE_SURFACES.CLAIRE;
     this.mobileChrome.sheetToggle?.setAttribute("aria-expanded", sheetExpanded ? "true" : "false");
     if (this.mobileChrome.sheetContext) {
       this.mobileChrome.sheetContext.textContent = /contact\.html$/i.test(this.mobileUx.pathname)
@@ -668,6 +880,7 @@ export class ClaireCompanion {
         ? `Claire vous montre « ${section.label} »`
         : "Claire vous montre cette page";
     }
+    if (surface === MOBILE_SURFACES.PIP) this.scheduleMobilePipLayout();
   }
 
   syncMobileRoute({ preserveGuided = false } = {}) {
@@ -826,6 +1039,15 @@ export class ClaireCompanion {
     document.addEventListener("pointerdown", (event) => this.handleSiteFieldPointer(event), true);
     this.nodes.mic?.addEventListener("click", () => void this.toggleMicrophone());
     this.nodes.stage?.addEventListener("click", (event) => {
+      if (
+        isPhoneShell()
+        && this.mobileUx.surface === MOBILE_SURFACES.PIP
+        && this.mobilePipClickSuppressed()
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
       if (event.target?.closest?.("button, a, input")) return;
       if (isPhoneShell()) {
         if (this.mobileUx.surface === MOBILE_SURFACES.PIP) {
@@ -1062,6 +1284,20 @@ export class ClaireCompanion {
     if (this.nodes.mic) {
       this.nodes.mic.setAttribute("aria-pressed", micActive ? "true" : "false");
       this.nodes.mic.setAttribute("aria-label", micActive ? "Arrêter le microphone" : "Parler à Claire");
+    }
+    if (this.mobileChrome?.voiceMic) {
+      this.mobileChrome.voiceMic.setAttribute("aria-pressed", micActive ? "true" : "false");
+      this.mobileChrome.voiceMic.setAttribute(
+        "aria-label",
+        micActive ? "Arrêter le microphone" : "Parler à Claire"
+      );
+    }
+    if (this.mobileChrome?.voiceLabel) {
+      this.mobileChrome.voiceLabel.textContent = micActive ? "J’écoute" : "Parler à Claire";
+    }
+    if (this.mobileChrome?.voiceStatus) this.mobileChrome.voiceStatus.textContent = label;
+    if (this.mobileChrome?.voiceInterrupt) {
+      this.mobileChrome.voiceInterrupt.hidden = !isSpeakingPresence(value);
     }
     this.nodes.micLabels?.forEach((node) => { node.textContent = micActive ? "J’écoute" : "Parler à Claire"; });
     if (this.nodes.interrupt) this.nodes.interrupt.hidden = value !== "speaking";
@@ -1649,7 +1885,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260912-mobile-bdae-v1");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260912-mobile-d2-c1-v1");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));

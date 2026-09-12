@@ -1,4 +1,7 @@
 export const PHONE_MEDIA_QUERY = "(max-width: 768px)";
+export const MOBILE_PIP_STORAGE_KEY = "infoserv2a.claire.pip-position";
+export const MOBILE_PIP_DRAG_THRESHOLD_PX = 8;
+export const MOBILE_PIP_EDGE_MAGNET_PX = 20;
 
 export const MOBILE_SURFACES = Object.freeze({
   PIP: "pip",
@@ -6,6 +9,82 @@ export const MOBILE_SURFACES = Object.freeze({
   SHEET: "sheet",
   GUIDED: "guided"
 });
+
+function finite(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function clamp(value, minimum, maximum) {
+  return Math.min(Math.max(finite(value, minimum), minimum), maximum);
+}
+
+function pipLimits(bounds = {}, size = {}) {
+  const left = finite(bounds.left);
+  const top = finite(bounds.top);
+  const right = Math.max(left, finite(bounds.right, left));
+  const bottom = Math.max(top, finite(bounds.bottom, top));
+  const width = Math.max(0, finite(size.width));
+  const height = Math.max(0, finite(size.height));
+  return {
+    minX: left,
+    minY: top,
+    maxX: Math.max(left, right - width),
+    maxY: Math.max(top, bottom - height)
+  };
+}
+
+export function clampMobilePipPoint(point = {}, bounds = {}, size = {}) {
+  const limits = pipLimits(bounds, size);
+  return {
+    x: clamp(point.x, limits.minX, limits.maxX),
+    y: clamp(point.y, limits.minY, limits.maxY)
+  };
+}
+
+export function mobilePipPointFromPercent(position = {}, bounds = {}, size = {}) {
+  const limits = pipLimits(bounds, size);
+  const x = clamp(position.x, 0, 1);
+  const y = clamp(position.y, 0, 1);
+  return {
+    x: limits.minX + ((limits.maxX - limits.minX) * x),
+    y: limits.minY + ((limits.maxY - limits.minY) * y)
+  };
+}
+
+export function mobilePipPercentFromPoint(point = {}, bounds = {}, size = {}) {
+  const limits = pipLimits(bounds, size);
+  const clamped = clampMobilePipPoint(point, bounds, size);
+  const spanX = limits.maxX - limits.minX;
+  const spanY = limits.maxY - limits.minY;
+  return {
+    x: spanX > 0 ? (clamped.x - limits.minX) / spanX : 0,
+    y: spanY > 0 ? (clamped.y - limits.minY) / spanY : 0
+  };
+}
+
+export function magnetizeMobilePipPoint(
+  point = {},
+  bounds = {},
+  size = {},
+  threshold = MOBILE_PIP_EDGE_MAGNET_PX
+) {
+  const limits = pipLimits(bounds, size);
+  const next = clampMobilePipPoint(point, bounds, size);
+  const distance = Math.max(0, finite(threshold, MOBILE_PIP_EDGE_MAGNET_PX));
+  if (Math.abs(next.x - limits.minX) <= distance) next.x = limits.minX;
+  else if (Math.abs(limits.maxX - next.x) <= distance) next.x = limits.maxX;
+  if (Math.abs(next.y - limits.minY) <= distance) next.y = limits.minY;
+  else if (Math.abs(limits.maxY - next.y) <= distance) next.y = limits.maxY;
+  return next;
+}
+
+export function mobilePipDragExceeded(start = {}, current = {}) {
+  return Math.hypot(
+    finite(current.x) - finite(start.x),
+    finite(current.y) - finite(start.y)
+  ) >= MOBILE_PIP_DRAG_THRESHOLD_PX;
+}
 
 function normalizedPath(pathname = "") {
   const value = String(pathname || "").split(/[?#]/, 1)[0].replace(/^\/+/, "");

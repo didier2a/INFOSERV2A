@@ -1784,8 +1784,23 @@ body.nav-just-closed [data-claire-start] {
   }
 
   .claire-mobile-shell[hidden],
-  .claire-mobile-sheet[hidden] {
+  .claire-mobile-sheet[hidden],
+  .claire-mobile-voice-row[hidden] {
     display: none !important;
+  }
+
+  .claire-mobile-safe-probe {
+    position: fixed;
+    inset: 0 auto auto 0;
+    width: 0;
+    height: 0;
+    padding:
+      env(safe-area-inset-top, 0px)
+      env(safe-area-inset-right, 0px)
+      env(safe-area-inset-bottom, 0px)
+      env(safe-area-inset-left, 0px);
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .claire-mobile-tabs {
@@ -1886,6 +1901,17 @@ body.nav-just-closed [data-claire-start] {
     pointer-events: none;
   }
 
+  body.claire-phone-shell[data-claire-mobile-surface="pip"] .claire-companion[data-pip-positioned="true"] {
+    inset: 0 auto auto 0 !important;
+    transform: translate3d(var(--claire-pip-x, 0), var(--claire-pip-y, 0), 0);
+    transition: transform 180ms var(--claire-ease);
+    will-change: transform;
+  }
+
+  body.claire-phone-shell[data-claire-mobile-surface="pip"] .claire-companion.is-pip-dragging {
+    transition: none;
+  }
+
   body.claire-phone-shell[data-claire-mobile-surface="pip"] .claire-experience {
     position: static;
     display: block !important;
@@ -1924,11 +1950,20 @@ body.nav-just-closed [data-claire-start] {
     background: #102c39;
     box-shadow: 0 12px 32px rgba(3, 18, 30, 0.32);
     cursor: pointer;
+    touch-action: none;
+    user-select: none;
+  }
+
+  body.claire-phone-shell[data-claire-mobile-surface="pip"] .claire-companion.is-pip-dragging .claire-live-stage {
+    cursor: grabbing;
+    box-shadow: 0 16px 38px rgba(3, 18, 30, 0.38);
   }
 
   body[data-claire-mobile-surface="pip"] .claire-live-stage__poster,
   body[data-claire-mobile-surface="pip"] .claire-avatar__video {
     object-position: center 16%;
+    pointer-events: none;
+    -webkit-user-drag: none;
   }
 
   body[data-claire-mobile-surface="pip"] .claire-live-stage__shade {
@@ -1992,7 +2027,7 @@ body.nav-just-closed [data-claire-start] {
     display: grid;
     height: 100%;
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(190px, 30dvh) minmax(0, 1fr);
+    grid-template-rows: minmax(190px, 30dvh) 52px minmax(0, 1fr);
   }
 
   body[data-claire-mobile-surface="claire"] .claire-live-stage {
@@ -2035,17 +2070,59 @@ body.nav-just-closed [data-claire-start] {
   }
 
   body[data-claire-mobile-surface="claire"] .claire-live-stage__controls {
-    display: flex;
-    left: 0.75rem;
-    right: 0.75rem;
-    bottom: 0.65rem;
+    display: none !important;
   }
 
-  body[data-claire-mobile-surface="claire"] .claire-live-stage__controls > :not(
-    [data-claire-mic],
-    [data-claire-interrupt]
-  ) {
-    display: none !important;
+  body[data-claire-mobile-surface="claire"] .claire-mobile-voice-row {
+    position: relative;
+    z-index: 4;
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+    min-height: 52px;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.35rem 0.7rem;
+    border-bottom: 1px solid var(--claire-line);
+    background: rgba(251, 250, 246, 0.98);
+  }
+
+  .claire-mobile-voice-row__mic,
+  .claire-mobile-voice-row__interrupt {
+    display: inline-flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.75rem;
+    border: 0;
+    border-radius: 999px;
+    font: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+
+  .claire-mobile-voice-row__mic {
+    color: #06202a;
+    background: #83e3d7;
+    box-shadow: 0 5px 16px rgba(5, 28, 41, 0.16);
+  }
+
+  .claire-mobile-voice-row__mic > span {
+    color: #08756c;
+    font-size: 0.65rem;
+  }
+
+  .claire-mobile-voice-row > small {
+    overflow: hidden;
+    color: var(--claire-muted);
+    font-size: 0.7rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .claire-mobile-voice-row__interrupt:not([hidden]) {
+    color: #fff;
+    background: var(--claire-ink);
   }
 
   body[data-claire-mobile-surface="claire"] .claire-dialogue {
