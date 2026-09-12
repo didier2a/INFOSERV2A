@@ -16,6 +16,7 @@ export function onRequestGet({ env, request }) {
   const liveAvatar = Boolean(env.LIVEAVATAR_API_KEY || env.HEYGEN_API_KEY);
   const realtime = Boolean(env.LIVEAVATAR_OPENAI_SECRET_ID || env.OPENAI_API_KEY);
   const avatar = true;
+  const minimalProfile = String(env.LIVEAVATAR_REALTIME_DIAGNOSTIC || "").trim() === "minimal";
   return json({
     configured: liveAvatar && realtime && avatar,
     prerequisites: {
@@ -25,9 +26,10 @@ export function onRequestGet({ env, request }) {
     },
     provider: "liveavatar-realtime",
     connector: "OPENAI_REALTIME",
-    voice: "marin",
+    voice: minimalProfile ? "alloy" : "marin",
     model: String(env.LIVEAVATAR_OPENAI_MODEL || "gpt-realtime"),
     ...(realtime ? {
+      realtimeProfile: minimalProfile ? "minimal" : "claire",
       realtimeCredentialSource: env.OPENAI_API_KEY ? "cloudflare-key" : "liveavatar-secret-id"
     } : {}),
     mode: "LITE"

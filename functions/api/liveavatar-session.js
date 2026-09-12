@@ -139,11 +139,13 @@ export async function onRequestPost({ request, env }) {
   if (input.appId !== "infoserv2a") return json({ error: "Application non autorisée" }, 403, request);
 
   try {
+    const minimalProfile = String(env.LIVEAVATAR_REALTIME_DIAGNOSTIC || "").trim() === "minimal";
     const [realtimeSecret, contextId] = await Promise.all([
       ensureOpenAISecret(env, key),
-      ensureClaireContext(env, key)
+      minimalProfile ? Promise.resolve("") : ensureClaireContext(env, key)
     ]);
     const model = String(env.LIVEAVATAR_OPENAI_MODEL || "gpt-realtime").trim();
+    const voice = minimalProfile ? "alloy" : "marin";
     const requestToken = (duration) => providerJson(TOKEN_URL, {
       method: "POST",
       headers: { "X-API-KEY": key, "Content-Type": "application/json" },
@@ -155,8 +157,8 @@ export async function onRequestPost({ request, env }) {
         video_settings: { quality: "high", encoding: "H264" },
         openai_realtime_config: {
           secret_id: realtimeSecret.id,
-          context_id: contextId,
-          voice: "marin",
+          ...(contextId ? { context_id: contextId } : {}),
+          voice,
           model,
           // LiveAvatar refuse toute température < 0.6 sur le connecteur LITE.
           temperature: 0.75
@@ -187,8 +189,9 @@ export async function onRequestPost({ request, env }) {
       maxSessionDuration: sessionDuration,
       mode: "LITE",
       connector: "OPENAI_REALTIME",
-      voice: "marin",
+      voice,
       model,
+      realtimeProfile: minimalProfile ? "minimal" : "claire",
       realtimeCredentialSource: env.OPENAI_API_KEY ? "cloudflare-key" : "liveavatar-secret-id",
       realtimeSecretReference: realtimeSecret.id,
       realtimeSecretRevision: realtimeSecret.revision,

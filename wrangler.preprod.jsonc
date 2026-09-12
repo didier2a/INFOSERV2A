@@ -7,7 +7,8 @@
   "preview_urls": false,
   "keep_vars": true,
   "vars": {
-    "PREVIEW_BUILD_ID": "20260912-claire-voice-secret-v2"
+    "PREVIEW_BUILD_ID": "20260912-claire-voice-secret-v2",
+    "LIVEAVATAR_REALTIME_DIAGNOSTIC": "minimal"
   },
   "assets": {
     "directory": ".",
