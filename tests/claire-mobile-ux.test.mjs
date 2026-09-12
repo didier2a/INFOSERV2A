@@ -239,6 +239,7 @@ test("Quitter Claire compacts to PiP without stopping the duplex provider", asyn
     applyMobileSceneEvent(value) { calls.push(`scene:${value}`); },
     applyMobileUxEvent(event) { calls.push(`surface:${event.type}`); }
   };
+  context.keepMobilePip = ClaireCompanion.prototype.keepMobilePip;
   await ClaireCompanion.prototype.exitMobileClaire.call(context);
   assert.ok(calls.includes("duplex"));
   assert.ok(!calls.includes("interrupt"));
@@ -490,7 +491,7 @@ test("taper le médaillon live ouvre Claire sans avoir interrompu l’écoute", 
   const opened = await ClaireCompanion.prototype.openMobileClaire.call(context);
   assert.equal(opened, true);
   assert.equal(calls.includes("pause"), false);
-  assert.deepEqual(calls.filter((call) => call === "listen"), ["listen", "listen"]);
+  assert.deepEqual(calls.filter((call) => call === "listen"), ["listen"]);
   assert.ok(calls.includes("surface:show-pip"));
   assert.ok(calls.includes("surface:open-claire"));
 });
