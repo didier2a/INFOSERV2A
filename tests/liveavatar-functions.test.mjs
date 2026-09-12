@@ -125,6 +125,9 @@ test("la fonction échange les références serveur contre un jeton éphémère"
     assert.equal(payload.sessionToken, "ephemeral-test-token");
     assert.equal(payload.appId, "infoserv2a");
     assert.equal(payload.realtimeCredentialSource, "liveavatar-secret-id");
+    assert.equal(payload.realtimeSecretReference, "secret-ref");
+    assert.equal(payload.realtimeSecretRevision, "configured-id");
+    assert.equal(payload.realtimeSecretCreated, false);
     assert.equal(payload.maxSessionDuration, 600);
     assert.equal(outbound.url, "https://api.liveavatar.com/v1/sessions/token");
     const body = JSON.parse(outbound.options.body);
@@ -164,11 +167,15 @@ test("une nouvelle clé Cloudflare crée une nouvelle référence LiveAvatar", a
       }
     });
     assert.equal(response.status, 200);
-    assert.equal((await response.clone().json()).realtimeCredentialSource, "cloudflare-key");
+    const payload = await response.clone().json();
+    assert.equal(payload.realtimeCredentialSource, "cloudflare-key");
+    assert.equal(payload.realtimeSecretReference, "rotated-secret");
+    assert.equal(payload.realtimeSecretRevision, "20260912-voice-secret-v2");
+    assert.equal(payload.realtimeSecretCreated, true);
     const created = outbound.find((item) => item.url.endsWith("/v1/secrets") && item.options.method === "POST");
     assert.ok(created);
     const secretBody = JSON.parse(created.options.body);
-    assert.match(secretBody.secret_name, /^InfoServ2A OpenAI Realtime [0-9a-f]{16}$/);
+    assert.match(secretBody.secret_name, /^InfoServ2A OpenAI Realtime 20260912-voice-secret-v2 [0-9a-f]{16}$/);
     assert.equal(secretBody.secret_value, "sk-test-new-value");
     const token = outbound.find((item) => item.url.endsWith("/v1/sessions/token"));
     assert.equal(JSON.parse(token.options.body).openai_realtime_config.secret_id, "rotated-secret");

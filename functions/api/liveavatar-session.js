@@ -12,6 +12,7 @@ const SECRETS_URL = "https://api.liveavatar.com/v1/secrets";
 const CONTEXTS_URL = "https://api.liveavatar.com/v1/contexts";
 const DEFAULT_AVATAR_ID = "664ff8bb-4932-4644-91f8-b90975d6f549";
 const SECRET_NAME = "InfoServ2A OpenAI Realtime";
+const SECRET_REVISION = "20260912-voice-secret-v2";
 const CONTEXT_NAME = "InfoServ2A Claire Actions V1 20260911";
 
 const CLAIRE_CONTEXT = buildClaireContextPrompt(knowledge);
@@ -56,7 +57,9 @@ async function ensureOpenAISecret(env, key) {
   const openaiKey = String(env.OPENAI_API_KEY || "").trim();
   if (!openaiKey) {
     const configured = String(env.LIVEAVATAR_OPENAI_SECRET_ID || "").trim();
-    if (configured) return configured;
+    if (configured) {
+      return { id: configured, revision: "configured-id", created: false };
+    }
     throw new Error("OpenAI Realtime non configuré");
   }
   // LiveAvatar ne permet pas de modifier la valeur d’un secret. Un nom
@@ -65,13 +68,15 @@ async function ensureOpenAISecret(env, key) {
   // La clé Cloudflare actuelle prime toujours sur un ancien ID LiveAvatar :
   // un ID encore accepté à la création du token peut néanmoins produire un
   // connecteur Realtime silencieux si sa valeur OpenAI a expiré.
-  const versionedName = `${SECRET_NAME} ${await secretFingerprint(openaiKey)}`;
+  const versionedName = `${SECRET_NAME} ${SECRET_REVISION} ${await secretFingerprint(openaiKey)}`;
 
   const listed = await providerJson(SECRETS_URL, { headers: { "X-API-KEY": key } });
   if (!listed.response.ok) throw new Error(`Secrets LiveAvatar ${listed.response.status}`);
   const existing = (Array.isArray(listed.payload?.data) ? listed.payload.data : [])
     .find((item) => item?.secret_name === versionedName && item?.secret_type === "OPENAI_API_KEY");
-  if (existing?.id) return String(existing.id);
+  if (existing?.id) {
+    return { id: String(existing.id), revision: SECRET_REVISION, created: false };
+  }
 
   const created = await providerJson(SECRETS_URL, {
     method: "POST",
@@ -85,7 +90,7 @@ async function ensureOpenAISecret(env, key) {
   if (!created.response.ok || !created.payload?.data?.id) {
     throw new Error(`Création du secret LiveAvatar ${created.response.status}`);
   }
-  return String(created.payload.data.id);
+  return { id: String(created.payload.data.id), revision: SECRET_REVISION, created: true };
 }
 
 async function ensureClaireContext(env, key) {
@@ -134,7 +139,7 @@ export async function onRequestPost({ request, env }) {
   if (input.appId !== "infoserv2a") return json({ error: "Application non autorisée" }, 403, request);
 
   try {
-    const [secretId, contextId] = await Promise.all([
+    const [realtimeSecret, contextId] = await Promise.all([
       ensureOpenAISecret(env, key),
       ensureClaireContext(env, key)
     ]);
@@ -149,7 +154,7 @@ export async function onRequestPost({ request, env }) {
         max_session_duration: duration,
         video_settings: { quality: "high", encoding: "H264" },
         openai_realtime_config: {
-          secret_id: secretId,
+          secret_id: realtimeSecret.id,
           context_id: contextId,
           voice: "marin",
           model,
@@ -185,6 +190,9 @@ export async function onRequestPost({ request, env }) {
       voice: "marin",
       model,
       realtimeCredentialSource: env.OPENAI_API_KEY ? "cloudflare-key" : "liveavatar-secret-id",
+      realtimeSecretReference: realtimeSecret.id,
+      realtimeSecretRevision: realtimeSecret.revision,
+      realtimeSecretCreated: realtimeSecret.created,
       orientation: "vertical",
       appId: "infoserv2a"
     }, 200, request);
