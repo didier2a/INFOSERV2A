@@ -175,6 +175,10 @@ test("phone shell keeps PiP opt-in and renders it as a round medallion", async (
   );
   assert.match(css, /var\(--med-blue, #006c75\)/);
   assert.doesNotMatch(css, /gold|neon|glitter/i);
+  assert.match(
+    css,
+    /data-claire-mobile-surface="guided"[\s\S]*?\.claire-live-stage \{[\s\S]*?border-radius: 0 !important/
+  );
 });
 
 test("full Claire voice row sits between portrait and conversation", async () => {
@@ -256,6 +260,115 @@ test("Rester en PiP pauses listening without stopping the provider", async () =>
   assert.ok(calls.includes("pause"));
   assert.ok(!calls.includes("stop"));
   assert.ok(calls.includes("surface:show-pip"));
+});
+
+test("ouvrir l’onglet Claire reprend toujours le micro déjà autorisé", async () => {
+  globalThis.matchMedia = () => ({ matches: true });
+  const calls = [];
+  const context = {
+    audioEnabled: false,
+    provider: {
+      connected: true,
+      streamReady: true,
+      listening: false,
+      async resumeMedia() { calls.push("media"); },
+      async ensureActiveListening() {
+        calls.push("listen");
+        this.listening = true;
+        return true;
+      }
+    },
+    hideMobileDiscovery() { calls.push("hide"); },
+    applyMobileUxEvent(event) { calls.push(`surface:${event.type}`); },
+    setState(value) { calls.push(`state:${value}`); },
+    setStatus(value) { calls.push(`status:${value}`); },
+    async connectLiveSession() { calls.push("connect"); }
+  };
+  const { ClaireCompanion } = await import("../assets/js/claire-companion.js");
+  const opened = await ClaireCompanion.prototype.openMobileClaire.call(context);
+  assert.equal(opened, true);
+  assert.equal(context.audioEnabled, true);
+  assert.ok(calls.includes("listen"));
+  assert.ok(!calls.includes("connect"));
+  assert.ok(calls.includes("status:listening"));
+});
+
+test("taper le médaillon reprend l’écoute après Rester en PiP", async () => {
+  globalThis.matchMedia = () => ({ matches: true });
+  const calls = [];
+  const context = {
+    audioEnabled: true,
+    provider: {
+      connected: true,
+      streamReady: true,
+      listening: true,
+      async pauseListening() { calls.push("pause"); this.listening = false; },
+      async resumeMedia() { calls.push("media"); },
+      async ensureActiveListening() {
+        calls.push("listen");
+        this.listening = true;
+        return true;
+      }
+    },
+    mobileChrome: { pipDismiss: { focus() {} } },
+    interrupt() { calls.push("interrupt"); },
+    releaseWakeLock() {},
+    hideSessionNotice() {},
+    clearMobileSceneTimer() {},
+    hideMobileDiscovery() {},
+    setState() {},
+    setStatus() {},
+    applyMobileSceneEvent() {},
+    applyMobileUxEvent(event) { calls.push(`surface:${event.type}`); },
+    async connectLiveSession() { calls.push("connect"); }
+  };
+  const { ClaireCompanion } = await import("../assets/js/claire-companion.js");
+  await ClaireCompanion.prototype.keepMobilePip.call(context, { restoreFocus: false });
+  assert.equal(context.provider.listening, false);
+  const opened = await ClaireCompanion.prototype.openMobileClaire.call(context);
+  assert.equal(opened, true);
+  assert.deepEqual(calls.filter((call) => call === "pause" || call === "listen"), ["pause", "listen"]);
+  assert.ok(calls.includes("surface:show-pip"));
+  assert.ok(calls.includes("surface:open-claire"));
+});
+
+test("Voir le site laisse le médaillon puis Claire repart en écoute", async () => {
+  globalThis.matchMedia = () => ({ matches: true });
+  const calls = [];
+  const context = {
+    audioEnabled: true,
+    provider: {
+      connected: true,
+      streamReady: true,
+      listening: true,
+      async pauseListening() { calls.push("pause"); this.listening = false; },
+      async resumeMedia() {},
+      async ensureActiveListening() {
+        calls.push("listen");
+        this.listening = true;
+        return true;
+      }
+    },
+    mobileChrome: {},
+    interrupt() {},
+    releaseWakeLock() {},
+    hideSessionNotice() {},
+    clearMobileSceneTimer() {},
+    hideMobileDiscovery() {},
+    setState() {},
+    setStatus() {},
+    applyMobileSceneEvent() {},
+    applyMobileUxEvent(event) { calls.push(`surface:${event.type}`); },
+    async connectLiveSession() { calls.push("connect"); }
+  };
+  const { ClaireCompanion } = await import("../assets/js/claire-companion.js");
+  context.keepMobilePip = ClaireCompanion.prototype.keepMobilePip;
+  await ClaireCompanion.prototype.dismissMobileGuided.call(context);
+  assert.equal(context.provider.listening, false);
+  assert.ok(calls.includes("surface:show-pip"));
+  await ClaireCompanion.prototype.openMobileClaire.call(context);
+  assert.equal(context.provider.listening, true);
+  assert.ok(calls.includes("listen"));
 });
 
 test("PiP X fully stops and evacuates Claire without clearing memory", async () => {

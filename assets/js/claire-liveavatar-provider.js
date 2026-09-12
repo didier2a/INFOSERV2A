@@ -3,7 +3,7 @@ import {
   isOralSendConfirm,
   isStableUrgentCommand,
   isUrgentSiteCommand
-} from "./claire-core.mjs?v=20260912-combo3star-pip-v1";
+} from "./claire-core.mjs?v=20260912-combo3star-listen-v1";
 
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;
@@ -313,6 +313,23 @@ export class InfoServ2ALiveAvatarProvider {
     try { this.session?.startListening(); } catch { /* Le SDK peut déjà écouter. */ }
     this.listening = true;
     this.emit("listening", label);
+  }
+
+  async ensureActiveListening() {
+    this.record("microphone:resume-request", {
+      connected: this.connected,
+      streamReady: this.streamReady,
+      hasSession: Boolean(this.session)
+    });
+    if (!this.session || !this.connected || !this.streamReady) {
+      await this.reconnect({ microphone: true });
+      return Boolean(this.connected && this.streamReady && this.listening);
+    }
+    await this.resumeMedia();
+    const active = await this.ensureMicrophone();
+    if (active && this.connected && this.streamReady) return true;
+    await this.reconnect({ microphone: true });
+    return Boolean(this.connected && this.streamReady && this.listening);
   }
 
   sendEmailResult(value) {
