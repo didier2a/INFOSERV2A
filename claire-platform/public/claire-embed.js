@@ -40,7 +40,7 @@
     iframe.src = frameUrl.href;
     iframe.title = (bootstrap.tenant && bootstrap.tenant.persona && bootstrap.tenant.persona.name) || "Claire";
     iframe.loading = "eager";
-    iframe.allow = "microphone; autoplay";
+    iframe.allow = "autoplay *; microphone *; camera *; fullscreen *";
     iframe.referrerPolicy = "no-referrer";
     iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
     iframe.dataset.claireTenant = tenant;

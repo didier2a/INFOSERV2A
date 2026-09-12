@@ -8,6 +8,7 @@ const elements = {
   avatar: document.querySelector("#avatar"),
   placeholder: document.querySelector("#placeholder"),
   status: document.querySelector("#status"),
+  enableSound: document.querySelector("#enable-sound"),
   name: document.querySelector("#claire-name"),
   greeting: document.querySelector("#greeting"),
   transcript: document.querySelector("#transcript"),
@@ -37,6 +38,28 @@ function headers(json = false) {
 
 function setStatus(message) {
   elements.status.textContent = message;
+}
+
+async function enableAvatarSound() {
+  const video = elements.avatar;
+  video.defaultMuted = false;
+  video.muted = false;
+  video.volume = 1;
+  try {
+    await video.play();
+  } catch {
+    try {
+      video.muted = true;
+      await video.play();
+    } catch { /* The stream may not be attached yet. */ }
+  }
+
+  const audible = !video.muted && !video.paused;
+  elements.enableSound.hidden = audible;
+  setStatus(audible
+    ? "Son activé · Claire est connectée"
+    : "Touchez « Activer le son » pour entendre Claire");
+  return audible;
 }
 
 function transcript(speaker, message) {
@@ -88,15 +111,12 @@ function wireSession(activeSession) {
     await Promise.resolve(activeSession.attach(elements.avatar));
     elements.avatar.hidden = false;
     elements.placeholder.hidden = true;
-    elements.avatar.muted = false;
-    await elements.avatar.play().catch(() => {
-      elements.avatar.muted = true;
-      return elements.avatar.play();
-    });
     setStatus("Claire est connectée");
+    await enableAvatarSound();
   });
   activeSession.on(sdk.SessionEvent.SESSION_DISCONNECTED, () => {
     setStatus("La session est terminée");
+    elements.enableSound.hidden = true;
     elements.message.disabled = true;
     elements.chatForm.querySelector("button").disabled = true;
     session = null;
@@ -110,7 +130,14 @@ function wireSession(activeSession) {
     if (text) transcript(elements.name.textContent, text);
   });
   activeSession.on(sdk.AgentEventsEnum.USER_SPEAK_STARTED, () => setStatus("Je vous écoute…"));
-  activeSession.on(sdk.AgentEventsEnum.AVATAR_SPEAK_STARTED, () => setStatus("Claire vous répond…"));
+  activeSession.on(sdk.AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
+    if (elements.avatar.muted) {
+      elements.enableSound.hidden = false;
+      setStatus("Claire répond · activez le son");
+    } else {
+      setStatus("Claire vous répond…");
+    }
+  });
   activeSession.on(sdk.AgentEventsEnum.AVATAR_SPEAK_ENDED, () => setStatus("À votre écoute"));
 }
 
@@ -134,6 +161,7 @@ async function start() {
     await session.start();
     const voiceChat = session.voiceChat;
     if (voiceChat && String(voiceChat.state) === "INACTIVE") await voiceChat.start({ defaultMuted: false });
+    await enableAvatarSound();
     try { session.startListening(); } catch { /* The SDK may already be listening. */ }
     elements.message.disabled = false;
     elements.chatForm.querySelector("button").disabled = false;
@@ -162,6 +190,7 @@ async function endSession() {
 }
 
 elements.start.addEventListener("click", start);
+elements.enableSound.addEventListener("click", () => { void enableAvatarSound(); });
 elements.close.addEventListener("click", () => parent.postMessage({ type: "claire:close" }, "*"));
 elements.contact.addEventListener("click", () => { elements.overlay.hidden = false; });
 elements.leadClose.addEventListener("click", () => { elements.overlay.hidden = true; });

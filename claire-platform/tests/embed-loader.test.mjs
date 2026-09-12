@@ -81,7 +81,7 @@ test("loader mounts a sandboxed iframe using data-tenant and a bootstrap ticket"
   assert.equal(iframe.nodeName, "IFRAME");
   assert.equal(iframe.dataset.claireTenant, "boulangerie-soleil");
   assert.match(iframe.src, /^http:\/\/localhost:8787\/embed\/\?tenant=boulangerie-soleil#ticket=dev_ticket$/);
-  assert.match(iframe.allow, /microphone/);
+  assert.equal(iframe.allow, "autoplay *; microphone *; camera *; fullscreen *");
   assert.match(iframe.sandbox, /allow-scripts/);
   assert.match(iframe.style.cssText, /inset:0/);
   assert.match(iframe.style.cssText, /width:100vw/);
@@ -125,12 +125,21 @@ test("iframe UI keeps the LiveAvatar stage in a centered 9:16 frame", () => {
   assert.doesNotMatch(frameStyles, /minmax\(210px,\s*42%\)/);
 });
 
+test("audio recovery is user-visible and retries after voice chat starts", () => {
+  assert.match(frameHtml, /<video id="avatar" playsinline hidden><\/video>/);
+  assert.doesNotMatch(frameHtml, /<video id="avatar"[^>]*\sautoplay(?:\s|>)/);
+  assert.match(frameHtml, /id="enable-sound"[^>]*>Activer le son<\/button>/);
+  assert.match(frameStyles, /\.sound-button\s*\{/);
+  assert.match(frameSource, /async function enableAvatarSound\(\)/);
+  assert.match(frameSource, /voiceChat\.start\(\{ defaultMuted: false \}\);\s*await enableAvatarSound\(\)/);
+});
+
 test("direct iframe URL bootstraps its own ticket when the hash is missing", async () => {
   const calls = [];
   const button = { disabled: true };
   const elements = new Map();
   for (const selector of [
-    "#avatar", "#placeholder", "#status", "#claire-name", "#greeting", "#transcript",
+    "#avatar", "#placeholder", "#status", "#enable-sound", "#claire-name", "#greeting", "#transcript",
     "#start", "#close", "#contact", "#lead-overlay", "#lead-close", "#lead-form",
     "#lead-result", "#chat-form", "#message"
   ]) {

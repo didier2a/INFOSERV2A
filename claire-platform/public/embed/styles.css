@@ -118,6 +118,23 @@ h2 { margin: 6px 0 8px; font-family: Georgia, serif; font-size: 27px; font-weigh
   font-size: 54px;
 }
 
+.sound-button {
+  position: absolute;
+  z-index: 2;
+  right: calc(18px + env(safe-area-inset-right));
+  bottom: calc(224px + env(safe-area-inset-bottom));
+  left: calc(18px + env(safe-area-inset-left));
+  min-height: 46px;
+  border: 1px solid rgba(255, 255, 255, .72);
+  border-radius: 999px;
+  color: white;
+  background: rgba(15, 79, 82, .92);
+  font-weight: 800;
+  box-shadow: 0 10px 30px rgba(8, 21, 31, .28);
+  backdrop-filter: blur(8px);
+}
+.sound-button[hidden] { display: none; }
+
 .status {
   position: absolute;
   right: 12px;
@@ -222,5 +239,6 @@ h2 { margin: 6px 0 8px; font-family: Georgia, serif; font-size: 27px; font-weigh
     padding-top: 28px;
     padding-bottom: 6px;
   }
+  .sound-button { bottom: calc(194px + env(safe-area-inset-bottom)); }
   .status { bottom: calc(154px + env(safe-area-inset-bottom)); }
 }
