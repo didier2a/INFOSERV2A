@@ -724,13 +724,19 @@ export class ClaireCompanion {
       this.enterGuidedMode();
       return;
     }
-    if (this.provider?.connected) this.setState("guided");
-    else this.setState("manual");
     this.applyMobileUxEvent({
       type: "show-site",
       pathname: location.pathname,
       hash: location.hash
     });
+    const activeTab = this.mobileChrome?.tabs.find(
+      (button) => button.dataset.mobileTab === this.mobileUx.activeTab
+    );
+    if (this.nodes.experience?.contains(document.activeElement)) {
+      activeTab?.focus?.({ preventScroll: true });
+    }
+    if (this.provider?.connected) this.setState("guided");
+    else this.setState("manual");
   }
 
   showMobileGuided() {
