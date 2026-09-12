@@ -4,7 +4,7 @@ import {
   normalizeSchemaValue,
   validateContactFields,
   validateQuoteFields
-} from "./form-schema.mjs?v=20260912-combo3star-listen-v1";
+} from "./form-schema.mjs?v=20260912-claire-titre-opt3-v1";
 
 export const SESSION_MEMORY_KEY = "infoserv2a.claire.memory";
 export const CLIENT_ID_KEY = "infoserv2a.claire.client";

@@ -305,7 +305,8 @@ test("le briefing site contient tous les onglets et le rôle consultante IT", ()
   for (const page of knowledge.pages) {
     assert.match(briefing, new RegExp(page.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
-  assert.match(briefing, /collaboratrice numérique IT généraliste/);
+  assert.match(briefing, /experte IT et assistante de Didier/);
+  assert.match(briefing, /collaboratrice InfoServ2A/);
   assert.match(prompt, /interlocutrice professionnelle/);
   assert.match(prompt, /recentres vers InfoServ2A et l’IT/);
   assert.match(prompt, /pas la recette/);
@@ -319,7 +320,7 @@ test("le briefing site contient tous les onglets et le rôle consultante IT", ()
   assert.match(prompt, /reste silencieuse/);
   assert.match(prompt, /Ne dis pas que tu attends le site/);
   assert.match(prompt, /mode par défaut est conseil/i);
-  assert.match(CLAIRE_WELCOME, /Moi c’est Claire, collaboratrice numérique IT d’InfoServ2A/);
+  assert.match(CLAIRE_WELCOME, /Moi c’est Claire, experte IT et assistante de Didier/);
   assert.doesNotMatch(CLAIRE_WELCOME, /uniquement dans l’informatique/);
   assert.doesNotMatch(CLAIRE_WELCOME, /De quoi avez-vous besoin/);
   assert.match(prompt, /Jamais de phrase du type/);

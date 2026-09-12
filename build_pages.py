@@ -6,8 +6,8 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-ASSET_V = "20260912-combo3star-listen-v1"
-MED_ASSET_V = "20260912-combo3star-listen-v1"
+ASSET_V = "20260912-claire-titre-opt3-v1"
+MED_ASSET_V = "20260912-claire-titre-opt3-v1"
 BRAND = '<span class="brand-name">INFOSERV2A</span>'
 HEADER_MARK_START = "<!-- chrome:header -->"
 HEADER_MARK_END = "<!-- /chrome:header -->"
@@ -44,6 +44,10 @@ OFFRES = {
 }
 
 SEO = {
+    "claire.html": {
+        "title": "Claire — Experte IT &amp; assistante de Didier",
+        "description": "Collaboratrice InfoServ2A · conseil et accompagnement",
+    },
     "contact.html": {
         "title": "Contact — InfoServ2A à Porto-Vecchio",
         "description": "Professionnels du Sud Corse et particuliers : décrivez votre besoin, je vous accompagne. Du lundi au samedi, de 9 h à 17 h.",

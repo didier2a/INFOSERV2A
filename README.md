@@ -10,7 +10,7 @@ Site professionnel d'InfoServ2A, relié à Cloudflare Workers Builds. La branche
 
 Environnement de validation Cloudflare : `https://infoserv2a.infoserv2a.workers.dev/`.
 
-Preview Claire (cette branche) : `https://cursor-claire-it-only-8f54-infoserv2a.infoserv2a.workers.dev/?claire=1`.
+Preview Claire après déploiement préprod : `https://infoserv2a-claire-v3-preproduction.infoserv2a.workers.dev/?claire=1`.
 
 Déploiement manuel de Claire en **PREPROD uniquement** :
 
@@ -21,7 +21,7 @@ npx wrangler deploy --config wrangler.preprod.jsonc
 Cette commande cible `infoserv2a-claire-v3-preproduction` sur `workers.dev`. Ne pas utiliser
 `wrangler.jsonc` et ne pas publier `www.infoserv2a.pro` pour valider Claire.
 Le correctif d’écoute préprod doit répondre avec
-`X-InfoServ2A-Preview: 20260912-combo3star-listen-v1`.
+`X-InfoServ2A-Preview: 20260912-claire-titre-opt3-v1`.
 
 Le domaine public `https://infoserv2a.pro` pointe encore vers **GitHub Pages** (DNS OVH). LiveAvatar n’y démarre pas : Pages ne sert pas `/api/liveavatar-session`. Pour transférer l’URL vers le Worker Cloudflare (sans casser l’e-mail OVH), suivre `docs/activer-claire-sur-infoserv2a-pro.md`.
 
@@ -50,9 +50,9 @@ http://localhost:8000
 - `data/` — contenus JSON (services, réalisations, FAQ)
 - `partials/` — header et footer de référence (également intégrés dans chaque page pour fonctionner sans injection JavaScript)
 
-## Claire Live Companion — aidante Live Avatar
+## Claire — Experte IT & assistante de Didier
 
-Le site intègre Claire, **aidante Live Avatar** mobile-first, sans exposer de secret :
+Claire est **Collaboratrice InfoServ2A · conseil et accompagnement**. Sa présence Live Avatar mobile-first n’expose aucun secret :
 
 - arrivée immersive avec la même Claire verticale que Pocket Guide, puis scène plein écran ou rail guidé occupant 38 % de l’écran sur ordinateur ;
 - sur mobile 9:16, Claire conserve une scène haute et le site défile en dessous ; aucune bulle de support en bas à droite n’est utilisée ;

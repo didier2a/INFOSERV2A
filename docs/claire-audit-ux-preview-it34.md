@@ -1,7 +1,7 @@
 # Audit UX / cybernétique — preview Claire it34
 
 **Date :** 4 septembre 2026  
-**Cible testée :** [preview devis](https://cursor-claire-send-email-8f54-infoserv2a.infoserv2a.workers.dev/devis.html?claire=1) · commit `8fe02b5` · assets **20260904-it34** · contexte LiveAvatar **Aidant 1.27**  
+**Cible testée :** [preview devis](https://cursor-claire-send-email-8f54-infoserv2a.infoserv2a.workers.dev/devis.html?claire=1) · commit `8fe02b5` · assets **20260904-it34** · contexte LiveAvatar **Claire 1.27**
 **Schémas Figma / FigJam :** [board parcours + états + séquence](https://www.figma.com/board/y0THPsd9vQF5zF8Twf34a0)  
 **Méthode :** desktop ~1280×800 + mobile 390×844 + curl API + lecture des boucles (`claire-companion.js`, mémoire, envoi).  
 **Voix LiveAvatar :** tentée. Connexion **interrompue** dans le labo (micro automate + session coupée). La recette vocale **humaine** (Didier, téléphone) reste le contre-test.
@@ -107,7 +107,7 @@ Poids = importance visiteur. Note / 100. Score = poids × note. **Somme des poid
 ### 3.1 Desktop — ce qui marche
 
 - Claire à gauche, site à droite, boutons **Parler à Claire** / **Conversation** / **Ranger Claire**.
-- **Ranger** → barre bas « Reprendre avec Claire · Aidante LiveAvatar + OpenAI Realtime » + **Ouvrir**. Ça marche.
+- **Ranger** → barre bas « Reprendre avec Claire · Collaboratrice InfoServ2A · en direct » + **Ouvrir**. Ça marche.
 - Sur `/devis`, les 6 champs étaient déjà remplis (mémoire navigateur) : Didier Aouizerate, 07 45 15 60 76, infoserv2a@gmail.com, Porto-Vecchio, Vidéosurveillance, « Caméra 4G hangar isolé… ».
 - CONTEXTE cochait les 6 lignes quand le rail n’était pas en plein écran.
 
@@ -185,7 +185,7 @@ C’est ça, « le plus fluide » : **zéro mode à apprendre**.
 
 ### Déjà dans le repo
 
-`data/claire-aidant-figma.json` + `claire-aidant-figma.html` (8 frames aidante). **À mettre à jour** avec F4 / F5 / F6 : ils n’existent pas encore.
+`data/claire-aidant-figma.json` + `claire-aidant-figma.html` (8 frames Claire). **À mettre à jour** avec F4 / F5 / F6 : ils n’existent pas encore.
 
 ---
 

@@ -73,7 +73,7 @@ async function health(page){return page.evaluate(()=>{
   await check('Claire : présentation sans microphone puis échange volontaire',async()=>{
     await page.locator('.site-nav>a[href="claire.html"]').click();await page.waitForURL('**/claire.html');await pause(650);
     await page.locator('[data-med-claire="presentation"]').first().click();await pause(400);
-    let calls=await page.evaluate(()=>window.__qaCalls);assert.equal(calls.microphone,0);assert.equal(calls.speak.length,1);assert.ok(calls.speak[0].toLowerCase().includes("l'assistante virtuelle it d'infoserv2a"));assert.ok(calls.connect.every(x=>x.microphone===false));
+    let calls=await page.evaluate(()=>window.__qaCalls);assert.equal(calls.microphone,0);assert.equal(calls.speak.length,1);assert.ok(calls.speak[0].toLowerCase().includes("experte it et assistante de didier"));assert.ok(calls.connect.every(x=>x.microphone===false));
     assert.equal(await page.evaluate(()=>window.InfoServClaire.companion.provider.listening),false);
     await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));await pause(100);
     assert.equal(await page.evaluate(()=>window.__qaCalls.microphone),0);

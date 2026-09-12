@@ -1,10 +1,10 @@
 {
   "version": "1.0.0",
   "site": "InfoServ2A",
-  "updated": "2026-09-10",
+  "updated": "2026-09-12",
   "identity": {
     "companion": "Claire",
-    "role": "Collaboratrice numérique IT généraliste d’InfoServ2A",
+    "role": "Experte IT & assistante de Didier · Collaboratrice InfoServ2A",
     "phone": "07 45 15 60 76",
     "email": "contact@infoserv2a.pro",
     "area": "Porto-Vecchio et Corse-du-Sud, de Solenzara à Bonifacio",
@@ -507,15 +507,15 @@
     {
       "id": "claire-presentation",
       "href": "claire.html",
-      "title": "Claire, votre assistante IT",
-      "summary": "Je vous écoute, j'éclaire les choix techniques et je vous aide à préparer votre échange avec Didier.",
+      "title": "Claire — Experte IT & assistante de Didier",
+      "summary": "Collaboratrice InfoServ2A · conseil et accompagnement",
       "keywords": [
         "claire",
         "assistante",
         "présentation",
-        "complice",
+        "conseil",
         "binôme",
-        "virtuelle"
+        "accompagnement"
       ],
       "prompts": [
         "Présentez-moi Claire",
