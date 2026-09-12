@@ -293,6 +293,34 @@ test("ouvrir l’onglet Claire reprend toujours le micro déjà autorisé", asyn
   assert.ok(calls.includes("status:listening"));
 });
 
+test("ouvrir Claire ne déclare pas la reprise réussie si la sortie avatar reste muette", async () => {
+  globalThis.matchMedia = () => ({ matches: true });
+  const calls = [];
+  const context = {
+    audioEnabled: false,
+    provider: {
+      connected: true,
+      streamReady: true,
+      listening: false,
+      mediaAudible: false,
+      async ensureActiveListening() {
+        calls.push("listen");
+        this.listening = true;
+        return false;
+      }
+    },
+    hideMobileDiscovery() {},
+    applyMobileUxEvent() {},
+    setState() {},
+    setStatus(value) { calls.push(`status:${value}`); },
+    async connectLiveSession() { calls.push("connect"); }
+  };
+  const { ClaireCompanion } = await import("../assets/js/claire-companion.js");
+  const opened = await ClaireCompanion.prototype.openMobileClaire.call(context);
+  assert.equal(opened, false);
+  assert.deepEqual(calls, ["listen", "connect"]);
+});
+
 test("taper le médaillon reprend l’écoute après Rester en PiP", async () => {
   globalThis.matchMedia = () => ({ matches: true });
   const calls = [];
