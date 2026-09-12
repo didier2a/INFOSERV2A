@@ -529,10 +529,10 @@ export function inferService(text = "") {
   if (!query) return "";
   if (/\bnis\s*2\b/.test(query)) return "audit-nis2";
   if (/\b(camera|cameras|videosurveillance|alarme)\b/.test(query)) return "videosurveillance";
+  if (/\b(site web|site internet|creer un site|refonte|hebergement)\b/.test(query)) return "creation-site-web";
   if (/\b(reseau|reseaux|wi[\s-]?fi|wifi|internet|routeur|borne|ethernet|cablage|connexion)\b/.test(query)) {
     return "reseaux-wifi";
   }
-  if (/\b(site web|site internet|creer un site|refonte|hebergement)\b/.test(query)) return "creation-site-web";
   if (/\b(recuperation|disque|donnees perdues|ssd|hdd)\b/.test(query)) return "recuperation-donnees";
   if (/\b(cyber|ransomware|pare[- ]feu|antivirus|intelligence artificielle|\bia\b)\b/.test(query)) {
     return "cybersecurite-ia";
@@ -988,7 +988,7 @@ export function extractFactsFromUtterance(text = "") {
   const phone = raw.match(/(?:\+33|0033|0)\s*[1-9](?:[\s.-]?\d{2}){4}/);
   if (phone) facts.phone = compact(phone[0]);
 
-  const name = raw.match(/(?:je m['’]appelle|mon nom est|moi c['’]est|je suis(?!\s+(?:de|à|a|au|aux|en)\b))\s+([A-Za-zÀ-ÿ'’-]+(?:\s+[A-Za-zÀ-ÿ'’-]+){0,2})/i);
+  const name = raw.match(/(?:je m['’]appelle|mon nom est|moi c['’]est|je suis(?!\s+(?:de|à|a|au|aux|en)(?:\s|$)))\s+([A-Za-zÀ-ÿ'’-]+(?:\s+[A-Za-zÀ-ÿ'’-]+){0,2})/i);
   if (name) facts.name = compact(name[1]);
 
   const city = raw.match(/(?:j['’]habite(?:\s+(?:à|a|au|aux|en))?\s+|je suis (?:de|à|a|au|aux|en)\s+|je vis (?:à|a)\s+)([A-Za-zÀ-ÿ'’-]+(?:[- ][A-Za-zÀ-ÿ'’-]+){0,2})/i);
@@ -1225,10 +1225,8 @@ export function validateQuoteDraft(memory = {}, extras = {}) {
   const validation = validateQuoteFields(quotePrefillFromMemory(memory, extras));
   const rejected = normalizeDraft(memory.draft).invalid;
   for (const [field, message] of Object.entries(rejected)) {
-    if (!validation.fieldErrors[field]) {
-      validation.invalid.push(field);
-      validation.fieldErrors[field] = message;
-    }
+    validation.invalid.push(field);
+    validation.fieldErrors[field] = message;
   }
   validation.invalid = [...new Set(validation.invalid)];
   validation.valid = validation.invalid.length === 0;
@@ -1328,7 +1326,7 @@ export function validateContactDraft(memory = {}, extras = {}) {
   );
   const validation = validateContactFields({ name, email, phone, message });
   for (const [field, error] of Object.entries(draft.invalid)) {
-    if (field in CONTACT_SCHEMA && !validation.fieldErrors[field]) {
+    if (field in CONTACT_SCHEMA) {
       validation.invalid.push(field);
       validation.fieldErrors[field] = error;
     }
