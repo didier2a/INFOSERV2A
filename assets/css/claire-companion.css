@@ -2478,6 +2478,7 @@ body.nav-just-closed [data-claire-start] {
     min-height: 0 !important;
     max-height: none !important;
     overflow: hidden !important;
+    border-radius: 0 !important;
   }
 
   body[data-claire-mobile-surface="guided"] .claire-experience__layout {
@@ -2492,7 +2493,15 @@ body.nav-just-closed [data-claire-start] {
     height: 100% !important;
     min-height: 0 !important;
     max-height: none !important;
+    border-radius: 0 !important;
     box-shadow: 0 10px 32px rgba(3, 18, 30, 0.24);
+  }
+
+  body[data-claire-mobile-surface="guided"] .claire-live-stage__poster,
+  body[data-claire-mobile-surface="guided"] .claire-avatar__video,
+  body[data-claire-mobile-surface="guided"] .claire-live-stage__shade {
+    border-radius: 0 !important;
+    clip-path: none !important;
   }
 
   body[data-claire-mobile-surface="guided"] .claire-live-stage__poster,

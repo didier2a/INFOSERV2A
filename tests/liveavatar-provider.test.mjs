@@ -521,6 +521,48 @@ test("SESSION_STOPPED propose de relancer sans arrêter le site", async () => {
   await provider.stop();
 });
 
+test("la reprise après PiP réactive un micro autorisé mais muet", async () => {
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-pip-resume" })
+  }).install({ video });
+
+  await provider.connect({ microphone: true });
+  const session = globalThis.__infoservFakeSession;
+  await provider.pauseListening();
+  const startsBeforeResume = session.listenStarts || 0;
+  assert.equal(provider.listening, false);
+  assert.equal(session.voiceChat.isMuted, true);
+
+  assert.equal(await provider.ensureActiveListening(), true);
+  assert.equal(provider.listening, true);
+  assert.equal(session.voiceChat.isMuted, false);
+  assert.ok((session.listenStarts || 0) > startsBeforeResume);
+  await provider.stop();
+});
+
+test("la reprise recrée une session arrêtée avant de réécouter", async () => {
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-zap-reconnect" })
+  }).install({ video });
+
+  await provider.connect({ microphone: true });
+  const stoppedSession = globalThis.__infoservFakeSession;
+  stoppedSession.emit("session-stopped");
+  assert.equal(provider.connected, false);
+  assert.equal(provider.listening, false);
+
+  assert.equal(await provider.ensureActiveListening(), true);
+  assert.notEqual(globalThis.__infoservFakeSession, stoppedSession);
+  assert.equal(provider.connected, true);
+  assert.equal(provider.streamReady, true);
+  assert.equal(provider.listening, true);
+  await provider.stop();
+});
+
 test("le transport retient la durée de session réellement accordée", async () => {
   const video = fakeVideo();
   const provider = new InfoServ2ALiveAvatarProvider({
