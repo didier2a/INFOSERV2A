@@ -1,4 +1,4 @@
-import { QUOTE_FIELD_LABELS, joinFrenchList } from "./claire-session-memory.mjs?v=20260912-mobile-d2-c1-v1";
+import { QUOTE_FIELD_LABELS, joinFrenchList } from "./claire-session-memory.mjs?v=20260912-claire-cde-v1";
 
 export const SITE_EMAIL_PATH = "/api/send-email";
 export const EMAIL_SEND_TIMEOUT_MS = 12000;
@@ -14,6 +14,7 @@ function emptyEmailResult(error = "") {
     replyTo: "",
     businessCopy: false,
     missing: [],
+    fieldErrors: {},
     error,
     message: "",
     provider: ""
@@ -42,6 +43,7 @@ export async function postSiteEmail(payload, fetchImpl = globalThis.fetch) {
       replyTo: data.replyTo || "",
       businessCopy: Boolean(data.businessCopy),
       missing: Array.isArray(data.missing) ? data.missing : [],
+      fieldErrors: data.fieldErrors && typeof data.fieldErrors === "object" ? data.fieldErrors : {},
       error: data.error || "",
       message: data.message || "",
       provider: data.provider || ""
@@ -89,6 +91,20 @@ export function describeEmailSendOutcome(outcome) {
   const copy = output.businessCopy ? " Une copie a aussi été transmise à InfoServ2A." : "";
   const missing = Array.isArray(output.missing) ? output.missing : [];
   if (missing.length) {
+    const field = missing[0];
+    const questions = {
+      name: "Quel est votre nom et prénom ?",
+      phone: "Quel est votre numéro de téléphone ?",
+      email: "Quelle est votre adresse e-mail corrigée ?",
+      city: "Dans quelle commune êtes-vous ?",
+      service: "Quel type de service souhaitez-vous ?",
+      description: "Décrivez précisément votre besoin.",
+      message: "Quel message souhaitez-vous transmettre ?"
+    };
+    const fieldError = output.fieldErrors?.[field];
+    if (fieldError) {
+      return `Je n’ai pas envoyé. ${fieldError} ${questions[field] || "Corrigez ce champ avant de réessayer."}`;
+    }
     return `Je n’ai pas envoyé. Il manque encore ${missingFieldSpeech(missing)}.`;
   }
   if (result.tool === "prefill_quote") {

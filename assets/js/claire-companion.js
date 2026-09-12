@@ -20,7 +20,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260912-mobile-d2-c1-v1";
+} from "./claire-core.mjs?v=20260912-claire-cde-v1";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -37,6 +37,9 @@ import {
   shouldAnnounceQuoteTruth,
   rememberPage,
   rememberTurn,
+  rememberDraftField,
+  rememberAskedQuoteField,
+  rejectDraftFields,
   rememberSuccessfulSend,
   beginNewQuoteAfterSend,
   quoteExtrasFromDocument,
@@ -46,7 +49,7 @@ import {
   alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260912-mobile-d2-c1-v1";
+} from "./claire-session-memory.mjs?v=20260912-claire-cde-v1";
 import {
   CLAIRE_ACTION_MODES,
   actionDraftReady,
@@ -58,18 +61,18 @@ import {
   isQuoteResendRequest,
   shouldDebounceVoiceCommand,
   requestedActionMode
-} from "./claire-actions-v1.mjs?v=20260912-mobile-d2-c1-v1";
+} from "./claire-actions-v1.mjs?v=20260912-claire-cde-v1";
 import {
   describeEmailSendOutcome,
   didEmailSendThisTurn
-} from "./site-email.mjs?v=20260912-mobile-d2-c1-v1";
+} from "./site-email.mjs?v=20260912-claire-cde-v1";
 import {
   MOBILE_SCENE_HOLD_MS,
   createMobileSceneState,
   mobileSceneActive,
   reduceMobileScene,
   sceneStatusLabel
-} from "./claire-mobile-scene.mjs?v=20260912-mobile-d2-c1-v1";
+} from "./claire-mobile-scene.mjs?v=20260912-claire-cde-v1";
 import {
   MOBILE_PIP_EDGE_MAGNET_PX,
   MOBILE_PIP_STORAGE_KEY,
@@ -83,20 +86,20 @@ import {
   mobilePipPointFromPercent,
   mobileUxLocksScroll,
   reduceMobileUx
-} from "./claire-mobile-ux.mjs?v=20260912-mobile-d2-c1-v1";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260912-mobile-d2-c1-v1";
+} from "./claire-mobile-ux.mjs?v=20260912-claire-cde-v1";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260912-claire-cde-v1";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260912-mobile-d2-c1-v1";
-import "./contact.js?v=20260912-mobile-d2-c1-v1";
-import "./devis.js?v=20260912-mobile-d2-c1-v1";
+} from "./claire-site-runtime-adapter.mjs?v=20260912-claire-cde-v1";
+import "./contact.js?v=20260912-claire-cde-v1";
+import "./devis.js?v=20260912-claire-cde-v1";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
 const LOCAL_TEXT_FALLBACK = "Le direct vocal est indisponible, mais je peux continuer par écrit pour vous orienter dans les services InfoServ2A. Décrivez votre besoin informatique ou demandez un onglet précis.";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260912-mobile-d2-c1-v1";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260912-mobile-d2-c1-v1";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260912-claire-cde-v1";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260912-claire-cde-v1";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -1033,6 +1036,12 @@ export class ClaireCompanion {
     });
     this.bindResponsiveShell();
     document.addEventListener("focusin", (event) => this.handleSiteFieldFocus(event));
+    document.addEventListener("input", (event) => this.handleFormDraftEdit(event));
+    document.addEventListener("change", (event) => this.handleFormDraftEdit(event));
+    document.addEventListener("infoserv:email-rejected", (event) => {
+      const detail = event.detail || {};
+      this.rememberRejectedFields(detail.fields, detail.fieldErrors);
+    });
     document.addEventListener("focusout", () => {
       globalThis.setTimeout(() => this.syncViewportShell(), 0);
     });
@@ -1885,7 +1894,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260912-mobile-d2-c1-v1");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260912-claire-cde-v1");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
@@ -1965,6 +1974,79 @@ export class ClaireCompanion {
 
   syncVisibleForms(memory = loadSessionMemory()) {
     return this.siteAdapter?.surface?.syncVisibleForms?.(memory) || { quote: false, contact: false };
+  }
+
+  formDraftField(target) {
+    const ids = {
+      "devis-name": "name",
+      "devis-phone": "phone",
+      "devis-email": "email",
+      "devis-city": "city",
+      "devis-service": "service",
+      "devis-description": "description",
+      "contact-name": "name",
+      "contact-phone": "phone",
+      "contact-email": "email",
+      "contact-city": "city",
+      "contact-message": "message"
+    };
+    return ids[target?.id] || (target?.name === "audience" ? "status" : "");
+  }
+
+  handleFormDraftEdit(event) {
+    const target = event?.target;
+    const field = this.formDraftField(target);
+    if (!field || target?.dataset?.claireWriteSource === "programmatic") return;
+    const value = target?.type === "radio"
+      ? (target.checked ? target.value : "")
+      : target?.value;
+    if (target?.type === "radio" && !target.checked) return;
+    delete target?.dataset?.claireServerRejected;
+    const memory = rememberDraftField(field, value, "typed");
+    this.confirmationArmed = "";
+    this.updateLiveContext();
+    this.renderQuoteQuest(memory, this.siteAdapter?.snapshot?.() || {});
+  }
+
+  rememberInterviewPrompt(update = {}) {
+    rememberAskedQuoteField(update.ready ? "" : update.askedField || "");
+    if (!update.ready && update.askedField) {
+      this.siteAdapter?.surface?.applyFieldErrors?.(
+        this.actionMode === CLAIRE_ACTION_MODES.CONTACT ? "contact" : "devis",
+        { missing: [update.askedField], fieldErrors: update.fieldErrors || {} }
+      );
+    }
+    return update;
+  }
+
+  rememberRejectedFields(fields = [], fieldErrors = {}) {
+    const rejected = [...new Set(Array.isArray(fields) ? fields : [])];
+    if (!rejected.length) return loadSessionMemory();
+    const memory = rejectDraftFields(rejected, fieldErrors);
+    this.confirmationArmed = "";
+    this.updateLiveContext();
+    return memory;
+  }
+
+  applyRejectedEmailResult(outcome) {
+    const failed = (outcome?.results || []).find((item) => (
+      (item.tool === "submit_quote" || item.tool === "compose_email")
+      && item.output?.sent !== true
+      && (
+        item.output?.rejectedFields?.length
+        || item.output?.missing?.length
+        || Object.keys(item.output?.fieldErrors || {}).length
+      )
+    ));
+    if (!failed) return [];
+    const output = failed.output || {};
+    const fields = [
+      ...(Array.isArray(output.rejectedFields) ? output.rejectedFields : []),
+      ...(Array.isArray(output.missing) ? output.missing : []),
+      ...Object.keys(output.fieldErrors || {})
+    ];
+    this.rememberRejectedFields(fields, output.fieldErrors || {});
+    return [...new Set(fields)];
   }
 
   updateLiveContext() {
@@ -2245,7 +2327,7 @@ export class ClaireCompanion {
       if (exactConfirmation) {
         if (source === "liveavatar") this.provider?.bargeIn?.("email-send");
         if (!actionDraftReady(this.actionMode, memory)) {
-          const update = interviewUpdate(this.actionMode, memory);
+          const update = this.rememberInterviewPrompt(interviewUpdate(this.actionMode, memory));
           this.confirmationArmed = "";
           this.syncVisibleForms(memory);
           const speech = `Je n’ai pas envoyé. ${update.speech}`;
@@ -2257,7 +2339,7 @@ export class ClaireCompanion {
         this.confirmationArmed = this.actionMode;
         this.syncVisibleForms(memory);
       } else if (!requestedMode) {
-        const update = interviewUpdate(this.actionMode, memory);
+        const update = this.rememberInterviewPrompt(interviewUpdate(this.actionMode, memory));
         this.confirmationArmed = update.ready ? this.actionMode : "";
         this.syncVisibleForms(memory);
         this.updateLiveContext();
@@ -2376,7 +2458,7 @@ export class ClaireCompanion {
       }
       if (requestedMode) {
         const memory = hydrateQuoteMemoryFromForm();
-        const update = interviewUpdate(this.actionMode, memory);
+        const update = this.rememberInterviewPrompt(interviewUpdate(this.actionMode, memory));
         this.confirmationArmed = update.ready ? this.actionMode : "";
         this.syncVisibleForms(memory);
         const speech = `${actionOpeningSpeech(this.actionMode)} ${update.speech}`;
@@ -2402,6 +2484,8 @@ export class ClaireCompanion {
           inbox: sentResult?.output?.inbox || "",
           replyTo: sentResult?.output?.replyTo || ""
         });
+      } else {
+        this.applyRejectedEmailResult(outcome);
       }
       this.setStatus(
         "ready",

@@ -1,3 +1,11 @@
+import {
+  CONTACT_SCHEMA,
+  QUOTE_SCHEMA,
+  normalizeSchemaValue,
+  validateContactFields,
+  validateQuoteFields
+} from "./form-schema.mjs?v=20260912-claire-cde-v1";
+
 export const SESSION_MEMORY_KEY = "infoserv2a.claire.memory";
 export const CLIENT_ID_KEY = "infoserv2a.claire.client";
 export const QUOTE_REQUIRED_FIELDS = Object.freeze([
@@ -25,6 +33,7 @@ export const QUOTE_FIELD_LABELS = Object.freeze({
 
 const SERVICE_LABELS = Object.freeze({
   "videosurveillance": "vidéosurveillance",
+  "reseaux-wifi": "réseaux et Wi-Fi",
   "creation-site-web": "création de site web",
   "maintenance-distance": "maintenance à distance",
   "configuration-domicile": "configuration à domicile",
@@ -64,6 +73,17 @@ function folded(value = "") {
 }
 
 export const PLACEHOLDER_NEED = "À préciser à l’oral";
+export const DRAFT_HUMAN_SOURCES = Object.freeze(["oral", "typed"]);
+const DRAFT_FIELDS = Object.freeze([
+  "name",
+  "phone",
+  "email",
+  "city",
+  "status",
+  "service",
+  "description",
+  "message"
+]);
 
 export function isPlaceholderNeed(value = "") {
   return folded(value) === "a preciser a l oral";
@@ -84,7 +104,7 @@ export function firstUsefulText(max, ...values) {
 
 export function emptyMemory() {
   return {
-    version: 3,
+    version: 4,
     startedAt: 0,
     updatedAt: 0,
     clientId: "",
@@ -101,6 +121,12 @@ export function emptyMemory() {
     visits: [],
     lastSend: null,
     quoteEpoch: 0,
+    draft: {
+      values: {},
+      provenance: {},
+      invalid: {},
+      askedField: ""
+    },
     summary: ""
   };
 }
@@ -121,6 +147,47 @@ function normalizeStoredQuoteDraft(value = {}) {
     service: compact(value.service).slice(0, 80),
     description: usefulText(value.description || value.need, 4000)
   };
+}
+
+function normalizeDraft(value = {}) {
+  const rawValues = value?.values || {};
+  const rawProvenance = value?.provenance || {};
+  const rawInvalid = value?.invalid || {};
+  const values = {};
+  const provenance = {};
+  const invalid = {};
+  for (const field of DRAFT_FIELDS) {
+    const definition = QUOTE_SCHEMA[field] || CONTACT_SCHEMA[field] || { max: 4000 };
+    const normalized = normalizeSchemaValue(rawValues[field], definition);
+    if (normalized) values[field] = normalized;
+    const source = compact(rawProvenance[field]?.source);
+    const updatedAt = Math.max(0, Number(rawProvenance[field]?.updatedAt) || 0);
+    if (source && updatedAt) provenance[field] = { source, updatedAt };
+    const error = compact(rawInvalid[field]).slice(0, 240);
+    if (error) invalid[field] = error;
+  }
+  const askedField = DRAFT_FIELDS.includes(value?.askedField) ? value.askedField : "";
+  return { values, provenance, invalid, askedField };
+}
+
+function mergeDrafts(primary = {}, secondary = {}) {
+  const first = normalizeDraft(primary);
+  const second = normalizeDraft(secondary);
+  const merged = { values: {}, provenance: {}, invalid: {}, askedField: first.askedField || second.askedField };
+  for (const field of DRAFT_FIELDS) {
+    const firstStamp = Number(first.provenance[field]?.updatedAt) || 0;
+    const secondStamp = Number(second.provenance[field]?.updatedAt) || 0;
+    const preferred = firstStamp >= secondStamp ? first : second;
+    const fallback = preferred === first ? second : first;
+    const value = preferred.values[field] ?? fallback.values[field];
+    const provenance = preferred.provenance[field] || fallback.provenance[field];
+    const error = preferred.invalid[field]
+      || (!preferred.values[field] && !preferred.provenance[field] ? fallback.invalid[field] : "");
+    if (value) merged.values[field] = value;
+    if (provenance) merged.provenance[field] = provenance;
+    if (error) merged.invalid[field] = error;
+  }
+  return merged;
 }
 
 function normalizeLastSend(value = null) {
@@ -161,7 +228,7 @@ export function normalizeMemory(value = {}) {
       .slice(-MAX_VISITS)
     : [];
   return {
-    version: 3,
+    version: 4,
     startedAt: Number(value.startedAt) || 0,
     updatedAt: Number(value.updatedAt) || 0,
     clientId: compact(value.clientId).slice(0, 80),
@@ -178,6 +245,7 @@ export function normalizeMemory(value = {}) {
     visits,
     lastSend: normalizeLastSend(value.lastSend),
     quoteEpoch: Math.max(0, Number(value.quoteEpoch) || 0),
+    draft: normalizeDraft(value.draft),
     summary: compact(value.summary).slice(0, 400) || fallback.summary
   };
 }
@@ -195,7 +263,7 @@ function readStore(storage) {
     const raw = storage?.getItem?.(SESSION_MEMORY_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (!parsed || ![1, 2, 3].includes(parsed.version)) return null;
+    if (!parsed || ![1, 2, 3, 4].includes(parsed.version)) return null;
     return normalizeMemory(parsed);
   } catch {
     return null;
@@ -267,7 +335,8 @@ export function mergeMemories(primary = {}, secondary = {}) {
     visitCount: Math.max(Number(newer.visitCount) || 0, Number(older.visitCount) || 0),
     startedAt: Math.min(newer.startedAt || now(), older.startedAt || now()),
     turns: newerEpoch === olderEpoch ? mergeTurns(older.turns, newer.turns) : (needFrom.turns || []),
-    visits: mergeVisits(older.visits, newer.visits)
+    visits: mergeVisits(older.visits, newer.visits),
+    draft: mergeDrafts(newer.draft, older.draft)
   });
 }
 
@@ -358,12 +427,112 @@ export function archiveCurrentVisit(storage, persistent) {
   return saveSessionMemory(memory, ...loadArgs);
 }
 
+function applyDraftValueToMemory(memory, field, value) {
+  if (["name", "phone", "email", "city"].includes(field)) {
+    memory.visitor = normalizeVisitor({ ...memory.visitor, [field]: value });
+  } else if (field === "service") {
+    memory.service = compact(value).slice(0, 80);
+  } else if (field === "status") {
+    memory.status = compact(value).slice(0, 80);
+  } else if (field === "description" || field === "message") {
+    if (!value) {
+      memory.need = "";
+    } else if (!isClaireSynthesis(value) && !looksLikeConversationDump(value, memory)) {
+      memory.need = usefulText(value, 280);
+    }
+  }
+}
+
+export function applyDraftPatch(memory = {}, patch = {}, {
+  source = "oral",
+  at = now(),
+  clearInvalid = true
+} = {}) {
+  const next = normalizeMemory(memory);
+  const draft = normalizeDraft(next.draft);
+  const humanSource = DRAFT_HUMAN_SOURCES.includes(source);
+  for (const field of DRAFT_FIELDS) {
+    if (!Object.prototype.hasOwnProperty.call(patch, field)) continue;
+    const definition = QUOTE_SCHEMA[field] || CONTACT_SCHEMA[field] || { max: 4000 };
+    const value = normalizeSchemaValue(patch[field], definition);
+    const previous = draft.provenance[field] || {};
+    const previousIsHuman = DRAFT_HUMAN_SOURCES.includes(previous.source);
+    if (source === "programmatic" && previousIsHuman) continue;
+    if (Number(previous.updatedAt) > Number(at)) continue;
+    if (value) draft.values[field] = value;
+    else delete draft.values[field];
+    draft.provenance[field] = { source: humanSource ? source : compact(source) || "programmatic", updatedAt: Number(at) || now() };
+    if (clearInvalid) delete draft.invalid[field];
+    applyDraftValueToMemory(next, field, value);
+  }
+  next.draft = draft;
+  next.summary = buildSummary(next);
+  return next;
+}
+
+export function rememberDraftField(field, value, source = "typed", storage, persistent) {
+  if (!DRAFT_FIELDS.includes(field)) return loadSessionMemory(storage, persistent);
+  const storeArgs = arguments.length <= 3 ? [] : arguments.length === 4 ? [storage] : [storage, persistent];
+  const memory = applyDraftPatch(loadSessionMemory(...storeArgs), { [field]: value }, { source });
+  return saveSessionMemory(memory, ...storeArgs);
+}
+
+export function rememberAskedQuoteField(field = "", storage, persistent) {
+  const storeArgs = arguments.length <= 1 ? [] : arguments.length === 2 ? [storage] : [storage, persistent];
+  const memory = loadSessionMemory(...storeArgs);
+  memory.draft = normalizeDraft(memory.draft);
+  memory.draft.askedField = DRAFT_FIELDS.includes(field) ? field : "";
+  return saveSessionMemory(memory, ...storeArgs);
+}
+
+export function rejectDraftFields(fields = [], fieldErrors = {}, storage, persistent) {
+  const storeArgs = arguments.length <= 2 ? [] : arguments.length === 3 ? [storage] : [storage, persistent];
+  const memory = loadSessionMemory(...storeArgs);
+  memory.draft = normalizeDraft(memory.draft);
+  const rejected = [...new Set(fields)].filter((field) => DRAFT_FIELDS.includes(field));
+  for (const field of rejected) {
+    delete memory.draft.values[field];
+    memory.draft.invalid[field] = compact(fieldErrors[field])
+      || `Corrigez ${QUOTE_FIELD_LABELS[field] || field}.`;
+    applyDraftValueToMemory(memory, field, "");
+  }
+  memory.draft.askedField = rejected[0] || "";
+  return saveSessionMemory(memory, ...storeArgs);
+}
+
+function slotFact(text = "", askedField = "", explicitFacts = {}) {
+  const raw = compact(text);
+  if (!raw || !DRAFT_FIELDS.includes(askedField)) return {};
+  if (/\b(?:envoie|transmets|soumets)\b.{0,40}\b(?:devis|contact|message)\b/.test(folded(raw))) {
+    return {};
+  }
+  const explicitKeys = ["name", "phone", "email", "city", "service", "status"]
+    .filter((field) => compact(explicitFacts[field]));
+  if (explicitKeys.length) return explicitFacts;
+  if (askedField === "name" && /^[A-Za-zÀ-ÿ'’-]+(?:\s+[A-Za-zÀ-ÿ'’-]+){1,3}$/.test(raw)) {
+    return { name: raw };
+  }
+  if (askedField === "phone") return { phone: raw };
+  if (askedField === "email") return { email: extractSpokenEmail(raw) || raw };
+  if (askedField === "city") {
+    const city = extractKnownCity(raw)
+      || raw.replace(/^(?:je (?:suis|vis)|j['’]habite)\s+(?:à|a|de|au|aux|en)\s+/i, "");
+    return { city: compact(city) };
+  }
+  if (askedField === "service") return { service: inferService(raw) || raw };
+  if (askedField === "description" || askedField === "message") return { [askedField]: raw };
+  return {};
+}
+
 export function inferService(text = "") {
   const query = folded(text);
   if (!query) return "";
   if (/\bnis\s*2\b/.test(query)) return "audit-nis2";
   if (/\b(camera|cameras|videosurveillance|alarme)\b/.test(query)) return "videosurveillance";
   if (/\b(site web|site internet|creer un site|refonte|hebergement)\b/.test(query)) return "creation-site-web";
+  if (/\b(reseau|reseaux|wi[\s-]?fi|wifi|internet|routeur|borne|ethernet|cablage|connexion)\b/.test(query)) {
+    return "reseaux-wifi";
+  }
   if (/\b(recuperation|disque|donnees perdues|ssd|hdd)\b/.test(query)) return "recuperation-donnees";
   if (/\b(cyber|ransomware|pare[- ]feu|antivirus|intelligence artificielle|\bia\b)\b/.test(query)) {
     return "cybersecurite-ia";
@@ -819,10 +988,10 @@ export function extractFactsFromUtterance(text = "") {
   const phone = raw.match(/(?:\+33|0033|0)\s*[1-9](?:[\s.-]?\d{2}){4}/);
   if (phone) facts.phone = compact(phone[0]);
 
-  const name = raw.match(/(?:je m['’]appelle|mon nom est|moi c['’]est|je suis(?!\s+(?:de|à|a|au|aux|en)\b))\s+([A-Za-zÀ-ÿ'’-]+(?:\s+[A-Za-zÀ-ÿ'’-]+){0,2})/i);
+  const name = raw.match(/(?:je m['’]appelle|mon nom est|moi c['’]est|je suis(?!\s+(?:de|à|a|au|aux|en)(?:\s|$)))\s+([A-Za-zÀ-ÿ'’-]+(?:\s+[A-Za-zÀ-ÿ'’-]+){0,2})/i);
   if (name) facts.name = compact(name[1]);
 
-  const city = raw.match(/(?:j['’]habite(?:\s+(?:à|a|au|aux|en))?\s+|je suis de\s+|je vis (?:à|a)\s+)([A-Za-zÀ-ÿ'’-]+(?:[- ][A-Za-zÀ-ÿ'’-]+){0,2})/i);
+  const city = raw.match(/(?:j['’]habite(?:\s+(?:à|a|au|aux|en))?\s+|je suis (?:de|à|a|au|aux|en)\s+|je vis (?:à|a)\s+)([A-Za-zÀ-ÿ'’-]+(?:[- ][A-Za-zÀ-ÿ'’-]+){0,2})/i);
   if (city) facts.city = compact(city[1]);
   else if (extractKnownCity(raw)) facts.city = extractKnownCity(raw);
 
@@ -878,7 +1047,26 @@ export function rememberTurn(role, text, storage, persistent) {
     text: clean,
     at: now()
   });
-  if (role === "user") memory = mergeFacts(memory, extractFactsFromUtterance(clean));
+  if (role === "user") {
+    const extracted = extractFactsFromUtterance(clean);
+    const askedField = memory.draft?.askedField || "";
+    const facts = askedField ? slotFact(clean, askedField, extracted) : extracted;
+    memory = mergeFacts(memory, facts);
+    const patch = {
+      ...Object.fromEntries(
+        ["name", "phone", "email", "city", "status", "service"]
+          .filter((field) => Object.prototype.hasOwnProperty.call(facts, field))
+          .map((field) => [field, facts[field]])
+      ),
+      ...(facts.description ? { description: facts.description } : {}),
+      ...(facts.message ? { message: facts.message } : {}),
+      ...(facts.need ? { description: facts.need } : {})
+    };
+    memory = applyDraftPatch(memory, patch, { source: "oral" });
+    if (askedField && Object.prototype.hasOwnProperty.call(patch, askedField)) {
+      memory.draft.askedField = "";
+    }
+  }
   return saveSessionMemory(memory, ...storeArgs);
 }
 
@@ -943,6 +1131,13 @@ export function beginNewQuoteAfterSend(storage, persistent) {
   memory.need = "";
   memory.service = "";
   memory.turns = [];
+  memory.draft = normalizeDraft(memory.draft);
+  for (const field of ["service", "description", "message"]) {
+    delete memory.draft.values[field];
+    delete memory.draft.provenance[field];
+  }
+  memory.draft.invalid = {};
+  memory.draft.askedField = "";
   memory.quoteEpoch = (Number(memory.quoteEpoch) || 0) + 1;
   return saveSessionMemory(memory, ...storeArgs);
 }
@@ -1008,23 +1203,42 @@ export function alreadySentSpeech(memory = {}, kind = "devis") {
 
 export function quotePrefillFromMemory(memory = {}, extras = {}) {
   const visitor = normalizeVisitor(memory.visitor);
+  const draft = normalizeDraft(memory.draft);
+  const value = (field, fallback = "") => compact(draft.values[field]) || compact(extras[field]) || compact(fallback);
+  const typedDescription = draft.provenance.description?.source === "typed"
+    ? usefulText(draft.values.description, 4000)
+    : "";
   return {
-    name: compact(extras.name) || visitor.name,
-    phone: compact(extras.phone) || visitor.phone,
-    email: compact(extras.email) || visitor.email,
-    city: compact(extras.city) || visitor.city,
-    service: compact(extras.service) || compact(memory.service),
-    description: synthesizeMailBody(memory, extras)
+    name: value("name", visitor.name),
+    phone: value("phone", visitor.phone),
+    email: value("email", visitor.email),
+    city: value("city", visitor.city),
+    service: value("service", memory.service),
+    description: typedDescription || synthesizeMailBody(memory, {
+      ...extras,
+      description: firstUsefulText(4000, extras.description, draft.values.description)
+    })
   };
 }
 
+export function validateQuoteDraft(memory = {}, extras = {}) {
+  const validation = validateQuoteFields(quotePrefillFromMemory(memory, extras));
+  const rejected = normalizeDraft(memory.draft).invalid;
+  for (const [field, message] of Object.entries(rejected)) {
+    validation.invalid.push(field);
+    validation.fieldErrors[field] = message;
+  }
+  validation.invalid = [...new Set(validation.invalid)];
+  validation.valid = validation.invalid.length === 0;
+  return validation;
+}
+
 export function missingQuoteFields(memory = {}, extras = {}) {
-  const draft = quotePrefillFromMemory(memory, extras);
-  return QUOTE_REQUIRED_FIELDS.filter((key) => !compact(draft[key]));
+  return validateQuoteDraft(memory, extras).invalid;
 }
 
 export function canSubmitQuote(memory = {}, extras = {}) {
-  return missingQuoteFields(memory, extras).length === 0;
+  return validateQuoteDraft(memory, extras).valid;
 }
 
 export function hasQuoteProgress(memory = {}) {
@@ -1046,7 +1260,11 @@ export function shouldAnnounceQuoteTruth(command = "", memory = {}, pageId = "")
 
 export function quoteExtrasFromDocument(doc = globalThis.document) {
   if (!doc?.querySelector) return {};
-  const read = (selector) => usefulText(doc.querySelector(selector)?.value);
+  const read = (selector) => {
+    const field = doc.querySelector(selector);
+    if (field?.getAttribute?.("aria-invalid") === "true") return "";
+    return usefulText(field?.value);
+  };
   return {
     name: read("#devis-name"),
     phone: read("#devis-phone"),
@@ -1059,7 +1277,11 @@ export function quoteExtrasFromDocument(doc = globalThis.document) {
 
 export function contactExtrasFromDocument(doc = globalThis.document) {
   if (!doc?.querySelector) return {};
-  const read = (selector) => usefulText(doc.querySelector(selector)?.value);
+  const read = (selector) => {
+    const field = doc.querySelector(selector);
+    if (field?.getAttribute?.("aria-invalid") === "true") return "";
+    return usefulText(field?.value);
+  };
   return {
     name: read("#contact-name"),
     phone: read("#contact-phone"),
@@ -1085,16 +1307,37 @@ export function formExtrasFromDocument(doc = globalThis.document) {
   };
 }
 
-export function canSubmitContact(memory = {}, extras = {}) {
+export function validateContactDraft(memory = {}, extras = {}) {
   const visitor = normalizeVisitor(memory.visitor);
-  const name = compact(extras.name) || visitor.name;
-  const email = compact(extras.email) || visitor.email;
+  const draft = normalizeDraft(memory.draft);
+  const name = compact(draft.values.name) || compact(extras.name) || visitor.name;
+  const email = compact(draft.values.email) || compact(extras.email) || visitor.email;
+  const phone = compact(draft.values.phone) || compact(extras.phone) || visitor.phone;
   const authored = looksLikeConversationDump(extras.message || extras.description, memory)
     || isClaireSynthesis(extras.message || extras.description)
     ? ""
     : firstUsefulText(4000, extras.message, extras.description);
-  const message = firstUsefulText(4000, synthesizeMailBody(memory, extras), authored, memory.need);
-  return Boolean(name && email && message);
+  const message = firstUsefulText(
+    4000,
+    draft.provenance.message?.source === "typed" ? draft.values.message : "",
+    synthesizeMailBody(memory, extras),
+    authored,
+    memory.need
+  );
+  const validation = validateContactFields({ name, email, phone, message });
+  for (const [field, error] of Object.entries(draft.invalid)) {
+    if (field in CONTACT_SCHEMA) {
+      validation.invalid.push(field);
+      validation.fieldErrors[field] = error;
+    }
+  }
+  validation.invalid = [...new Set(validation.invalid)];
+  validation.valid = validation.invalid.length === 0;
+  return validation;
+}
+
+export function canSubmitContact(memory = {}, extras = {}) {
+  return validateContactDraft(memory, extras).valid;
 }
 
 export function hydrateQuoteMemoryFromForm(storage, doc) {
@@ -1130,9 +1373,10 @@ export function describeMissingQuoteFields(memory = {}, extras = {}) {
 }
 
 export function describeQuoteChecklist(memory = {}, extras = {}) {
-  const draft = quotePrefillFromMemory(memory, extras);
-  const missing = QUOTE_REQUIRED_FIELDS.filter((key) => !compact(draft[key]));
-  const filled = QUOTE_REQUIRED_FIELDS.filter((key) => compact(draft[key]));
+  const validation = validateQuoteDraft(memory, extras);
+  const draft = validation.normalized;
+  const missing = validation.invalid;
+  const filled = QUOTE_REQUIRED_FIELDS.filter((key) => compact(draft[key]) && !missing.includes(key));
   const missingSpeech = joinFrenchList(missing.map((key) => QUOTE_FIELD_LABELS[key] || key));
   const filledSpeech = joinFrenchList(filled.map((key) => QUOTE_FIELD_LABELS[key] || key));
   if (missing.length) {
@@ -1140,6 +1384,7 @@ export function describeQuoteChecklist(memory = {}, extras = {}) {
       complete: false,
       missing,
       filled,
+      fieldErrors: validation.fieldErrors,
       alreadySent: false,
       speech: filledSpeech
         ? `Je n’envoie pas le devis. Il manque encore ${missingSpeech}. J’ai déjà ${filledSpeech}.`
@@ -1151,6 +1396,7 @@ export function describeQuoteChecklist(memory = {}, extras = {}) {
       complete: true,
       missing: [],
       filled,
+      fieldErrors: {},
       alreadySent: true,
       speech: alreadySentSpeech(memory, "devis")
     };
@@ -1159,6 +1405,7 @@ export function describeQuoteChecklist(memory = {}, extras = {}) {
     complete: true,
     missing: [],
     filled,
+    fieldErrors: {},
     alreadySent: false,
     speech: `Le devis est complet : ${filledSpeech}. Confirmez que vous voulez transmettre la demande vers ${draft.email || "l’e-mail indiqué dans le formulaire"}. Rien n’est parti tant que le site n’a pas confirmé l’envoi.`
   };
