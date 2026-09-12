@@ -21,15 +21,15 @@
   <meta name="twitter:title" content="Configuration à domicile — Porto-Vecchio | InfoServ2A">
   <meta name="twitter:description" content="Configuration PC, Mac, Wi-Fi, box et objets connectés à domicile à Porto-Vecchio, de Solenzara à Bonifacio.">
   <meta name="twitter:image" content="https://infoserv2a.pro/assets/images/home/web.jpg">
-  <link rel="icon" href="favicon.ico?v=20260911-claire-send-hang-v1" sizes="any">
-  <link rel="icon" href="assets/images/logo/favicon.png?v=20260911-claire-send-hang-v1" type="image/png" sizes="192x192">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=20260911-claire-send-hang-v1">
+  <link rel="icon" href="favicon.ico?v=20260912-mobile-cobranded-choice-v1" sizes="any">
+  <link rel="icon" href="assets/images/logo/favicon.png?v=20260912-mobile-cobranded-choice-v1" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=20260912-mobile-cobranded-choice-v1">
   <link rel="manifest" href="site.webmanifest">
-  <link rel="stylesheet" href="assets/css/variables.css?v=20260911-claire-send-hang-v1">
-  <link rel="stylesheet" href="assets/css/main.css?v=20260911-claire-send-hang-v1">
-  <link rel="stylesheet" href="assets/css/components.css?v=20260911-claire-send-hang-v1">
-  <link rel="stylesheet" href="assets/css/responsive.css?v=20260911-claire-send-hang-v1">
-  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260911-claire-send-hang-v1">
+  <link rel="stylesheet" href="assets/css/variables.css?v=20260912-mobile-cobranded-choice-v1">
+  <link rel="stylesheet" href="assets/css/main.css?v=20260912-mobile-cobranded-choice-v1">
+  <link rel="stylesheet" href="assets/css/components.css?v=20260912-mobile-cobranded-choice-v1">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=20260912-mobile-cobranded-choice-v1">
+  <link rel="stylesheet" href="assets/css/claire-companion.css?v=20260912-mobile-cobranded-choice-v1">
   <script type="application/ld+json">{
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
@@ -62,7 +62,7 @@
 }</script>
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Accueil", "item": "https://infoserv2a.pro/"}, {"@type": "ListItem", "position": 2, "name": "Configuration à domicile", "item": "https://infoserv2a.pro/configuration-domicile.html"}]}</script>
   <script type="importmap">{"imports":{"events":"./vendor/liveavatar/events-browser.mjs"}}</script>
-<link rel="stylesheet" href="assets/css/mediterranee.css?v=20260911-claire-send-hang-v1">
+<link rel="stylesheet" href="assets/css/mediterranee.css?v=20260912-mobile-cobranded-choice-v1">
 </head>
 <body class="med-site">
   <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -77,6 +77,19 @@
   <div class="claire-companion__backdrop" aria-hidden="true"></div>
 
   <section class="claire-experience" role="dialog" aria-modal="true" aria-labelledby="claireArrivalTitle" aria-describedby="claireArrivalDescription">
+    <div class="claire-mobile-choice" role="group" aria-labelledby="claireChoiceTitle" aria-describedby="claireChoiceDescription">
+      <div class="claire-mobile-choice__brands">
+        <p><strong>InfoServ2A —</strong><span>votre expert local à Porto-Vecchio</span></p>
+        <span class="claire-mobile-choice__join" aria-hidden="true">×</span>
+        <p><strong>Claire,</strong><span>assistante numérique de Didier</span></p>
+      </div>
+      <h1 id="claireChoiceTitle">Comment souhaitez-vous commencer&nbsp;?</h1>
+      <p id="claireChoiceDescription">Choisissez librement. Claire n’active le son et le micro qu’après votre demande.</p>
+      <div class="claire-mobile-choice__actions">
+        <button class="claire-mobile-choice__button claire-mobile-choice__button--site" type="button" data-claire-manual data-claire-choice-manual>Découvrir InfoServ2A</button>
+        <button class="claire-mobile-choice__button claire-mobile-choice__button--claire" type="button" data-claire-start>Échanger avec Claire</button>
+      </div>
+    </div>
     <header class="claire-experience__header">
       <div class="claire-experience__brand" aria-label="InfoServ2A, Claire en direct">
         <img class="claire-experience__logo" src="assets/images/logo/infoserv2a-logo-light.svg" alt="InfoServ2A" width="168" height="39">
@@ -243,17 +256,28 @@
         stored = sessionStorage.getItem("infoserv2a.claire.mode");
         seen = sessionStorage.getItem("infoserv2a.claire.seen");
       } catch (error) { /* Navigation reste possible sans stockage. */ }
-      var next = "arrival";
+      var phone = false;
+      try {
+        phone = Boolean(window.matchMedia && window.matchMedia("(max-width: 820px)").matches);
+      } catch (error) { /* Le client complet resynchronisera le viewport. */ }
+      var next = phone ? "choice" : "arrival";
       if (requested === "1" || requested === "start") next = "arrival";
       else if (requested === "guided" || requested === "continue" || stored === "guided") next = "guided";
-      else if (stored === "shared") next = "shared";
+      else if (stored === "shared") next = "guided";
       else if (stored === "manual" || seen === "1") next = "manual";
       root.setAttribute("data-state", next);
       root.setAttribute("aria-busy", "false");
       document.body.classList.toggle("claire-arrival-open", next === "arrival");
+      document.body.classList.toggle("claire-choice-open", next === "choice");
       document.body.classList.toggle("claire-conversation-open", next === "shared");
       document.body.classList.toggle("claire-is-guided", next === "guided");
       document.body.classList.toggle("claire-is-manual", next === "manual");
+      var experience = root.querySelector(".claire-experience");
+      if (experience && next === "choice") {
+        experience.setAttribute("aria-modal", "false");
+        experience.setAttribute("aria-labelledby", "claireChoiceTitle");
+        experience.setAttribute("aria-describedby", "claireChoiceDescription");
+      }
       var badge = root.querySelector("[data-claire-engine-status]");
       var status = root.querySelector("[data-claire-status]");
       if (badge) badge.textContent = "Claire en direct";
@@ -319,6 +343,7 @@
   </script>
 </div>
 <!-- /chrome:header -->
+
 
 
 
@@ -514,11 +539,12 @@
 
 
 
-<script src="assets/js/main.js?v=20260911-claire-send-hang-v1" defer></script>
-  <script src="assets/js/navigation.js?v=20260911-claire-send-hang-v1" defer></script>
-  <script src="assets/js/contact.js?v=20260911-claire-send-hang-v1" defer></script>
-<script src="assets/js/devis.js?v=20260911-claire-send-hang-v1" defer></script>
-<script type="module" src="assets/js/claire-companion.js?v=20260911-claire-send-hang-v1"></script>
-<script src="assets/js/mediterranee.js?v=20260911-claire-send-hang-v1" defer></script>
+
+<script src="assets/js/main.js?v=20260912-mobile-cobranded-choice-v1" defer></script>
+  <script src="assets/js/navigation.js?v=20260912-mobile-cobranded-choice-v1" defer></script>
+  <script src="assets/js/contact.js?v=20260912-mobile-cobranded-choice-v1" defer></script>
+<script src="assets/js/devis.js?v=20260912-mobile-cobranded-choice-v1" defer></script>
+<script type="module" src="assets/js/claire-companion.js?v=20260912-mobile-cobranded-choice-v1"></script>
+<script src="assets/js/mediterranee.js?v=20260912-mobile-cobranded-choice-v1" defer></script>
 </body>
 </html>
