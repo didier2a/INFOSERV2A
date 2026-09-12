@@ -13,7 +13,8 @@ ROOT = Path(__file__).resolve().parent
 PUBLIC_PAGES = {
     'index.html', 'maintenance-distance.html', 'reseaux-wifi.html',
     'videosurveillance.html', 'creation-site-web.html', 'claire.html',
-    'a-propos.html', 'contact.html', 'devis.html', 'configuration-domicile.html',
+    'claire-pour-votre-site.html', 'a-propos.html', 'contact.html', 'devis.html',
+    'configuration-domicile.html',
     'cybersecurite-ia.html', 'recuperation-donnees.html', 'realisations.html',
     'mentions-legales.html', 'politique-confidentialite.html', '404.html',
 }

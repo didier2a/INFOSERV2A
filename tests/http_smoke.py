@@ -44,6 +44,7 @@ class HttpSmokeTest(unittest.TestCase):
     def test_home_and_companion_assets_are_served(self) -> None:
         cases = {
             "/?claire=1": "text/html",
+            "/claire-pour-votre-site.html": "text/html",
             "/claire-lab.html": "text/html",
             "/claire-aidant-figma.html": "text/html",
             "/assets/js/claire-companion.js?v=20260830-live3": "text/javascript",
@@ -55,6 +56,7 @@ class HttpSmokeTest(unittest.TestCase):
             "/data/site-knowledge.json?v=20260830-live3": "application/json",
             "/data/claire-capabilities.json": "application/json",
             "/assets/images/companion/claire-liveavatar-1080x1920.jpg": "image/jpeg",
+            "/assets/images/logo/infoserv2a-logo-light.png": "image/png",
         }
         for path, expected_type in cases.items():
             with self.subTest(path=path):
