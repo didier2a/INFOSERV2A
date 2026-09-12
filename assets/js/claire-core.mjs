@@ -559,11 +559,19 @@ export function liveAvatarSessionPhase(elapsedMs, {
   return "active";
 }
 
+function normalizedSitePath(pathname = "/") {
+  const clean = String(pathname || "/")
+    .split("?")[0]
+    .split("#")[0]
+    .replace(/^\/+|\/+$/g, "") || "index.html";
+  return /^(?:devis|contact)$/i.test(clean) ? `${clean.toLowerCase()}.html` : clean;
+}
+
 export function currentPage(knowledge, pathname = "/") {
-  const clean = pathname.split("?")[0].split("#")[0].replace(/^\//, "") || "index.html";
+  const clean = normalizedSitePath(pathname);
   return (knowledge.pages || []).find((page) => {
     const candidates = [page.href, ...(page.aliases || [])]
-      .map((item) => String(item).split("#")[0].replace(/^\//, "") || "index.html");
+      .map((item) => normalizedSitePath(item));
     return candidates.includes(clean);
   }) || null;
 }

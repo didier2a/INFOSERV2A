@@ -369,6 +369,10 @@
     {
       "id": "contact",
       "href": "contact.html",
+      "aliases": [
+        "/contact",
+        "/contact/"
+      ],
       "title": "Contact",
       "summary": "La page Contact regroupe le téléphone, l’adresse e-mail, WhatsApp, les horaires et un formulaire de message.",
       "keywords": [
@@ -407,6 +411,10 @@
     {
       "id": "quote",
       "href": "devis.html",
+      "aliases": [
+        "/devis",
+        "/devis/"
+      ],
       "title": "Demande de devis",
       "summary": "Le formulaire de devis permet de décrire gratuitement un besoin de vidéosurveillance, site web, assistance, cybersécurité ou récupération de données, sans engagement.",
       "keywords": [

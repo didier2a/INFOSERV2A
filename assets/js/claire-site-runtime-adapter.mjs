@@ -20,7 +20,8 @@ function clone(value) {
 
 function cleanPath(value, base = "https://infoserv2a.pro/") {
   const url = new URL(value || "/", base);
-  return url.pathname.replace(/^\//, "") || "index.html";
+  const path = url.pathname.replace(/^\/+|\/+$/g, "") || "index.html";
+  return /^(?:devis|contact)$/i.test(path) ? `${path.toLowerCase()}.html` : path;
 }
 
 function pageSummary(page) {
