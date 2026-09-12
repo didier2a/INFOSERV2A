@@ -1,11 +1,11 @@
-import { normalizeText } from "./claire-core.mjs?v=20260912-pip-duplex-v1";
+import { normalizeText } from "./claire-core.mjs?v=20260912-pip-edge-v1";
 import {
   canSubmitContact,
   canSubmitQuote,
   synthesizeMailBody,
   validateContactDraft,
   validateQuoteDraft
-} from "./claire-session-memory.mjs?v=20260912-pip-duplex-v1";
+} from "./claire-session-memory.mjs?v=20260912-pip-edge-v1";
 
 export const CLAIRE_ACTION_MODES = Object.freeze({
   CONSEIL: "conseil",

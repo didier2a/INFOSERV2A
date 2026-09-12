@@ -1,4 +1,4 @@
-import { adjacentPage, adjacentSection, catalogEntries, pageById, scorePage } from "./claire-core.mjs?v=20260912-pip-duplex-v1";
+import { adjacentPage, adjacentSection, catalogEntries, pageById, scorePage } from "./claire-core.mjs?v=20260912-pip-edge-v1";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));

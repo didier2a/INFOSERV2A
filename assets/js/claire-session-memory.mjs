@@ -4,7 +4,7 @@ import {
   normalizeSchemaValue,
   validateContactFields,
   validateQuoteFields
-} from "./form-schema.mjs?v=20260912-pip-duplex-v1";
+} from "./form-schema.mjs?v=20260912-pip-edge-v1";
 
 export const SESSION_MEMORY_KEY = "infoserv2a.claire.memory";
 export const CLIENT_ID_KEY = "infoserv2a.claire.client";

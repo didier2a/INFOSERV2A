@@ -146,6 +146,10 @@ export function siteSurfaceForPath() {
   return MOBILE_SURFACES.SITE;
 }
 
+export function mobileTabsVisible(state) {
+  return state?.surface !== MOBILE_SURFACES.PIP;
+}
+
 export function createMobileUxState({ pathname = "", hash = "" } = {}) {
   return {
     surface: siteSurfaceForPath(pathname),
