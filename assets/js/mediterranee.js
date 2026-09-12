@@ -18,7 +18,10 @@
   // Keep the mobile keyboard's working area free while the visitor fills a form.
   const syncFormFocus = () => {
     const active = document.activeElement;
-    document.body.classList.toggle('med-form-editing', Boolean(active?.matches('#contenu input, #contenu textarea, #contenu select')));
+    document.body.classList.toggle(
+      'med-form-editing',
+      Boolean(active?.matches('#contenu form input, #contenu form textarea, #contenu form select, #contenu form button'))
+    );
   };
   document.addEventListener('focusin', syncFormFocus);
   document.addEventListener('focusout', () => setTimeout(syncFormFocus, 0));

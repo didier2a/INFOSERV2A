@@ -20,7 +20,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260911-claire-send-hang-v1";
+} from "./claire-core.mjs?v=20260912-claire-mobile-option-2-v1";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -46,7 +46,7 @@ import {
   alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260911-claire-send-hang-v1";
+} from "./claire-session-memory.mjs?v=20260912-claire-mobile-option-2-v1";
 import {
   CLAIRE_ACTION_MODES,
   actionDraftReady,
@@ -58,31 +58,32 @@ import {
   isQuoteResendRequest,
   shouldDebounceVoiceCommand,
   requestedActionMode
-} from "./claire-actions-v1.mjs?v=20260911-claire-send-hang-v1";
+} from "./claire-actions-v1.mjs?v=20260912-claire-mobile-option-2-v1";
 import {
   describeEmailSendOutcome,
   didEmailSendThisTurn
-} from "./site-email.mjs?v=20260911-claire-send-hang-v1";
+} from "./site-email.mjs?v=20260912-claire-mobile-option-2-v1";
 import {
   MOBILE_SCENE_HOLD_MS,
   createMobileSceneState,
   mobileSceneActive,
   reduceMobileScene,
   sceneStatusLabel
-} from "./claire-mobile-scene.mjs?v=20260911-claire-send-hang-v1";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260911-claire-send-hang-v1";
+} from "./claire-mobile-scene.mjs?v=20260912-claire-mobile-option-2-v1";
+import { resolveInitialClaireState } from "./claire-entry-mode.mjs?v=20260912-claire-mobile-option-2-v1";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260912-claire-mobile-option-2-v1";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260911-claire-send-hang-v1";
-import "./contact.js?v=20260911-claire-send-hang-v1";
-import "./devis.js?v=20260911-claire-send-hang-v1";
+} from "./claire-site-runtime-adapter.mjs?v=20260912-claire-mobile-option-2-v1";
+import "./contact.js?v=20260912-claire-mobile-option-2-v1";
+import "./devis.js?v=20260912-claire-mobile-option-2-v1";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
 const LOCAL_TEXT_FALLBACK = "Le direct vocal est indisponible, mais je peux continuer par écrit pour vous orienter dans les services InfoServ2A. Décrivez votre besoin informatique ou demandez un onglet précis.";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260911-claire-send-hang-v1";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260911-claire-send-hang-v1";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260912-claire-mobile-option-2-v1";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260912-claire-mobile-option-2-v1";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -399,12 +400,12 @@ export class ClaireCompanion {
     const requested = params.get("claire");
     const storedMode = storageGet(STORAGE_MODE);
     const seen = storageGet(STORAGE_SEEN) === "1";
-
-    if (requested === "1" || requested === "start") this.setState("arrival");
-    else if (["guided", "continue"].includes(requested) || storedMode === "guided") this.setState("guided");
-    else if (storedMode === "shared") this.setState("guided");
-    else if (storedMode === "manual" || seen) this.setState("manual");
-    else this.setState("arrival");
+    this.setState(resolveInitialClaireState({
+      requested,
+      storedMode,
+      seen,
+      phone: isPhoneShell()
+    }));
 
     if (["guided", "continue"].includes(requested) && history.replaceState) {
       params.delete("claire");
@@ -442,6 +443,7 @@ export class ClaireCompanion {
   cacheNodes() {
     const find = (selector) => this.root.querySelector(selector);
     this.nodes = {
+      choice: find(".claire-mobile-choice"),
       experience: find(".claire-experience"),
       stage: find("[data-claire-stage]"),
       transcript: find("[data-claire-transcript]"),
@@ -732,14 +734,19 @@ export class ClaireCompanion {
     if (next === "guided" && isPhoneShell() && !this.root.dataset.composer) {
       this.root.dataset.composer = "closed";
     }
+    document.body.classList.toggle("claire-choice-open", next === "choice");
     document.body.classList.toggle("claire-arrival-open", next === "arrival");
     document.body.classList.toggle("claire-conversation-open", next === "shared" || next === "action");
     document.body.classList.toggle("claire-is-guided", next === "guided");
     document.body.classList.toggle("claire-is-manual", next === "manual");
+    this.nodes.choice?.setAttribute("aria-hidden", next === "choice" ? "false" : "true");
     this.nodes.experience?.setAttribute("aria-hidden", ["arrival", "shared", "action", "guided"].includes(next) ? "false" : "true");
     this.nodes.experience?.setAttribute("aria-modal", ["arrival", "shared", "action"].includes(next) ? "true" : "false");
     this.nodes.experience?.setAttribute("role", next === "guided" ? "complementary" : "dialog");
-    if (next === "arrival") {
+    if (next === "choice") {
+      this.lastFocus = document.activeElement;
+      requestAnimationFrame(() => this.root.querySelector("[data-claire-choice-primary]")?.focus({ preventScroll: true }));
+    } else if (next === "arrival") {
       this.lastFocus = document.activeElement;
       requestAnimationFrame(() => this.root.querySelector("[data-claire-start]")?.focus());
     }
@@ -1327,7 +1334,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260911-claire-send-hang-v1");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260912-claire-mobile-option-2-v1");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
