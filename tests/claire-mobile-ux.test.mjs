@@ -18,6 +18,7 @@ import {
   mobilePipDragExceeded,
   mobilePipPercentFromPoint,
   mobilePipPointFromPercent,
+  mobileTabsVisible,
   mobileTabForLocation,
   mobileUxLocksScroll,
   reduceMobileUx,
@@ -58,11 +59,25 @@ test("Claire tab is full, then an explicit exit can offer the PiP medallion", ()
 test("opt-in PiP survives site navigation until explicit evacuation", () => {
   let state = createMobileUxState({ pathname: "/" });
   state = reduceMobileUx(state, { type: "show-pip", pathname: "/" });
+  assert.equal(mobileTabsVisible(state), false);
   state = reduceMobileUx(state, { type: "route", pathname: "/reseaux-wifi.html" });
   assert.equal(state.surface, MOBILE_SURFACES.PIP);
   assert.equal(state.activeTab, "services");
+  assert.equal(mobileTabsVisible(state), false);
   state = reduceMobileUx(state, { type: "evacuate-pip", pathname: "/reseaux-wifi.html" });
   assert.equal(state.surface, MOBILE_SURFACES.SITE);
+  assert.equal(mobileTabsVisible(state), true);
+});
+
+test("le bandeau revient en quittant le médaillon vers Claire", () => {
+  let state = reduceMobileUx(createMobileUxState(), {
+    type: "show-pip",
+    pathname: "/"
+  });
+  assert.equal(mobileTabsVisible(state), false);
+  state = reduceMobileUx(state, { type: "open-claire" });
+  assert.equal(state.surface, MOBILE_SURFACES.CLAIRE);
+  assert.equal(mobileTabsVisible(state), true);
 });
 
 test("guided mode is exclusive and dismisses to the correct site surface", () => {
@@ -167,8 +182,21 @@ test("phone shell keeps PiP opt-in and renders it as a round medallion", async (
   assert.match(client, /Aide Claire/);
   assert.match(client, /dataset\.mobilePipDismiss/);
   assert.match(client, /Rester en PiP/);
+  assert.match(client, /tabBar\.hidden = !mobileTabsVisible\(this\.mobileUx\)/);
   assert.match(css, /data-claire-mobile-surface="site"[\s\S]*?display: none !important/);
   assert.match(css, /--claire-mobile-pip-size: 76px/);
+  assert.match(
+    css,
+    /data-claire-mobile-surface="pip"[\s\S]*?\.claire-mobile-tabs \{[\s\S]*?display: none !important/
+  );
+  assert.match(
+    css,
+    /data-claire-mobile-surface="pip"\] \{[\s\S]*?padding-bottom: env\(safe-area-inset-bottom, 0px\) !important/
+  );
+  assert.doesNotMatch(
+    css,
+    /data-claire-mobile-surface="pip"\] \.claire-companion \{[\s\S]{0,500}var\(--claire-mobile-tabs-height\)/
+  );
   assert.match(
     css,
     /data-claire-mobile-surface="pip"[\s\S]*?\.claire-live-stage \{[\s\S]*?border-radius: 50%/
