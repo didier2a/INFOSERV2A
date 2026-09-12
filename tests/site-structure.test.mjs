@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260912-combo3star-listen-v1)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260912-combo3star-listen-v1)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260912-claire-voice-restore-v1)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260912-claire-voice-restore-v1)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -39,7 +39,7 @@ test("les modules Claire sont versionnés pour éviter un cache 24 h cassé", as
     const bare = [...source.matchAll(/(?:from|import)\(?["'](\.\/[^"'?]+)["']/g)].map((match) => match[1]);
     assert.deepEqual(bare, [], `${file} importe sans ?v= : ${bare.join(", ")}`);
     if (source.includes("claire-core.mjs")) {
-      assert.match(source, /claire-core\.mjs\?v=20260912-combo3star-listen-v1/);
+      assert.match(source, /claire-core\.mjs\?v=20260912-claire-voice-restore-v1/);
     }
   }
 });
@@ -130,7 +130,7 @@ test("Claire accueille l'utilisateur et explique son rôle chez InfoServ2A", asy
     readFile(path.join(ROOT, "functions/api/liveavatar-session.js"), "utf8"),
     readFile(path.join(ROOT, "assets/js/claire-core.mjs"), "utf8")
   ]);
-  assert.match(core, /Moi c’est Claire, collaboratrice numérique IT d’InfoServ2A/);
+  assert.match(core, /Moi c’est Claire, experte IT et assistante de Didier/);
   assert.match(core, /navigation manuelle reste toujours disponible/);
   assert.match(core, /être interrompue à tout moment/);
   assert.match(core, /onglets du site/);
@@ -146,7 +146,7 @@ test("Claire accueille l'utilisateur et explique son rôle chez InfoServ2A", asy
   assert.match(core, /INFOSERV2A_SESSION_MEMORY/);
   assert.match(core, /INFOSERV2A_OFF_TOPIC/);
   assert.match(core, /interlocutrice professionnelle/);
-  assert.match(core, /collaboratrice numérique IT généraliste/);
+  assert.match(core, /experte IT et assistante de Didier/);
   assert.doesNotMatch(client, /this\.speak\(greeting\)/);
   assert.doesNotMatch(core, /n’importe quel sujet/);
 });
@@ -410,7 +410,7 @@ test("l’arrivée montre l’enseigne InfoServ2A et deux portes", async () => {
   assert.match(header, /id="claireArrivalCommand"/);
   assert.match(header, /placeholder="Écrire à Claire"/);
   assert.match(header, /infoserv2a-logo-light\.svg/);
-  assert.match(header, /Collaboratrice numérique IT/);
+  assert.match(header, /Collaboratrice InfoServ2A/);
   assert.match(css, /claire-door--claire/);
   assert.match(css, /\.claire-arrival-write \{/);
   assert.match(client, /skipLiveResumeCue/);
@@ -419,15 +419,22 @@ test("l’arrivée montre l’enseigne InfoServ2A et deux portes", async () => {
   assert.match(client, /Claire reste à portée/);
 });
 
-test("Claire se présente comme collaboratrice numérique IT", async () => {
-  const [header, client, endpoint, knowledge] = await Promise.all([
+test("Claire se présente avec le titre et le sous-titre Option 3", async () => {
+  const [header, clairePage, client, endpoint, knowledge] = await Promise.all([
     readFile(path.join(ROOT, "partials/header.html"), "utf8"),
+    readFile(path.join(ROOT, "claire.html"), "utf8"),
     readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
     readFile(path.join(ROOT, "functions/api/liveavatar-session.js"), "utf8"),
     readFile(path.join(ROOT, "data/site-knowledge.json"), "utf8")
   ]);
   assert.match(header, /Claire en direct/);
-  assert.match(header, /collaboratrice numérique IT/);
+  assert.match(header, /Experte IT &amp; assistante de Didier/);
+  assert.match(header, /Collaboratrice InfoServ2A · conseil et accompagnement/);
+  assert.doesNotMatch(header, /aidante/i);
+  assert.match(clairePage, /<title>Claire — Experte IT &amp; assistante de Didier<\/title>/);
+  assert.match(clairePage, /<meta property="og:title" content="Claire — Experte IT &amp; assistante de Didier">/);
+  assert.match(clairePage, /<meta property="og:description" content="Collaboratrice InfoServ2A · conseil et accompagnement">/);
+  assert.doesNotMatch(clairePage, /aidante/i);
   assert.match(header, /infoserv2a\.claire\.mode/);
   assert.match(header, /requested === "1"/);
   assert.match(header, /InfoServClaireBoot/);
@@ -442,7 +449,7 @@ test("Claire se présente comme collaboratrice numérique IT", async () => {
   assert.doesNotMatch(header, /Connexion en attente/);
   assert.match(client, /CLAIRE_WELCOME/);
   assert.match(endpoint, /CLAIRE_WELCOME/);
-  assert.match(knowledge, /Collaboratrice numérique IT généraliste/);
+  assert.match(knowledge, /Experte IT & assistante de Didier/);
 });
 
 test("la parole de Claire enchaîne les pages sans coupure nette", async () => {

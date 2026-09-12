@@ -495,7 +495,7 @@ test("l’ancre hébergement existe dans la page publique", async () => {
   assert.match(html, /id="offre-hebergement"/);
 });
 
-test("la spec Figma versionne les huit frames de l’aidante", async () => {
+test("la spec Figma versionne les huit frames de Claire", async () => {
   const [spec, html, plan] = await Promise.all([
     readFile(new URL("../data/claire-aidant-figma.json", import.meta.url), "utf8"),
     readFile(new URL("../claire-aidant-figma.html", import.meta.url), "utf8"),
@@ -510,7 +510,8 @@ test("la spec Figma versionne les huit frames de l’aidante", async () => {
   for (const frame of inventory.frames) {
     assert.match(html, new RegExp(`data-figma-frame="${frame.id}"`));
   }
-  assert.match(plan, /aidante Live Avatar/i);
+  assert.match(plan, /Experte IT & assistante de Didier/i);
+  assert.doesNotMatch(html + spec + plan, /aidante/i);
   assert.match(plan, /claire-aidant-figma/);
   assert.doesNotMatch(html + spec, /\bsk-[A-Za-z0-9_-]{20,}\b/);
 });

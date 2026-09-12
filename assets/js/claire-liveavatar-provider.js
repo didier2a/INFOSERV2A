@@ -3,7 +3,7 @@ import {
   isOralSendConfirm,
   isStableUrgentCommand,
   isUrgentSiteCommand
-} from "./claire-core.mjs?v=20260912-combo3star-listen-v1";
+} from "./claire-core.mjs?v=20260912-claire-voice-restore-v1";
 
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;
@@ -136,13 +136,17 @@ export class InfoServ2ALiveAvatarProvider {
   primeAudio() {
     if (!this.video) return false;
     this.prepareVideoElement();
+    this.video.defaultMuted = false;
+    this.video.removeAttribute?.("muted");
     this.video.muted = false;
     this.video.volume = 1;
-    // Geste utilisateur (PC, Chrome Android, Safari iPhone) : déverrouille
-    // l'autoplay. Sans flux, play() peut échouer ; on retentera à l'attache.
+    // Sur Safari, l'attribut HTML muted alimente defaultMuted et peut être
+    // réappliqué lors de l'attache WebRTC. Un geste explicite doit conserver
+    // l'intention audible même si play() échoue encore faute de srcObject.
     void this.video.play().catch(() => {
-      this.video.muted = true;
-      void this.video.play().catch(() => {});
+      this.video.defaultMuted = false;
+      this.video.removeAttribute?.("muted");
+      this.video.muted = false;
     });
     return true;
   }
@@ -151,18 +155,22 @@ export class InfoServ2ALiveAvatarProvider {
     if (!this.video) return false;
     this.prepareVideoElement();
     try {
+      this.video.defaultMuted = false;
+      this.video.removeAttribute?.("muted");
       this.video.muted = false;
       this.video.volume = 1;
       await this.video.play();
-      return !this.video.muted;
+      return !this.video.muted && !this.video.paused;
     } catch {
       try {
         this.video.muted = true;
         await this.video.play();
+        this.video.defaultMuted = false;
+        this.video.removeAttribute?.("muted");
         this.video.muted = false;
         this.video.volume = 1;
         await this.video.play();
-        return !this.video.muted;
+        return !this.video.muted && !this.video.paused;
       } catch {
         this.video.muted = true;
         void this.video.play().catch(() => {});
@@ -214,6 +222,15 @@ export class InfoServ2ALiveAvatarProvider {
 
   hasLiveVideo() {
     return mediaTrackState(this.video).video;
+  }
+
+  needsAudioUnlock() {
+    return Boolean(
+      !this.mediaAudible
+      || this.video?.muted
+      || this.video?.paused
+      || !this.hasLiveAudio()
+    );
   }
 
   async waitForMediaTracks(timeoutMs = TRACK_ATTACH_TIMEOUT_MS) {
@@ -315,21 +332,28 @@ export class InfoServ2ALiveAvatarProvider {
     this.emit("listening", label);
   }
 
-  async ensureActiveListening() {
+  async ensureActiveListening({ allowReconnect = false } = {}) {
     this.record("microphone:resume-request", {
       connected: this.connected,
       streamReady: this.streamReady,
-      hasSession: Boolean(this.session)
+      hasSession: Boolean(this.session),
+      allowReconnect
     });
     if (!this.session || !this.connected || !this.streamReady) {
+      if (!allowReconnect) return false;
       await this.reconnect({ microphone: true });
-      return Boolean(this.connected && this.streamReady && this.listening);
+      return Boolean(this.connected && this.streamReady && this.listening && this.mediaAudible);
     }
-    await this.resumeMedia();
     const active = await this.ensureMicrophone();
-    if (active && this.connected && this.streamReady) return true;
+    // Sur mobile, démarrer ou démuter getUserMedia peut reprendre le focus
+    // audio et suspendre le média distant. La sortie doit donc être restaurée
+    // après le micro, puis faire partie du contrôle de santé de la reprise.
+    const audible = await this.resumeMedia();
+    if (active && audible && this.connected && this.streamReady) return true;
+    if (this.connected && this.streamReady && this.hasLiveAudio()) return false;
+    if (!allowReconnect) return false;
     await this.reconnect({ microphone: true });
-    return Boolean(this.connected && this.streamReady && this.listening);
+    return Boolean(this.connected && this.streamReady && this.listening && this.mediaAudible);
   }
 
   sendEmailResult(value) {
@@ -364,7 +388,7 @@ export class InfoServ2ALiveAvatarProvider {
   sendBriefing(value) {
     return this.keepLocalNote(
       "briefing",
-      `[INFOSERV2A_SITE_BRIEFING]\n${value}\nN’y réponds pas. Mémorise le catalogue des onglets. Tu restes l’aidante IT d’InfoServ2A : ouverte aux métiers du numérique, tu recentres un loisir vers l’informatique.`,
+      `[INFOSERV2A_SITE_BRIEFING]\n${value}\nN’y réponds pas. Mémorise le catalogue des onglets. Tu restes Claire, experte IT et assistante de Didier, collaboratrice InfoServ2A : ouverte aux métiers du numérique, tu recentres un loisir vers l’informatique.`,
       "conversation:site-briefing-kept"
     );
   }
@@ -582,7 +606,10 @@ export class InfoServ2ALiveAvatarProvider {
 
   async connect({ microphone = false } = {}) {
     if (this.connected && this.streamReady) {
-      if (microphone) await this.ensureMicrophone();
+      if (microphone) {
+        await this.ensureMicrophone();
+        await this.resumeMedia();
+      }
       return true;
     }
     if (this.startPromise) return this.startPromise;
@@ -640,7 +667,12 @@ export class InfoServ2ALiveAvatarProvider {
           this.connected = true;
           this.sessionStopNotified = false;
           this.setTransportState("connected", { attempt });
-          if (microphone) await this.ensureMicrophone();
+          if (microphone) {
+            await this.ensureMicrophone();
+            // voiceChat.start() peut interrompre le playback mobile après
+            // l'attache réussie des pistes : toujours restaurer la sortie en dernier.
+            await this.resumeMedia();
+          }
           else this.emit("ready", "Claire est connectée");
           return true;
         } catch (error) {
@@ -778,6 +810,7 @@ export class InfoServ2ALiveAvatarProvider {
     });
     session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
       this.avatarSpeaking = true;
+      this.mediaAudible = !this.needsAudioUnlock();
       this.realtimeSignal = "reply-started";
       this.record("conversation:avatar-speak-started");
       if (this.holdListenForResult) this.armReplyTimer();

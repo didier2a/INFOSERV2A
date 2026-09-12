@@ -27,9 +27,17 @@ export class LiveAvatarSession {
       starts: 0,
       mutes: 0,
       unmutes: 0,
-      start: async () => { this.voiceChat.starts += 1; this.voiceChat.state = "ACTIVE"; },
+      start: async () => {
+        this.voiceChat.starts += 1;
+        this.voiceChat.state = "ACTIVE";
+        this.attachedVideo?.onMicrophoneEnabled?.();
+      },
       mute: async () => { this.voiceChat.mutes += 1; this.voiceChat.isMuted = true; },
-      unmute: async () => { this.voiceChat.unmutes += 1; this.voiceChat.isMuted = false; }
+      unmute: async () => {
+        this.voiceChat.unmutes += 1;
+        this.voiceChat.isMuted = false;
+        this.attachedVideo?.onMicrophoneEnabled?.();
+      }
     };
     this.room = { disconnect: async () => {} };
     globalThis.__infoservFakeSession = this;
@@ -44,6 +52,7 @@ export class LiveAvatarSession {
   }
   async start() { setTimeout(() => this.emit("stream-ready"), 0); }
   attach(video) {
+    this.attachedVideo = video;
     setTimeout(() => {
       const audio = { kind: "audio", readyState: "live", enabled: true, addEventListener() {} };
       const picture = { kind: "video", readyState: "live", enabled: true, addEventListener() {} };
@@ -64,11 +73,13 @@ export class LiveAvatarSession {
 const sdkUrl = `data:text/javascript;base64,${Buffer.from(sdkSource).toString("base64")}`;
 const { InfoServ2ALiveAvatarProvider } = await import("../assets/js/claire-liveavatar-provider.js");
 
-function fakeVideo() {
-  const attrs = {};
+function fakeVideo({ interruptOutputOnMicrophone = false } = {}) {
+  const attrs = { muted: "" };
   return {
     hidden: true,
     muted: true,
+    defaultMuted: true,
+    paused: true,
     volume: 0,
     srcObject: null,
     playsInline: false,
@@ -77,7 +88,15 @@ function fakeVideo() {
     disablePictureInPicture: false,
     preload: "",
     setAttribute(name, value = "") { attrs[name] = value; },
-    play: async () => true
+    removeAttribute(name) { delete attrs[name]; },
+    hasAttribute(name) { return Object.hasOwn(attrs, name); },
+    onMicrophoneEnabled() {
+      if (interruptOutputOnMicrophone) this.muted = true;
+    },
+    play: async function () {
+      this.paused = false;
+      return true;
+    }
   };
 }
 
@@ -113,6 +132,41 @@ test("le transport attend les pistes Android retardées sans arrêter la session
   session.emit("avatar-speak-ended");
   assert.equal(session.voiceChat.mutes, 0);
   assert.equal(session.voiceChat.unmutes, 0);
+
+  await provider.stop();
+});
+
+test("le premier geste Safari retire durablement l’attribut muted même avant le flux", async () => {
+  const video = fakeVideo();
+  video.play = async () => { throw new Error("Aucune source attachée"); };
+  const provider = new InfoServ2ALiveAvatarProvider().install({ video });
+
+  assert.equal(provider.primeAudio(), true);
+  await Promise.resolve();
+  assert.equal(video.defaultMuted, false);
+  assert.equal(video.muted, false);
+  assert.equal(video.hasAttribute("muted"), false);
+});
+
+test("la simulation iPad attache les deux pistes puis expédie réellement la parole", async () => {
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-ipad-speak" })
+  }).install({ video });
+
+  await provider.connect({ microphone: false });
+  const session = globalThis.__infoservFakeSession;
+  assert.ok(video.srcObject);
+  assert.equal(video.srcObject.getAudioTracks().length, 1);
+  assert.equal(video.srcObject.getVideoTracks().length, 1);
+  assert.equal(video.paused, false);
+  assert.equal(video.muted, false);
+  assert.equal(provider.mediaAudible, true);
+
+  assert.equal(provider.sendUserMessage("Bonjour Claire"), true);
+  assert.equal(session.messages.length, 1);
+  assert.match(session.messages[0], /^\[INFOSERV2A_USER_TEXT\]/);
 
   await provider.stop();
 });
@@ -542,6 +596,50 @@ test("la reprise après PiP réactive un micro autorisé mais muet", async () =>
   await provider.stop();
 });
 
+test("la sortie avatar est restaurée après que le micro mobile reprend le focus audio", async () => {
+  const video = fakeVideo({ interruptOutputOnMicrophone: true });
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-output-resume" })
+  }).install({ video });
+
+  await provider.connect({ microphone: true });
+  const session = globalThis.__infoservFakeSession;
+  assert.equal(video.muted, false);
+  assert.equal(provider.mediaAudible, true);
+
+  await provider.pauseListening();
+  const listenStartsBeforeResume = session.listenStarts || 0;
+  assert.equal(await provider.ensureActiveListening(), true);
+  assert.equal(video.muted, false);
+  assert.equal(provider.mediaAudible, true);
+  assert.ok((session.listenStarts || 0) > listenStartsBeforeResume);
+
+  await provider.stop();
+});
+
+test("la reprise n’est pas déclarée saine si la sortie distante reste bloquée", async () => {
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-output-blocked" })
+  }).install({ video });
+
+  await provider.connect({ microphone: false });
+  const session = globalThis.__infoservFakeSession;
+  video.muted = true;
+  video.play = async () => { throw new Error("NotAllowedError"); };
+
+  assert.equal(await provider.ensureActiveListening(), false);
+  assert.equal(globalThis.__infoservFakeSession, session);
+  assert.equal(provider.connected, true);
+  assert.equal(provider.listening, true);
+  assert.equal(provider.mediaAudible, false);
+  assert.equal(provider.diagnostic().audioState, "blocked");
+
+  await provider.stop();
+});
+
 test("la reprise recrée une session arrêtée avant de réécouter", async () => {
   const video = fakeVideo();
   const provider = new InfoServ2ALiveAvatarProvider({
@@ -555,7 +653,10 @@ test("la reprise recrée une session arrêtée avant de réécouter", async () =
   assert.equal(provider.connected, false);
   assert.equal(provider.listening, false);
 
-  assert.equal(await provider.ensureActiveListening(), true);
+  assert.equal(await provider.ensureActiveListening(), false);
+  assert.equal(globalThis.__infoservFakeSession, stoppedSession);
+
+  assert.equal(await provider.ensureActiveListening({ allowReconnect: true }), true);
   assert.notEqual(globalThis.__infoservFakeSession, stoppedSession);
   assert.equal(provider.connected, true);
   assert.equal(provider.streamReady, true);

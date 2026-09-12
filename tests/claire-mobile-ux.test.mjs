@@ -293,6 +293,144 @@ test("ouvrir l’onglet Claire reprend toujours le micro déjà autorisé", asyn
   assert.ok(calls.includes("status:listening"));
 });
 
+test("ouvrir Claire ne déclare pas la reprise réussie si la sortie avatar reste muette", async () => {
+  globalThis.matchMedia = () => ({ matches: true });
+  const calls = [];
+  const context = {
+    audioEnabled: false,
+    provider: {
+      connected: true,
+      streamReady: true,
+      listening: false,
+      mediaAudible: false,
+      async ensureActiveListening() {
+        calls.push("listen");
+        this.listening = true;
+        return false;
+      }
+    },
+    hideMobileDiscovery() {},
+    applyMobileUxEvent() {},
+    setState() {},
+    setStatus(value) { calls.push(`status:${value}`); },
+    async connectLiveSession() { calls.push("connect"); }
+  };
+  const { ClaireCompanion } = await import("../assets/js/claire-companion.js");
+  const opened = await ClaireCompanion.prototype.openMobileClaire.call(context);
+  assert.equal(opened, false);
+  assert.deepEqual(calls, ["listen", "connect"]);
+});
+
+test("le retour de visibilité ne reconnecte jamais LiveAvatar sans geste utilisateur", async () => {
+  globalThis.matchMedia = () => ({ matches: true });
+  const originalDocument = globalThis.document;
+  globalThis.document = { visibilityState: "visible" };
+  const calls = [];
+  const context = {
+    state: "shared",
+    audioEnabled: true,
+    mobileUx: { surface: "claire" },
+    provider: {
+      connected: false,
+      async ensureActiveListening(options) {
+        calls.push(["listen", options]);
+        return false;
+      }
+    },
+    syncViewportShell() { calls.push(["viewport"]); },
+    async keepScreenAwake() { calls.push(["wake"]); },
+    releaseWakeLock() { calls.push(["release"]); },
+    async connectLiveSession() { calls.push(["connect"]); }
+  };
+  const { ClaireCompanion } = await import("../assets/js/claire-companion.js");
+  await ClaireCompanion.prototype.handleVisibility.call(context);
+  assert.deepEqual(calls, [
+    ["viewport"],
+    ["wake"],
+    ["listen", { allowReconnect: false }]
+  ]);
+  globalThis.document = originalDocument;
+});
+
+test("sur iPad, toucher Claire déverrouille une réponse muette au lieu de l’interrompre", async () => {
+  const calls = [];
+  const context = {
+    provider: {
+      avatarSpeaking: true,
+      mediaAudible: false,
+      needsAudioUnlock: () => true,
+      async resumeMedia() {
+        calls.push("resume");
+        this.mediaAudible = true;
+        return true;
+      }
+    },
+    interrupt() { calls.push("interrupt"); }
+  };
+  const { ClaireCompanion } = await import("../assets/js/claire-companion.js");
+  assert.equal(await ClaireCompanion.prototype.handleAvatarStageGesture.call(context), true);
+  assert.deepEqual(calls, ["resume"]);
+
+  context.provider.needsAudioUnlock = () => false;
+  assert.equal(
+    await ClaireCompanion.prototype.handleAvatarStageGesture.call(context),
+    "interrupted"
+  );
+  assert.deepEqual(calls, ["resume", "interrupt"]);
+});
+
+test("le premier tap iPad retire muted avant même que le provider soit chargé", async () => {
+  const attributes = new Set(["muted"]);
+  const video = {
+    muted: true,
+    defaultMuted: true,
+    paused: true,
+    volume: 0,
+    setAttribute(name) { attributes.add(name); },
+    removeAttribute(name) { attributes.delete(name); },
+    play: async () => { throw new Error("Flux pas encore attaché"); }
+  };
+  const { ClaireCompanion } = await import("../assets/js/claire-companion.js");
+  ClaireCompanion.prototype.prepareLocalVideo.call({ nodes: { video } });
+  await Promise.resolve();
+  assert.equal(video.playsInline, true);
+  assert.equal(video.autoplay, true);
+  assert.equal(video.defaultMuted, false);
+  assert.equal(video.muted, false);
+  assert.equal(video.volume, 1);
+  assert.equal(attributes.has("muted"), false);
+  assert.equal(attributes.has("playsinline"), true);
+  assert.equal(attributes.has("webkit-playsinline"), true);
+});
+
+test("sur iPad, Parler déverrouille d’abord le haut-parleur sans couper Claire", async () => {
+  const calls = [];
+  const context = {
+    audioEnabled: false,
+    state: "guided",
+    provider: {
+      connected: true,
+      avatarSpeaking: true,
+      mediaAudible: false,
+      primeAudio() { calls.push("prime"); },
+      needsAudioUnlock: () => true,
+      async resumeMedia() {
+        calls.push("resume");
+        this.mediaAudible = true;
+        return true;
+      },
+      async toggleListening() { calls.push("toggle"); }
+    },
+    prepareLocalVideo() { calls.push("prepare"); },
+    async preflightMicrophone() { calls.push("preflight"); },
+    setStatus(state) { calls.push(`status:${state}`); }
+  };
+  const { ClaireCompanion } = await import("../assets/js/claire-companion.js");
+  assert.equal(await ClaireCompanion.prototype.toggleMicrophone.call(context), true);
+  assert.deepEqual(calls, ["prepare", "prime", "resume", "status:speaking"]);
+  assert.equal(context.audioEnabled, true);
+});
+
 test("taper le médaillon reprend l’écoute après Rester en PiP", async () => {
   globalThis.matchMedia = () => ({ matches: true });
   const calls = [];

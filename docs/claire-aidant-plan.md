@@ -1,12 +1,12 @@
-# Plan Claire — aidante Live Avatar d’InfoServ2A
+# Plan Claire — Experte IT & assistante de Didier
 
-Date : 1er septembre 2026  
-Statut : présence chaleureuse, mémoire de session, encart parole + contexte, actions orales, contexte Aidant 1.12  
+Date : 1er septembre 2026
+Statut : présence chaleureuse, mémoire de session, encart parole + contexte, actions orales, contexte Claire 1.12
 Référence visuelle : `/claire-aidant-figma.html` · `data/claire-aidant-figma.json`
 
 ## 1. Intention
 
-Greffer sur le site InfoServ2A la même Claire que Pocket Guide : une aidante audiovisuelle unique, voix OpenAI `marin`, avatar LiveAvatar vertical 9:16. Elle n’est pas une bulle de support. Elle occupe l’arrivée, reste visible pendant la navigation, et rend la main à tout moment.
+Greffer sur le site InfoServ2A la même Claire que Pocket Guide : experte IT et assistante de Didier, avec la voix OpenAI `marin` et un avatar LiveAvatar vertical 9:16. Collaboratrice InfoServ2A, elle conseille et accompagne sans devenir une bulle de support. Elle occupe l’arrivée, reste visible pendant la navigation, et rend la main à tout moment.
 
 Claire est une **présence chaleureuse**, très à l’écoute. LiveAvatar n’est que le visage et la voix. Dès l’entrée, elle se présente et présente InfoServ2A. Elle répond dans tous les domaines, sans ramener systématiquement à l’informatique. Sa parole s’écrit dans un encart visible (texte + contexte / questionnaire de devis), hors de son visage.
 
@@ -57,7 +57,7 @@ Règles non négociables :
 - Mémoire de session `assets/js/claire-session-memory.mjs` (`sessionStorage`, tant que l’onglet reste ouvert).
 - Laboratoire texte `/claire-lab` (aucun secret, aucune voix).
 - Ancres canoniques : `solutions-sans-fibre`, `audit-nis2`, `supports`, `offre-hebergement`.
-- Contexte LiveAvatar `InfoServ2A Claire Aidant 1.12` (prompt généré depuis `data/site-knowledge.json`, `opening_text` = accueil vocal).
+- Contexte LiveAvatar `InfoServ2A Claire 1.12` (prompt généré depuis `data/site-knowledge.json`, `opening_text` = accueil vocal).
 - Encart `claire-live-prompt` : parole de Claire + ligne de contexte + questionnaire de devis visible.
 
 ## 5. Spec Figma
@@ -71,7 +71,7 @@ Frames à pousser dans Figma dès que le MCP Figma est authentifié sur le burea
 
 | Frame | Viewport | Usage |
 |---|---|---|
-| F01 Accueil aidante | 1440×900 | Arrivée desktop |
+| F01 Accueil Claire | 1440×900 | Arrivée desktop |
 | F02 Accueil mobile | 390×844 | Arrivée 9:16 |
 | F03 Conversation | 1440×900 | Transcript + résultat vérifié |
 | F04 Rail guidé | 1440×900 | Claire 38 % + site |
@@ -87,11 +87,11 @@ Frames à pousser dans Figma dès que le MCP Figma est authentifié sur le burea
 - `LIVEAVATAR_API_KEY`
 - `OPENAI_API_KEY` ou `LIVEAVATAR_OPENAI_SECRET_ID`
 - optionnel `LIVEAVATAR_AVATAR_ID` (Claire Pocket Guide par défaut)
-- optionnel `LIVEAVATAR_CONTEXT_ID` après la première création du contexte Aidant 1.12. Si une ancienne valeur pointe encore vers 1.3–1.11, la supprimer pour forcer la recréation.
+- optionnel `LIVEAVATAR_CONTEXT_ID` après la première création du contexte Claire 1.12. Si une ancienne valeur pointe encore vers 1.3–1.11, la supprimer pour forcer la recréation.
 
 ## 7. Acceptation
 
-1. L’arrivée nomme Claire comme aidante Live Avatar.
+1. L’arrivée présente Claire comme experte IT, assistante de Didier et collaboratrice InfoServ2A.
 2. Une question informatique (disque, Wi-Fi) reste en conversation : aucune page ne change. Une question hors IT (capitale, blague, recette) est refusée, toujours sans navigation.
 3. « Affiche les solutions de vidéosurveillance sans fibre » exécute search → open → scroll et conserve Claire.
 4. « Onglet suivant » / « onglet précédent » parcourt les 13 pages dans l’ordre du catalogue.
@@ -112,7 +112,7 @@ Cahier des charges énoncé : Claire est conviviale ; elle accueille à la voix 
 
 | Exigence | Verdict | Preuve |
 |---|---|---|
-| Accueil vocal dès l’entrée | **Conforme** | `opening_text` = `CLAIRE_WELCOME` (contexte Aidant 1.12). Le client n’appelle pas `speak(greeting)`. |
+| Accueil vocal dès l’entrée | **Conforme** | `opening_text` = `CLAIRE_WELCOME` (contexte Claire 1.12). Le client n’appelle pas `speak(greeting)`. |
 | Présentation de Claire et d’InfoServ2A | **Conforme** | Accueil unique dans `claire-core.mjs`, importé par le Worker et le client. |
 | Présence chaleureuse, tous domaines | **Conforme** | Métiers, sciences, quotidien, curiosité → `chat`. Elle ne ramène pas à l’informatique. Encart parole + contexte visible hors du visage. |
 | Interruption (parler / toucher / Interrompre) | **Conforme** | `bargeIn` sur `USER_SPEAK_STARTED`, transcription, micro, scène et bouton. |

@@ -32,6 +32,11 @@ function compact(value = "", max = 800) {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
+function safeUpstreamCode(value = "") {
+  const code = String(value || "").trim();
+  return /^[a-z0-9_.-]{1,80}$/i.test(code) ? code : "";
+}
+
 function folded(value = "") {
   return compact(value, 5000)
     .normalize("NFD")
@@ -210,7 +215,14 @@ export async function onRequestPost({ request, env }) {
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-      return json({ error: "Rédaction silencieuse indisponible", fallback: true }, 502, request);
+      const upstream = payload?.error || {};
+      return json({
+        error: "Rédaction silencieuse indisponible",
+        fallback: true,
+        upstreamStatus: response.status,
+        upstreamType: safeUpstreamCode(upstream.type),
+        upstreamCode: safeUpstreamCode(upstream.code)
+      }, 502, request);
     }
     const synthesis = normalizeWriterOutput(parseModelContent(payload), facts);
     return json(synthesis, 200, request);

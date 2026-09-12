@@ -113,3 +113,30 @@ test("POST /api/synthesize-need renvoie le canevas JSON structuré d’OpenAI", 
     globalThis.fetch = originalFetch;
   }
 });
+
+test("POST /api/synthesize-need expose seulement le code sûr d’un refus OpenAI", async () => {
+  resetNeedSynthesisRateLimit();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => Response.json({
+    error: {
+      message: "Incorrect API key: sk-secret-value",
+      type: "invalid_request_error",
+      code: "invalid_api_key"
+    }
+  }, { status: 401 });
+  try {
+    const response = await worker.fetch(post(input), env({ OPENAI_API_KEY: "test-key" }));
+    const payload = await response.json();
+    assert.equal(response.status, 502);
+    assert.deepEqual(payload, {
+      error: "Rédaction silencieuse indisponible",
+      fallback: true,
+      upstreamStatus: 401,
+      upstreamType: "invalid_request_error",
+      upstreamCode: "invalid_api_key"
+    });
+    assert.doesNotMatch(JSON.stringify(payload), /sk-secret-value|test-key/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

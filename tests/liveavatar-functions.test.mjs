@@ -30,7 +30,23 @@ test("le statut s’active avec LiveAvatar et OpenAI Realtime", async () => {
       LIVEAVATAR_OPENAI_SECRET_ID: "secret-ref"
     }
   });
-  assert.equal((await response.json()).configured, true);
+  const payload = await response.json();
+  assert.equal(payload.configured, true);
+  assert.equal(payload.realtimeCredentialSource, "liveavatar-secret-id");
+});
+
+test("le statut annonce le profil minimal préprod sans contexte Claire", async () => {
+  const payload = await statusFunction.onRequestGet({
+    env: {
+      LIVEAVATAR_API_KEY: "configured",
+      OPENAI_API_KEY: "configured",
+      LIVEAVATAR_REALTIME_DIAGNOSTIC: "minimal"
+    }
+  }).json();
+  assert.equal(payload.configured, true);
+  assert.equal(payload.voice, "alloy");
+  assert.equal(payload.realtimeProfile, "minimal");
+  assert.equal(payload.realtimeCredentialSource, "cloudflare-key");
 });
 
 test("le statut confirme le modèle vocal sans exposer les secrets", async () => {
@@ -122,6 +138,10 @@ test("la fonction échange les références serveur contre un jeton éphémère"
     assert.equal(response.status, 200);
     assert.equal(payload.sessionToken, "ephemeral-test-token");
     assert.equal(payload.appId, "infoserv2a");
+    assert.equal(payload.realtimeCredentialSource, "liveavatar-secret-id");
+    assert.equal(payload.realtimeSecretReference, "secret-ref");
+    assert.equal(payload.realtimeSecretRevision, "configured-id");
+    assert.equal(payload.realtimeSecretCreated, false);
     assert.equal(payload.maxSessionDuration, 600);
     assert.equal(outbound.url, "https://api.liveavatar.com/v1/sessions/token");
     const body = JSON.parse(outbound.options.body);
@@ -155,18 +175,55 @@ test("une nouvelle clé Cloudflare crée une nouvelle référence LiveAvatar", a
       env: {
         LIVEAVATAR_API_KEY: "configured",
         OPENAI_API_KEY: "sk-test-new-value",
+        LIVEAVATAR_OPENAI_SECRET_ID: "stale-static-id",
         LIVEAVATAR_CONTEXT_ID: "context-ref",
         LIVEAVATAR_AVATAR_ID: "avatar-ref"
       }
     });
     assert.equal(response.status, 200);
+    const payload = await response.clone().json();
+    assert.equal(payload.realtimeCredentialSource, "cloudflare-key");
+    assert.equal(payload.realtimeSecretReference, "rotated-secret");
+    assert.equal(payload.realtimeSecretRevision, "20260912-voice-secret-v2");
+    assert.equal(payload.realtimeSecretCreated, true);
     const created = outbound.find((item) => item.url.endsWith("/v1/secrets") && item.options.method === "POST");
     assert.ok(created);
     const secretBody = JSON.parse(created.options.body);
-    assert.match(secretBody.secret_name, /^InfoServ2A OpenAI Realtime [0-9a-f]{16}$/);
+    assert.match(secretBody.secret_name, /^InfoServ2A OpenAI Realtime 20260912-voice-secret-v2 [0-9a-f]{16}$/);
     assert.equal(secretBody.secret_value, "sk-test-new-value");
     const token = outbound.find((item) => item.url.endsWith("/v1/sessions/token"));
     assert.equal(JSON.parse(token.options.body).openai_realtime_config.secret_id, "rotated-secret");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("le profil diagnostic isole le connecteur sans marin ni context_id", async () => {
+  const originalFetch = globalThis.fetch;
+  let tokenBody;
+  globalThis.fetch = async (url, options = {}) => {
+    if (String(url).endsWith("/v1/sessions/token")) {
+      tokenBody = JSON.parse(options.body);
+      return Response.json({ data: { session_token: "minimal-token", session_id: "minimal-session" } });
+    }
+    throw new Error(`Appel inattendu : ${url}`);
+  };
+  try {
+    const response = await sessionFunction.onRequestPost({
+      request: request(),
+      env: {
+        LIVEAVATAR_API_KEY: "configured",
+        LIVEAVATAR_OPENAI_SECRET_ID: "fresh-secret-ref",
+        LIVEAVATAR_REALTIME_DIAGNOSTIC: "minimal"
+      }
+    });
+    const payload = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(payload.realtimeProfile, "minimal");
+    assert.equal(payload.voice, "alloy");
+    assert.equal(tokenBody.openai_realtime_config.secret_id, "fresh-secret-ref");
+    assert.equal(tokenBody.openai_realtime_config.voice, "alloy");
+    assert.equal("context_id" in tokenBody.openai_realtime_config, false);
   } finally {
     globalThis.fetch = originalFetch;
   }
