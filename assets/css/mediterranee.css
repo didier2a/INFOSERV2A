@@ -139,17 +139,6 @@ body.med-site { background: var(--med-paper); }
 .med-main .med-details { margin-top: 18px; border-top: 1px solid var(--med-line); padding-top: 15px; }
 .med-details summary { cursor: pointer; font-size: 15px; color: var(--med-blue); }
 .med-details p { font-size: 16px; margin-top: 12px; }
-.med-claire-offer-hero { grid-template-columns: 1.05fr .95fr; padding-block: 28px 34px; }
-.med-claire-stage { min-height: 440px; margin: 0; padding: 28px; display: grid; place-items: center; overflow: hidden; border-radius: 18px; background: linear-gradient(145deg, #dcebe4, var(--med-blue)); }
-.med-claire-phone { width: min(260px, 70%); aspect-ratio: 9 / 16; position: relative; overflow: hidden; border: 3px solid rgba(255,255,255,.55); border-radius: 28px; background: #0b1216; box-shadow: 0 24px 60px rgba(0,0,0,.28); }
-.med-claire-phone img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
-.med-claire-phone figcaption { position: absolute; inset: auto 0 0; padding: 42px 14px 22px; color: white; background: linear-gradient(transparent, rgba(0,0,0,.78)); font-size: 14px; font-weight: 650; text-align: center; }
-.med-claire-demo-link { display: inline-flex; gap: 7px; margin-top: 14px; color: var(--med-blue); font-weight: 650; text-decoration: underline; text-underline-offset: 4px; }
-.med-offer-cards .med-card { display: flex; flex-direction: column; background: #fffdf9; }
-.med-offer-cards .med-card > p:not(.med-price) { color: var(--med-muted); }
-.med-price { margin-top: auto !important; padding-top: 18px; color: var(--med-ink); font-size: 28px !important; font-weight: 750; letter-spacing: -.04em; }
-.med-price small { display: block; margin-top: 4px; color: var(--med-muted); font-size: 14px; font-weight: 500; letter-spacing: 0; }
-.med-offer-process { padding-top: 0; }
 .med-main [id] { scroll-margin-top: 125px; }
 .med-form :is(input, textarea, select) { scroll-margin-bottom: 180px; }
 /* Existing routes retain their content and controls, with the shared identity. */
@@ -164,7 +153,7 @@ body.med-site { background: var(--med-paper); }
   .med-section { padding-block: 30px; }
 }
 @container (max-width: 740px) {
-  .med-hero, .med-contact-grid, .med-proximity, .med-claire-offer-hero { grid-template-columns: 1fr; }
+  .med-hero, .med-contact-grid, .med-proximity { grid-template-columns: 1fr; }
   .med-hero { gap: 8px; }
   .med-hero--home { padding-right: 4%; padding-bottom: 25px; }
   .med-hero--home .med-photo { border-radius: 12px; }
@@ -180,7 +169,6 @@ body.med-site { background: var(--med-paper); }
   .med-values { grid-template-columns: 1fr; gap: 14px; }
   .med-values p { justify-content: start; }
   .med-values p + p { border: 0; }
-  .med-claire-stage { min-height: 400px; margin-top: 18px; }
 }
 @container (max-width: 450px) {
   .med-main h1 { font-size: 35px; }
@@ -191,8 +179,6 @@ body.med-site { background: var(--med-paper); }
   .med-contact-card, .med-form { padding: 20px; }
   .med-photo img { aspect-ratio: 1.55; }
   .med-cta .med-actions { width: 100%; }
-  .med-claire-stage { min-height: 370px; padding: 20px; }
-  .med-claire-phone { width: min(220px, 76%); }
 }
 @media (max-width: 820px) {
   .med-header .header-inner, .med-header.med-compact .header-inner { min-height: 76px; }

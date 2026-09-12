@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 ASSET_V = "20260907-it48"
-MED_ASSET_V = "20260912-claire-offer"
+MED_ASSET_V = "20260910-med1"
 BRAND = '<span class="brand-name">INFOSERV2A</span>'
 HEADER_MARK_START = "<!-- chrome:header -->"
 HEADER_MARK_END = "<!-- /chrome:header -->"
@@ -26,7 +26,6 @@ CURRENT = {
     "maintenance-distance.html": {"maintenance-distance.html"},
     "reseaux-wifi.html": {"reseaux-wifi.html"},
     "claire.html": {"claire.html"},
-    "claire-pour-votre-site.html": {"claire-pour-votre-site.html"},
     "configuration-domicile.html": {"configuration-domicile.html"},
     "cybersecurite-ia.html": {"cybersecurite-ia.html"},
     "recuperation-donnees.html": {"recuperation-donnees.html"},
@@ -45,10 +44,6 @@ OFFRES = {
 }
 
 SEO = {
-    "claire-pour-votre-site.html": {
-        "title": "Claire pour votre site — InfoServ2A",
-        "description": "Intégrez Claire à votre site : conseillère vidéo 9:16, réponses clients et demandes de contact. Installation par InfoServ2A.",
-    },
     "contact.html": {
         "title": "Contact — InfoServ2A à Porto-Vecchio",
         "description": "Professionnels du Sud Corse et particuliers : décrivez votre besoin, je vous accompagne. Du lundi au samedi, de 9 h à 17 h.",
@@ -262,7 +257,7 @@ def patch_seo(html: str, page: str) -> str:
 def replace_marked(html: str, start: str, end: str, inner: str) -> str | None:
     if start in html and end in html:
         pattern = re.compile(re.escape(start) + r".*?" + re.escape(end), re.S)
-        block = start + "\n" + inner.rstrip() + "\n" + end
+        block = start + "\n" + inner.rstrip() + "\n" + end + "\n"
         return pattern.sub(block, html, count=1)
     return None
 
