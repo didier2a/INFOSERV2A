@@ -262,7 +262,7 @@ def patch_seo(html: str, page: str) -> str:
 def replace_marked(html: str, start: str, end: str, inner: str) -> str | None:
     if start in html and end in html:
         pattern = re.compile(re.escape(start) + r".*?" + re.escape(end), re.S)
-        block = start + "\n" + inner.rstrip() + "\n" + end + "\n"
+        block = start + "\n" + inner.rstrip() + "\n" + end
         return pattern.sub(block, html, count=1)
     return None
 

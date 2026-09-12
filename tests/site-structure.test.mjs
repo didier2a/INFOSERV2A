@@ -20,7 +20,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
     assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260907-it48)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
+    const expectedClaireImages = page === "claire-pour-votre-site.html" ? 3 : 2;
+    assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, expectedClaireImages, page);
     assert.doesNotMatch(html, /claire-mini|claire-panel/);
   }
 });
