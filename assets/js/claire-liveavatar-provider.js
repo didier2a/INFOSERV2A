@@ -315,13 +315,15 @@ export class InfoServ2ALiveAvatarProvider {
     this.emit("listening", label);
   }
 
-  async ensureActiveListening() {
+  async ensureActiveListening({ allowReconnect = false } = {}) {
     this.record("microphone:resume-request", {
       connected: this.connected,
       streamReady: this.streamReady,
-      hasSession: Boolean(this.session)
+      hasSession: Boolean(this.session),
+      allowReconnect
     });
     if (!this.session || !this.connected || !this.streamReady) {
+      if (!allowReconnect) return false;
       await this.reconnect({ microphone: true });
       return Boolean(this.connected && this.streamReady && this.listening && this.mediaAudible);
     }
@@ -332,6 +334,7 @@ export class InfoServ2ALiveAvatarProvider {
     const audible = await this.resumeMedia();
     if (active && audible && this.connected && this.streamReady) return true;
     if (this.connected && this.streamReady && this.hasLiveAudio()) return false;
+    if (!allowReconnect) return false;
     await this.reconnect({ microphone: true });
     return Boolean(this.connected && this.streamReady && this.listening && this.mediaAudible);
   }

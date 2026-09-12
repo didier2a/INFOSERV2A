@@ -611,7 +611,10 @@ test("la reprise recrée une session arrêtée avant de réécouter", async () =
   assert.equal(provider.connected, false);
   assert.equal(provider.listening, false);
 
-  assert.equal(await provider.ensureActiveListening(), true);
+  assert.equal(await provider.ensureActiveListening(), false);
+  assert.equal(globalThis.__infoservFakeSession, stoppedSession);
+
+  assert.equal(await provider.ensureActiveListening({ allowReconnect: true }), true);
   assert.notEqual(globalThis.__infoservFakeSession, stoppedSession);
   assert.equal(provider.connected, true);
   assert.equal(provider.streamReady, true);

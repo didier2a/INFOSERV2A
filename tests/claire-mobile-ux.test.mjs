@@ -321,6 +321,37 @@ test("ouvrir Claire ne déclare pas la reprise réussie si la sortie avatar rest
   assert.deepEqual(calls, ["listen", "connect"]);
 });
 
+test("le retour de visibilité ne reconnecte jamais LiveAvatar sans geste utilisateur", async () => {
+  globalThis.matchMedia = () => ({ matches: true });
+  const originalDocument = globalThis.document;
+  globalThis.document = { visibilityState: "visible" };
+  const calls = [];
+  const context = {
+    state: "shared",
+    audioEnabled: true,
+    mobileUx: { surface: "claire" },
+    provider: {
+      connected: false,
+      async ensureActiveListening(options) {
+        calls.push(["listen", options]);
+        return false;
+      }
+    },
+    syncViewportShell() { calls.push(["viewport"]); },
+    async keepScreenAwake() { calls.push(["wake"]); },
+    releaseWakeLock() { calls.push(["release"]); },
+    async connectLiveSession() { calls.push(["connect"]); }
+  };
+  const { ClaireCompanion } = await import("../assets/js/claire-companion.js");
+  await ClaireCompanion.prototype.handleVisibility.call(context);
+  assert.deepEqual(calls, [
+    ["viewport"],
+    ["wake"],
+    ["listen", { allowReconnect: false }]
+  ]);
+  globalThis.document = originalDocument;
+});
+
 test("taper le médaillon reprend l’écoute après Rester en PiP", async () => {
   globalThis.matchMedia = () => ({ matches: true });
   const calls = [];

@@ -952,7 +952,7 @@ export class ClaireCompanion {
       this.setState("shared");
       try {
         const listening = this.provider.ensureActiveListening
-          ? await this.provider.ensureActiveListening()
+          ? await this.provider.ensureActiveListening({ allowReconnect: true })
           : await this.provider.ensureMicrophone?.();
         const outputReady = this.provider.mediaAudible !== false;
         if (listening !== false && outputReady && this.provider.connected && this.provider.listening) {
@@ -1324,12 +1324,13 @@ export class ClaireCompanion {
     await this.keepScreenAwake();
     if (this.audioEnabled) {
       try {
-        if (this.provider?.ensureActiveListening) await this.provider.ensureActiveListening();
-        else if (this.provider?.connected) await this.provider.ensureMicrophone?.();
-        else await this.connectLiveSession({ microphone: true, state: this.state, skipWelcome: true });
-      } catch {
-        await this.connectLiveSession({ microphone: true, state: this.state, skipWelcome: true });
-      }
+        if (this.provider?.ensureActiveListening) {
+          await this.provider.ensureActiveListening({ allowReconnect: false });
+        } else if (this.provider?.connected) {
+          await this.provider.ensureMicrophone?.();
+          await this.provider.resumeMedia?.();
+        }
+      } catch { /* Une reprise passive ne recrée jamais le flux sans nouveau geste. */ }
     }
   }
 
