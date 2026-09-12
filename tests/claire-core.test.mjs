@@ -174,6 +174,15 @@ test("identifie l’accueil avec les deux formes d’URL", () => {
   assert.equal(currentPage(knowledge, "/index.html")?.id, "home");
 });
 
+test("identifie devis et contact avec ou sans extension HTML", () => {
+  for (const pathname of ["/devis", "/devis/", "/devis.html"]) {
+    assert.equal(currentPage(knowledge, pathname)?.id, "quote");
+  }
+  for (const pathname of ["/contact", "/contact/", "/contact.html"]) {
+    assert.equal(currentPage(knowledge, pathname)?.id, "contact");
+  }
+});
+
 test("conserve Claire pendant une navigation interne", () => {
   assert.equal(
     pageHrefForSession("cybersecurite-ia.html#audit-nis2", "shared"),

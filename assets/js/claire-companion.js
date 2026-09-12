@@ -20,7 +20,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260912-claire-cde-v1";
+} from "./claire-core.mjs?v=20260912-combo3star-pip-v1";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -49,7 +49,7 @@ import {
   alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260912-claire-cde-v1";
+} from "./claire-session-memory.mjs?v=20260912-combo3star-pip-v1";
 import {
   CLAIRE_ACTION_MODES,
   actionDraftReady,
@@ -61,18 +61,18 @@ import {
   isQuoteResendRequest,
   shouldDebounceVoiceCommand,
   requestedActionMode
-} from "./claire-actions-v1.mjs?v=20260912-claire-cde-v1";
+} from "./claire-actions-v1.mjs?v=20260912-combo3star-pip-v1";
 import {
   describeEmailSendOutcome,
   didEmailSendThisTurn
-} from "./site-email.mjs?v=20260912-claire-cde-v1";
+} from "./site-email.mjs?v=20260912-combo3star-pip-v1";
 import {
   MOBILE_SCENE_HOLD_MS,
   createMobileSceneState,
   mobileSceneActive,
   reduceMobileScene,
   sceneStatusLabel
-} from "./claire-mobile-scene.mjs?v=20260912-claire-cde-v1";
+} from "./claire-mobile-scene.mjs?v=20260912-combo3star-pip-v1";
 import {
   MOBILE_PIP_EDGE_MAGNET_PX,
   MOBILE_PIP_STORAGE_KEY,
@@ -80,26 +80,30 @@ import {
   PHONE_MEDIA_QUERY,
   clampMobilePipPoint,
   createMobileUxState,
+  dismissClaireDiscovery,
+  isMobileFormPath,
   magnetizeMobilePipPoint,
+  markClaireDiscoverySeen,
   mobilePipDragExceeded,
   mobilePipPercentFromPoint,
   mobilePipPointFromPercent,
   mobileUxLocksScroll,
-  reduceMobileUx
-} from "./claire-mobile-ux.mjs?v=20260912-claire-cde-v1";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260912-claire-cde-v1";
+  reduceMobileUx,
+  shouldShowClaireDiscovery
+} from "./claire-mobile-ux.mjs?v=20260912-combo3star-pip-v1";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260912-combo3star-pip-v1";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260912-claire-cde-v1";
-import "./contact.js?v=20260912-claire-cde-v1";
-import "./devis.js?v=20260912-claire-cde-v1";
+} from "./claire-site-runtime-adapter.mjs?v=20260912-combo3star-pip-v1";
+import "./contact.js?v=20260912-combo3star-pip-v1";
+import "./devis.js?v=20260912-combo3star-pip-v1";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
 const LOCAL_TEXT_FALLBACK = "Le direct vocal est indisponible, mais je peux continuer par écrit pour vous orienter dans les services InfoServ2A. Décrivez votre besoin informatique ou demandez un onglet précis.";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260912-claire-cde-v1";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260912-claire-cde-v1";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260912-combo3star-pip-v1";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260912-combo3star-pip-v1";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -368,6 +372,11 @@ export class ClaireCompanion {
       pathname: location.pathname,
       hash: location.hash
     });
+    this.mobileDiscoveryVisible = shouldShowClaireDiscovery(
+      globalThis.sessionStorage,
+      globalThis.localStorage
+    );
+    this.mobileDiscoverySeenMarked = false;
     this.mobileChrome = null;
     this.mobilePipDrag = null;
     this.mobilePipPosition = this.loadMobilePipPosition();
@@ -592,8 +601,8 @@ export class ClaireCompanion {
   mobilePipSize() {
     const rect = this.nodes.stage?.getBoundingClientRect();
     return {
-      width: rect?.width || 104,
-      height: rect?.height || 136
+      width: rect?.width || 76,
+      height: rect?.height || 76
     };
   }
 
@@ -636,6 +645,7 @@ export class ClaireCompanion {
       if (
         !isPhoneShell()
         || this.mobileUx.surface !== MOBILE_SURFACES.PIP
+        || event.target?.closest?.("[data-mobile-pip-dismiss]")
         || (event.pointerType === "mouse" && event.button !== 0)
       ) return;
       const rect = this.root.getBoundingClientRect();
@@ -696,26 +706,12 @@ export class ClaireCompanion {
     const shell = document.createElement("div");
     shell.className = "claire-mobile-shell";
     shell.innerHTML = `
-      <section class="claire-mobile-sheet" data-mobile-sheet aria-label="Claire" aria-expanded="false">
-        <button class="claire-mobile-sheet__handle" type="button" data-mobile-sheet-toggle aria-expanded="false">
-          <span aria-hidden="true"></span>
-          <strong>Claire</strong>
-          <small data-mobile-sheet-context>Votre devis reste visible</small>
+      <aside class="claire-mobile-discovery" data-mobile-discovery aria-label="Découvrir Claire">
+        <button class="claire-mobile-discovery__open" type="button" data-mobile-discovery-open>
+          <span aria-hidden="true">◌</span><strong>Découvrir Claire</strong>
         </button>
-        <div class="claire-mobile-sheet__body">
-          <div class="claire-mobile-sheet__intro">
-            <img src="assets/images/companion/claire-liveavatar-1080x1920.jpg" alt="">
-            <span><strong>Bonjour, je suis Claire.</strong><small data-mobile-sheet-status>Je peux vous aider avec ce formulaire.</small></span>
-            <button type="button" data-mobile-sheet-site>Voir le site</button>
-          </div>
-          <form class="claire-mobile-sheet__command" data-mobile-sheet-form>
-            <label class="sr-only" for="claireMobileSheetCommand">Votre question</label>
-            <input id="claireMobileSheetCommand" type="text" autocomplete="off" enterkeyhint="send" maxlength="320" placeholder="Votre question…">
-            <button type="button" data-mobile-sheet-mic aria-label="Claire">●</button>
-            <button type="submit" aria-label="Envoyer">→</button>
-          </form>
-        </div>
-      </section>
+        <button class="claire-mobile-discovery__dismiss" type="button" data-mobile-discovery-dismiss aria-label="Ne plus afficher Découvrir Claire">×</button>
+      </aside>
       <nav class="claire-mobile-tabs" aria-label="Navigation mobile">
         <button type="button" data-mobile-tab="accueil" data-mobile-href="/index.html">
           <span aria-hidden="true">⌂</span><b>Accueil</b>
@@ -738,16 +734,31 @@ export class ClaireCompanion {
     pipOpen.type = "button";
     pipOpen.className = "claire-mobile-pip__open";
     pipOpen.dataset.mobilePipOpen = "";
-    pipOpen.setAttribute("aria-label", "Claire");
-    pipOpen.innerHTML = "<strong>Claire</strong><span aria-hidden=\"true\">●</span>";
+    pipOpen.setAttribute("aria-label", "Ouvrir Claire");
+    pipOpen.innerHTML = '<span class="sr-only">Ouvrir Claire</span>';
     this.nodes.stage?.append(pipOpen);
+
+    const pipDismiss = document.createElement("button");
+    pipDismiss.type = "button";
+    pipDismiss.className = "claire-mobile-pip__dismiss";
+    pipDismiss.dataset.mobilePipDismiss = "";
+    pipDismiss.setAttribute("aria-label", "Fermer Claire");
+    pipDismiss.textContent = "×";
+    this.nodes.stage?.append(pipDismiss);
 
     const siteReturn = document.createElement("button");
     siteReturn.type = "button";
     siteReturn.className = "claire-mobile-site-return";
     siteReturn.dataset.mobileSiteReturn = "";
-    siteReturn.textContent = "Voir le site";
+    siteReturn.textContent = "Quitter Claire";
     this.nodes.experience?.append(siteReturn);
+
+    const pipChoice = document.createElement("button");
+    pipChoice.type = "button";
+    pipChoice.className = "claire-mobile-pip-choice";
+    pipChoice.dataset.mobilePipChoice = "";
+    pipChoice.textContent = "Rester en PiP";
+    this.nodes.experience?.append(pipChoice);
 
     const voiceRow = document.createElement("div");
     voiceRow.className = "claire-mobile-voice-row";
@@ -766,12 +777,9 @@ export class ClaireCompanion {
       shell,
       tabs: [...shell.querySelectorAll("[data-mobile-tab]")],
       safeProbe: shell.querySelector(".claire-mobile-safe-probe"),
-      sheet: shell.querySelector("[data-mobile-sheet]"),
-      sheetToggle: shell.querySelector("[data-mobile-sheet-toggle]"),
-      sheetContext: shell.querySelector("[data-mobile-sheet-context]"),
-      sheetStatus: shell.querySelector("[data-mobile-sheet-status]"),
-      sheetForm: shell.querySelector("[data-mobile-sheet-form]"),
-      sheetInput: shell.querySelector("#claireMobileSheetCommand"),
+      discovery: shell.querySelector("[data-mobile-discovery]"),
+      pipDismiss,
+      pipChoice,
       voiceRow,
       voiceMic: voiceRow.querySelector("[data-mobile-voice-mic]"),
       voiceLabel: voiceRow.querySelector("[data-mobile-voice-label]"),
@@ -785,7 +793,15 @@ export class ClaireCompanion {
           void this.openMobileClaire();
           return;
         }
-        void this.navigateMobileTab(button.dataset.mobileHref);
+        void (async () => {
+          if (
+            this.mobileUx.surface !== MOBILE_SURFACES.SITE
+            && this.mobileUx.surface !== MOBILE_SURFACES.PIP
+          ) {
+            await this.exitMobileClaire({ restoreFocus: false });
+          }
+          await this.navigateMobileTab(button.dataset.mobileHref);
+        })();
       });
     });
     pipOpen.addEventListener("click", (event) => {
@@ -796,46 +812,48 @@ export class ClaireCompanion {
       }
       void this.openMobileClaire();
     });
-    siteReturn.addEventListener("click", () => this.showMobileSite());
+    pipDismiss.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      void this.evacuateMobilePip();
+    });
+    siteReturn.addEventListener("click", () => void this.exitMobileClaire());
+    pipChoice.addEventListener("click", () => void this.keepMobilePip());
     this.mobileChrome.voiceMic?.addEventListener("click", () => void this.toggleMicrophone());
     this.mobileChrome.voiceInterrupt?.addEventListener("click", () => this.interrupt());
-    shell.querySelector("[data-mobile-sheet-site]")?.addEventListener("click", () => {
-      this.applyMobileUxEvent({ type: "collapse-sheet" });
-      document.querySelector("#devis-form, #contact-form")?.scrollIntoView?.({
-        block: "start",
-        behavior: "smooth"
-      });
+    shell.querySelector("[data-mobile-discovery-open]")?.addEventListener("click", () => {
+      this.hideMobileDiscovery();
+      void this.openMobileClaire();
     });
-    this.mobileChrome.sheetToggle?.addEventListener("click", () => {
-      this.applyMobileUxEvent({
-        type: this.mobileUx.sheetExpanded ? "collapse-sheet" : "expand-sheet"
-      });
-    });
-    this.mobileChrome.sheetInput?.addEventListener("focus", () => {
-      this.applyMobileUxEvent({ type: "expand-sheet" });
-    });
-    shell.querySelector("[data-mobile-sheet-mic]")?.addEventListener("click", async () => {
-      await this.toggleMicrophone();
-      this.applyMobileUxEvent({ type: "open-sheet", expanded: true });
-    });
-    this.mobileChrome.sheetForm?.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const value = this.mobileChrome?.sheetInput?.value.trim();
-      if (!value) return;
-      this.mobileChrome.sheetInput.value = "";
-      if (!this.provider?.connected) {
-        await this.connectLiveSession({
-          microphone: false,
-          state: "guided",
-          skipWelcome: true
-        });
-        this.applyMobileUxEvent({ type: "open-sheet", expanded: true });
-      }
-      await this.submit(value, "mobile-sheet");
+    shell.querySelector("[data-mobile-discovery-dismiss]")?.addEventListener("click", () => {
+      dismissClaireDiscovery(globalThis.sessionStorage, globalThis.localStorage);
+      this.hideMobileDiscovery();
     });
 
     this.bindMobilePipDrag();
+    this.installMobileFormAssist();
     this.renderMobileUx();
+  }
+
+  hideMobileDiscovery() {
+    this.mobileDiscoveryVisible = false;
+    this.mobileChrome?.shell?.classList?.remove("is-discovery-new");
+    if (this.mobileChrome?.discovery) this.mobileChrome.discovery.hidden = true;
+  }
+
+  installMobileFormAssist() {
+    document.querySelectorAll?.("#devis-form, #contact-form").forEach((form) => {
+      if (form.querySelector?.("[data-mobile-form-claire]")) return;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "claire-mobile-form-assist";
+      button.dataset.mobileFormClaire = "";
+      button.innerHTML = '<span aria-hidden="true">◌</span> Aide Claire';
+      button.addEventListener("click", () => void this.openMobileClaire());
+      const anchor = form.querySelector?.(".form-hint");
+      if (anchor) anchor.before(button);
+      else form.prepend(button);
+    });
   }
 
   applyMobileUxEvent(event) {
@@ -856,7 +874,7 @@ export class ClaireCompanion {
       return;
     }
 
-    const { surface, activeTab, sheetExpanded } = this.mobileUx;
+    const { surface, activeTab } = this.mobileUx;
     this.root.dataset.mobileSurface = surface;
     document.body.dataset.claireMobileSurface = surface;
     document.body.classList.toggle("claire-mobile-scroll-lock", mobileUxLocksScroll(this.mobileUx));
@@ -865,17 +883,24 @@ export class ClaireCompanion {
       if (active) button.setAttribute("aria-current", "page");
       else button.removeAttribute("aria-current");
     });
-    if (this.mobileChrome.sheet) {
-      this.mobileChrome.sheet.hidden = surface !== MOBILE_SURFACES.SHEET;
-      this.mobileChrome.sheet.setAttribute("aria-expanded", sheetExpanded ? "true" : "false");
-    }
     this.mobileChrome.voiceRow.hidden = surface !== MOBILE_SURFACES.CLAIRE;
-    this.mobileChrome.sheetToggle?.setAttribute("aria-expanded", sheetExpanded ? "true" : "false");
-    if (this.mobileChrome.sheetContext) {
-      this.mobileChrome.sheetContext.textContent = /contact\.html$/i.test(this.mobileUx.pathname)
-        ? "Votre contact reste visible"
-        : "Votre devis reste visible";
+    if (this.mobileChrome.discovery) {
+      const showDiscovery = (
+        this.mobileDiscoveryVisible
+        && surface === MOBILE_SURFACES.SITE
+        && !isMobileFormPath(location.pathname)
+      );
+      this.mobileChrome.discovery.hidden = !showDiscovery;
+      this.mobileChrome.shell.classList.toggle(
+        "is-discovery-new",
+        showDiscovery
+      );
+      if (showDiscovery && !this.mobileDiscoverySeenMarked) {
+        markClaireDiscoverySeen(globalThis.sessionStorage);
+        this.mobileDiscoverySeenMarked = true;
+      }
     }
+    this.installMobileFormAssist();
     const section = this.siteAdapter?.snapshot?.()?.section;
     const sceneStatus = this.nodes.sceneStatus;
     if (surface === MOBILE_SURFACES.GUIDED && sceneStatus) {
@@ -920,6 +945,7 @@ export class ClaireCompanion {
 
   async openMobileClaire() {
     if (!isPhoneShell()) return this.openConversation();
+    this.hideMobileDiscovery();
     this.applyMobileUxEvent({ type: "open-claire" });
     if (this.provider?.connected) {
       this.setState("shared");
@@ -933,6 +959,57 @@ export class ClaireCompanion {
     });
     this.applyMobileUxEvent({ type: "open-claire" });
     return true;
+  }
+
+  async exitMobileClaire({ restoreFocus = true, showPip = true } = {}) {
+    this.interrupt();
+    this.releaseWakeLock();
+    this.hideSessionNotice();
+    this.clearSessionWatch();
+    this.clearMobileSceneTimer();
+    try { await this.provider?.pauseListening?.(); } catch { /* Déjà en pause. */ }
+    try { await this.provider?.stop?.(); } catch { /* Session déjà terminée. */ }
+    this.audioEnabled = false;
+    storageSet(STORAGE_SEEN, "1");
+    storageSet(STORAGE_MODE, "manual");
+    this.setState("manual");
+    this.applyMobileSceneEvent("reset");
+    this.applyMobileUxEvent({
+      type: showPip ? "show-pip" : "evacuate-pip",
+      pathname: location.pathname,
+      hash: location.hash
+    });
+    if (this.nodes.live) this.nodes.live.textContent = "Session Claire terminée. Votre conversation reste mémorisée.";
+    if (restoreFocus) {
+      const activeTab = this.mobileChrome?.tabs.find(
+        (button) => button.dataset.mobileTab === this.mobileUx.activeTab
+      );
+      activeTab?.focus?.({ preventScroll: true });
+    }
+    return true;
+  }
+
+  async keepMobilePip({ restoreFocus = true } = {}) {
+    this.interrupt();
+    this.releaseWakeLock();
+    this.hideSessionNotice();
+    this.clearMobileSceneTimer();
+    try { await this.provider?.pauseListening?.(); } catch { /* Déjà en pause. */ }
+    storageSet(STORAGE_SEEN, "1");
+    storageSet(STORAGE_MODE, "guided");
+    this.setState("guided");
+    this.applyMobileSceneEvent("reset");
+    this.applyMobileUxEvent({
+      type: "show-pip",
+      pathname: location.pathname,
+      hash: location.hash
+    });
+    if (restoreFocus) this.mobileChrome?.pipDismiss?.focus?.({ preventScroll: true });
+    return true;
+  }
+
+  async evacuateMobilePip() {
+    return this.exitMobileClaire({ restoreFocus: true, showPip: false });
   }
 
   showMobileSite() {
@@ -977,7 +1054,7 @@ export class ClaireCompanion {
   bindEvents() {
     this.root.querySelectorAll("[data-claire-start]").forEach((button) => button.addEventListener("click", () => void this.start()));
     this.root.querySelectorAll("[data-claire-manual]").forEach((button) => button.addEventListener("click", () => {
-      if (isPhoneShell()) this.showMobileSite();
+      if (isPhoneShell()) void this.exitMobileClaire();
       else this.enterManualMode();
     }));
     this.root.querySelectorAll("[data-claire-recall]").forEach((button) => button.addEventListener("click", () => {
@@ -985,7 +1062,7 @@ export class ClaireCompanion {
       else this.recall();
     }));
     this.root.querySelectorAll("[data-claire-guided]").forEach((button) => button.addEventListener("click", () => {
-      if (isPhoneShell()) this.showMobileSite();
+      if (isPhoneShell()) this.showMobileGuided();
       else this.enterGuidedMode();
     }));
     this.root.querySelectorAll("[data-claire-expand]").forEach((button) => button.addEventListener("click", () => {
@@ -1288,7 +1365,6 @@ export class ClaireCompanion {
   setStatus(value, label) {
     const previous = this.root?.dataset.presence;
     if (this.nodes.status) this.nodes.status.textContent = label;
-    if (this.mobileChrome?.sheetStatus) this.mobileChrome.sheetStatus.textContent = label;
     const micActive = Boolean(this.provider?.listening);
     if (this.nodes.mic) {
       this.nodes.mic.setAttribute("aria-pressed", micActive ? "true" : "false");
@@ -1499,6 +1575,10 @@ export class ClaireCompanion {
   }
 
   enterManualMode() {
+    if (isPhoneShell()) {
+      void this.exitMobileClaire();
+      return;
+    }
     this.interrupt();
     this.releaseWakeLock();
     this.hideSessionNotice();
@@ -1507,13 +1587,6 @@ export class ClaireCompanion {
     storageSet(STORAGE_SEEN, "1");
     storageSet(STORAGE_MODE, "manual");
     this.setState("manual");
-    if (isPhoneShell()) {
-      this.applyMobileUxEvent({
-        type: "show-site",
-        pathname: location.pathname,
-        hash: location.hash
-      });
-    }
     this.nodes.live.textContent = "Claire reste à portée pendant votre visite du site.";
     const focusTarget = this.lastFocus instanceof HTMLElement ? this.lastFocus : document.querySelector("#contenu");
     focusTarget?.focus?.({ preventScroll: true });
@@ -1894,7 +1967,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260912-claire-cde-v1");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260912-combo3star-pip-v1");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));

@@ -181,3 +181,69 @@ test("les écritures programmatiques émettent input et change", () => {
   assert.deepEqual(events, ["input", "change"]);
   assert.equal(field.dataset.claireWriteSource, undefined);
 });
+
+test("la synthèse Claire ne remplace jamais un message contact tapé", () => {
+  const message = {
+    value: "Message saisi par le client, à conserver mot pour mot.",
+    tagName: "TEXTAREA",
+    dataset: {},
+    scrollTop: 0,
+    dispatchEvent() {}
+  };
+  const surface = new BrowserInfoServ2ASurface({
+    knowledge: { pages: [] },
+    windowRef: {
+      location: { href: "https://preprod.example/contact", pathname: "/contact", origin: "https://preprod.example" },
+      Event,
+      setTimeout,
+      clearTimeout
+    },
+    documentRef: {
+      querySelector(selector) {
+        if (selector === "#contact-message") return message;
+        return null;
+      }
+    },
+    fetchImpl: async () => new Response()
+  });
+  const fields = surface.prefillContact(
+    { message: "Synthèse de l’échange : texte généré par Claire." },
+    {
+      memory: {
+        draft: {
+          values: { message: message.value },
+          provenance: { message: { source: "typed", updatedAt: 20 } }
+        }
+      }
+    }
+  );
+  assert.equal(fields.message, "Message saisi par le client, à conserver mot pour mot.");
+  assert.equal(message.value, fields.message);
+});
+
+test("le résolveur SPA accepte les routes formulaire sans extension", () => {
+  const surface = new BrowserInfoServ2ASurface({
+    knowledge: {
+      pages: [
+        { id: "quote", href: "devis.html" },
+        { id: "contact", href: "contact.html" }
+      ]
+    },
+    windowRef: {
+      location: {
+        href: "https://preprod.example/devis",
+        pathname: "/devis",
+        origin: "https://preprod.example"
+      },
+      setTimeout,
+      clearTimeout
+    },
+    documentRef: { querySelector() { return null; } },
+    fetchImpl: async () => new Response()
+  });
+  assert.equal(surface.activePageId, "quote");
+  assert.equal(surface.resolvePage("/devis")?.id, "quote");
+  assert.equal(surface.resolvePage("/devis.html")?.id, "quote");
+  assert.equal(surface.resolvePage("/contact")?.id, "contact");
+  assert.equal(surface.resolvePage("/contact.html")?.id, "contact");
+});
