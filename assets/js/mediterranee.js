@@ -2,7 +2,7 @@
 (() => {
   const header = document.querySelector('.med-header');
   if (header) {
-    const compact = () => header.classList.toggle('med-compact', header.getBoundingClientRect().width < 1040);
+    const compact = () => header.classList.toggle('med-compact', header.getBoundingClientRect().width < 920);
     new ResizeObserver(compact).observe(header);
     compact();
   }
