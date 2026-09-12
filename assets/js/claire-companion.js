@@ -20,7 +20,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260911-claire-send-hang-v1";
+} from "./claire-core.mjs?v=20260912-mobile-bdae-v1";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -46,7 +46,7 @@ import {
   alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260911-claire-send-hang-v1";
+} from "./claire-session-memory.mjs?v=20260912-mobile-bdae-v1";
 import {
   CLAIRE_ACTION_MODES,
   actionDraftReady,
@@ -58,31 +58,38 @@ import {
   isQuoteResendRequest,
   shouldDebounceVoiceCommand,
   requestedActionMode
-} from "./claire-actions-v1.mjs?v=20260911-claire-send-hang-v1";
+} from "./claire-actions-v1.mjs?v=20260912-mobile-bdae-v1";
 import {
   describeEmailSendOutcome,
   didEmailSendThisTurn
-} from "./site-email.mjs?v=20260911-claire-send-hang-v1";
+} from "./site-email.mjs?v=20260912-mobile-bdae-v1";
 import {
   MOBILE_SCENE_HOLD_MS,
   createMobileSceneState,
   mobileSceneActive,
   reduceMobileScene,
   sceneStatusLabel
-} from "./claire-mobile-scene.mjs?v=20260911-claire-send-hang-v1";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260911-claire-send-hang-v1";
+} from "./claire-mobile-scene.mjs?v=20260912-mobile-bdae-v1";
+import {
+  MOBILE_SURFACES,
+  PHONE_MEDIA_QUERY,
+  createMobileUxState,
+  mobileUxLocksScroll,
+  reduceMobileUx
+} from "./claire-mobile-ux.mjs?v=20260912-mobile-bdae-v1";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260912-mobile-bdae-v1";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260911-claire-send-hang-v1";
-import "./contact.js?v=20260911-claire-send-hang-v1";
-import "./devis.js?v=20260911-claire-send-hang-v1";
+} from "./claire-site-runtime-adapter.mjs?v=20260912-mobile-bdae-v1";
+import "./contact.js?v=20260912-mobile-bdae-v1";
+import "./devis.js?v=20260912-mobile-bdae-v1";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
 const LOCAL_TEXT_FALLBACK = "Le direct vocal est indisponible, mais je peux continuer par écrit pour vous orienter dans les services InfoServ2A. Décrivez votre besoin informatique ou demandez un onglet précis.";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260911-claire-send-hang-v1";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260911-claire-send-hang-v1";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260912-mobile-bdae-v1";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260912-mobile-bdae-v1";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -164,7 +171,7 @@ function storageRemove(key) {
 
 function isPhoneShell() {
   try {
-    return Boolean(globalThis.matchMedia?.("(max-width: 820px)")?.matches);
+    return Boolean(globalThis.matchMedia?.(PHONE_MEDIA_QUERY)?.matches);
   } catch {
     return false;
   }
@@ -176,7 +183,7 @@ function isSpeakingPresence(value) {
 
 function isTypingControl(node) {
   if (!(node instanceof Element)) return false;
-  if (node.closest?.(".claire-companion")) {
+  if (node.closest?.(".claire-companion, .claire-mobile-shell")) {
     return Boolean(node.closest?.("[data-claire-form]") || node.matches?.("#claireCommand, textarea, input"));
   }
   const contenu = document.getElementById("contenu");
@@ -347,6 +354,11 @@ export class ClaireCompanion {
     this.speakingStageTimer = 0;
     this.mobileScene = createMobileSceneState();
     this.mobileSceneTimer = 0;
+    this.mobileUx = createMobileUxState({
+      pathname: location.pathname,
+      hash: location.hash
+    });
+    this.mobileChrome = null;
     this.browserVoice = new BrowserVoiceProvider({
       onTranscript: (text, final) => this.handleTranscript(text, final),
       onStatus: (value, label) => this.setStatus(value, label)
@@ -355,6 +367,7 @@ export class ClaireCompanion {
 
   async init() {
     this.cacheNodes();
+    this.installMobileUx();
     this.bindEvents();
     this.setEngineStatus("checking", "Claire en direct");
     this.setStatus("ready", "Prête");
@@ -400,7 +413,22 @@ export class ClaireCompanion {
     const storedMode = storageGet(STORAGE_MODE);
     const seen = storageGet(STORAGE_SEEN) === "1";
 
-    if (requested === "1" || requested === "start") this.setState("arrival");
+    if (isPhoneShell()) {
+      if (requested === "1" || requested === "start") {
+        this.setState("shared");
+        this.applyMobileUxEvent({ type: "open-claire" });
+      } else if (["guided", "continue"].includes(requested)) {
+        this.setState("guided");
+        this.applyMobileUxEvent({
+          type: "guide",
+          pathname: location.pathname,
+          hash: location.hash
+        });
+      } else {
+        this.setState("manual");
+        this.syncMobileRoute();
+      }
+    } else if (requested === "1" || requested === "start") this.setState("arrival");
     else if (["guided", "continue"].includes(requested) || storedMode === "guided") this.setState("guided");
     else if (storedMode === "shared") this.setState("guided");
     else if (storedMode === "manual" || seen) this.setState("manual");
@@ -479,18 +507,273 @@ export class ClaireCompanion {
     };
   }
 
+  installMobileUx() {
+    if (this.mobileChrome || !document.body) return;
+
+    const shell = document.createElement("div");
+    shell.className = "claire-mobile-shell";
+    shell.innerHTML = `
+      <section class="claire-mobile-sheet" data-mobile-sheet aria-label="Claire" aria-expanded="false">
+        <button class="claire-mobile-sheet__handle" type="button" data-mobile-sheet-toggle aria-expanded="false">
+          <span aria-hidden="true"></span>
+          <strong>Claire</strong>
+          <small data-mobile-sheet-context>Votre devis reste visible</small>
+        </button>
+        <div class="claire-mobile-sheet__body">
+          <div class="claire-mobile-sheet__intro">
+            <img src="assets/images/companion/claire-liveavatar-1080x1920.jpg" alt="">
+            <span><strong>Bonjour, je suis Claire.</strong><small data-mobile-sheet-status>Je peux vous aider avec ce formulaire.</small></span>
+            <button type="button" data-mobile-sheet-site>Voir le site</button>
+          </div>
+          <form class="claire-mobile-sheet__command" data-mobile-sheet-form>
+            <label class="sr-only" for="claireMobileSheetCommand">Votre question</label>
+            <input id="claireMobileSheetCommand" type="text" autocomplete="off" enterkeyhint="send" maxlength="320" placeholder="Votre question…">
+            <button type="button" data-mobile-sheet-mic aria-label="Claire">●</button>
+            <button type="submit" aria-label="Envoyer">→</button>
+          </form>
+        </div>
+      </section>
+      <nav class="claire-mobile-tabs" aria-label="Navigation mobile">
+        <button type="button" data-mobile-tab="accueil" data-mobile-href="/index.html">
+          <span aria-hidden="true">⌂</span><b>Accueil</b>
+        </button>
+        <button type="button" data-mobile-tab="services" data-mobile-href="/index.html#services">
+          <span aria-hidden="true">◇</span><b>Services</b>
+        </button>
+        <button class="claire-mobile-tabs__claire" type="button" data-mobile-tab="claire">
+          <span aria-hidden="true">●</span><b>Claire</b>
+        </button>
+        <button type="button" data-mobile-tab="devis" data-mobile-href="/devis.html">
+          <span aria-hidden="true">▤</span><b>Devis</b>
+        </button>
+      </nav>
+    `;
+    document.body.append(shell);
+
+    const pipOpen = document.createElement("button");
+    pipOpen.type = "button";
+    pipOpen.className = "claire-mobile-pip__open";
+    pipOpen.dataset.mobilePipOpen = "";
+    pipOpen.setAttribute("aria-label", "Claire");
+    pipOpen.innerHTML = "<strong>Claire</strong><span aria-hidden=\"true\">●</span>";
+    this.nodes.stage?.append(pipOpen);
+
+    const siteReturn = document.createElement("button");
+    siteReturn.type = "button";
+    siteReturn.className = "claire-mobile-site-return";
+    siteReturn.dataset.mobileSiteReturn = "";
+    siteReturn.textContent = "Voir le site";
+    this.nodes.experience?.append(siteReturn);
+
+    this.mobileChrome = {
+      shell,
+      tabs: [...shell.querySelectorAll("[data-mobile-tab]")],
+      sheet: shell.querySelector("[data-mobile-sheet]"),
+      sheetToggle: shell.querySelector("[data-mobile-sheet-toggle]"),
+      sheetContext: shell.querySelector("[data-mobile-sheet-context]"),
+      sheetStatus: shell.querySelector("[data-mobile-sheet-status]"),
+      sheetForm: shell.querySelector("[data-mobile-sheet-form]"),
+      sheetInput: shell.querySelector("#claireMobileSheetCommand")
+    };
+
+    this.mobileChrome.tabs.forEach((button) => {
+      button.addEventListener("click", () => {
+        if (button.dataset.mobileTab === "claire") {
+          void this.openMobileClaire();
+          return;
+        }
+        void this.navigateMobileTab(button.dataset.mobileHref);
+      });
+    });
+    pipOpen.addEventListener("click", () => void this.openMobileClaire());
+    siteReturn.addEventListener("click", () => this.showMobileSite());
+    shell.querySelector("[data-mobile-sheet-site]")?.addEventListener("click", () => {
+      this.applyMobileUxEvent({ type: "collapse-sheet" });
+      document.querySelector("#devis-form, #contact-form")?.scrollIntoView?.({
+        block: "start",
+        behavior: "smooth"
+      });
+    });
+    this.mobileChrome.sheetToggle?.addEventListener("click", () => {
+      this.applyMobileUxEvent({
+        type: this.mobileUx.sheetExpanded ? "collapse-sheet" : "expand-sheet"
+      });
+    });
+    this.mobileChrome.sheetInput?.addEventListener("focus", () => {
+      this.applyMobileUxEvent({ type: "expand-sheet" });
+    });
+    shell.querySelector("[data-mobile-sheet-mic]")?.addEventListener("click", async () => {
+      await this.toggleMicrophone();
+      this.applyMobileUxEvent({ type: "open-sheet", expanded: true });
+    });
+    this.mobileChrome.sheetForm?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const value = this.mobileChrome?.sheetInput?.value.trim();
+      if (!value) return;
+      this.mobileChrome.sheetInput.value = "";
+      if (!this.provider?.connected) {
+        await this.connectLiveSession({
+          microphone: false,
+          state: "guided",
+          skipWelcome: true
+        });
+        this.applyMobileUxEvent({ type: "open-sheet", expanded: true });
+      }
+      await this.submit(value, "mobile-sheet");
+    });
+
+    this.renderMobileUx();
+  }
+
+  applyMobileUxEvent(event) {
+    this.mobileUx = reduceMobileUx(this.mobileUx, event);
+    this.renderMobileUx();
+    return this.mobileUx;
+  }
+
+  renderMobileUx() {
+    if (!this.mobileChrome) return;
+    const phone = isPhoneShell();
+    this.mobileChrome.shell.hidden = !phone;
+    if (!phone) {
+      delete this.root.dataset.mobileSurface;
+      delete document.body.dataset.claireMobileSurface;
+      document.body.classList.remove("claire-mobile-scroll-lock");
+      return;
+    }
+
+    const { surface, activeTab, sheetExpanded } = this.mobileUx;
+    this.root.dataset.mobileSurface = surface;
+    document.body.dataset.claireMobileSurface = surface;
+    document.body.classList.toggle("claire-mobile-scroll-lock", mobileUxLocksScroll(this.mobileUx));
+    this.mobileChrome.tabs.forEach((button) => {
+      const active = button.dataset.mobileTab === activeTab;
+      if (active) button.setAttribute("aria-current", "page");
+      else button.removeAttribute("aria-current");
+    });
+    if (this.mobileChrome.sheet) {
+      this.mobileChrome.sheet.hidden = surface !== MOBILE_SURFACES.SHEET;
+      this.mobileChrome.sheet.setAttribute("aria-expanded", sheetExpanded ? "true" : "false");
+    }
+    this.mobileChrome.sheetToggle?.setAttribute("aria-expanded", sheetExpanded ? "true" : "false");
+    if (this.mobileChrome.sheetContext) {
+      this.mobileChrome.sheetContext.textContent = /contact\.html$/i.test(this.mobileUx.pathname)
+        ? "Votre contact reste visible"
+        : "Votre devis reste visible";
+    }
+    const section = this.siteAdapter?.snapshot?.()?.section;
+    const sceneStatus = this.nodes.sceneStatus;
+    if (surface === MOBILE_SURFACES.GUIDED && sceneStatus) {
+      sceneStatus.textContent = section?.label
+        ? `Claire vous montre « ${section.label} »`
+        : "Claire vous montre cette page";
+    }
+  }
+
+  syncMobileRoute({ preserveGuided = false } = {}) {
+    if (!isPhoneShell()) return;
+    if (preserveGuided && this.mobileUx.surface === MOBILE_SURFACES.GUIDED) {
+      this.mobileUx.pathname = location.pathname.replace(/^\/+/, "") || "index.html";
+      this.mobileUx.hash = location.hash;
+      this.renderMobileUx();
+      return;
+    }
+    this.applyMobileUxEvent({
+      type: "route",
+      pathname: location.pathname,
+      hash: location.hash
+    });
+  }
+
+  async navigateMobileTab(href) {
+    if (!isPhoneShell() || !href) return false;
+    const url = new URL(href, location.href);
+    this.claimUserSiteNavigation(url);
+    const navigated = await this.navigateInternal(url.href, {
+      announce: false,
+      silent: true,
+      mobileMode: "route"
+    });
+    if (!navigated) {
+      location.assign(url.href);
+      return false;
+    }
+    this.syncMobileRoute();
+    return true;
+  }
+
+  async openMobileClaire() {
+    if (!isPhoneShell()) return this.openConversation();
+    this.applyMobileUxEvent({ type: "open-claire" });
+    if (this.provider?.connected) {
+      this.setState("shared");
+      await this.provider.resumeMedia?.();
+      return true;
+    }
+    await this.connectLiveSession({
+      microphone: false,
+      state: "shared",
+      skipWelcome: false
+    });
+    this.applyMobileUxEvent({ type: "open-claire" });
+    return true;
+  }
+
+  showMobileSite() {
+    if (!isPhoneShell()) {
+      this.enterGuidedMode();
+      return;
+    }
+    if (this.provider?.connected) this.setState("guided");
+    else this.setState("manual");
+    this.applyMobileUxEvent({
+      type: "show-site",
+      pathname: location.pathname,
+      hash: location.hash
+    });
+  }
+
+  showMobileGuided() {
+    if (!isPhoneShell()) return;
+    this.setState("guided");
+    this.applyMobileUxEvent({
+      type: "guide",
+      pathname: location.pathname,
+      hash: location.hash
+    });
+  }
+
+  dismissMobileGuided() {
+    if (!isPhoneShell()) return;
+    this.applyMobileUxEvent({
+      type: "dismiss-guide",
+      pathname: location.pathname,
+      hash: location.hash
+    });
+  }
+
   bindEvents() {
     this.root.querySelectorAll("[data-claire-start]").forEach((button) => button.addEventListener("click", () => void this.start()));
-    this.root.querySelectorAll("[data-claire-manual]").forEach((button) => button.addEventListener("click", () => this.enterManualMode()));
-    this.root.querySelectorAll("[data-claire-recall]").forEach((button) => button.addEventListener("click", () => this.recall()));
-    this.root.querySelectorAll("[data-claire-guided]").forEach((button) => button.addEventListener("click", () => this.enterGuidedMode()));
+    this.root.querySelectorAll("[data-claire-manual]").forEach((button) => button.addEventListener("click", () => {
+      if (isPhoneShell()) this.showMobileSite();
+      else this.enterManualMode();
+    }));
+    this.root.querySelectorAll("[data-claire-recall]").forEach((button) => button.addEventListener("click", () => {
+      if (isPhoneShell()) void this.openMobileClaire();
+      else this.recall();
+    }));
+    this.root.querySelectorAll("[data-claire-guided]").forEach((button) => button.addEventListener("click", () => {
+      if (isPhoneShell()) this.showMobileSite();
+      else this.enterGuidedMode();
+    }));
     this.root.querySelectorAll("[data-claire-expand]").forEach((button) => button.addEventListener("click", () => {
       this.toggleGuidedTranscript();
     }));
     this.root.querySelectorAll("[data-claire-zap-site]").forEach((button) => button.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
-      this.zapMobileScene();
+      if (isPhoneShell()) this.dismissMobileGuided();
+      else this.zapMobileScene();
     }));
     this.root.querySelectorAll("[data-claire-scene-write]").forEach((button) => button.addEventListener("click", (event) => {
       event.preventDefault();
@@ -538,12 +821,19 @@ export class ClaireCompanion {
     this.nodes.mic?.addEventListener("click", () => void this.toggleMicrophone());
     this.nodes.stage?.addEventListener("click", (event) => {
       if (event.target?.closest?.("button, a, input")) return;
-      if (isPhoneShell() && this.state === "guided") {
-        if (this.mobileScene.on) {
-          this.zapMobileScene();
+      if (isPhoneShell()) {
+        if (this.mobileUx.surface === MOBILE_SURFACES.PIP) {
+          void this.openMobileClaire();
           return;
         }
-        this.applyMobileSceneEvent("reopen");
+        if (this.mobileUx.surface === MOBILE_SURFACES.GUIDED) {
+          this.dismissMobileGuided();
+          return;
+        }
+        if (this.mobileUx.surface === MOBILE_SURFACES.SHEET) {
+          this.applyMobileUxEvent({ type: "expand-sheet" });
+          return;
+        }
         void this.provider?.resumeMedia?.();
         return;
       }
@@ -558,11 +848,19 @@ export class ClaireCompanion {
     this.nodes.resultLink?.addEventListener("click", () => storageSet(STORAGE_MODE, "guided"));
     document.addEventListener("click", (event) => this.handleSiteLink(event));
     globalThis.addEventListener("popstate", () => {
-      if (this.state === "manual" || !this.siteAdapter) return;
-      void this.navigateInternal(location.href, { historyMode: "pop", announce: false, silent: true });
+      if ((this.state === "manual" && !isPhoneShell()) || !this.siteAdapter) return;
+      void this.navigateInternal(location.href, {
+        historyMode: "pop",
+        announce: false,
+        silent: true,
+        mobileMode: "route"
+      }).then(() => this.syncMobileRoute());
     });
     globalThis.addEventListener("infoserv:claire-telemetry", (event) => {
       this.showRealtimeTelemetry(event.detail);
+    });
+    document.addEventListener("infoserv:content-changed", () => {
+      this.syncMobileRoute({ preserveGuided: true });
     });
     globalThis.addEventListener("infoserv:email-sending", (event) => {
       const sending = event.detail?.sending === true;
@@ -631,6 +929,7 @@ export class ClaireCompanion {
     document.body.classList.toggle("claire-keyboard-open", Boolean(phone && typing));
     if (typing && isSiteContentTarget(document.activeElement)) this.closeGuidedTranscript();
     this.syncMobileSceneDom();
+    this.renderMobileUx();
   }
 
   openMobileComposer() {
@@ -746,11 +1045,13 @@ export class ClaireCompanion {
     this.showLivePrompt();
     if (next !== "guided") this.applyMobileSceneEvent("reset");
     this.syncViewportShell();
+    this.renderMobileUx();
   }
 
   setStatus(value, label) {
     const previous = this.root?.dataset.presence;
     if (this.nodes.status) this.nodes.status.textContent = label;
+    if (this.mobileChrome?.sheetStatus) this.mobileChrome.sheetStatus.textContent = label;
     const micActive = Boolean(this.provider?.listening);
     if (this.nodes.mic) {
       this.nodes.mic.setAttribute("aria-pressed", micActive ? "true" : "false");
@@ -782,10 +1083,12 @@ export class ClaireCompanion {
   syncMobileSceneDom() {
     const phone = isPhoneShell();
     const guided = this.state === "guided";
-    const on = mobileSceneActive(this.mobileScene, { phone, guided });
+    // Le shell B+D+A+E pilote désormais les téléphones. L’ancienne scène 9:16
+    // reste disponible pour les autres présentations sans pouvoir se superposer.
+    const on = mobileSceneActive(this.mobileScene, { phone: false, guided });
     if (this.root) this.root.dataset.mobileScene = on ? "on" : "off";
     document.body.classList.toggle("claire-mobile-scene", on);
-    document.body.classList.toggle("claire-mobile-shop", Boolean(phone && guided && !on));
+    document.body.classList.remove("claire-mobile-shop");
     if (this.nodes.sceneStatus) {
       this.nodes.sceneStatus.textContent = sceneStatusLabel(this.root?.dataset.presence);
     }
@@ -953,12 +1256,23 @@ export class ClaireCompanion {
     storageSet(STORAGE_SEEN, "1");
     storageSet(STORAGE_MODE, "manual");
     this.setState("manual");
-    this.nodes.live.textContent = "Claire reste à portée. Feuilletez le site, puis reprenez-la en bas de l’écran.";
+    if (isPhoneShell()) {
+      this.applyMobileUxEvent({
+        type: "show-site",
+        pathname: location.pathname,
+        hash: location.hash
+      });
+    }
+    this.nodes.live.textContent = "Claire reste à portée pendant votre visite du site.";
     const focusTarget = this.lastFocus instanceof HTMLElement ? this.lastFocus : document.querySelector("#contenu");
     focusTarget?.focus?.({ preventScroll: true });
   }
 
   recall() {
+    if (isPhoneShell()) {
+      void this.openMobileClaire();
+      return;
+    }
     storageSet(STORAGE_MODE, "guided");
     this.audioEnabled = true;
     this.setState("guided");
@@ -969,6 +1283,7 @@ export class ClaireCompanion {
   }
 
   async openConversation() {
+    if (isPhoneShell()) return this.openMobileClaire();
     await this.connectLiveSession({ microphone: false, state: "guided" });
   }
 
@@ -1137,7 +1452,8 @@ export class ClaireCompanion {
     storageSet(STORAGE_SEEN, "1");
     storageSet(STORAGE_MODE, "guided");
     this.setState("guided");
-    this.applyMobileSceneEvent("start");
+    if (isPhoneShell()) this.showMobileGuided();
+    else this.applyMobileSceneEvent("start");
     this.setStatus("ready", this.provider ? "Claire reste avec vous" : "Claire · mode local");
   }
 
@@ -1327,7 +1643,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260911-claire-send-hang-v1");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260912-mobile-bdae-v1");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
@@ -1768,6 +2084,17 @@ export class ClaireCompanion {
     const sendingNow = classified.route?.action === "email"
       || classified.route?.action === "submit_quote"
       || isUrgentSiteCommand(value);
+    const routePageId = classified.route?.page?.id
+      || classified.route?.pageId
+      || classified.route?.page
+      || "";
+    const mobileFormIntent = sendingNow
+      || isQuoteAction(value)
+      || routePageId === "quote"
+      || routePageId === "contact";
+    if (isPhoneShell() && classified.kind === "site" && !mobileFormIntent) {
+      this.showMobileGuided();
+    }
     this.pendingEmailSend = sendingNow;
     if (source === "liveavatar" && sendingNow) {
       this.provider?.bargeIn?.("email-send");
@@ -1802,6 +2129,9 @@ export class ClaireCompanion {
 
       const response = this.verifiedSpeechFor(outcome);
       this.showRuntimeResult(outcome);
+      if (isPhoneShell() && /(?:devis|contact)\.html$/i.test(location.pathname)) {
+        this.syncMobileRoute();
+      }
       if (requestedMode) {
         const memory = hydrateQuoteMemoryFromForm();
         const update = interviewUpdate(this.actionMode, memory);
@@ -1914,7 +2244,12 @@ export class ClaireCompanion {
     this.syncVisibleForms();
   }
 
-  async navigateInternal(href, { historyMode = "push", announce = true, silent = false } = {}) {
+  async navigateInternal(href, {
+    historyMode = "push",
+    announce = true,
+    silent = false,
+    mobileMode = "preserve"
+  } = {}) {
     if (!this.siteAdapter) return false;
     try {
       if (!silent) this.setStatus("thinking", "Navigation contrôlée en cours…");
@@ -1925,6 +2260,10 @@ export class ClaireCompanion {
       this.renderSuggestions();
       this.syncVisibleForms();
       this.showLivePrompt();
+      if (isPhoneShell()) {
+        if (mobileMode === "guided") this.showMobileGuided();
+        else if (mobileMode === "route") this.syncMobileRoute();
+      }
       if (isolateVoice) {
         this.pushPageContext(snapshot);
         this.setStatus(
@@ -2009,12 +2348,18 @@ export class ClaireCompanion {
       const next = await this.navigateInternal(href, {
         historyMode: this.lastFollowKey ? "replace" : "push",
         announce: false,
-        silent: true
+        silent: true,
+        mobileMode: "guided"
       });
       if (this.speechFollowGate.isStale(epoch) || !this.speechFollowGate.allowsFollow()) {
         const restore = this.speechFollowGate.userHref();
         if (restore) {
-          await this.navigateInternal(restore, { announce: false, silent: true, historyMode: "replace" });
+          await this.navigateInternal(restore, {
+            announce: false,
+            silent: true,
+            historyMode: "replace",
+            mobileMode: "route"
+          });
           const restoreKey = this.speechFollowGate.userFollowKey();
           if (restoreKey) this.lastFollowKey = restoreKey;
         }
@@ -2040,7 +2385,15 @@ export class ClaireCompanion {
   }
 
   handleSiteLink(event) {
-    if (event.defaultPrevented || this.state === "manual" || event.button > 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (
+      event.defaultPrevented
+      || (this.state === "manual" && !isPhoneShell())
+      || event.button > 0
+      || event.metaKey
+      || event.ctrlKey
+      || event.shiftKey
+      || event.altKey
+    ) return;
     const link = event.target?.closest?.("a[href]");
     if (!link || link.target === "_blank" || link.hasAttribute("download")) return;
     if (link.closest?.(".claire-companion")) return;
@@ -2051,7 +2404,12 @@ export class ClaireCompanion {
     this.closeGuidedTranscript();
     this.claimUserSiteNavigation(url);
     if (this.state !== "guided" && this.state !== "manual") this.setState("guided");
-    void this.navigateInternal(url.href, { announce: false, silent: true }).then((ok) => {
+    void this.navigateInternal(url.href, {
+      announce: false,
+      silent: true,
+      mobileMode: "route"
+    }).then((ok) => {
+      if (ok) this.syncMobileRoute();
       if (!ok) location.assign(url.href);
     });
   }

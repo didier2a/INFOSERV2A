@@ -6,8 +6,8 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-ASSET_V = "20260911-claire-send-hang-v1"
-MED_ASSET_V = "20260911-claire-send-hang-v1"
+ASSET_V = "20260912-mobile-bdae-v1"
+MED_ASSET_V = "20260912-mobile-bdae-v1"
 BRAND = '<span class="brand-name">INFOSERV2A</span>'
 HEADER_MARK_START = "<!-- chrome:header -->"
 HEADER_MARK_END = "<!-- /chrome:header -->"

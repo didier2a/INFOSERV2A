@@ -1,10 +1,10 @@
-import { normalizeText } from "./claire-core.mjs?v=20260911-claire-send-hang-v1";
+import { normalizeText } from "./claire-core.mjs?v=20260912-mobile-bdae-v1";
 import {
   canSubmitContact,
   canSubmitQuote,
   describeMissingQuoteFields,
   synthesizeMailBody
-} from "./claire-session-memory.mjs?v=20260911-claire-send-hang-v1";
+} from "./claire-session-memory.mjs?v=20260912-mobile-bdae-v1";
 
 export const CLAIRE_ACTION_MODES = Object.freeze({
   CONSEIL: "conseil",
