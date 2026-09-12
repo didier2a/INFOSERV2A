@@ -603,7 +603,7 @@ test("IT43 : rythme Claire — PC 1/3+2/3 fixe, mobile scène nominale hors spea
   assert.match(textStart, /connectLiveSession\(\{ microphone: false, state: "guided", skipWelcome: true \}/);
   assert.match(textStart, /openMobileComposer\(\)/);
   assert.match(client, /storageSet\(STORAGE_MODE, state\)/);
-  assert.match(client, /matchMedia\?\.\("\(max-width: 820px\)"\)/);
+  assert.match(client, /matchMedia\?\.\(PHONE_MEDIA_QUERY\)/);
   assert.match(client, /nodes\.input\?\.addEventListener\("input", \(\) => this\.yieldToHumanType\(\)\)/);
   assert.doesNotMatch(client, /syncSpeakingStage\(/);
   assert.doesNotMatch(client, /pointer: coarse/);
