@@ -42,17 +42,27 @@ test("devis and contact keep the full form alone, with or without .html", () => 
   }
 });
 
-test("Claire tab is full, then Quitter returns to the classic site", () => {
+test("Claire tab is full, then an explicit exit can offer the PiP medallion", () => {
   let state = createMobileUxState({ pathname: "/videosurveillance.html" });
   state = reduceMobileUx(state, { type: "open-claire" });
   assert.equal(state.surface, MOBILE_SURFACES.CLAIRE);
   assert.equal(state.activeTab, "claire");
   state = reduceMobileUx(state, {
-    type: "show-site",
+    type: "show-pip",
     pathname: "/videosurveillance.html"
   });
-  assert.equal(state.surface, MOBILE_SURFACES.SITE);
+  assert.equal(state.surface, MOBILE_SURFACES.PIP);
   assert.equal(state.activeTab, "services");
+});
+
+test("opt-in PiP survives site navigation until explicit evacuation", () => {
+  let state = createMobileUxState({ pathname: "/" });
+  state = reduceMobileUx(state, { type: "show-pip", pathname: "/" });
+  state = reduceMobileUx(state, { type: "route", pathname: "/reseaux-wifi.html" });
+  assert.equal(state.surface, MOBILE_SURFACES.PIP);
+  assert.equal(state.activeTab, "services");
+  state = reduceMobileUx(state, { type: "evacuate-pip", pathname: "/reseaux-wifi.html" });
+  assert.equal(state.surface, MOBILE_SURFACES.SITE);
 });
 
 test("guided mode is exclusive and dismisses to the correct site surface", () => {
@@ -107,16 +117,16 @@ test("Services tab maps to the home services section", () => {
 
 test("PiP geometry clamps to the usable rectangle", () => {
   const bounds = { left: 12, top: 88, right: 378, bottom: 760 };
-  const size = { width: 104, height: 136 };
+  const size = { width: 76, height: 76 };
   assert.deepEqual(
     clampMobilePipPoint({ x: -40, y: 900 }, bounds, size),
-    { x: 12, y: 624 }
+    { x: 12, y: 684 }
   );
 });
 
 test("PiP position round-trips as usable-rectangle percentages", () => {
   const bounds = { left: 12, top: 88, right: 378, bottom: 760 };
-  const size = { width: 104, height: 136 };
+  const size = { width: 76, height: 76 };
   const point = mobilePipPointFromPercent({ x: 0.25, y: 0.75 }, bounds, size);
   const position = mobilePipPercentFromPoint(point, bounds, size);
   assert.equal(position.x, 0.25);
@@ -126,11 +136,11 @@ test("PiP position round-trips as usable-rectangle percentages", () => {
 
 test("PiP uses a soft 20px edge magnet without forcing central positions", () => {
   const bounds = { left: 12, top: 88, right: 378, bottom: 760 };
-  const size = { width: 104, height: 136 };
+  const size = { width: 76, height: 76 };
   assert.equal(MOBILE_PIP_EDGE_MAGNET_PX, 20);
   assert.deepEqual(
     magnetizeMobilePipPoint({ x: 30, y: 610 }, bounds, size),
-    { x: 12, y: 624 }
+    { x: 12, y: 610 }
   );
   assert.deepEqual(
     magnetizeMobilePipPoint({ x: 120, y: 300 }, bounds, size),
@@ -144,7 +154,7 @@ test("PiP keeps sub-8px movement as a tap", () => {
   assert.equal(mobilePipDragExceeded({ x: 10, y: 10 }, { x: 18, y: 10 }), true);
 });
 
-test("phone shell has no generated PiP or form sheet default", async () => {
+test("phone shell keeps PiP opt-in and renders it as a round medallion", async () => {
   const [css, client] = await Promise.all([
     readFile(new URL("../assets/css/claire-companion.css", import.meta.url), "utf8"),
     readFile(new URL("../assets/js/claire-companion.js", import.meta.url), "utf8")
@@ -155,7 +165,14 @@ test("phone shell has no generated PiP or form sheet default", async () => {
   assert.match(shellMarkup, /Découvrir Claire/);
   assert.match(client, /dataset\.mobileFormClaire/);
   assert.match(client, /Aide Claire/);
+  assert.match(client, /dataset\.mobilePipDismiss/);
+  assert.match(client, /Rester en PiP/);
   assert.match(css, /data-claire-mobile-surface="site"[\s\S]*?display: none !important/);
+  assert.match(css, /--claire-mobile-pip-size: 76px/);
+  assert.match(
+    css,
+    /data-claire-mobile-surface="pip"[\s\S]*?\.claire-live-stage \{[\s\S]*?border-radius: 50%/
+  );
   assert.match(css, /var\(--med-blue, #006c75\)/);
   assert.doesNotMatch(css, /gold|neon|glitter/i);
 });
@@ -176,7 +193,7 @@ test("full Claire voice row sits between portrait and conversation", async () =>
   );
 });
 
-test("Quitter Claire stops provider and microphone while keeping memory", async () => {
+test("Quitter Claire stops provider and offers the opt-in medallion", async () => {
   globalThis.location = new URL("https://preprod.example/devis");
   globalThis.window = globalThis;
   globalThis.sessionStorage = {
@@ -215,5 +232,57 @@ test("Quitter Claire stops provider and microphone while keeping memory", async 
   assert.equal(context.audioEnabled, false);
   assert.match(context.nodes.live.textContent, /mémorisée/);
   assert.ok(calls.includes("state:manual"));
-  assert.ok(calls.includes("surface:show-site"));
+  assert.ok(calls.includes("surface:show-pip"));
+});
+
+test("Rester en PiP pauses listening without stopping the provider", async () => {
+  const calls = [];
+  const context = {
+    provider: {
+      async pauseListening() { calls.push("pause"); },
+      async stop() { calls.push("stop"); }
+    },
+    mobileChrome: { pipDismiss: { focus() { calls.push("focus"); } } },
+    interrupt() { calls.push("interrupt"); },
+    releaseWakeLock() { calls.push("wake"); },
+    hideSessionNotice() { calls.push("notice"); },
+    clearMobileSceneTimer() { calls.push("timer"); },
+    setState(value) { calls.push(`state:${value}`); },
+    applyMobileSceneEvent(value) { calls.push(`scene:${value}`); },
+    applyMobileUxEvent(event) { calls.push(`surface:${event.type}`); }
+  };
+  const { ClaireCompanion } = await import("../assets/js/claire-companion.js");
+  await ClaireCompanion.prototype.keepMobilePip.call(context);
+  assert.ok(calls.includes("pause"));
+  assert.ok(!calls.includes("stop"));
+  assert.ok(calls.includes("surface:show-pip"));
+});
+
+test("PiP X fully stops and evacuates Claire without clearing memory", async () => {
+  const calls = [];
+  const context = {
+    audioEnabled: true,
+    provider: {
+      async pauseListening() { calls.push("pause"); },
+      async stop() { calls.push("stop"); }
+    },
+    mobileUx: { activeTab: "accueil" },
+    mobileChrome: { tabs: [] },
+    nodes: { live: { textContent: "" } },
+    interrupt() { calls.push("interrupt"); },
+    releaseWakeLock() {},
+    hideSessionNotice() {},
+    clearSessionWatch() {},
+    clearMobileSceneTimer() {},
+    setState() {},
+    applyMobileSceneEvent() {},
+    applyMobileUxEvent(event) { calls.push(`surface:${event.type}`); }
+  };
+  const { ClaireCompanion } = await import("../assets/js/claire-companion.js");
+  context.exitMobileClaire = ClaireCompanion.prototype.exitMobileClaire;
+  await ClaireCompanion.prototype.evacuateMobilePip.call(context);
+  assert.ok(calls.includes("pause"));
+  assert.ok(calls.includes("stop"));
+  assert.ok(calls.includes("surface:evacuate-pip"));
+  assert.match(context.nodes.live.textContent, /mémorisée/);
 });

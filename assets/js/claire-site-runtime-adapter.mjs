@@ -1,4 +1,4 @@
-import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260912-combo3star-v1";
+import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260912-combo3star-pip-v1";
 import {
   contactExtrasFromDocument,
   firstUsefulText,
@@ -11,8 +11,8 @@ import {
   synthesisTurnsFromMemory,
   synthesizeMailBody,
   usefulText
-} from "./claire-session-memory.mjs?v=20260912-combo3star-v1";
-import { validateContactFields, validateQuoteFields } from "./form-schema.mjs?v=20260912-combo3star-v1";
+} from "./claire-session-memory.mjs?v=20260912-combo3star-pip-v1";
+import { validateContactFields, validateQuoteFields } from "./form-schema.mjs?v=20260912-combo3star-pip-v1";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));

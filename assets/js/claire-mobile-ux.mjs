@@ -171,7 +171,9 @@ export function reduceMobileUx(state, event = {}) {
 
   switch (type) {
     case "route": {
-      const surface = siteSurfaceForPath(pathname);
+      const surface = current.surface === MOBILE_SURFACES.PIP
+        ? MOBILE_SURFACES.PIP
+        : siteSurfaceForPath(pathname);
       return {
         ...current,
         surface,
@@ -182,6 +184,26 @@ export function reduceMobileUx(state, event = {}) {
         returnSurface: surface
       };
     }
+    case "show-pip":
+      return {
+        ...current,
+        surface: MOBILE_SURFACES.PIP,
+        activeTab: mobileTabForLocation(pathname, hash),
+        pathname: normalizedPath(pathname),
+        hash: String(hash || ""),
+        sheetExpanded: false,
+        returnSurface: MOBILE_SURFACES.SITE
+      };
+    case "evacuate-pip":
+      return {
+        ...current,
+        surface: MOBILE_SURFACES.SITE,
+        activeTab: mobileTabForLocation(pathname, hash),
+        pathname: normalizedPath(pathname),
+        hash: String(hash || ""),
+        sheetExpanded: false,
+        returnSurface: MOBILE_SURFACES.SITE
+      };
     case "open-claire":
       return {
         ...current,

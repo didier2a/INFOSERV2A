@@ -3,7 +3,7 @@ import {
   isOralSendConfirm,
   isStableUrgentCommand,
   isUrgentSiteCommand
-} from "./claire-core.mjs?v=20260912-combo3star-v1";
+} from "./claire-core.mjs?v=20260912-combo3star-pip-v1";
 
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;

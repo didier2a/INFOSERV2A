@@ -20,7 +20,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260912-combo3star-v1";
+} from "./claire-core.mjs?v=20260912-combo3star-pip-v1";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -49,7 +49,7 @@ import {
   alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260912-combo3star-v1";
+} from "./claire-session-memory.mjs?v=20260912-combo3star-pip-v1";
 import {
   CLAIRE_ACTION_MODES,
   actionDraftReady,
@@ -61,18 +61,18 @@ import {
   isQuoteResendRequest,
   shouldDebounceVoiceCommand,
   requestedActionMode
-} from "./claire-actions-v1.mjs?v=20260912-combo3star-v1";
+} from "./claire-actions-v1.mjs?v=20260912-combo3star-pip-v1";
 import {
   describeEmailSendOutcome,
   didEmailSendThisTurn
-} from "./site-email.mjs?v=20260912-combo3star-v1";
+} from "./site-email.mjs?v=20260912-combo3star-pip-v1";
 import {
   MOBILE_SCENE_HOLD_MS,
   createMobileSceneState,
   mobileSceneActive,
   reduceMobileScene,
   sceneStatusLabel
-} from "./claire-mobile-scene.mjs?v=20260912-combo3star-v1";
+} from "./claire-mobile-scene.mjs?v=20260912-combo3star-pip-v1";
 import {
   MOBILE_PIP_EDGE_MAGNET_PX,
   MOBILE_PIP_STORAGE_KEY,
@@ -90,20 +90,20 @@ import {
   mobileUxLocksScroll,
   reduceMobileUx,
   shouldShowClaireDiscovery
-} from "./claire-mobile-ux.mjs?v=20260912-combo3star-v1";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260912-combo3star-v1";
+} from "./claire-mobile-ux.mjs?v=20260912-combo3star-pip-v1";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260912-combo3star-pip-v1";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260912-combo3star-v1";
-import "./contact.js?v=20260912-combo3star-v1";
-import "./devis.js?v=20260912-combo3star-v1";
+} from "./claire-site-runtime-adapter.mjs?v=20260912-combo3star-pip-v1";
+import "./contact.js?v=20260912-combo3star-pip-v1";
+import "./devis.js?v=20260912-combo3star-pip-v1";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
 const LOCAL_TEXT_FALLBACK = "Le direct vocal est indisponible, mais je peux continuer par écrit pour vous orienter dans les services InfoServ2A. Décrivez votre besoin informatique ou demandez un onglet précis.";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260912-combo3star-v1";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260912-combo3star-v1";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260912-combo3star-pip-v1";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260912-combo3star-pip-v1";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -601,8 +601,8 @@ export class ClaireCompanion {
   mobilePipSize() {
     const rect = this.nodes.stage?.getBoundingClientRect();
     return {
-      width: rect?.width || 104,
-      height: rect?.height || 136
+      width: rect?.width || 76,
+      height: rect?.height || 76
     };
   }
 
@@ -645,6 +645,7 @@ export class ClaireCompanion {
       if (
         !isPhoneShell()
         || this.mobileUx.surface !== MOBILE_SURFACES.PIP
+        || event.target?.closest?.("[data-mobile-pip-dismiss]")
         || (event.pointerType === "mouse" && event.button !== 0)
       ) return;
       const rect = this.root.getBoundingClientRect();
@@ -733,9 +734,17 @@ export class ClaireCompanion {
     pipOpen.type = "button";
     pipOpen.className = "claire-mobile-pip__open";
     pipOpen.dataset.mobilePipOpen = "";
-    pipOpen.setAttribute("aria-label", "Claire");
-    pipOpen.innerHTML = "<strong>Claire</strong><span aria-hidden=\"true\">●</span>";
+    pipOpen.setAttribute("aria-label", "Ouvrir Claire");
+    pipOpen.innerHTML = '<span class="sr-only">Ouvrir Claire</span>';
     this.nodes.stage?.append(pipOpen);
+
+    const pipDismiss = document.createElement("button");
+    pipDismiss.type = "button";
+    pipDismiss.className = "claire-mobile-pip__dismiss";
+    pipDismiss.dataset.mobilePipDismiss = "";
+    pipDismiss.setAttribute("aria-label", "Fermer Claire");
+    pipDismiss.textContent = "×";
+    this.nodes.stage?.append(pipDismiss);
 
     const siteReturn = document.createElement("button");
     siteReturn.type = "button";
@@ -743,6 +752,13 @@ export class ClaireCompanion {
     siteReturn.dataset.mobileSiteReturn = "";
     siteReturn.textContent = "Quitter Claire";
     this.nodes.experience?.append(siteReturn);
+
+    const pipChoice = document.createElement("button");
+    pipChoice.type = "button";
+    pipChoice.className = "claire-mobile-pip-choice";
+    pipChoice.dataset.mobilePipChoice = "";
+    pipChoice.textContent = "Rester en PiP";
+    this.nodes.experience?.append(pipChoice);
 
     const voiceRow = document.createElement("div");
     voiceRow.className = "claire-mobile-voice-row";
@@ -762,6 +778,8 @@ export class ClaireCompanion {
       tabs: [...shell.querySelectorAll("[data-mobile-tab]")],
       safeProbe: shell.querySelector(".claire-mobile-safe-probe"),
       discovery: shell.querySelector("[data-mobile-discovery]"),
+      pipDismiss,
+      pipChoice,
       voiceRow,
       voiceMic: voiceRow.querySelector("[data-mobile-voice-mic]"),
       voiceLabel: voiceRow.querySelector("[data-mobile-voice-label]"),
@@ -776,7 +794,10 @@ export class ClaireCompanion {
           return;
         }
         void (async () => {
-          if (this.mobileUx.surface !== MOBILE_SURFACES.SITE) {
+          if (
+            this.mobileUx.surface !== MOBILE_SURFACES.SITE
+            && this.mobileUx.surface !== MOBILE_SURFACES.PIP
+          ) {
             await this.exitMobileClaire({ restoreFocus: false });
           }
           await this.navigateMobileTab(button.dataset.mobileHref);
@@ -791,7 +812,13 @@ export class ClaireCompanion {
       }
       void this.openMobileClaire();
     });
+    pipDismiss.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      void this.evacuateMobilePip();
+    });
     siteReturn.addEventListener("click", () => void this.exitMobileClaire());
+    pipChoice.addEventListener("click", () => void this.keepMobilePip());
     this.mobileChrome.voiceMic?.addEventListener("click", () => void this.toggleMicrophone());
     this.mobileChrome.voiceInterrupt?.addEventListener("click", () => this.interrupt());
     shell.querySelector("[data-mobile-discovery-open]")?.addEventListener("click", () => {
@@ -934,7 +961,7 @@ export class ClaireCompanion {
     return true;
   }
 
-  async exitMobileClaire({ restoreFocus = true } = {}) {
+  async exitMobileClaire({ restoreFocus = true, showPip = true } = {}) {
     this.interrupt();
     this.releaseWakeLock();
     this.hideSessionNotice();
@@ -948,7 +975,7 @@ export class ClaireCompanion {
     this.setState("manual");
     this.applyMobileSceneEvent("reset");
     this.applyMobileUxEvent({
-      type: "show-site",
+      type: showPip ? "show-pip" : "evacuate-pip",
       pathname: location.pathname,
       hash: location.hash
     });
@@ -960,6 +987,29 @@ export class ClaireCompanion {
       activeTab?.focus?.({ preventScroll: true });
     }
     return true;
+  }
+
+  async keepMobilePip({ restoreFocus = true } = {}) {
+    this.interrupt();
+    this.releaseWakeLock();
+    this.hideSessionNotice();
+    this.clearMobileSceneTimer();
+    try { await this.provider?.pauseListening?.(); } catch { /* Déjà en pause. */ }
+    storageSet(STORAGE_SEEN, "1");
+    storageSet(STORAGE_MODE, "guided");
+    this.setState("guided");
+    this.applyMobileSceneEvent("reset");
+    this.applyMobileUxEvent({
+      type: "show-pip",
+      pathname: location.pathname,
+      hash: location.hash
+    });
+    if (restoreFocus) this.mobileChrome?.pipDismiss?.focus?.({ preventScroll: true });
+    return true;
+  }
+
+  async evacuateMobilePip() {
+    return this.exitMobileClaire({ restoreFocus: true, showPip: false });
   }
 
   showMobileSite() {
@@ -1917,7 +1967,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260912-combo3star-v1");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260912-combo3star-pip-v1");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
