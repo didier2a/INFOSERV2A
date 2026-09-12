@@ -20,7 +20,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260912-claire-voice-restore-v1";
+} from "./claire-core.mjs?v=20260912-pip-duplex-v1";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -49,7 +49,7 @@ import {
   alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260912-claire-voice-restore-v1";
+} from "./claire-session-memory.mjs?v=20260912-pip-duplex-v1";
 import {
   CLAIRE_ACTION_MODES,
   actionDraftReady,
@@ -61,18 +61,18 @@ import {
   isQuoteResendRequest,
   shouldDebounceVoiceCommand,
   requestedActionMode
-} from "./claire-actions-v1.mjs?v=20260912-claire-voice-restore-v1";
+} from "./claire-actions-v1.mjs?v=20260912-pip-duplex-v1";
 import {
   describeEmailSendOutcome,
   didEmailSendThisTurn
-} from "./site-email.mjs?v=20260912-claire-voice-restore-v1";
+} from "./site-email.mjs?v=20260912-pip-duplex-v1";
 import {
   MOBILE_SCENE_HOLD_MS,
   createMobileSceneState,
   mobileSceneActive,
   reduceMobileScene,
   sceneStatusLabel
-} from "./claire-mobile-scene.mjs?v=20260912-claire-voice-restore-v1";
+} from "./claire-mobile-scene.mjs?v=20260912-pip-duplex-v1";
 import {
   MOBILE_PIP_EDGE_MAGNET_PX,
   MOBILE_PIP_STORAGE_KEY,
@@ -90,20 +90,20 @@ import {
   mobileUxLocksScroll,
   reduceMobileUx,
   shouldShowClaireDiscovery
-} from "./claire-mobile-ux.mjs?v=20260912-claire-voice-restore-v1";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260912-claire-voice-restore-v1";
+} from "./claire-mobile-ux.mjs?v=20260912-pip-duplex-v1";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260912-pip-duplex-v1";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260912-claire-voice-restore-v1";
-import "./contact.js?v=20260912-claire-voice-restore-v1";
-import "./devis.js?v=20260912-claire-voice-restore-v1";
+} from "./claire-site-runtime-adapter.mjs?v=20260912-pip-duplex-v1";
+import "./contact.js?v=20260912-pip-duplex-v1";
+import "./devis.js?v=20260912-pip-duplex-v1";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
 const LOCAL_TEXT_FALLBACK = "Le direct vocal est indisponible, mais je peux continuer par écrit pour vous orienter dans les services InfoServ2A. Décrivez votre besoin informatique ou demandez un onglet précis.";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260912-claire-voice-restore-v1";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260912-claire-voice-restore-v1";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260912-pip-duplex-v1";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260912-pip-duplex-v1";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -810,7 +810,7 @@ export class ClaireCompanion {
         event.stopPropagation();
         return;
       }
-      void this.openMobileClaire();
+      void this.handleMobilePipTap();
     });
     pipDismiss.addEventListener("click", (event) => {
       event.preventDefault();
@@ -977,12 +977,12 @@ export class ClaireCompanion {
   }
 
   async exitMobileClaire({ restoreFocus = true, showPip = true } = {}) {
+    if (showPip) return this.keepMobilePip({ restoreFocus });
     this.interrupt();
     this.releaseWakeLock();
     this.hideSessionNotice();
     this.clearSessionWatch();
     this.clearMobileSceneTimer();
-    try { await this.provider?.pauseListening?.(); } catch { /* Déjà en pause. */ }
     try { await this.provider?.stop?.(); } catch { /* Session déjà terminée. */ }
     this.audioEnabled = false;
     storageSet(STORAGE_SEEN, "1");
@@ -990,7 +990,7 @@ export class ClaireCompanion {
     this.setState("manual");
     this.applyMobileSceneEvent("reset");
     this.applyMobileUxEvent({
-      type: showPip ? "show-pip" : "evacuate-pip",
+      type: "evacuate-pip",
       pathname: location.pathname,
       hash: location.hash
     });
@@ -1005,11 +1005,30 @@ export class ClaireCompanion {
   }
 
   async keepMobilePip({ restoreFocus = true } = {}) {
-    this.interrupt();
-    this.releaseWakeLock();
     this.hideSessionNotice();
     this.clearMobileSceneTimer();
-    try { await this.provider?.pauseListening?.(); } catch { /* Déjà en pause. */ }
+    this.audioEnabled = true;
+    const provider = this.provider;
+    const needsSound = provider?.needsAudioUnlock?.()
+      ?? provider?.mediaAudible === false;
+    const needsDuplexArm = Boolean(provider && (
+      !provider.connected
+      || !provider.streamReady
+      || !provider.listening
+      || needsSound
+    ));
+    if (needsDuplexArm) {
+      try {
+        if (provider.ensureActiveListening) {
+          await provider.ensureActiveListening({ allowReconnect: true });
+        } else {
+          await provider.ensureMicrophone?.();
+          await provider.resumeMedia?.();
+        }
+      } catch {
+        // Le médaillon reste live ; un tap explicite pourra réarmer les médias.
+      }
+    }
     storageSet(STORAGE_SEEN, "1");
     storageSet(STORAGE_MODE, "guided");
     this.setState("guided");
@@ -1031,6 +1050,9 @@ export class ClaireCompanion {
     if (!isPhoneShell()) {
       this.enterGuidedMode();
       return;
+    }
+    if (this.provider?.connected) {
+      return this.keepMobilePip({ restoreFocus: false });
     }
     this.applyMobileUxEvent({
       type: "show-site",
@@ -1059,9 +1081,45 @@ export class ClaireCompanion {
 
   async dismissMobileGuided() {
     if (!isPhoneShell()) return false;
-    // « Voir le site » conserve une porte de retour explicite : le médaillon
-    // reste visible, mais son microphone est clairement mis en pause.
+    // « Voir le site » compacte Claire sans interrompre la conversation duplex.
     return this.keepMobilePip({ restoreFocus: false });
+  }
+
+  async handleMobilePipTap() {
+    const provider = this.provider;
+    if (!provider) return this.openMobileClaire();
+    const needsSound = provider.needsAudioUnlock?.()
+      ?? provider.mediaAudible === false;
+    const needsDuplexArm = (
+      !provider.connected
+      || !provider.streamReady
+      || !provider.listening
+      || needsSound
+    );
+    if (!needsDuplexArm) return this.openMobileClaire();
+
+    this.audioEnabled = true;
+    this.prepareLocalVideo();
+    provider.primeAudio?.();
+    try { await this.preflightMicrophone(); } catch { /* Le SDK redemandera le micro. */ }
+    try {
+      const armed = provider.ensureActiveListening
+        ? await provider.ensureActiveListening({ allowReconnect: true })
+        : Boolean(
+          await provider.ensureMicrophone?.()
+          && await provider.resumeMedia?.()
+        );
+      if (armed) {
+        this.setStatus(
+          provider.avatarSpeaking ? "speaking" : "listening",
+          provider.avatarSpeaking ? "Claire vous répond" : "Je vous écoute"
+        );
+      }
+      return armed;
+    } catch {
+      this.setStatus("ready", "Touchez Claire pour réactiver le son et le micro");
+      return false;
+    }
   }
 
   async handleAvatarStageGesture() {
@@ -1160,7 +1218,7 @@ export class ClaireCompanion {
       if (event.target?.closest?.("button, a, input")) return;
       if (isPhoneShell()) {
         if (this.mobileUx.surface === MOBILE_SURFACES.PIP) {
-          void this.openMobileClaire();
+          void this.handleMobilePipTap();
           return;
         }
         if (this.mobileUx.surface === MOBILE_SURFACES.GUIDED) {
@@ -2010,7 +2068,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260912-claire-voice-restore-v1");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260912-pip-duplex-v1");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));

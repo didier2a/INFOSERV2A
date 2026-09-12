@@ -197,7 +197,7 @@ test("full Claire voice row sits between portrait and conversation", async () =>
   );
 });
 
-test("Quitter Claire stops provider and offers the opt-in medallion", async () => {
+test("Quitter Claire compacts to PiP without stopping the duplex provider", async () => {
   globalThis.location = new URL("https://preprod.example/devis");
   globalThis.window = globalThis;
   globalThis.sessionStorage = {
@@ -214,6 +214,16 @@ test("Quitter Claire stops provider and offers the opt-in medallion", async () =
   const context = {
     audioEnabled: true,
     provider: {
+      connected: true,
+      streamReady: true,
+      listening: false,
+      mediaAudible: false,
+      async ensureActiveListening() {
+        calls.push("duplex");
+        this.listening = true;
+        this.mediaAudible = true;
+        return true;
+      },
       async pauseListening() { calls.push("pause"); },
       async stop() { calls.push("stop"); }
     },
@@ -230,19 +240,28 @@ test("Quitter Claire stops provider and offers the opt-in medallion", async () =
     applyMobileUxEvent(event) { calls.push(`surface:${event.type}`); }
   };
   await ClaireCompanion.prototype.exitMobileClaire.call(context);
-  assert.deepEqual(calls.slice(0, 7), [
-    "interrupt", "wake", "notice", "watch", "timer", "pause", "stop"
-  ]);
-  assert.equal(context.audioEnabled, false);
-  assert.match(context.nodes.live.textContent, /mémorisée/);
-  assert.ok(calls.includes("state:manual"));
+  assert.ok(calls.includes("duplex"));
+  assert.ok(!calls.includes("interrupt"));
+  assert.ok(!calls.includes("pause"));
+  assert.ok(!calls.includes("stop"));
+  assert.equal(context.audioEnabled, true);
+  assert.ok(calls.includes("state:guided"));
   assert.ok(calls.includes("surface:show-pip"));
 });
 
-test("Rester en PiP pauses listening without stopping the provider", async () => {
+test("Rester en PiP keeps listening and remote audio without interrupting speech", async () => {
   const calls = [];
   const context = {
+    audioEnabled: true,
     provider: {
+      connected: true,
+      streamReady: true,
+      listening: true,
+      mediaAudible: true,
+      async ensureActiveListening(options) {
+        calls.push(["duplex", options]);
+        return this.listening && this.mediaAudible;
+      },
       async pauseListening() { calls.push("pause"); },
       async stop() { calls.push("stop"); }
     },
@@ -257,8 +276,13 @@ test("Rester en PiP pauses listening without stopping the provider", async () =>
   };
   const { ClaireCompanion } = await import("../assets/js/claire-companion.js");
   await ClaireCompanion.prototype.keepMobilePip.call(context);
-  assert.ok(calls.includes("pause"));
+  assert.ok(!calls.includes("pause"));
   assert.ok(!calls.includes("stop"));
+  assert.ok(!calls.includes("interrupt"));
+  assert.equal(calls.some((call) => Array.isArray(call)), false);
+  assert.equal(context.provider.listening, true);
+  assert.equal(context.provider.mediaAudible, true);
+  assert.equal(context.audioEnabled, true);
   assert.ok(calls.includes("surface:show-pip"));
 });
 
@@ -431,7 +455,7 @@ test("sur iPad, Parler déverrouille d’abord le haut-parleur sans couper Clair
   assert.equal(context.audioEnabled, true);
 });
 
-test("taper le médaillon reprend l’écoute après Rester en PiP", async () => {
+test("taper le médaillon live ouvre Claire sans avoir interrompu l’écoute", async () => {
   globalThis.matchMedia = () => ({ matches: true });
   const calls = [];
   const context = {
@@ -462,15 +486,16 @@ test("taper le médaillon reprend l’écoute après Rester en PiP", async () =>
   };
   const { ClaireCompanion } = await import("../assets/js/claire-companion.js");
   await ClaireCompanion.prototype.keepMobilePip.call(context, { restoreFocus: false });
-  assert.equal(context.provider.listening, false);
+  assert.equal(context.provider.listening, true);
   const opened = await ClaireCompanion.prototype.openMobileClaire.call(context);
   assert.equal(opened, true);
-  assert.deepEqual(calls.filter((call) => call === "pause" || call === "listen"), ["pause", "listen"]);
+  assert.equal(calls.includes("pause"), false);
+  assert.deepEqual(calls.filter((call) => call === "listen"), ["listen", "listen"]);
   assert.ok(calls.includes("surface:show-pip"));
   assert.ok(calls.includes("surface:open-claire"));
 });
 
-test("Voir le site laisse le médaillon puis Claire repart en écoute", async () => {
+test("Voir le site laisse le médaillon avec Claire toujours en écoute", async () => {
   globalThis.matchMedia = () => ({ matches: true });
   const calls = [];
   const context = {
@@ -502,11 +527,32 @@ test("Voir le site laisse le médaillon puis Claire repart en écoute", async ()
   const { ClaireCompanion } = await import("../assets/js/claire-companion.js");
   context.keepMobilePip = ClaireCompanion.prototype.keepMobilePip;
   await ClaireCompanion.prototype.dismissMobileGuided.call(context);
-  assert.equal(context.provider.listening, false);
+  assert.equal(context.provider.listening, true);
+  assert.equal(calls.includes("pause"), false);
   assert.ok(calls.includes("surface:show-pip"));
   await ClaireCompanion.prototype.openMobileClaire.call(context);
   assert.equal(context.provider.listening, true);
   assert.ok(calls.includes("listen"));
+});
+
+test("showMobileSite conserve une session connectée dans le PiP duplex", async () => {
+  globalThis.matchMedia = () => ({ matches: true });
+  const calls = [];
+  const context = {
+    provider: { connected: true },
+    keepMobilePip(options) {
+      calls.push(["pip", options]);
+      return Promise.resolve(true);
+    },
+    applyMobileUxEvent(event) { calls.push(["surface", event.type]); },
+    setState(value) { calls.push(["state", value]); }
+  };
+  const { ClaireCompanion } = await import("../assets/js/claire-companion.js");
+  assert.equal(
+    await ClaireCompanion.prototype.showMobileSite.call(context),
+    true
+  );
+  assert.deepEqual(calls, [["pip", { restoreFocus: false }]]);
 });
 
 test("PiP X fully stops and evacuates Claire without clearing memory", async () => {
@@ -532,8 +578,48 @@ test("PiP X fully stops and evacuates Claire without clearing memory", async () 
   const { ClaireCompanion } = await import("../assets/js/claire-companion.js");
   context.exitMobileClaire = ClaireCompanion.prototype.exitMobileClaire;
   await ClaireCompanion.prototype.evacuateMobilePip.call(context);
-  assert.ok(calls.includes("pause"));
+  assert.ok(!calls.includes("pause"));
   assert.ok(calls.includes("stop"));
   assert.ok(calls.includes("surface:evacuate-pip"));
   assert.match(context.nodes.live.textContent, /mémorisée/);
+});
+
+test("un tap sur le médaillon réarme son et micro sans quitter le PiP", async () => {
+  const calls = [];
+  const context = {
+    audioEnabled: false,
+    provider: {
+      connected: true,
+      streamReady: true,
+      listening: false,
+      mediaAudible: false,
+      avatarSpeaking: false,
+      needsAudioUnlock: () => true,
+      primeAudio() { calls.push("prime"); },
+      async ensureActiveListening(options) {
+        calls.push(["duplex", options]);
+        this.listening = true;
+        this.mediaAudible = true;
+        return true;
+      }
+    },
+    prepareLocalVideo() { calls.push("video"); },
+    async preflightMicrophone() { calls.push("preflight"); },
+    setStatus(state) { calls.push(`status:${state}`); },
+    async openMobileClaire() { calls.push("open"); }
+  };
+  const { ClaireCompanion } = await import("../assets/js/claire-companion.js");
+  const armed = await ClaireCompanion.prototype.handleMobilePipTap.call(context);
+  assert.equal(armed, true);
+  assert.equal(context.audioEnabled, true);
+  assert.equal(context.provider.listening, true);
+  assert.equal(context.provider.mediaAudible, true);
+  assert.equal(calls.includes("open"), false);
+  assert.deepEqual(calls, [
+    "video",
+    "prime",
+    "preflight",
+    ["duplex", { allowReconnect: true }],
+    "status:listening"
+  ]);
 });
