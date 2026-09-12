@@ -688,6 +688,24 @@ test("la sortie générée reste synchronisée avec le partial", async () => {
   assert.equal(generatedHeader.replace(/ aria-current="page"/g, "").replace(/\r\n/g, "\n"), partial.trim().replace(/\r\n/g, "\n"));
 });
 
+test("l’offre B2B Claire est un véritable onglet Méditerranée", async () => {
+  const [offer, home, header] = await Promise.all([
+    readFile(path.join(ROOT, "claire-pour-votre-site.html"), "utf8"),
+    readFile(path.join(ROOT, "index.html"), "utf8"),
+    readFile(path.join(ROOT, "partials/header.html"), "utf8")
+  ]);
+  assert.match(header, /href="claire-pour-votre-site\.html">Claire pour votre site/);
+  assert.match(home, /href="claire-pour-votre-site\.html">Claire pour votre site/);
+  assert.match(offer, /href="claire-pour-votre-site\.html" aria-current="page">Claire pour votre site/);
+  assert.match(offer, /assets\/images\/logo\/infoserv2a-logo-light\.png/);
+  assert.match(offer, /690 € setup/);
+  assert.match(offer, /1 190 € setup/);
+  assert.match(offer, /129 € \/ mois · 60 min voix/);
+  assert.match(offer, /249 € \/ mois · 180 min voix/);
+  assert.match(offer, /claire-platform-dev\.infoserv2a\.workers\.dev\/demo-boulangerie\.html/);
+  assert.doesNotMatch(offer, /mock-banner|>MAQUETTE</);
+});
+
 test("audit externe corroboré : écrit dès l’arrivée, formulaires, rail, badge public", async () => {
   const [header, css, client, devis, contact, headers] = await Promise.all([
     readFile(path.join(ROOT, "partials/header.html"), "utf8"),

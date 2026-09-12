@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 ASSET_V = "20260907-it48"
-MED_ASSET_V = "20260910-med1"
+MED_ASSET_V = "20260912-claire-offer"
 BRAND = '<span class="brand-name">INFOSERV2A</span>'
 HEADER_MARK_START = "<!-- chrome:header -->"
 HEADER_MARK_END = "<!-- /chrome:header -->"
@@ -26,6 +26,7 @@ CURRENT = {
     "maintenance-distance.html": {"maintenance-distance.html"},
     "reseaux-wifi.html": {"reseaux-wifi.html"},
     "claire.html": {"claire.html"},
+    "claire-pour-votre-site.html": {"claire-pour-votre-site.html"},
     "configuration-domicile.html": {"configuration-domicile.html"},
     "cybersecurite-ia.html": {"cybersecurite-ia.html"},
     "recuperation-donnees.html": {"recuperation-donnees.html"},
@@ -44,6 +45,10 @@ OFFRES = {
 }
 
 SEO = {
+    "claire-pour-votre-site.html": {
+        "title": "Claire pour votre site — InfoServ2A",
+        "description": "Intégrez Claire à votre site : conseillère vidéo 9:16, réponses clients et demandes de contact. Installation par InfoServ2A.",
+    },
     "contact.html": {
         "title": "Contact — InfoServ2A à Porto-Vecchio",
         "description": "Professionnels du Sud Corse et particuliers : décrivez votre besoin, je vous accompagne. Du lundi au samedi, de 9 h à 17 h.",

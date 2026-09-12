@@ -184,6 +184,59 @@
       ]
     },
     {
+      "id": "claire-offer",
+      "href": "claire-pour-votre-site.html",
+      "title": "Claire pour votre site",
+      "summary": "InfoServ2A installe Claire sur les sites de commerces, artisans et PME : conseillère vidéo 9:16, réponses aux clients et transmission des demandes de contact.",
+      "keywords": [
+        "claire pour votre site",
+        "claire sur mon site",
+        "assistante vidéo",
+        "conseillère vidéo",
+        "liveavatar",
+        "plein écran 9:16",
+        "offre claire",
+        "formules claire"
+      ],
+      "prompts": [
+        "Je veux Claire sur mon site",
+        "Quelles sont les formules Claire ?",
+        "Montrez-moi la démo pour les professionnels"
+      ],
+      "anchors": [
+        {
+          "id": "offres",
+          "label": "Formules Claire",
+          "keywords": [
+            "formules",
+            "essentiel",
+            "pro",
+            "sur-mesure",
+            "tarifs"
+          ]
+        },
+        {
+          "id": "parcours",
+          "label": "Installation de Claire",
+          "keywords": [
+            "installation",
+            "greffe",
+            "mise en service",
+            "démo 15 min"
+          ]
+        },
+        {
+          "id": "demo",
+          "label": "Demander une démo",
+          "keywords": [
+            "démo",
+            "démonstration",
+            "essayer"
+          ]
+        }
+      ]
+    },
+    {
       "id": "cybersecurity",
       "href": "cybersecurite-ia.html",
       "title": "Cybersécurité et intelligence artificielle",

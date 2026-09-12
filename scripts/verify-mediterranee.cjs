@@ -10,7 +10,7 @@ const assert = require('node:assert/strict');
 const BASE='http://127.0.0.1:8016';
 const OUT='docs/validation-mediterranee';
 fs.mkdirSync(OUT+'/captures',{recursive:true});
-const routes=['index.html','maintenance-distance.html','reseaux-wifi.html','videosurveillance.html','creation-site-web.html','claire.html','a-propos.html','contact.html'];
+const routes=['index.html','maintenance-distance.html','reseaux-wifi.html','videosurveillance.html','creation-site-web.html','claire.html','claire-pour-votre-site.html','a-propos.html','contact.html'];
 const report={date:new Date().toISOString(),mode:'Local preview, simulated services; no external email or live voice/video',checks:[],captures:[],errors:[]};
 async function check(name,fn) {try{const detail=await fn();report.checks.push({name,passed:true,detail});console.log('PASS '+name);}catch(e){report.checks.push({name,passed:false,error:e.message});console.log('FAIL '+name+': '+e.message);}}
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
@@ -32,7 +32,7 @@ async function health(page){return page.evaluate(()=>{
   });
   for(const [i,route] of routes.entries()) await check('PC route '+route,async()=>{
     const res=await page.goto(BASE+'/'+route,{waitUntil:'networkidle'});assert.equal(res.status(),200);await stable(page);
-    const h=await health(page);assert.equal(h.h1,1);assert.equal(h.nav,8);assert.deepEqual(h.overflow,[]);assert.deepEqual(h.images,[]);
+    const h=await health(page);assert.equal(h.h1,1);assert.equal(h.nav,9);assert.deepEqual(h.overflow,[]);assert.deepEqual(h.images,[]);
     assert.equal(await page.evaluate(()=>window.__mediaRequests),0);
     if(route==='index.html') await capture(page,'01-accueil-pc-manuel.png');
     await page.evaluate(()=>window.InfoServClaire.guided());await pause(650);
