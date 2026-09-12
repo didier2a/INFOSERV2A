@@ -53,7 +53,11 @@ button { cursor: pointer; }
     calc(18px + env(safe-area-inset-left));
   color: white;
   background: linear-gradient(180deg, rgba(8, 21, 31, .82), transparent);
+  pointer-events: none;
 }
+.topbar > * { pointer-events: auto; }
+.topbar__actions { display: flex; gap: 8px; }
+.topbar__left { pointer-events: none; }
 
 .eyebrow {
   color: #d8ebe5;
@@ -118,22 +122,24 @@ h2 { margin: 6px 0 8px; font-family: Georgia, serif; font-size: 27px; font-weigh
   font-size: 54px;
 }
 
-.sound-button {
+.unmute {
   position: absolute;
-  z-index: 2;
-  right: calc(18px + env(safe-area-inset-right));
-  bottom: calc(224px + env(safe-area-inset-bottom));
-  left: calc(18px + env(safe-area-inset-left));
-  min-height: 46px;
-  border: 1px solid rgba(255, 255, 255, .72);
+  z-index: 6;
+  top: 50%;
+  left: 50%;
+  min-width: 220px;
+  min-height: 52px;
+  padding: 14px 22px;
+  transform: translate(-50%, -50%);
+  border: 0;
   border-radius: 999px;
-  color: white;
-  background: rgba(15, 79, 82, .92);
+  color: #0f1c24;
+  background: white;
   font-weight: 800;
-  box-shadow: 0 10px 30px rgba(8, 21, 31, .28);
-  backdrop-filter: blur(8px);
+  font-size: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, .45);
 }
-.sound-button[hidden] { display: none; }
+.unmute[hidden] { display: none; }
 
 .status {
   position: absolute;
@@ -228,6 +234,59 @@ h2 { margin: 6px 0 8px; font-family: Georgia, serif; font-size: 27px; font-weigh
 #lead-result { margin: 10px 0 0; color: #285b54; font-size: 12px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
 
+/* Cinema is the default dogfood surface: Claire fills the frame. */
+.shell.cinema .chrome-panel { display: none; }
+.shell.cinema .status {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+}
+.shell.cinema.show-chrome .chrome-panel { display: flex; }
+.shell.cinema.show-chrome .conversation.chrome-panel { display: block; }
+.shell.cinema.show-chrome .status {
+  opacity: 1;
+  pointer-events: auto;
+}
+.shell.cinema .topbar--minimal {
+  padding-bottom: 28px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, .55), transparent);
+}
+.shell.cinema:not(.show-chrome) .topbar--minimal .eyebrow,
+.shell.cinema:not(.show-chrome) .topbar--minimal h1 { opacity: 0; }
+.shell.cinema .stage,
+.shell.cinema .stage-frame {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  aspect-ratio: auto;
+}
+.shell.cinema .topbar,
+.shell.cinema .unmute,
+.shell.cinema .actions,
+.shell.cinema .conversation,
+.shell.cinema .lead-overlay { z-index: 4; }
+
+.shell.cinema:not(.show-chrome) .actions {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  padding:
+    16px
+    calc(14px + env(safe-area-inset-right))
+    calc(18px + env(safe-area-inset-bottom))
+    calc(14px + env(safe-area-inset-left));
+  background: transparent;
+}
+.shell.cinema:not(.show-chrome) .actions .secondary { display: none; }
+.shell.cinema:not(.show-chrome) .actions .primary {
+  width: 100%;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .45);
+}
+.shell.cinema.session-live:not(.show-chrome) .actions { display: none; }
+
 @media (max-height: 560px) {
   .topbar {
     padding-top: calc(10px + env(safe-area-inset-top));
@@ -239,6 +298,5 @@ h2 { margin: 6px 0 8px; font-family: Georgia, serif; font-size: 27px; font-weigh
     padding-top: 28px;
     padding-bottom: 6px;
   }
-  .sound-button { bottom: calc(194px + env(safe-area-inset-bottom)); }
   .status { bottom: calc(154px + env(safe-area-inset-bottom)); }
 }

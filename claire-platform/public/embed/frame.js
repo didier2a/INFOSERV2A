@@ -8,7 +8,6 @@ const elements = {
   avatar: document.querySelector("#avatar"),
   placeholder: document.querySelector("#placeholder"),
   status: document.querySelector("#status"),
-  enableSound: document.querySelector("#enable-sound"),
   name: document.querySelector("#claire-name"),
   greeting: document.querySelector("#greeting"),
   transcript: document.querySelector("#transcript"),
@@ -20,7 +19,11 @@ const elements = {
   leadForm: document.querySelector("#lead-form"),
   leadResult: document.querySelector("#lead-result"),
   chatForm: document.querySelector("#chat-form"),
-  message: document.querySelector("#message")
+  message: document.querySelector("#message"),
+  unmute: document.querySelector("#unmute"),
+  pip: document.querySelector("#pip"),
+  toggleChrome: document.querySelector("#toggle-chrome"),
+  shell: document.querySelector(".shell")
 };
 elements.start.disabled = true;
 
@@ -55,11 +58,44 @@ async function enableAvatarSound() {
   }
 
   const audible = !video.muted && !video.paused;
-  elements.enableSound.hidden = audible;
+  elements.unmute.hidden = audible;
   setStatus(audible
     ? "Son activé · Claire est connectée"
     : "Touchez « Activer le son » pour entendre Claire");
   return audible;
+}
+
+function setCinemaChrome(visible) {
+  elements.shell?.classList.toggle("show-chrome", Boolean(visible));
+  if (!elements.toggleChrome) return;
+  elements.toggleChrome.setAttribute("aria-pressed", visible ? "true" : "false");
+  elements.toggleChrome.textContent = visible ? "UI·" : "UI";
+}
+
+async function togglePictureInPicture() {
+  const video = elements.avatar;
+  if (!video || video.hidden) {
+    setStatus("Lancez Claire avant le PiP");
+    return false;
+  }
+  try {
+    if (document.pictureInPictureElement) {
+      await document.exitPictureInPicture();
+      setStatus("PiP fermé");
+      return true;
+    }
+    if (!document.pictureInPictureEnabled || typeof video.requestPictureInPicture !== "function") {
+      setStatus("PiP non disponible sur ce navigateur");
+      return false;
+    }
+    await enableAvatarSound();
+    await video.requestPictureInPicture();
+    setStatus("Claire en PiP");
+    return true;
+  } catch (error) {
+    setStatus(error?.message || "Impossible d’ouvrir le PiP");
+    return false;
+  }
 }
 
 function transcript(speaker, message) {
@@ -111,12 +147,14 @@ function wireSession(activeSession) {
     await Promise.resolve(activeSession.attach(elements.avatar));
     elements.avatar.hidden = false;
     elements.placeholder.hidden = true;
+    elements.shell?.classList.add("session-live");
     setStatus("Claire est connectée");
     await enableAvatarSound();
   });
   activeSession.on(sdk.SessionEvent.SESSION_DISCONNECTED, () => {
     setStatus("La session est terminée");
-    elements.enableSound.hidden = true;
+    elements.unmute.hidden = true;
+    elements.shell?.classList.remove("session-live");
     elements.message.disabled = true;
     elements.chatForm.querySelector("button").disabled = true;
     session = null;
@@ -132,7 +170,7 @@ function wireSession(activeSession) {
   activeSession.on(sdk.AgentEventsEnum.USER_SPEAK_STARTED, () => setStatus("Je vous écoute…"));
   activeSession.on(sdk.AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
     if (elements.avatar.muted) {
-      elements.enableSound.hidden = false;
+      elements.unmute.hidden = false;
       setStatus("Claire répond · activez le son");
     } else {
       setStatus("Claire vous répond…");
@@ -166,6 +204,7 @@ async function start() {
     elements.message.disabled = false;
     elements.chatForm.querySelector("button").disabled = false;
     elements.start.textContent = "Session active";
+    elements.shell?.classList.add("session-live");
   } catch (error) {
     const missing = error.payload?.requiredSecrets?.join(", ");
     setStatus(missing ? `Configuration requise : ${missing}` : error.message);
@@ -189,8 +228,16 @@ async function endSession() {
   } catch { /* Metering end is best effort during page teardown. */ }
 }
 
+elements.unmute.addEventListener("click", async () => {
+  if (!await enableAvatarSound()) setStatus("Autorisez le son du navigateur, puis réessayez");
+});
+elements.toggleChrome?.addEventListener("click", () => {
+  setCinemaChrome(!elements.shell.classList.contains("show-chrome"));
+});
+elements.pip?.addEventListener("click", () => { void togglePictureInPicture(); });
+document.addEventListener("leavepictureinpicture", () => setStatus("Retour plein cadre"));
+setCinemaChrome(false);
 elements.start.addEventListener("click", start);
-elements.enableSound.addEventListener("click", () => { void enableAvatarSound(); });
 elements.close.addEventListener("click", () => parent.postMessage({ type: "claire:close" }, "*"));
 elements.contact.addEventListener("click", () => { elements.overlay.hidden = false; });
 elements.leadClose.addEventListener("click", () => { elements.overlay.hidden = true; });

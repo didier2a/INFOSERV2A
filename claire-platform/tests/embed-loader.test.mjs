@@ -126,12 +126,23 @@ test("iframe UI keeps the LiveAvatar stage in a centered 9:16 frame", () => {
 });
 
 test("audio recovery is user-visible and retries after voice chat starts", () => {
-  assert.match(frameHtml, /<video id="avatar" playsinline hidden><\/video>/);
+  assert.match(frameHtml, /<video id="avatar" playsinline webkit-playsinline hidden><\/video>/);
   assert.doesNotMatch(frameHtml, /<video id="avatar"[^>]*\sautoplay(?:\s|>)/);
-  assert.match(frameHtml, /id="enable-sound"[^>]*>Activer le son<\/button>/);
-  assert.match(frameStyles, /\.sound-button\s*\{/);
+  assert.match(frameHtml, /id="unmute"[^>]*>Activer le son<\/button>/);
+  assert.match(frameStyles, /\.unmute\s*\{/);
   assert.match(frameSource, /async function enableAvatarSound\(\)/);
   assert.match(frameSource, /voiceChat\.start\(\{ defaultMuted: false \}\);\s*await enableAvatarSound\(\)/);
+});
+
+test("cinema mode defaults to minimal controls and supports Picture-in-Picture", () => {
+  assert.match(frameHtml, /<main class="shell cinema"[^>]*data-mode="cinema"/);
+  assert.match(frameHtml, /id="toggle-chrome"/);
+  assert.match(frameHtml, /id="pip"/);
+  assert.match(frameStyles, /\.shell\.cinema \.chrome-panel\s*\{\s*display:\s*none/);
+  assert.match(frameStyles, /\.shell\.cinema\.session-live:not\(\.show-chrome\) \.actions\s*\{\s*display:\s*none/);
+  assert.match(frameSource, /function setCinemaChrome\(visible\)/);
+  assert.match(frameSource, /video\.requestPictureInPicture\(\)/);
+  assert.match(frameSource, /classList\.add\("session-live"\)/);
 });
 
 test("direct iframe URL bootstraps its own ticket when the hash is missing", async () => {
@@ -139,15 +150,26 @@ test("direct iframe URL bootstraps its own ticket when the hash is missing", asy
   const button = { disabled: true };
   const elements = new Map();
   for (const selector of [
-    "#avatar", "#placeholder", "#status", "#enable-sound", "#claire-name", "#greeting", "#transcript",
+    "#avatar", "#placeholder", "#status", "#claire-name", "#greeting", "#transcript",
     "#start", "#close", "#contact", "#lead-overlay", "#lead-close", "#lead-form",
-    "#lead-result", "#chat-form", "#message"
+    "#lead-result", "#chat-form", "#message", "#unmute", "#pip", "#toggle-chrome", ".shell"
   ]) {
+    const classes = new Set();
     elements.set(selector, {
       addEventListener() {},
+      setAttribute() {},
       querySelector() { return button; },
       append() {},
       reset() {},
+      classList: {
+        add(value) { classes.add(value); },
+        remove(value) { classes.delete(value); },
+        contains(value) { return classes.has(value); },
+        toggle(value, force) {
+          if (force) classes.add(value);
+          else classes.delete(value);
+        }
+      },
       disabled: false,
       hidden: false,
       textContent: "",
@@ -186,6 +208,7 @@ test("direct iframe URL bootstraps its own ticket when the hash is missing", asy
     history: { replaceState() {} },
     document: {
       title: "",
+      addEventListener() {},
       querySelector(selector) { return elements.get(selector); },
       createElement() { return { append() {}, scrollIntoView() {}, textContent: "" }; },
       createTextNode(value) { return value; }

@@ -8,27 +8,30 @@
   <script type="importmap">{"imports":{"events":"/vendor/liveavatar/events-browser.mjs"}}</script>
 </head>
 <body>
-  <main class="shell" aria-label="Conseil avec Claire">
-    <header class="topbar">
-      <div>
-        <span class="eyebrow">CONSEIL EN DIRECT</span>
+  <main class="shell cinema" aria-label="Conseil avec Claire" data-mode="cinema">
+    <header class="topbar topbar--minimal">
+      <div class="topbar__left">
+        <span class="eyebrow">CLAIRE</span>
         <h1 id="claire-name">Claire</h1>
       </div>
-      <button class="icon-button" id="close" type="button" aria-label="Fermer Claire">×</button>
+      <div class="topbar__actions">
+        <button class="icon-button" id="toggle-chrome" type="button" aria-pressed="false" title="Afficher les commandes">UI</button>
+        <button class="icon-button" id="pip" type="button" title="Picture-in-Picture" aria-label="Picture-in-Picture">PiP</button>
+        <button class="icon-button" id="close" type="button" aria-label="Fermer Claire">×</button>
+      </div>
     </header>
 
     <section class="stage" aria-label="LiveAvatar">
       <div class="stage-frame">
-        <video id="avatar" playsinline hidden></video>
+        <video id="avatar" playsinline webkit-playsinline hidden></video>
         <div class="portrait-placeholder" id="placeholder" aria-hidden="true">
           <span>C</span>
         </div>
-        <button class="sound-button" id="enable-sound" type="button" hidden>Activer le son</button>
         <span class="status" id="status" role="status">Prête à vous conseiller</span>
       </div>
     </section>
 
-    <section class="conversation" aria-live="polite">
+    <section class="conversation chrome-panel" aria-live="polite">
       <p class="greeting" id="greeting">Bonjour. Comment puis-je vous aider&nbsp;?</p>
       <div id="transcript" class="transcript"></div>
       <form id="chat-form" class="chat-form">
@@ -38,7 +41,9 @@
       </form>
     </section>
 
-    <footer class="actions">
+    <button class="unmute" id="unmute" type="button" hidden>Activer le son</button>
+
+    <footer class="actions chrome-panel">
       <button class="primary" id="start" type="button">Parler à Claire</button>
       <button class="secondary" id="contact" type="button">Être recontacté</button>
     </footer>
