@@ -1,10 +1,11 @@
-import { normalizeText } from "./claire-core.mjs?v=20260912-mobile-d2-c1-v1";
+import { normalizeText } from "./claire-core.mjs?v=20260912-claire-cde-v1";
 import {
   canSubmitContact,
   canSubmitQuote,
-  describeMissingQuoteFields,
-  synthesizeMailBody
-} from "./claire-session-memory.mjs?v=20260912-mobile-d2-c1-v1";
+  synthesizeMailBody,
+  validateContactDraft,
+  validateQuoteDraft
+} from "./claire-session-memory.mjs?v=20260912-claire-cde-v1";
 
 export const CLAIRE_ACTION_MODES = Object.freeze({
   CONSEIL: "conseil",
@@ -75,30 +76,37 @@ export function actionDraftReady(kind, memory = {}) {
 
 export function interviewUpdate(kind, memory = {}) {
   const canvas = synthesizeMailBody(memory);
-  const ready = actionDraftReady(kind, memory);
+  const validation = kind === CLAIRE_ACTION_MODES.CONTACT
+    ? validateContactDraft(memory)
+    : validateQuoteDraft(memory);
+  const ready = validation.valid;
   if (ready) {
     return {
       ready: true,
       canvas,
+      askedField: "",
+      fieldErrors: {},
       speech: `J’ai mis la synthèse à jour dans le formulaire. Relisez-la puis, si elle vous convient, dites exactement : « ${confirmationPhrase(kind)} ».`
     };
   }
-  if (kind === CLAIRE_ACTION_MODES.CONTACT) {
-    const missing = [
-      !memory?.visitor?.name && "votre nom",
-      !memory?.visitor?.email && "votre e-mail",
-      !canvas && "votre message"
-    ].filter(Boolean);
-    return {
-      ready: false,
-      canvas,
-      speech: `Je synthétise notre échange dans le message. Il me manque encore ${missing.join(", ")}.`
-    };
-  }
+  const askedField = validation.invalid[0] || "";
+  const questions = {
+    name: "Quel est votre nom et prénom ?",
+    phone: "Quel est votre numéro de téléphone ?",
+    email: "Quelle est votre adresse e-mail ?",
+    city: "Dans quelle commune êtes-vous ?",
+    service: "Quel type de service souhaitez-vous ?",
+    description: "Décrivez précisément votre besoin.",
+    message: "Quel message souhaitez-vous transmettre ?"
+  };
+  const error = validation.fieldErrors[askedField] || "";
+  const correction = error && !/^Veuillez renseigner/i.test(error) ? `${error} ` : "";
   return {
     ready: false,
     canvas,
-    speech: `Je synthétise notre échange dans le champ besoin. Il me manque encore ${describeMissingQuoteFields(memory)}.`
+    askedField,
+    fieldErrors: validation.fieldErrors,
+    speech: `${correction}${questions[askedField] || "Pouvez-vous préciser ce champ ?"}`.trim()
   };
 }
 

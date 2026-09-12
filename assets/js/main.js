@@ -65,6 +65,22 @@
       field.setAttribute("aria-invalid", message ? "true" : "false");
       if (holder) holder.textContent = message || "";
     },
+    applyFieldErrors(form, result) {
+      const errors = result && result.fieldErrors && typeof result.fieldErrors === "object"
+        ? result.fieldErrors
+        : {};
+      const rejected = Array.isArray(result && result.missing) ? result.missing : [];
+      const fields = [...new Set([...rejected, ...Object.keys(errors)])];
+      fields.forEach((name) => {
+        const field = form && form.querySelector(`[name="${name}"]`);
+        if (!field) return;
+        this.setError(field, errors[name] || "Veuillez corriger ce champ.");
+        field.dataset.claireServerRejected = "true";
+      });
+      const first = fields.length ? form && form.querySelector(`[name="${fields[0]}"]`) : null;
+      first?.focus?.();
+      return fields;
+    },
     showStatus(form, type, message) {
       const box = form.querySelector(".form-status");
       if (!box) return;
@@ -188,6 +204,7 @@
           replyTo: data.replyTo || "",
           businessCopy: Boolean(data.businessCopy),
           missing: Array.isArray(data.missing) ? data.missing : [],
+          fieldErrors: data.fieldErrors && typeof data.fieldErrors === "object" ? data.fieldErrors : {},
           error: data.error || "",
           message: data.message || ""
         };
@@ -202,6 +219,7 @@
           inbox: (payload && payload.email) || "",
           replyTo: "",
           missing: [],
+          fieldErrors: {},
           error: timeout ? "L’envoi a pris trop de temps. Réessayez." : "L’envoi n’a pas pu aboutir",
           message: ""
         };

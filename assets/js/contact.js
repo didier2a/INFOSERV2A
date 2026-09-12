@@ -86,7 +86,17 @@
           api.showStatus(form, "ok", result.message || "Un e-mail d’activation arrive dans " + (result.inbox || email.value) + ". Confirmez-le, puis renvoyez le message.");
           return;
         }
-        if (!result.sent) throw new Error(result.error || "network");
+        if (!result.sent) {
+          const rejected = api.applyFieldErrors?.(form, result) || [];
+          const correction = rejected.length
+            ? "Corrigez le champ indiqué avant de réessayer."
+            : "Réessayez dans un instant sans modifier les autres champs.";
+          api.showStatus(form, "error", (result.error || "L’envoi n’a pas pu aboutir.") + " " + correction);
+          document.dispatchEvent(new CustomEvent("infoserv:email-rejected", {
+            detail: { kind: "contact", fields: rejected, fieldErrors: result.fieldErrors || {} }
+          }));
+          return;
+        }
         api.showStatus(form, "ok", "Votre récapitulatif a bien été transmis vers " + (result.inbox || email.value) + ". Répondez à cet e-mail pour l’adresser à Didier.");
         document.dispatchEvent(new CustomEvent("infoserv:email-sent", {
           detail: {

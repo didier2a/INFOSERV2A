@@ -1,10 +1,15 @@
 import { corsHeaders, corsPreflight, isAllowedOrigin } from "./liveavatar-origin.js";
+import {
+  EMAIL_PATTERN,
+  validateContactFields,
+  validateQuoteFields
+} from "../../assets/js/form-schema.mjs";
 
 export const CONTACT_INBOX = "contact@infoserv2a.pro";
 export const BUSINESS_REPLY_TO = CONTACT_INBOX;
 export const DEFAULT_FROM = "InfoServ2A <site@infoserv2a.pro>";
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_RE = EMAIL_PATTERN;
 const RATE_LIMIT = 6;
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 const hits = new Map();
@@ -152,17 +157,10 @@ export function normalizeEmailPayload(input = {}, env = {}) {
     || usefulMessage(input.description, 4000)
     || usefulMessage(input.body, 4000);
   const files = compactField(input.files, 400);
-  const missing = [];
-  if (!name) missing.push("name");
-  if (!email || !EMAIL_RE.test(email)) missing.push("email");
-  if (kind === "devis") {
-    if (!phone) missing.push("phone");
-    if (!city) missing.push("city");
-    if (!service) missing.push("service");
-    if (!message) missing.push("description");
-  } else if (!message) {
-    missing.push("message");
-  }
+  const validation = kind === "devis"
+    ? validateQuoteFields({ name, email, phone, city, service, description: message })
+    : validateContactFields({ name, email, phone, message });
+  const missing = validation.invalid;
   const inbox = destinationInbox(email);
   const replyTo = compactField(env.CONTACT_REPLY_TO, 120) || BUSINESS_REPLY_TO;
   const subject = kind === "devis"
@@ -174,6 +172,7 @@ export function normalizeEmailPayload(input = {}, env = {}) {
     kind,
     honeypot: Boolean(honeypot),
     missing,
+    fieldErrors: validation.fieldErrors,
     inbox,
     replyTo,
     subject,
@@ -389,6 +388,7 @@ export async function onRequestPost({ request, env }) {
       error: "Champs incomplets",
       sent: false,
       missing: mail.missing,
+      fieldErrors: mail.fieldErrors,
       inbox: mail.inbox
     }, 400, request);
   }
@@ -410,11 +410,14 @@ export async function onRequestPost({ request, env }) {
     }, delivery.pendingActivation ? 202 : 200, request);
   } catch (error) {
     const status = Number(error.status) || 502;
+    const rejectedEmail = /(?:e-?mail|recipient|address|destinataire)/i.test(String(error.message || ""));
     return json({
       error: status === 503 ? error.message : (error.message || "L’envoi n’a pas pu aboutir"),
       sent: false,
       configured: provider !== "none",
-      inbox: mail.inbox
+      inbox: mail.inbox,
+      missing: rejectedEmail ? ["email"] : [],
+      fieldErrors: rejectedEmail ? { email: "L’adresse e-mail a été refusée par le service d’envoi." } : {}
     }, status, request);
   }
 }

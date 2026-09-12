@@ -1,4 +1,4 @@
-import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260912-mobile-d2-c1-v1";
+import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260912-claire-cde-v1";
 import {
   contactExtrasFromDocument,
   firstUsefulText,
@@ -6,11 +6,13 @@ import {
   hasEnoughNeedContext,
   loadSessionMemory,
   quoteExtrasFromDocument,
+  quotePrefillFromMemory,
   synthesisFactsFromMemory,
   synthesisTurnsFromMemory,
   synthesizeMailBody,
   usefulText
-} from "./claire-session-memory.mjs?v=20260912-mobile-d2-c1-v1";
+} from "./claire-session-memory.mjs?v=20260912-claire-cde-v1";
+import { validateContactFields, validateQuoteFields } from "./form-schema.mjs?v=20260912-claire-cde-v1";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -259,6 +261,7 @@ export class BrowserInfoServ2ASurface {
   fillQuoteField(selector, value, { allowEmpty = false } = {}) {
     const field = this.document.querySelector(selector);
     if (!field) return false;
+    const previous = field.value;
     const multiline = selector === "#devis-description" || selector === "#contact-message";
     const next = multiline
       ? String(value || "").replace(/\r\n/g, "\n").replace(/[ \t]+\n/g, "\n").trim().slice(0, 4000)
@@ -267,18 +270,27 @@ export class BrowserInfoServ2ASurface {
     if (field.tagName === "SELECT") {
       if (!next) {
         field.value = "";
-        return true;
+      } else {
+        const needle = String(value).toLocaleLowerCase("fr");
+        const option = [...field.options].find((item) => {
+          const optionValue = item.value.toLocaleLowerCase("fr");
+          const label = item.textContent.trim().toLocaleLowerCase("fr");
+          return optionValue === needle || label.includes(needle);
+        });
+        if (option) field.value = option.value;
       }
-      const needle = String(value).toLocaleLowerCase("fr");
-      const option = [...field.options].find((item) => {
-        const optionValue = item.value.toLocaleLowerCase("fr");
-        const label = item.textContent.trim().toLocaleLowerCase("fr");
-        return optionValue === needle || label.includes(needle);
-      });
-      if (option) field.value = option.value;
     } else {
       field.value = next;
       field.scrollTop = 0;
+    }
+    if (field.value !== previous) {
+      const EventCtor = this.window.Event || globalThis.Event;
+      if (typeof EventCtor === "function" && typeof field.dispatchEvent === "function") {
+        field.dataset.claireWriteSource = "programmatic";
+        field.dispatchEvent(new EventCtor("input", { bubbles: true }));
+        field.dispatchEvent(new EventCtor("change", { bubbles: true }));
+        delete field.dataset.claireWriteSource;
+      }
     }
     return true;
   }
@@ -311,6 +323,9 @@ export class BrowserInfoServ2ASurface {
   }
 
   async ensureQuoteSynthesis(memory = loadSessionMemory(), draft = {}) {
+    if (memory.draft?.provenance?.description?.source === "typed") {
+      return usefulText(memory.draft?.values?.description, 4000);
+    }
     const fallback = this.fallbackQuoteCanvas(memory, draft);
     if (!hasEnoughNeedContext(memory, draft)) return fallback;
     const key = this.quoteSynthesisKey(memory);
@@ -361,10 +376,38 @@ export class BrowserInfoServ2ASurface {
   }
 
   quoteMissingFields() {
-    return ["name", "phone", "email", "city", "service", "description"].filter((key) => {
-      const field = this.document.querySelector(`#devis-${key}`);
-      return !usefulText(field?.value);
-    });
+    return this.quoteValidation().invalid;
+  }
+
+  quoteValidation() {
+    return validateQuoteFields(
+      Object.fromEntries(
+        ["name", "phone", "email", "city", "service", "description"]
+          .map((key) => [key, this.document.querySelector(`#devis-${key}`)?.value || ""])
+      )
+    );
+  }
+
+  applyFieldErrors(kind, result = {}) {
+    const form = this.document.querySelector(kind === "contact" ? "#contact-form" : "#devis-form");
+    const errors = result.fieldErrors && typeof result.fieldErrors === "object" ? result.fieldErrors : {};
+    const rejected = [...new Set([
+      ...(Array.isArray(result.missing) ? result.missing : []),
+      ...Object.keys(errors)
+    ])];
+    if (form && this.window.InfoServ?.applyFieldErrors) {
+      this.window.InfoServ.applyFieldErrors(form, { ...result, missing: rejected, fieldErrors: errors });
+      return rejected;
+    }
+    for (const field of rejected) {
+      const node = this.document.querySelector(`#${kind === "contact" ? "contact" : "devis"}-${field}`);
+      if (!node) continue;
+      node.setAttribute?.("aria-invalid", "true");
+      node.dataset.claireServerRejected = "true";
+      const holder = node.closest?.(".form-field")?.querySelector?.(".field-error");
+      if (holder) holder.textContent = errors[field] || "Veuillez corriger ce champ.";
+    }
+    return rejected;
   }
 
   async submitQuote(draft = {}) {
@@ -373,9 +416,17 @@ export class BrowserInfoServ2ASurface {
       || this.fallbackQuoteCanvas(memory, draft);
     const formState = this.prefillQuote({ ...draft, description });
     const form = this.document.querySelector("#devis-form");
-    const missing = this.quoteMissingFields();
+    const validation = this.quoteValidation();
+    const missing = validation.invalid;
     if (!form || missing.length) {
-      return { ...formState, submitted: false, sent: false, missing };
+      this.applyFieldErrors("devis", { missing, fieldErrors: validation.fieldErrors });
+      return {
+        ...formState,
+        submitted: false,
+        sent: false,
+        missing,
+        fieldErrors: validation.fieldErrors
+      };
     }
     const payload = {
       kind: "devis",
@@ -388,6 +439,7 @@ export class BrowserInfoServ2ASurface {
       website: this.document.querySelector("#devis-form [name='website']")?.value || ""
     };
     const result = await this.sendSiteEmail(payload);
+    const rejectedFields = result.sent ? [] : this.applyFieldErrors("devis", result);
     this.showFormStatus("#devis-form", result, payload.email);
     return {
       ...formState,
@@ -399,6 +451,8 @@ export class BrowserInfoServ2ASurface {
       replyTo: result.replyTo,
       businessCopy: Boolean(result.businessCopy),
       missing: result.missing || [],
+      rejectedFields,
+      fieldErrors: result.fieldErrors || {},
       error: result.error || ""
     };
   }
@@ -447,6 +501,7 @@ export class BrowserInfoServ2ASurface {
         replyTo: data.replyTo || "",
         businessCopy: Boolean(data.businessCopy),
         missing: Array.isArray(data.missing) ? data.missing : [],
+        fieldErrors: data.fieldErrors && typeof data.fieldErrors === "object" ? data.fieldErrors : {},
         error: data.error || "",
         message: data.message || ""
       };
@@ -462,6 +517,7 @@ export class BrowserInfoServ2ASurface {
         replyTo: "",
           businessCopy: false,
         missing: [],
+        fieldErrors: {},
         error: timeout
           ? "L’envoi a pris trop de temps. Réessayez."
           : (error?.message || "L’envoi n’a pas pu aboutir"),
@@ -514,19 +570,23 @@ export class BrowserInfoServ2ASurface {
     const quoteForm = this.document.querySelector("#devis-form");
     const contactForm = this.document.querySelector("#contact-form");
     const visitor = memory.visitor || {};
+    const quoteMemoryDraft = quotePrefillFromMemory(memory);
     const quote = quoteForm
       ? this.prefillQuote({
-        name: visitor.name,
-        phone: visitor.phone,
-        email: visitor.email,
-        city: visitor.city,
-        service: memory.service,
-        description: this.fallbackQuoteCanvas(memory, { service: memory.service })
+        ...quoteMemoryDraft,
+        description: quoteMemoryDraft.description || this.fallbackQuoteCanvas(memory, { service: memory.service })
       })
       : null;
-    if (quoteForm && hasEnoughNeedContext(memory)) {
+    if (
+      quoteForm
+      && hasEnoughNeedContext(memory)
+      && memory.draft?.provenance?.description?.source !== "typed"
+    ) {
       void this.ensureQuoteSynthesis(memory).then((description) => {
-        if (description) this.fillQuoteField("#devis-description", description);
+        const current = loadSessionMemory();
+        if (description && current.draft?.provenance?.description?.source !== "typed") {
+          this.fillQuoteField("#devis-description", description);
+        }
       });
     }
     const contact = contactForm
@@ -553,9 +613,20 @@ export class BrowserInfoServ2ASurface {
       message
     });
     fields.message = firstUsefulText(4000, fields.message, message);
-    const missing = ["name", "email", "message"].filter((key) => !usefulText(fields[key]));
-    if (missing.length) {
-      return { sent: false, triggered: false, missing, inbox: fields.email || "" };
+    const validation = validateContactFields(fields);
+    if (!validation.valid) {
+      this.applyFieldErrors("contact", {
+        missing: validation.invalid,
+        fieldErrors: validation.fieldErrors
+      });
+      return {
+        sent: false,
+        triggered: false,
+        missing: validation.invalid,
+        fieldErrors: validation.fieldErrors,
+        rejectedFields: validation.invalid,
+        inbox: fields.email || ""
+      };
     }
     const result = await this.sendSiteEmail({
       kind: "contact",
@@ -565,12 +636,14 @@ export class BrowserInfoServ2ASurface {
       message: fields.message,
       website: this.document.querySelector("#contact-form [name='website']")?.value || ""
     });
+    const rejectedFields = result.sent ? [] : this.applyFieldErrors("contact", result);
     this.showFormStatus("#contact-form", result, fields.email);
     return {
       ...result,
       draft,
       triggered: Boolean(result.sent),
-      missing: result.missing || []
+      missing: result.missing || [],
+      rejectedFields
     };
   }
 
@@ -706,6 +779,8 @@ export class InfoServ2ASiteAdapter {
           replyTo: form.replyTo || this.view.quoteDraft.email,
           businessCopy: Boolean(form.businessCopy),
           missing: form.missing || [],
+          rejectedFields: form.rejectedFields || [],
+          fieldErrors: form.fieldErrors || {},
           error: form.error || "",
           persistentSession: true
         };
@@ -769,6 +844,8 @@ export class InfoServ2ASiteAdapter {
           replyTo: launched.replyTo || args.email || "",
           businessCopy: Boolean(launched.businessCopy),
           missing: launched.missing || [],
+          rejectedFields: launched.rejectedFields || [],
+          fieldErrors: launched.fieldErrors || {},
           error: launched.error || "",
           triggered: Boolean(launched.sent),
           persistentSession: true

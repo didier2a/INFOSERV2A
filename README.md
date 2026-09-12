@@ -12,6 +12,15 @@ Environnement de validation Cloudflare : `https://infoserv2a.infoserv2a.workers.
 
 Preview Claire (cette branche) : `https://cursor-claire-it-only-8f54-infoserv2a.infoserv2a.workers.dev/?claire=1`.
 
+Déploiement manuel de Claire en **PREPROD uniquement** :
+
+```bash
+npx wrangler deploy --config wrangler.preprod.jsonc
+```
+
+Cette commande cible `infoserv2a-claire-v3-preproduction` sur `workers.dev`. Ne pas utiliser
+`wrangler.jsonc` et ne pas publier `www.infoserv2a.pro` pour valider Claire.
+
 Le domaine public `https://infoserv2a.pro` pointe encore vers **GitHub Pages** (DNS OVH). LiveAvatar n’y démarre pas : Pages ne sert pas `/api/liveavatar-session`. Pour transférer l’URL vers le Worker Cloudflare (sans casser l’e-mail OVH), suivre `docs/activer-claire-sur-infoserv2a-pro.md`.
 
 ## Lancement local
