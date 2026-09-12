@@ -4,7 +4,7 @@
 
 **Cible :** preview `cursor/arrivee-devanture-8f54` seulement. Pas www, pas `custom_domain`, pas de merge.
 
-**Assets :** `20260906-it42`. Contexte LiveAvatar **Aidant 1.31**.
+**Assets :** `20260906-it42`. Contexte LiveAvatar **Claire 1.31**.
 
 IT40 n’était **pas** tout P0–P2. IT41 traite le reste preview-codable, par priorité. L’arrivée logo + deux portes (IT40, recette Didier **OK**) n’est pas retouchée.
 
@@ -66,7 +66,7 @@ Le PDF veut **Claire fermée par défaut**. Didier a recetté l’arrivée IT40 
 ## Recette preview (sans envoi réel)
 
 `https://cursor-arrivee-devanture-8f54-infoserv2a.infoserv2a.workers.dev/?claire=1`  
-Ctrl+Shift+R. Assets `20260906-it42`. Contexte LiveAvatar **Aidant 1.31**.
+Ctrl+Shift+R. Assets `20260906-it42`. Contexte LiveAvatar **Claire 1.31**.
 
 ## IT42 — rythme Claire (Didier, 3 oui)
 

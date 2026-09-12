@@ -30,7 +30,9 @@ test("le statut s’active avec LiveAvatar et OpenAI Realtime", async () => {
       LIVEAVATAR_OPENAI_SECRET_ID: "secret-ref"
     }
   });
-  assert.equal((await response.json()).configured, true);
+  const payload = await response.json();
+  assert.equal(payload.configured, true);
+  assert.equal(payload.realtimeCredentialSource, "liveavatar-secret-id");
 });
 
 test("le statut confirme le modèle vocal sans exposer les secrets", async () => {
@@ -122,6 +124,7 @@ test("la fonction échange les références serveur contre un jeton éphémère"
     assert.equal(response.status, 200);
     assert.equal(payload.sessionToken, "ephemeral-test-token");
     assert.equal(payload.appId, "infoserv2a");
+    assert.equal(payload.realtimeCredentialSource, "liveavatar-secret-id");
     assert.equal(payload.maxSessionDuration, 600);
     assert.equal(outbound.url, "https://api.liveavatar.com/v1/sessions/token");
     const body = JSON.parse(outbound.options.body);
@@ -155,11 +158,13 @@ test("une nouvelle clé Cloudflare crée une nouvelle référence LiveAvatar", a
       env: {
         LIVEAVATAR_API_KEY: "configured",
         OPENAI_API_KEY: "sk-test-new-value",
+        LIVEAVATAR_OPENAI_SECRET_ID: "stale-static-id",
         LIVEAVATAR_CONTEXT_ID: "context-ref",
         LIVEAVATAR_AVATAR_ID: "avatar-ref"
       }
     });
     assert.equal(response.status, 200);
+    assert.equal((await response.clone().json()).realtimeCredentialSource, "cloudflare-key");
     const created = outbound.find((item) => item.url.endsWith("/v1/secrets") && item.options.method === "POST");
     assert.ok(created);
     const secretBody = JSON.parse(created.options.body);

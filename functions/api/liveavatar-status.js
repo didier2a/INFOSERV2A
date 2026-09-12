@@ -27,6 +27,7 @@ export function onRequestGet({ env, request }) {
     connector: "OPENAI_REALTIME",
     voice: "marin",
     model: String(env.LIVEAVATAR_OPENAI_MODEL || "gpt-realtime"),
+    realtimeCredentialSource: env.OPENAI_API_KEY ? "cloudflare-key" : "liveavatar-secret-id",
     mode: "LITE"
   }, 200, request);
 }

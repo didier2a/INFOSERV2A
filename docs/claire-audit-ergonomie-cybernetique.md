@@ -2,7 +2,7 @@
 
 **Date :** 2 septembre 2026  
 **Périmètre :** l’expérience Claire (pas le catalogue InfoServ2A page par page). Non exhaustif : assez détaillé pour servir de cahier des charges à raccorder.  
-**Cible mesurée :** preview `https://cursor-claire-it-only-8f54-infoserv2a.infoserv2a.workers.dev/?claire=1` · commit `5a970bf` · assets `20260901-it11` · contexte LiveAvatar **Aidant 1.14**.  
+**Cible mesurée :** preview `https://cursor-claire-it-only-8f54-infoserv2a.infoserv2a.workers.dev/?claire=1` · commit `5a970bf` · assets `20260901-it11` · contexte LiveAvatar **Claire 1.14**.
 **Méthode :** simulation desktop (~1280×800) + mobile (390×844) + lecture des boucles (`claire-companion.js`, `claire-core.mjs`, CSS, session LiveAvatar). Voix LiveAvatar **non** recettée ici (micro / permission).
 
 **Indice d’optimalité cybernétique actuel : 58 %.**  

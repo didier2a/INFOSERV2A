@@ -10,7 +10,7 @@ Site professionnel d'InfoServ2A, relié à Cloudflare Workers Builds. La branche
 
 Environnement de validation Cloudflare : `https://infoserv2a.infoserv2a.workers.dev/`.
 
-Preview Claire (cette branche) : `https://cursor-claire-it-only-8f54-infoserv2a.infoserv2a.workers.dev/?claire=1`.
+Preview Claire après déploiement préprod : `https://infoserv2a-claire-v3-preproduction.infoserv2a.workers.dev/?claire=1`.
 
 Déploiement manuel de Claire en **PREPROD uniquement** :
 
@@ -50,9 +50,9 @@ http://localhost:8000
 - `data/` — contenus JSON (services, réalisations, FAQ)
 - `partials/` — header et footer de référence (également intégrés dans chaque page pour fonctionner sans injection JavaScript)
 
-## Claire Live Companion — aidante Live Avatar
+## Claire — Experte IT & assistante de Didier
 
-Le site intègre Claire, **aidante Live Avatar** mobile-first, sans exposer de secret :
+Claire est **Collaboratrice InfoServ2A · conseil et accompagnement**. Sa présence Live Avatar mobile-first n’expose aucun secret :
 
 - arrivée immersive avec la même Claire verticale que Pocket Guide, puis scène plein écran ou rail guidé occupant 38 % de l’écran sur ordinateur ;
 - sur mobile 9:16, Claire conserve une scène haute et le site défile en dessous ; aucune bulle de support en bas à droite n’est utilisée ;

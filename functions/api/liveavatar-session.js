@@ -53,14 +53,18 @@ async function secretFingerprint(value) {
 }
 
 async function ensureOpenAISecret(env, key) {
-  const configured = String(env.LIVEAVATAR_OPENAI_SECRET_ID || "").trim();
-  if (configured) return configured;
-
   const openaiKey = String(env.OPENAI_API_KEY || "").trim();
-  if (!openaiKey) throw new Error("OpenAI Realtime non configuré");
+  if (!openaiKey) {
+    const configured = String(env.LIVEAVATAR_OPENAI_SECRET_ID || "").trim();
+    if (configured) return configured;
+    throw new Error("OpenAI Realtime non configuré");
+  }
   // LiveAvatar ne permet pas de modifier la valeur d’un secret. Un nom
   // déterministe dérivé de la clé garantit donc qu’une rotation Cloudflare
   // crée une nouvelle référence au lieu de réutiliser une ancienne clé.
+  // La clé Cloudflare actuelle prime toujours sur un ancien ID LiveAvatar :
+  // un ID encore accepté à la création du token peut néanmoins produire un
+  // connecteur Realtime silencieux si sa valeur OpenAI a expiré.
   const versionedName = `${SECRET_NAME} ${await secretFingerprint(openaiKey)}`;
 
   const listed = await providerJson(SECRETS_URL, { headers: { "X-API-KEY": key } });
@@ -180,6 +184,7 @@ export async function onRequestPost({ request, env }) {
       connector: "OPENAI_REALTIME",
       voice: "marin",
       model,
+      realtimeCredentialSource: env.OPENAI_API_KEY ? "cloudflare-key" : "liveavatar-secret-id",
       orientation: "vertical",
       appId: "infoserv2a"
     }, 200, request);
