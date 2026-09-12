@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   MOBILE_SURFACES,
@@ -68,4 +69,19 @@ test("only an expanded sheet locks site scrolling", () => {
 test("Services tab maps to the home services section", () => {
   assert.equal(mobileTabForLocation("/index.html", "#services"), "services");
   assert.equal(mobileTabForLocation("/", ""), "accueil");
+});
+
+test("phone CSS overrides the legacy top strip and duplicate guided controls", async () => {
+  const css = await readFile(
+    new URL("../assets/css/claire-companion.css", import.meta.url),
+    "utf8"
+  );
+  assert.match(
+    css,
+    /data-claire-mobile-surface="pip"[\s\S]*?inset:[^;]+!important;[\s\S]*?width: var\(--claire-mobile-pip-width\) !important/
+  );
+  assert.match(
+    css,
+    /data-claire-mobile-surface="guided"[\s\S]*?\.claire-shop-return,[\s\S]*?\.claire-scene-write \{[\s\S]*?display: none !important/
+  );
 });
