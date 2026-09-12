@@ -536,11 +536,12 @@ test("Voir le site laisse le médaillon avec Claire toujours en écoute", async 
   assert.ok(calls.includes("listen"));
 });
 
-test("showMobileSite conserve une session connectée dans le PiP duplex", async () => {
+test("showMobileSite conserve le PiP duplex même pendant une connexion", async () => {
   globalThis.matchMedia = () => ({ matches: true });
   const calls = [];
   const context = {
-    provider: { connected: true },
+    audioEnabled: true,
+    provider: { connected: false },
     keepMobilePip(options) {
       calls.push(["pip", options]);
       return Promise.resolve(true);

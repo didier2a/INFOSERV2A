@@ -1051,7 +1051,7 @@ export class ClaireCompanion {
       this.enterGuidedMode();
       return;
     }
-    if (this.provider?.connected) {
+    if (this.audioEnabled) {
       return this.keepMobilePip({ restoreFocus: false });
     }
     this.applyMobileUxEvent({
