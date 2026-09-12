@@ -21,7 +21,7 @@ npx wrangler deploy --config wrangler.preprod.jsonc
 Cette commande cible `infoserv2a-claire-v3-preproduction` sur `workers.dev`. Ne pas utiliser
 `wrangler.jsonc` et ne pas publier `www.infoserv2a.pro` pour valider Claire.
 Le correctif d’écoute préprod doit répondre avec
-`X-InfoServ2A-Preview: 20260912-claire-voice-out-v1`.
+`X-InfoServ2A-Preview: 20260912-claire-voice-restore-v1`.
 
 Le domaine public `https://infoserv2a.pro` pointe encore vers **GitHub Pages** (DNS OVH). LiveAvatar n’y démarre pas : Pages ne sert pas `/api/liveavatar-session`. Pour transférer l’URL vers le Worker Cloudflare (sans casser l’e-mail OVH), suivre `docs/activer-claire-sur-infoserv2a-pro.md`.
 

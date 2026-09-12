@@ -20,7 +20,7 @@ import {
   CLAIRE_WELCOME,
   CLAIRE_OFF_TOPIC_SPEECH,
   LIVEAVATAR_SESSION_WARNING_LEAD_MS
-} from "./claire-core.mjs?v=20260912-claire-voice-out-v1";
+} from "./claire-core.mjs?v=20260912-claire-voice-restore-v1";
 import {
   describeQuoteChecklist,
   formatCaptionContext,
@@ -49,7 +49,7 @@ import {
   alreadySentSpeech,
   quoteQuestionnaire,
   shouldShowQuoteQuest
-} from "./claire-session-memory.mjs?v=20260912-claire-voice-out-v1";
+} from "./claire-session-memory.mjs?v=20260912-claire-voice-restore-v1";
 import {
   CLAIRE_ACTION_MODES,
   actionDraftReady,
@@ -61,18 +61,18 @@ import {
   isQuoteResendRequest,
   shouldDebounceVoiceCommand,
   requestedActionMode
-} from "./claire-actions-v1.mjs?v=20260912-claire-voice-out-v1";
+} from "./claire-actions-v1.mjs?v=20260912-claire-voice-restore-v1";
 import {
   describeEmailSendOutcome,
   didEmailSendThisTurn
-} from "./site-email.mjs?v=20260912-claire-voice-out-v1";
+} from "./site-email.mjs?v=20260912-claire-voice-restore-v1";
 import {
   MOBILE_SCENE_HOLD_MS,
   createMobileSceneState,
   mobileSceneActive,
   reduceMobileScene,
   sceneStatusLabel
-} from "./claire-mobile-scene.mjs?v=20260912-claire-voice-out-v1";
+} from "./claire-mobile-scene.mjs?v=20260912-claire-voice-restore-v1";
 import {
   MOBILE_PIP_EDGE_MAGNET_PX,
   MOBILE_PIP_STORAGE_KEY,
@@ -90,20 +90,20 @@ import {
   mobileUxLocksScroll,
   reduceMobileUx,
   shouldShowClaireDiscovery
-} from "./claire-mobile-ux.mjs?v=20260912-claire-voice-out-v1";
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260912-claire-voice-out-v1";
+} from "./claire-mobile-ux.mjs?v=20260912-claire-voice-restore-v1";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260912-claire-voice-restore-v1";
 import {
   BrowserInfoServ2ASurface,
   InfoServ2ASiteAdapter
-} from "./claire-site-runtime-adapter.mjs?v=20260912-claire-voice-out-v1";
-import "./contact.js?v=20260912-claire-voice-out-v1";
-import "./devis.js?v=20260912-claire-voice-out-v1";
+} from "./claire-site-runtime-adapter.mjs?v=20260912-claire-voice-restore-v1";
+import "./contact.js?v=20260912-claire-voice-restore-v1";
+import "./devis.js?v=20260912-claire-voice-restore-v1";
 
 const STORAGE_MODE = "infoserv2a.claire.mode";
 const STORAGE_SEEN = "infoserv2a.claire.seen";
 const LOCAL_TEXT_FALLBACK = "Le direct vocal est indisponible, mais je peux continuer par écrit pour vous orienter dans les services InfoServ2A. Décrivez votre besoin informatique ou demandez un onglet précis.";
-const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260912-claire-voice-out-v1";
-const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260912-claire-voice-out-v1";
+const KNOWLEDGE_URL = "data/site-knowledge.json?v=20260912-claire-voice-restore-v1";
+const CAPABILITIES_URL = "data/claire-capabilities.json?v=20260912-claire-voice-restore-v1";
 const SILENT_SYNC_DELAY_MS = 4200;
 const LIVEAVATAR_STATUS_TIMEOUT_MS = 12000;
 const SPEECH_FOLLOW_MS = 360;
@@ -1064,6 +1064,16 @@ export class ClaireCompanion {
     return this.keepMobilePip({ restoreFocus: false });
   }
 
+  async handleAvatarStageGesture() {
+    const needsSound = this.provider?.needsAudioUnlock?.()
+      ?? this.provider?.mediaAudible === false;
+    if (this.provider?.avatarSpeaking && !needsSound) {
+      this.interrupt();
+      return "interrupted";
+    }
+    return await this.provider?.resumeMedia?.() || false;
+  }
+
   bindEvents() {
     this.root.querySelectorAll("[data-claire-start]").forEach((button) => button.addEventListener("click", () => void this.start()));
     this.root.querySelectorAll("[data-claire-manual]").forEach((button) => button.addEventListener("click", () => {
@@ -1072,7 +1082,7 @@ export class ClaireCompanion {
     }));
     this.root.querySelectorAll("[data-claire-recall]").forEach((button) => button.addEventListener("click", () => {
       if (isPhoneShell()) void this.openMobileClaire();
-      else this.recall();
+      else void this.recall();
     }));
     this.root.querySelectorAll("[data-claire-guided]").forEach((button) => button.addEventListener("click", () => {
       if (isPhoneShell()) this.showMobileGuided();
@@ -1164,11 +1174,7 @@ export class ClaireCompanion {
         void this.provider?.resumeMedia?.();
         return;
       }
-      if (this.provider?.avatarSpeaking) {
-        this.interrupt();
-        return;
-      }
-      void this.provider?.resumeMedia?.();
+      void this.handleAvatarStageGesture();
     });
     this.nodes.input?.addEventListener("focus", () => this.yieldToHumanType());
     this.nodes.input?.addEventListener("input", () => this.yieldToHumanType());
@@ -1339,8 +1345,17 @@ export class ClaireCompanion {
     if (!video) return;
     video.playsInline = true;
     video.autoplay = true;
+    video.defaultMuted = false;
+    video.removeAttribute?.("muted");
+    video.muted = false;
+    video.volume = 1;
     video.setAttribute("playsinline", "");
     video.setAttribute("webkit-playsinline", "");
+    void video.play?.().catch?.(() => {
+      video.defaultMuted = false;
+      video.removeAttribute?.("muted");
+      video.muted = false;
+    });
   }
 
   async preflightMicrophone() {
@@ -1615,18 +1630,23 @@ export class ClaireCompanion {
     focusTarget?.focus?.({ preventScroll: true });
   }
 
-  recall() {
+  async recall() {
     if (isPhoneShell()) {
-      void this.openMobileClaire();
-      return;
+      return this.openMobileClaire();
     }
     storageSet(STORAGE_MODE, "guided");
     this.audioEnabled = true;
     this.setState("guided");
     this.applyMobileSceneEvent("start");
     this.setStatus("ready", "Prête");
-    void this.provider?.ensureMicrophone?.();
+    if (this.provider?.ensureActiveListening) {
+      await this.provider.ensureActiveListening({ allowReconnect: true });
+    } else {
+      await this.provider?.ensureMicrophone?.();
+      await this.provider?.resumeMedia?.();
+    }
     this.focusComposer();
+    return Boolean(this.provider?.mediaAudible !== false);
   }
 
   async openConversation() {
@@ -1990,7 +2010,7 @@ export class ClaireCompanion {
         this.markProviderUnavailable("LiveAvatar et OpenAI Realtime doivent être configurés dans les secrets Cloudflare.");
         return false;
       }
-      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260912-claire-voice-out-v1");
+      const { InfoServ2ALiveAvatarProvider } = await import("./claire-liveavatar-provider.js?v=20260912-claire-voice-restore-v1");
       this.registerProvider(new InfoServ2ALiveAvatarProvider({
         endpoint: `${probed.origin}/api/liveavatar-session`
       }));
@@ -2394,7 +2414,7 @@ export class ClaireCompanion {
     this.lastSiteSendOk = false;
 
     if (classified.kind === "recall" || classified.route?.type === "recall") {
-      this.recall();
+      await this.recall();
       this.appendTurn("companion", classified.route.speech);
       this.speak(classified.route.speech);
       return classified.route;
@@ -2856,6 +2876,18 @@ export class ClaireCompanion {
     this.audioEnabled = true;
     this.prepareLocalVideo();
     this.provider?.primeAudio?.();
+    const needsSound = this.provider?.needsAudioUnlock?.()
+      ?? this.provider?.mediaAudible === false;
+    if (this.provider?.connected && needsSound) {
+      const audible = await this.provider.resumeMedia?.();
+      if (audible) {
+        this.setStatus(
+          this.provider.avatarSpeaking ? "speaking" : "ready",
+          this.provider.avatarSpeaking ? "Claire vous répond" : "Son activé · touchez encore pour parler"
+        );
+        return true;
+      }
+    }
     try { await this.preflightMicrophone(); } catch { /* Le SDK redemandera le micro. */ }
     if (this.state === "arrival" || this.state === "loading" || !this.provider?.connected) {
       await this.start();

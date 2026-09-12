@@ -74,10 +74,12 @@ const sdkUrl = `data:text/javascript;base64,${Buffer.from(sdkSource).toString("b
 const { InfoServ2ALiveAvatarProvider } = await import("../assets/js/claire-liveavatar-provider.js");
 
 function fakeVideo({ interruptOutputOnMicrophone = false } = {}) {
-  const attrs = {};
+  const attrs = { muted: "" };
   return {
     hidden: true,
     muted: true,
+    defaultMuted: true,
+    paused: true,
     volume: 0,
     srcObject: null,
     playsInline: false,
@@ -86,10 +88,15 @@ function fakeVideo({ interruptOutputOnMicrophone = false } = {}) {
     disablePictureInPicture: false,
     preload: "",
     setAttribute(name, value = "") { attrs[name] = value; },
+    removeAttribute(name) { delete attrs[name]; },
+    hasAttribute(name) { return Object.hasOwn(attrs, name); },
     onMicrophoneEnabled() {
       if (interruptOutputOnMicrophone) this.muted = true;
     },
-    play: async () => true
+    play: async function () {
+      this.paused = false;
+      return true;
+    }
   };
 }
 
@@ -125,6 +132,41 @@ test("le transport attend les pistes Android retardées sans arrêter la session
   session.emit("avatar-speak-ended");
   assert.equal(session.voiceChat.mutes, 0);
   assert.equal(session.voiceChat.unmutes, 0);
+
+  await provider.stop();
+});
+
+test("le premier geste Safari retire durablement l’attribut muted même avant le flux", async () => {
+  const video = fakeVideo();
+  video.play = async () => { throw new Error("Aucune source attachée"); };
+  const provider = new InfoServ2ALiveAvatarProvider().install({ video });
+
+  assert.equal(provider.primeAudio(), true);
+  await Promise.resolve();
+  assert.equal(video.defaultMuted, false);
+  assert.equal(video.muted, false);
+  assert.equal(video.hasAttribute("muted"), false);
+});
+
+test("la simulation iPad attache les deux pistes puis expédie réellement la parole", async () => {
+  const video = fakeVideo();
+  const provider = new InfoServ2ALiveAvatarProvider({
+    sdkUrl,
+    fetchImpl: async () => Response.json({ sessionToken: "ephemeral", sessionId: "session-ipad-speak" })
+  }).install({ video });
+
+  await provider.connect({ microphone: false });
+  const session = globalThis.__infoservFakeSession;
+  assert.ok(video.srcObject);
+  assert.equal(video.srcObject.getAudioTracks().length, 1);
+  assert.equal(video.srcObject.getVideoTracks().length, 1);
+  assert.equal(video.paused, false);
+  assert.equal(video.muted, false);
+  assert.equal(provider.mediaAudible, true);
+
+  assert.equal(provider.sendUserMessage("Bonjour Claire"), true);
+  assert.equal(session.messages.length, 1);
+  assert.match(session.messages[0], /^\[INFOSERV2A_USER_TEXT\]/);
 
   await provider.stop();
 });

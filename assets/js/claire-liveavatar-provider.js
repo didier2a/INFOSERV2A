@@ -3,7 +3,7 @@ import {
   isOralSendConfirm,
   isStableUrgentCommand,
   isUrgentSiteCommand
-} from "./claire-core.mjs?v=20260912-claire-voice-out-v1";
+} from "./claire-core.mjs?v=20260912-claire-voice-restore-v1";
 
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;
@@ -136,13 +136,17 @@ export class InfoServ2ALiveAvatarProvider {
   primeAudio() {
     if (!this.video) return false;
     this.prepareVideoElement();
+    this.video.defaultMuted = false;
+    this.video.removeAttribute?.("muted");
     this.video.muted = false;
     this.video.volume = 1;
-    // Geste utilisateur (PC, Chrome Android, Safari iPhone) : déverrouille
-    // l'autoplay. Sans flux, play() peut échouer ; on retentera à l'attache.
+    // Sur Safari, l'attribut HTML muted alimente defaultMuted et peut être
+    // réappliqué lors de l'attache WebRTC. Un geste explicite doit conserver
+    // l'intention audible même si play() échoue encore faute de srcObject.
     void this.video.play().catch(() => {
-      this.video.muted = true;
-      void this.video.play().catch(() => {});
+      this.video.defaultMuted = false;
+      this.video.removeAttribute?.("muted");
+      this.video.muted = false;
     });
     return true;
   }
@@ -151,18 +155,22 @@ export class InfoServ2ALiveAvatarProvider {
     if (!this.video) return false;
     this.prepareVideoElement();
     try {
+      this.video.defaultMuted = false;
+      this.video.removeAttribute?.("muted");
       this.video.muted = false;
       this.video.volume = 1;
       await this.video.play();
-      return !this.video.muted;
+      return !this.video.muted && !this.video.paused;
     } catch {
       try {
         this.video.muted = true;
         await this.video.play();
+        this.video.defaultMuted = false;
+        this.video.removeAttribute?.("muted");
         this.video.muted = false;
         this.video.volume = 1;
         await this.video.play();
-        return !this.video.muted;
+        return !this.video.muted && !this.video.paused;
       } catch {
         this.video.muted = true;
         void this.video.play().catch(() => {});
@@ -214,6 +222,15 @@ export class InfoServ2ALiveAvatarProvider {
 
   hasLiveVideo() {
     return mediaTrackState(this.video).video;
+  }
+
+  needsAudioUnlock() {
+    return Boolean(
+      !this.mediaAudible
+      || this.video?.muted
+      || this.video?.paused
+      || !this.hasLiveAudio()
+    );
   }
 
   async waitForMediaTracks(timeoutMs = TRACK_ATTACH_TIMEOUT_MS) {
@@ -793,6 +810,7 @@ export class InfoServ2ALiveAvatarProvider {
     });
     session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
       this.avatarSpeaking = true;
+      this.mediaAudible = !this.needsAudioUnlock();
       this.realtimeSignal = "reply-started";
       this.record("conversation:avatar-speak-started");
       if (this.holdListenForResult) this.armReplyTimer();
