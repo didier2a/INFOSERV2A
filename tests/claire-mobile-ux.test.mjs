@@ -153,7 +153,7 @@ test("phone shell has no generated PiP or form sheet default", async () => {
   assert.doesNotMatch(shellMarkup, /claire-mobile-pip/);
   assert.doesNotMatch(shellMarkup, /claire-mobile-sheet/);
   assert.match(shellMarkup, /Découvrir Claire/);
-  assert.match(client, /data\.mobileFormClaire/);
+  assert.match(client, /dataset\.mobileFormClaire/);
   assert.match(client, /Aide Claire/);
   assert.match(css, /data-claire-mobile-surface="site"[\s\S]*?display: none !important/);
   assert.match(css, /var\(--med-blue, #006c75\)/);
