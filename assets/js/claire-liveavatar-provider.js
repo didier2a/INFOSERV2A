@@ -3,7 +3,7 @@ import {
   isOralSendConfirm,
   isStableUrgentCommand,
   isUrgentSiteCommand
-} from "./claire-core.mjs?v=20260912-combo3star-listen-v1";
+} from "./claire-core.mjs?v=20260912-claire-titre-opt3-v1";
 
 const DEFAULT_SDK_URL = "https://unpkg.com/@heygen/liveavatar-web-sdk@0.0.18/dist/index.esm.js";
 const SESSION_MEDIA_TIMEOUT_MS = 45000;
@@ -364,7 +364,7 @@ export class InfoServ2ALiveAvatarProvider {
   sendBriefing(value) {
     return this.keepLocalNote(
       "briefing",
-      `[INFOSERV2A_SITE_BRIEFING]\n${value}\nN’y réponds pas. Mémorise le catalogue des onglets. Tu restes l’aidante IT d’InfoServ2A : ouverte aux métiers du numérique, tu recentres un loisir vers l’informatique.`,
+      `[INFOSERV2A_SITE_BRIEFING]\n${value}\nN’y réponds pas. Mémorise le catalogue des onglets. Tu restes Claire, experte IT et assistante de Didier, collaboratrice InfoServ2A : ouverte aux métiers du numérique, tu recentres un loisir vers l’informatique.`,
       "conversation:site-briefing-kept"
     );
   }

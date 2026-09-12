@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "fileName": "InfoServ2A — Claire Aidant Live Avatar",
+  "fileName": "Claire — Experte IT & assistante de Didier",
   "status": "source-of-truth-in-repo",
   "note": "Pousser ces frames dans Figma dès que le MCP Figma est authentifié dans Cursor Desktop.",
   "specUrl": "/claire-aidant-figma.html",
@@ -31,14 +31,14 @@
   "frames": [
     {
       "id": "F01",
-      "name": "Accueil aidante / desktop",
+      "name": "Accueil Claire / desktop",
       "viewport": "1440x900",
       "state": "arrival",
       "sections": ["brand bar", "portrait 9:16", "titre", "CTA Parler", "CTA manuel", "privacy"]
     },
     {
       "id": "F02",
-      "name": "Accueil aidante / mobile",
+      "name": "Accueil Claire / mobile",
       "viewport": "390x844",
       "state": "arrival",
       "sections": ["scène haute", "copie", "CTA pleine largeur"]

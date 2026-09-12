@@ -35,7 +35,9 @@ test("audit : Claire est une collaboratrice IT généraliste, pas une IA de salo
   assert.match(prompt, /interlocutrice professionnelle/);
   assert.match(prompt, /recentres vers InfoServ2A et l’IT/);
   assert.match(prompt, /être interrompue/);
-  assert.match(prompt, /experte humaine/);
+  assert.match(prompt, /experte IT et assistante de Didier/);
+  assert.match(prompt, /collaboratrice InfoServ2A/);
+  assert.doesNotMatch(prompt, /aidante/i);
   assert.match(prompt, /pas la recette/);
   assert.doesNotMatch(prompt, /refuses TOUT sujet hors informatique/);
   assert.doesNotMatch(prompt, /sans ramener systématiquement à l’informatique/);
