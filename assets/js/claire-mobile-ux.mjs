@@ -2,13 +2,49 @@ export const PHONE_MEDIA_QUERY = "(max-width: 768px)";
 export const MOBILE_PIP_STORAGE_KEY = "infoserv2a.claire.pip-position";
 export const MOBILE_PIP_DRAG_THRESHOLD_PX = 8;
 export const MOBILE_PIP_EDGE_MAGNET_PX = 20;
+export const CLAIRE_DISCOVERY_DISMISSED_KEY = "infoserv2a.claire.discovery-dismissed";
+export const CLAIRE_DISCOVERY_SEEN_KEY = "infoserv2a.claire.discovery-seen";
 
 export const MOBILE_SURFACES = Object.freeze({
+  SITE: "site",
   PIP: "pip",
   CLAIRE: "claire",
   SHEET: "sheet",
   GUIDED: "guided"
 });
+
+function storageValue(storage, key) {
+  try {
+    return storage?.getItem?.(key) || "";
+  } catch {
+    return "";
+  }
+}
+
+function storeValue(storage, key) {
+  try {
+    storage?.setItem?.(key, "1");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function shouldShowClaireDiscovery(sessionStorageRef, localStorageRef) {
+  return (
+    storageValue(localStorageRef, CLAIRE_DISCOVERY_DISMISSED_KEY) !== "1"
+    && storageValue(sessionStorageRef, CLAIRE_DISCOVERY_SEEN_KEY) !== "1"
+  );
+}
+
+export function markClaireDiscoverySeen(sessionStorageRef) {
+  return storeValue(sessionStorageRef, CLAIRE_DISCOVERY_SEEN_KEY);
+}
+
+export function dismissClaireDiscovery(sessionStorageRef, localStorageRef) {
+  markClaireDiscoverySeen(sessionStorageRef);
+  return storeValue(localStorageRef, CLAIRE_DISCOVERY_DISMISSED_KEY);
+}
 
 function finite(value, fallback = 0) {
   const number = Number(value);
@@ -87,12 +123,14 @@ export function mobilePipDragExceeded(start = {}, current = {}) {
 }
 
 function normalizedPath(pathname = "") {
-  const value = String(pathname || "").split(/[?#]/, 1)[0].replace(/^\/+/, "");
+  const value = String(pathname || "")
+    .split(/[?#]/, 1)[0]
+    .replace(/^\/+|\/+$/g, "");
   return value || "index.html";
 }
 
 export function isMobileFormPath(pathname = "") {
-  return /^(?:devis|contact)\.html$/i.test(normalizedPath(pathname));
+  return /^(?:devis|contact)(?:\.html)?$/i.test(normalizedPath(pathname));
 }
 
 export function mobileTabForLocation(pathname = "", hash = "") {
@@ -100,12 +138,12 @@ export function mobileTabForLocation(pathname = "", hash = "") {
   if (path === "index.html") {
     return String(hash || "").replace(/^#/, "") === "services" ? "services" : "accueil";
   }
-  if (path === "devis.html" || path === "contact.html") return "devis";
+  if (/^(?:devis|contact)(?:\.html)?$/i.test(path)) return "devis";
   return "services";
 }
 
-export function siteSurfaceForPath(pathname = "") {
-  return isMobileFormPath(pathname) ? MOBILE_SURFACES.SHEET : MOBILE_SURFACES.PIP;
+export function siteSurfaceForPath() {
+  return MOBILE_SURFACES.SITE;
 }
 
 export function createMobileUxState({ pathname = "", hash = "" } = {}) {

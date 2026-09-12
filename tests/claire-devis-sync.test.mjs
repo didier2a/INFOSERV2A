@@ -181,3 +181,42 @@ test("les écritures programmatiques émettent input et change", () => {
   assert.deepEqual(events, ["input", "change"]);
   assert.equal(field.dataset.claireWriteSource, undefined);
 });
+
+test("la synthèse Claire ne remplace jamais un message contact tapé", () => {
+  const message = {
+    value: "Message saisi par le client, à conserver mot pour mot.",
+    tagName: "TEXTAREA",
+    dataset: {},
+    scrollTop: 0,
+    dispatchEvent() {}
+  };
+  const surface = new BrowserInfoServ2ASurface({
+    knowledge: { pages: [] },
+    windowRef: {
+      location: { href: "https://preprod.example/contact", pathname: "/contact", origin: "https://preprod.example" },
+      Event,
+      setTimeout,
+      clearTimeout
+    },
+    documentRef: {
+      querySelector(selector) {
+        if (selector === "#contact-message") return message;
+        return null;
+      }
+    },
+    fetchImpl: async () => new Response()
+  });
+  const fields = surface.prefillContact(
+    { message: "Synthèse de l’échange : texte généré par Claire." },
+    {
+      memory: {
+        draft: {
+          values: { message: message.value },
+          provenance: { message: { source: "typed", updatedAt: 20 } }
+        }
+      }
+    }
+  );
+  assert.equal(fields.message, "Message saisi par le client, à conserver mot pour mot.");
+  assert.equal(message.value, fields.message);
+});

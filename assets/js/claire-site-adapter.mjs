@@ -1,4 +1,4 @@
-import { adjacentPage, adjacentSection, catalogEntries, pageById, scorePage } from "./claire-core.mjs?v=20260912-claire-cde-v1";
+import { adjacentPage, adjacentSection, catalogEntries, pageById, scorePage } from "./claire-core.mjs?v=20260912-combo3star-v1";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));

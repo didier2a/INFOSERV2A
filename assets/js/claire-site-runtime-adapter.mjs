@@ -1,4 +1,4 @@
-import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260912-claire-cde-v1";
+import { adjacentPage, adjacentSection, catalogEntries, currentPage, pageById, scorePage } from "./claire-core.mjs?v=20260912-combo3star-v1";
 import {
   contactExtrasFromDocument,
   firstUsefulText,
@@ -11,8 +11,8 @@ import {
   synthesisTurnsFromMemory,
   synthesizeMailBody,
   usefulText
-} from "./claire-session-memory.mjs?v=20260912-claire-cde-v1";
-import { validateContactFields, validateQuoteFields } from "./form-schema.mjs?v=20260912-claire-cde-v1";
+} from "./claire-session-memory.mjs?v=20260912-combo3star-v1";
+import { validateContactFields, validateQuoteFields } from "./form-schema.mjs?v=20260912-combo3star-v1";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -543,7 +543,7 @@ export class BrowserInfoServ2ASurface {
     api.showStatus(form, "error", result.error || "L’envoi n’a pas pu aboutir.");
   }
 
-  prefillContact(draft = {}) {
+  prefillContact(draft = {}, { memory = loadSessionMemory() } = {}) {
     this.fillQuoteField("#contact-name", draft.name);
     this.fillQuoteField("#contact-email", draft.email || draft.replyTo);
     this.fillQuoteField("#contact-phone", draft.phone);
@@ -555,7 +555,15 @@ export class BrowserInfoServ2ASurface {
       );
       if (audience) audience.checked = true;
     }
-    this.fillQuoteField("#contact-message", draft.message || draft.body);
+    const messageField = this.document.querySelector("#contact-message");
+    const typedMessage = memory.draft?.provenance?.message?.source === "typed";
+    if (typedMessage) {
+      if (!messageField?.value) {
+        this.fillQuoteField("#contact-message", memory.draft?.values?.message);
+      }
+    } else {
+      this.fillQuoteField("#contact-message", draft.message || draft.body);
+    }
     return {
       name: this.document.querySelector("#contact-name")?.value || "",
       email: this.document.querySelector("#contact-email")?.value || "",
@@ -597,13 +605,14 @@ export class BrowserInfoServ2ASurface {
         city: visitor.city,
         status: memory.status,
         message: synthesizeMailBody(memory, { message: memory.need })
-      })
+      }, { memory })
       : null;
     return { quote: Boolean(quoteForm), contact: Boolean(contactForm), quoteDraft: quote, contactDraft: contact };
   }
 
   async composeEmail(draft = {}) {
-    const message = synthesizeMailBody(loadSessionMemory(), {
+    const memory = loadSessionMemory();
+    const message = synthesizeMailBody(memory, {
       ...draft,
       message: usefulText(this.document.querySelector("#contact-message")?.value) || draft.message || draft.body,
       fallbackDescription: firstUsefulText(4000, draft.message, draft.body)
@@ -611,7 +620,7 @@ export class BrowserInfoServ2ASurface {
     const fields = this.prefillContact({
       ...draft,
       message
-    });
+    }, { memory });
     fields.message = firstUsefulText(4000, fields.message, message);
     const validation = validateContactFields(fields);
     if (!validation.valid) {
