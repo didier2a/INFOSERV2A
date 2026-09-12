@@ -1,0 +1,33 @@
+name: Claire platform isolation guard
+
+on:
+  pull_request:
+    paths:
+      - "claire-platform/**"
+      - ".assetsignore"
+      - ".github/workflows/claire-platform-guard.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "claire-platform/**"
+      - ".assetsignore"
+      - ".github/workflows/claire-platform-guard.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-worker:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: claire-platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Refuse production Worker targets and run tests
+        run: npm test
+      - name: Validate the claire-platform-dev bundle only
+        run: npm run deploy:dry-run

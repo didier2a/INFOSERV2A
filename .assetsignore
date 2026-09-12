@@ -8,6 +8,7 @@ build_pages.py
 serve.py
 package.json
 wrangler.jsonc
+claire-platform/
 functions/
 partials/
 src/
