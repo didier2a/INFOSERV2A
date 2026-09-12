@@ -16,8 +16,8 @@ test("chaque page contient exactement une instance de Claire", async () => {
   for (const page of pages) {
     const html = await readFile(path.join(ROOT, page), "utf8");
     assert.equal(matches(html, /id="(claireCompanion)"/g).length, 1, page);
-    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260911-claire-send-hang-v1)"/g).length, 1, page);
-    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260911-claire-send-hang-v1)"/g).length, 1, page);
+    assert.equal(matches(html, /href="(assets\/css\/claire-companion\.css\?v=20260912-claire-mobile-option-2-v1)"/g).length, 1, page);
+    assert.equal(matches(html, /src="(assets\/js\/claire-companion\.js\?v=20260912-claire-mobile-option-2-v1)"/g).length, 1, page);
     assert.equal(matches(html, /"events":"(\.\/vendor\/liveavatar\/events-browser\.mjs)"/g).length, 1, page);
     assert.equal(matches(html, /class="(claire-avatar__video)"/g).length, 1, page);
     assert.equal(matches(html, /src="(assets\/images\/companion\/claire-liveavatar-1080x1920\.jpg)"/g).length, 2, page);
@@ -39,7 +39,7 @@ test("les modules Claire sont versionnés pour éviter un cache 24 h cassé", as
     const bare = [...source.matchAll(/(?:from|import)\(?["'](\.\/[^"'?]+)["']/g)].map((match) => match[1]);
     assert.deepEqual(bare, [], `${file} importe sans ?v= : ${bare.join(", ")}`);
     if (source.includes("claire-core.mjs")) {
-      assert.match(source, /claire-core\.mjs\?v=20260911-claire-send-hang-v1/);
+      assert.match(source, /claire-core\.mjs\?v=20260912-claire-mobile-option-2-v1/);
     }
   }
 });
@@ -417,6 +417,26 @@ test("l’arrivée montre l’enseigne InfoServ2A et deux portes", async () => {
   assert.match(client, /skipWelcome/);
   assert.match(client, /ensureTextConversation/);
   assert.match(client, /Claire reste à portée/);
+});
+
+test("OPTION 2 : le premier écran téléphone propose deux portes co-brandées", async () => {
+  const [header, css, client, formShell] = await Promise.all([
+    readFile(path.join(ROOT, "partials/header.html"), "utf8"),
+    readFile(path.join(ROOT, "assets/css/claire-companion.css"), "utf8"),
+    readFile(path.join(ROOT, "assets/js/claire-companion.js"), "utf8"),
+    readFile(path.join(ROOT, "assets/css/mediterranee.css"), "utf8")
+  ]);
+  assert.match(header, /InfoServ2A — votre expert local à Porto-Vecchio/);
+  assert.match(header, /Claire, assistante numérique de Didier/);
+  assert.match(header, /data-claire-manual data-claire-choice-primary>Découvrir InfoServ2A/);
+  assert.match(header, /data-claire-start>Échanger avec Claire/);
+  assert.match(header, /var next = phone \? "choice" : "arrival"/);
+  assert.match(client, /resolveInitialClaireState/);
+  assert.match(client, /claire-choice-open/);
+  assert.match(css, /\[data-state="choice"\] \.claire-mobile-choice/);
+  assert.match(css, /\.claire-mobile-choice__actions \{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.doesNotMatch(css, /body\.claire-choice-open[^}]*overflow:\s*hidden/);
+  assert.match(formShell, /body\.med-site\.med-form-editing :is\(\.claire-manual-bar, \.med-dock\)/);
 });
 
 test("Claire se présente comme collaboratrice numérique IT", async () => {

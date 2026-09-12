@@ -8,7 +8,7 @@ import {
   resolveCurrentPage,
   isOralSendConfirm,
   isClaireQuotePrompt
-} from "./claire-core.mjs?v=20260911-claire-send-hang-v1";
+} from "./claire-core.mjs?v=20260912-claire-mobile-option-2-v1";
 import {
   canSubmitQuote,
   canSubmitContact,
@@ -17,11 +17,11 @@ import {
   quotePrefillFromMemory,
   isSameDraftAlreadySent,
   alreadySentSpeech
-} from "./claire-session-memory.mjs?v=20260911-claire-send-hang-v1";
+} from "./claire-session-memory.mjs?v=20260912-claire-mobile-option-2-v1";
 import {
   CLAIRE_ACTION_MODES,
   exactConfirmationKind
-} from "./claire-actions-v1.mjs?v=20260911-claire-send-hang-v1";
+} from "./claire-actions-v1.mjs?v=20260912-claire-mobile-option-2-v1";
 
 export const CONTROLLER_STATES = Object.freeze({
   READY: "ready",

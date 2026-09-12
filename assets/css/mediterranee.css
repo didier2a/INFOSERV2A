@@ -191,5 +191,5 @@ body.med-site { background: var(--med-paper); }
   /* Un seul chrome bas : la barre Claire remplace le dock en mode manuel. */
   body.med-site.claire-is-manual .med-dock { display: none; }
   body.med-site.claire-is-manual .claire-manual-bar { bottom: max(0.65rem, env(safe-area-inset-bottom)); }
-  body.med-site.med-form-editing.claire-is-manual :is(.claire-manual-bar, .med-dock) { visibility: hidden; pointer-events: none; }
+  body.med-site.med-form-editing :is(.claire-manual-bar, .med-dock) { visibility: hidden; pointer-events: none; }
 }

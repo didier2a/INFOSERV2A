@@ -1,6 +1,6 @@
-import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260911-claire-send-hang-v1";
-import { followSpokenNavigation } from "./claire-core.mjs?v=20260911-claire-send-hang-v1";
-import { InfoServ2ALabAdapter } from "./claire-site-adapter.mjs?v=20260911-claire-send-hang-v1";
+import { ClaireRuntimeController } from "./claire-runtime-v2.mjs?v=20260912-claire-mobile-option-2-v1";
+import { followSpokenNavigation } from "./claire-core.mjs?v=20260912-claire-mobile-option-2-v1";
+import { InfoServ2ALabAdapter } from "./claire-site-adapter.mjs?v=20260912-claire-mobile-option-2-v1";
 
 const stateLabels = {
   ready: "Prête",
