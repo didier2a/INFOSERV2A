@@ -15,13 +15,13 @@ Preview Claire après déploiement préprod : `https://infoserv2a-claire-v3-prep
 Déploiement manuel de Claire en **PREPROD uniquement** :
 
 ```bash
-npx wrangler deploy --config wrangler.preprod.jsonc
+npx wrangler deploy --config wrangler.preprod.jsonc --keep-vars
 ```
 
 Cette commande cible `infoserv2a-claire-v3-preproduction` sur `workers.dev`. Ne pas utiliser
 `wrangler.jsonc` et ne pas publier `www.infoserv2a.pro` pour valider Claire.
-Le build PiP edge-to-edge préprod doit répondre avec
-`X-InfoServ2A-Preview: 20260912-pip-edge-v1`. Après déploiement, vérifier sur
+Le build préprod avec la voix `marin` et le contexte Claire doit répondre avec
+`X-InfoServ2A-Preview: 20260913-marin-context-v1`. Après déploiement, vérifier sur
 un mobile ≤ 768 px que le bandeau Accueil / Services / Claire / Devis disparaît
 uniquement pendant le PiP, puis revient en touchant le médaillon ou son bouton ✕.
 Le son, le micro et la synchronisation labiale doivent rester actifs en PiP.
